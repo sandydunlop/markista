@@ -23,7 +23,7 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.List;
 
-/// A class that outputs API documentation.
+/// A class that outputs API documentation as Markdown.
 public class MarkdownWriter {
     private static final String BR = "<br/>";
     private static final String NBSP = "&nbsp;";

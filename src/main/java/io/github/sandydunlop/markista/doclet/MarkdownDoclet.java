@@ -21,7 +21,7 @@ public class MarkdownDoclet implements Doclet {
     private static final boolean OK = true;
     private static final boolean FAILED = false;
     private String outputDirectory = null;
-    private boolean documentPrivate = false;
+    private boolean documentPrivateMembers = false;
     private boolean createExternalLinks = false;
 
     /// The default constructor, does nothing.
@@ -115,7 +115,7 @@ public class MarkdownDoclet implements Doclet {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
-                    documentPrivate = true;
+                    documentPrivateMembers = true;
                     return OK;
                 }
             },
@@ -199,7 +199,7 @@ public class MarkdownDoclet implements Doclet {
         }
 
         ApiCollector collector = new ApiCollector(environment);
-        collector.setDocumentPrivate(documentPrivate);
+        collector.setDocumentPrivateMembers(documentPrivateMembers);
 
         Api api = collector.collect(environment.getIncludedElements());
         api.sort();

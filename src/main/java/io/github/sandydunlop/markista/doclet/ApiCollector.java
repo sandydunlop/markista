@@ -46,13 +46,14 @@ import jdk.javadoc.doclet.DocletEnvironment;
 
 import static javax.lang.model.element.Modifier.*;
 
+/// A class that scans code and generates an API tree representing code and Javadoc comments.
 public class ApiCollector extends ElementScanner9<Void, Integer> {
     private PackageNode packageDoc = null;
     private static DocTrees treeUtils;
     private static Types typeUtils;
     private static Elements elementUtils;
     private Api api;
-    private boolean documentPrivate = false;
+    private boolean documentPrivateMembers = false;
     private Set<Element> encounteredSupertypes = new HashSet<>();
 
     public ApiCollector(DocletEnvironment environment) {
@@ -62,8 +63,8 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         this.api = new Api();
     }
 
-    public void setDocumentPrivate(boolean documentPrivate) {
-        this.documentPrivate = documentPrivate;
+    public void setDocumentPrivateMembers(boolean documentPrivateMembers) {
+        this.documentPrivateMembers = documentPrivateMembers;
     }
 
     public Api collect(Set<? extends Element> elements) {
@@ -361,7 +362,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
 
     private boolean isIncludedInApi(Element e) {
         Set<Modifier> mods = e.getModifiers();
-        return documentPrivate || mods.contains(PUBLIC) || mods.contains(PROTECTED);
+        return documentPrivateMembers || mods.contains(PUBLIC) || mods.contains(PROTECTED);
     }
 
     private void setMethodParams(MethodNode methodDoc, ExecutableElement ee) {
