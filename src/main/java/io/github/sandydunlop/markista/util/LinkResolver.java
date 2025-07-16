@@ -1,25 +1,34 @@
 package io.github.sandydunlop.markista.util;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Optional;
+
+import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.PackageNode;
+
 
 /// This class woks calculates the paths for Markdown documents 
 /// to link between different packages and to URLs of external
 /// packages and their contents.
 public class LinkResolver {
-    private static HashSet<String> localPackageNames = new HashSet<>();
     private static HashMap<String,String> nativePackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
+    private static Api api = null;
 
     private LinkResolver() {
         // This hides the public constructor
     }
 
-    public static void addLocalPackage(String identifier) {
-        localPackageNames.add(identifier);
+    public static void setApi(Api a) {
+        api = a;
     }
+
+    public static void addLocalPackage(String identifier) {
+        // localPackageNames.add(identifier);
+    }
+
 
     public static void addNativeModule(String moduleName, String baseUrl, String s) {
         Optional<Module> module = moduleLayer.findModule(moduleName);
@@ -62,51 +71,116 @@ public class LinkResolver {
         return "";
     }
 
-    public static String resolve(String from, String to) {
-        if (to == null) return null;
-        if (to.indexOf("<") > -1) return null;
+    public static Link resolve(String from, String to) {
+        Link link = new Link();
+        if (to == null) return link;
+        if (to.indexOf("<") > -1) return link;
+        String url = resolveExternal(to);
+        if (url != null) {
+            link.path = url;
+            link.type = Type.EXTERNAL;
+            return link;
+        }
         String fromPackageName = getPackageName(from);
         String toPackageName = getPackageName(to);
         String toClassName = getClassName(to);
-        int dot = toPackageName.lastIndexOf(".");
-        if (dot > -1) {
-            if (localPackageNames.contains(toPackageName)) {
-                fromPackageName += ".";
-                toPackageName += ".";
-                dot = 0;
-                do {
-                    int nextDotFrom = fromPackageName.indexOf(".", dot + 1);
-                    int nextDotTo = toPackageName.indexOf(".", dot + 1);
-                    if (nextDotFrom == -1 || nextDotTo == -1 || 
-                            !fromPackageName.substring(0, nextDotFrom).equals(toPackageName.substring(0, nextDotTo))) {
-                        int dotsRemaining = (int) fromPackageName.substring(dot).chars().filter(ch -> ch == '.').count();
-                        String pathRemaining = toPackageName.substring(dot + 1);
-                        if (dotsRemaining < 2) {
-                            return toClassName;
-                        }else{
-                            String link = "../".repeat(dotsRemaining - 1) + pathRemaining.replace(".","/");
-                            return link + "/" + toClassName;
-                        }
-                    }
-                    dot = nextDotFrom;
-                } while(true);
-            }
-            dot = 0;
-            do {
-                dot = to.indexOf(".", dot + 1);
-                if (dot != -1) {
-                    String id = to.substring(0, dot);
-                    String baseUrl = nativePackageNames.get(id);
-                    if (baseUrl != null) {
-                        String link = baseUrl + "/" + to.replace(".", "/") + suffix.get(id);
-                        return link;
-                    }
-                }
-            } while(dot != -1);
-        }
+
         if (toPackageName.isEmpty()) {
-            return toClassName;
+            to = qualifyClass(fromPackageName, toClassName);
+            toPackageName = getPackageName(to);
+            toClassName = getClassName(to);
         }
+        if (!isQualified(fromPackageName, toPackageName)) {
+            to = qualifyPackage(fromPackageName, toPackageName);
+            toPackageName = getPackageName(to);
+            toClassName = getClassName(to);
+        }
+        if (toPackageName.isEmpty()) return link;
+        link.path =  relativize(fromPackageName, toPackageName);
+        link.type = Type.PACKAGE;
+        if (!toClassName.isEmpty()) {
+            if (!link.path.isEmpty()) link.path += "/";
+            link.path += toClassName;
+            link.type = Type.CLASS;
+        }
+        return link;
+    }
+
+    public static String resolveExternal(String to) {
+        int dot = 0;
+        do {
+            dot = to.indexOf(".", dot + 1);
+            if (dot != -1) {
+                String id = to.substring(0, dot);
+                String baseUrl = nativePackageNames.get(id);
+                if (baseUrl != null) {
+                    String link = baseUrl + "/" + to.replace(".", "/") + suffix.get(id);
+                    return link;
+                }
+            }
+        } while(dot != -1);
         return null;
+    }
+
+    public static boolean isQualified(String from, String to) {
+        int p = from.indexOf('.');
+        String first = from.substring(0, p);
+        return to.length() > p && to.substring(0, p).equals(first);
+    }
+
+    public static String qualifyClass(String from, String to) {
+        // 'from' could be used to ensure the closest matching class is chosen
+        for (ClassNode node : api.getClasses()) {
+            if (node.simpleName.equals(to)) {
+                return node.qualifiedName;
+            }
+        }
+        return "";
+    }
+
+    public static String qualifyPackage(String from, String to) {
+        // 'from' could be used to ensure the closest matching package is chosen
+        for (PackageNode node : api.getPackages()) {
+            int p = node.qualifiedName.lastIndexOf(".");
+            if (node.qualifiedName.substring(p + 1).equals(to)) {
+                return node.qualifiedName;
+            }
+        }
+        return "";
+    }
+
+    public static String relativize(String from, String to) {
+        if (from == null || to == null) return null;
+        String[] fromParts = from.split("\\.");
+        String[] toParts = to.split("\\.");
+        StringBuilder rel = new StringBuilder();
+        int p;
+        for (p=fromParts.length-1; p>0; p--) {
+            if (p<toParts.length) {
+                if (fromParts[p].equals(toParts[p])) {
+                    p++;
+                    break;
+                }
+            }
+            if (rel.length() > 0) rel.append("/");
+            rel.append("..");
+        }
+        for (;p < toParts.length; p++) {
+            if (!rel.isEmpty()) rel.append("/");
+            rel.append(toParts[p]);
+        }
+        return rel.toString();
+    }
+
+    public enum Type {
+        PACKAGE,
+        CLASS,
+        EXTERNAL,
+        NOTHING
+    }
+
+    public static class Link {
+        public Type type = Type.NOTHING;
+        public String path = null;
     }
 }

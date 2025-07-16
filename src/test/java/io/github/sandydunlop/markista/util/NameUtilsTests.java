@@ -26,7 +26,7 @@ class NameUtilsTests {
 	@Test
 	void simplifyName_arrayOfualifiedName() {
 		assertEquals("Object[]", 
-				NameUtils.simplifyNames("ava.lang.Object[]"));
+				NameUtils.simplifyNames("java.lang.Object[]"));
 	}
 
 	@Test

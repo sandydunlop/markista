@@ -82,11 +82,12 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         PackageNode pkg = api.getPackageDoc(ee.getQualifiedName().toString());
         if (pkg == null) {
             DocCommentTree dct = treeUtils.getDocCommentTree(ee);
-            String description = dct == null ? "" : dct.getFirstSentence().toString();
-            String fullDescription = dct == null ? "" : dct.getFullBody().toString();
             pkg = new PackageNode(ee.getQualifiedName().toString());
-            pkg.description = description;
-            pkg.fullDescription = fullDescription;
+            if (dct != null) {
+                pkg.setFirstSentence(dct.getFirstSentence());
+                pkg.setBody(dct.getBody());
+                pkg.setFullBody(dct.getFullBody());
+            }
             api.addPackage(pkg);
             LinkResolver.addLocalPackage(pkg.qualifiedName);
             packageDoc = pkg;
@@ -112,9 +113,9 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             TypeNode typeDoc = insantiateSubtype(e.getKind(), qualifiedName, simpleName, packageName);
             DocCommentTree dct = treeUtils.getDocCommentTree(e);
             if (dct != null) {
-                typeDoc.firstSentence = dct.getFirstSentence().toString();
-                typeDoc.description = dct.getBody().toString();
-                typeDoc.fullDescription = dct.getFullBody().toString();
+                typeDoc.setFirstSentence(dct.getFirstSentence());
+                typeDoc.setBody(dct.getBody());
+                typeDoc.setFullBody(dct.getFullBody());
             }
             typeDoc.modifiers.addAll(e.getModifiers());
             collectAllSupertypes(e.asType(), typeDoc.supertypes);
@@ -216,9 +217,9 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             methodDoc.modifiers.addAll(ee.getModifiers()); 
             DocCommentTree dct = treeUtils.getDocCommentTree(ee);
             if (dct != null) {
-                methodDoc.firstSentence = dct.getFirstSentence().toString();
-                methodDoc.description = dct.getBody().toString();
-                methodDoc.fullDescription = dct.getFullBody().toString();
+                methodDoc.setFirstSentence(dct.getFirstSentence());
+                methodDoc.setBody(dct.getBody());
+                methodDoc.setFullBody(dct.getFullBody());
                 methodDoc.returnDescription = getReturnComment(dct);
             }
             
@@ -277,8 +278,9 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                         fieldDoc.modifiers.addAll(ve.getModifiers()); 
                         DocCommentTree dct = treeUtils.getDocCommentTree(ve);
                         if (dct != null) {
-                            fieldDoc.firstSentence = dct.getFirstSentence().toString();
-                            fieldDoc.description = dct.getBody().toString();
+                            fieldDoc.setFirstSentence(dct.getFirstSentence());
+                            fieldDoc.setBody(dct.getBody());
+                            fieldDoc.setFullBody(dct.getFullBody());
                         }
                         classDoc.fields.add(fieldDoc);
                     }
@@ -374,8 +376,6 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         methodDoc.params.clear();
         TypeElement classElement = getEnclosingTypeElement(ee);
         for (VariableElement parameter : ee.getParameters()) {
-            DocCommentTree dct = treeUtils.getDocCommentTree(ee);
-            String description = dct == null ? "" : getParamComment(dct, parameter);
             String simpleName = parameter.getSimpleName().toString();
             String qualifiedClassName = classElement.getQualifiedName().toString();
             String qualifiedTypeName = getParamType(elementUtils, qualifiedClassName, ee, simpleName);
@@ -390,7 +390,12 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
 
             TypeNode paramType = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
             ParamNode param = new ParamNode(paramType, simpleName);
-            param.description = description;
+            DocCommentTree dct = treeUtils.getDocCommentTree(ee);
+            if (dct != null) {
+                param.setFirstSentence(dct.getFirstSentence());
+                param.setBody(dct.getBody());
+                param.setFullBody(dct.getFullBody());
+            }
             methodDoc.params.add(param);
         }
     }

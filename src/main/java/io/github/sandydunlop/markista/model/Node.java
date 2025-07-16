@@ -10,6 +10,8 @@ import java.util.Set;
 
 import javax.lang.model.element.Modifier;
 
+import com.sun.source.doctree.DocTree;
+
 
 public class Node {
     public Node owner = null;
@@ -18,8 +20,34 @@ public class Node {
     public String simpleName = "";
     public String qualifiedName = "";
     public String packageName = "";
-    public String firstSentence = "";
-    public String description = "";
+
+    private List<? extends DocTree> firstSentence = new ArrayList<>();
+    private List<? extends DocTree> body = new ArrayList<>();
+    private List<? extends DocTree> fullBody = new ArrayList<>();
+
+    public void setFirstSentence(List<? extends DocTree> doc) {
+        firstSentence = doc;
+    }
+
+    public List<? extends DocTree> getFirstSentence() {
+        return firstSentence;
+    }
+
+    public void setBody(List<? extends DocTree> doc) {
+        body = doc;
+    }
+
+    public List<? extends DocTree> getBody() {
+        return body;
+    }
+
+    public void setFullBody(List<? extends DocTree> doc) {
+        fullBody = doc;
+    }
+
+    public List<? extends DocTree> getFullBody() {
+        return fullBody;
+    }
 
     public String getModifiers() {
         String mods = "";

@@ -50,7 +50,7 @@ public class NameUtils {
         if (start > -1) {
             int end = str.indexOf(">");
             if (end > start) {
-                String before = str.substring(0, start + 1);
+                String before = simplifyNames(str.substring(0, start + 1));
                 String after = str.substring(end);
                 String mid = str.substring(start + 1, end);
                 String simplified = simplifyNames(mid);

@@ -203,6 +203,7 @@ public class MarkdownDoclet implements Doclet {
 
         Api api = collector.collect(environment.getIncludedElements());
         api.sort();
+        LinkResolver.setApi(api);
 
         MarkdownWriter writer = new MarkdownWriter(outputDirectory);
         try{
