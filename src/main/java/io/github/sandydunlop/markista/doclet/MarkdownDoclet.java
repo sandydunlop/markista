@@ -34,7 +34,7 @@ public class MarkdownDoclet implements Doclet {
             "-doclet", MarkdownDoclet.class.getName(),
             "-docletpath", "build/classes/java/main", 
             "-d", "build/md-docs", 
-            "--include-private", 
+            "--private", 
             "--external-links",
             "-sourcepath", "src/main/java/", 
             "-subpackages", 
@@ -110,8 +110,8 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
-            new Option("--include-private", false,
-                    "include elements with private modifier", null) {
+            new Option("--private", false,
+                    "include members with private modifier", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {

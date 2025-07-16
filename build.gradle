@@ -6,6 +6,9 @@ plugins {
     id 'signing'
 }
 
+group = 'io.github.sandydunlop'
+version = '0.1.0'
+
 repositories {
 	mavenCentral()
 }
@@ -81,5 +84,18 @@ publishing {
             url = uri(layout.buildDirectory.dir("staging-deploy"))
         }
     }
+
+    task website (type: Copy) {
+        duplicatesStrategy 'include'
+        from 'README.md'
+        into '../../../website/docs/markista'
+        rename ('README.md','index.md')
+    }
+    task copyDocs(type: Copy) {
+        duplicatesStrategy 'include'
+        from 'build/md-docs/io/github/sandydunlop/markista'
+        into '../../../website/docs/markista/javadoc'
+    }
+    website.dependsOn copyDocs
 }
 
