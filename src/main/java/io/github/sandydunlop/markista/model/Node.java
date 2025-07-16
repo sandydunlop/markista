@@ -18,6 +18,7 @@ public class Node {
     public String simpleName = "";
     public String qualifiedName = "";
     public String packageName = "";
+    public String firstSentence = "";
     public String description = "";
 
     public String getModifiers() {

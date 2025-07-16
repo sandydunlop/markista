@@ -49,6 +49,7 @@ public class MarkdownWriter {
     private void outputPackageDoc(PackageNode packageDoc) throws IOException {
         writer = createFile(null, packageDoc.qualifiedName);    
         writer.write("# Package " + packageDoc.qualifiedName + "\n");
+        writer.write("\n\n" + packageDoc.description + "\n\n");
         outputPackageMembers("Classes", packageDoc.classes);
         outputPackageMembers("Interfaces", packageDoc.interfaces);
         outputPackageMembers("Enum Classes", packageDoc.enumClasses);
@@ -80,7 +81,7 @@ public class MarkdownWriter {
                 .addColumn("Class")
                 .addColumn("Description");
         for (Node member : (List<Node>)members) {
-            table.addRow(new String[]{mdDocumentLink(member.simpleName), inOneLine(member.description)});
+            table.addRow(new String[]{mdDocumentLink(member.simpleName), inOneLine(member.firstSentence)});
         }
         table.render(writer, 4);
     }
@@ -98,8 +99,8 @@ public class MarkdownWriter {
         outputEnclosingClass(typeDoc);
         writer.write("\n----\n\n");
 
-        if (!isNullOrEmpty(typeDoc.fullDescription)) {
-            writer.write(typeDoc.fullDescription);
+        if (!isNullOrEmpty(typeDoc.description)) {
+            writer.write(typeDoc.description);
             writer.write("\n\n");
         }
 
@@ -171,7 +172,7 @@ public class MarkdownWriter {
         for (ClassNode nestedClass : nestedClasses) {
             table.addRow(new String[]{nestedClass.getModifiers(),
                         mdDocumentLink(nestedClass.simpleName), 
-                        nestedClass.description});
+                        nestedClass.firstSentence});
         }
         table.render(writer);
     }
@@ -184,7 +185,7 @@ public class MarkdownWriter {
         for (FieldNode fieldDoc : fields) {
             String link = mdAutoLink(fieldDoc.type.qualifiedName, false);
             table.addRow(new String[]{fieldDoc.getModifiers() + link, 
-                        fieldDoc.simpleName, fieldDoc.description});
+                        fieldDoc.simpleName, fieldDoc.firstSentence});
         }
         table.render(writer);
     }
@@ -195,7 +196,7 @@ public class MarkdownWriter {
                 .addColumn("Description");
         for (MethodNode methodDoc : methods) {
             table.addRow(new String[]{methodDoc.simpleName + "(" + methodDoc.paramsString() + ")",
-                        methodDoc.description});
+                        methodDoc.firstSentence});
         }
         table.render(writer);
     }
@@ -208,7 +209,7 @@ public class MarkdownWriter {
         for (MethodNode methodDoc : methods) {
             table.addRow(new String[]{methodDoc.getModifiers() + mdAutoLink(methodDoc.returnType.qualifiedName, false), 
                         mdAnchorLink(methodDoc.simpleName) + "(" + methodDoc.paramsString() + ")",
-                        methodDoc.description});
+                        methodDoc.firstSentence});
         }
         table.render(writer);
     }
@@ -217,20 +218,20 @@ public class MarkdownWriter {
         for (MethodNode methodDoc : methods) {
             writer.write("### " + methodDoc.simpleName + "\n\n");
             writer.write("`" + methodDoc.fullSignature() + "`\n\n");
-            writer.write(methodDoc.fullDescription + "\n\n");
+            writer.write(methodDoc.description + "\n\n");
 
             //TODO: Overrides, exceptions. Annotations?
 
             if (!methodDoc.params.isEmpty()) {
                 boolean showParameters = false;
                 for (ParamNode param : methodDoc.params) {
-                    if (!isNullOrEmpty(param.description)) showParameters = true; 
+                    if (!isNullOrEmpty(param.firstSentence)) showParameters = true; 
                 }
                 if (showParameters) {
                     writer.write("Parameters:\n\n");
                     for (ParamNode param : methodDoc.params) {
-                        if (!isNullOrEmpty(param.description)) {
-                            writer.write("`" +param.simpleName + "` - " + inOneLine(param.description) +"\n\n");
+                        if (!isNullOrEmpty(param.firstSentence)) {
+                            writer.write("`" +param.simpleName + "` - " + inOneLine(param.firstSentence) +"\n\n");
                         }
                     }
                 }

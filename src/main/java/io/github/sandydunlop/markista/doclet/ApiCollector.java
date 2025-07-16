@@ -97,22 +97,21 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     @Override
     public Void visitType(TypeElement e, Integer depth) { 
         if (isIncludedInApi(e)){
-            DocCommentTree dct = treeUtils.getDocCommentTree(e);
-            String description = dct == null ? "" : dct.getFirstSentence().toString();
-            String fullDescription = dct == null ? "" : dct.getFullBody().toString();
-            TypeElement classElement = (TypeElement)e;
-            TypeMirror typeMirror = e.asType();
-            String qualifiedName = classElement.getQualifiedName().toString();
-            PackageElement packageElement = getEnclosingPackageElement(classElement);
+            PackageElement packageElement = getEnclosingPackageElement(e);
+            String simpleName = e.getSimpleName().toString();
+            String qualifiedName = e.getQualifiedName().toString();
             String packageName = packageElement.getQualifiedName().toString();
-            String simpleName = classElement.getSimpleName().toString();
             TypeNode typeDoc = insantiateSubtype(e.getKind(), qualifiedName, simpleName, packageName);
-            typeDoc.description = description;
-            typeDoc.fullDescription = fullDescription;
+            DocCommentTree dct = treeUtils.getDocCommentTree(e);
+            if (dct != null) {
+                typeDoc.firstSentence = dct.getFirstSentence().toString();
+                typeDoc.description = dct.getBody().toString();
+                typeDoc.fullDescription = dct.getFullBody().toString();
+            }
             typeDoc.modifiers.addAll(e.getModifiers());
-            collectAllSupertypes(typeMirror, typeDoc.supertypes); //TODO: This has errors
+            collectAllSupertypes(e.asType(), typeDoc.supertypes);
             typeDoc.supertypes.add(0, "java.lang.Object");
-            findImplementedInterfaces(classElement, typeDoc.implementedInterfaces);
+            findImplementedInterfaces(e, typeDoc.implementedInterfaces);
             TypeElement owner = getEnclosingTypeElement(e);
             ClassNode ownerClass = owner == null ? null : api.getClassDoc(owner);
             if (ownerClass != null) {
@@ -198,26 +197,23 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             TypeMirror tm = ee.getReturnType();
             Element te = typeUtils.asElement(tm);
 
-            DocCommentTree dct = treeUtils.getDocCommentTree(ee);
-            String description = dct == null ? "" : dct.getFirstSentence().toString();
-            String fullDescription = dct == null ? "" : dct.getFullBody().toString();
-            String returnDescription = dct == null ? "" : getReturnComment(dct);
-
             // The return type...
             String qualifiedName = tm.toString();
             String simpleName = NameUtils.simplifyNames(qualifiedName);
-            
-            //This is the wrong package call
             PackageElement packageElement = getEnclosingPackageElement(ee);
             String packageName = packageElement.getQualifiedName().toString();                
-
             TypeNode returnType = new TypeNode(qualifiedName, simpleName, packageName);
 
             MethodNode methodDoc = new MethodNode(returnType, ee.getSimpleName().toString());
             methodDoc.modifiers.addAll(ee.getModifiers()); 
-            methodDoc.description = description;
-            methodDoc.fullDescription = fullDescription;
-            methodDoc.returnDescription = returnDescription;
+            DocCommentTree dct = treeUtils.getDocCommentTree(ee);
+            if (dct != null) {
+                methodDoc.firstSentence = dct.getFirstSentence().toString();
+                methodDoc.description = dct.getBody().toString();
+                methodDoc.fullDescription = dct.getFullBody().toString();
+                methodDoc.returnDescription = getReturnComment(dct);
+            }
+            
             methodDoc.thrownTypes = ee.getThrownTypes();
             methodDoc.deprecation = getDeprecationStatus(ee);
             // methodDoc.extension = round.getExtensionName(ee); //TODO
@@ -263,8 +259,6 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                     String simpleName = ve.getSimpleName().toString();
                     FieldNode fieldDoc = classDoc.getField(simpleName);
                     if (fieldDoc == null) {
-                        DocCommentTree dct = treeUtils.getDocCommentTree(ve);
-                        String description = dct == null ? "" : dct.getFirstSentence().toString();
                         String qualifiedClassName = classElement.getQualifiedName().toString();
                         String qualifiedTypeName = getFieldType(elementUtils, qualifiedClassName, simpleName);
                         String simpleTypeName = NameUtils.simplifyNames(qualifiedTypeName);
@@ -273,8 +267,12 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                         fieldDoc = new FieldNode(type, simpleName);
                         fieldDoc.constantValue = (Serializable) ve.getConstantValue();
                         fieldDoc.deprecation = getDeprecationStatus(ve);
-                        fieldDoc.description = description;
                         fieldDoc.modifiers.addAll(ve.getModifiers()); 
+                        DocCommentTree dct = treeUtils.getDocCommentTree(ve);
+                        if (dct != null) {
+                            fieldDoc.firstSentence = dct.getFirstSentence().toString();
+                            fieldDoc.description = dct.getBody().toString();
+                        }
                         classDoc.fields.add(fieldDoc);
                     }
                 }
