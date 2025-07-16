@@ -49,7 +49,15 @@ public class MarkdownWriter {
     private void outputPackageDoc(PackageNode packageDoc) throws IOException {
         writer = createFile(null, packageDoc.qualifiedName);    
         writer.write("# Package " + packageDoc.qualifiedName + "\n");
-        writer.write("\n\n" + packageDoc.description + "\n\n");
+        writer.write("\n\n" + packageDoc.fullDescription + "\n\n");
+
+        // if (!packageDoc.packages.isEmpty()) {
+        //     for (ClassNode doc : packageDoc.classes) {
+        //         outputTypeDoc(doc, "Class");
+        //     }
+        // }
+
+        outputPackageMembers("Packages", packageDoc.packages);
         outputPackageMembers("Classes", packageDoc.classes);
         outputPackageMembers("Interfaces", packageDoc.interfaces);
         outputPackageMembers("Enum Classes", packageDoc.enumClasses);
@@ -76,9 +84,13 @@ public class MarkdownWriter {
 
     private void outputPackageMembers(String title, List<?> members) throws IOException {
         if (members.isEmpty()) return;
+        String memberKind = "Class";
+        if (members.get(0) instanceof PackageNode) {
+            memberKind = "Package";
+        }
         writer.write("=== \"" + title + "\"\n\n");
         MarkdownTable table = new MarkdownTable()
-                .addColumn("Class")
+                .addColumn(memberKind)
                 .addColumn("Description");
         for (Node member : (List<Node>)members) {
             table.addRow(new String[]{mdDocumentLink(member.simpleName), inOneLine(member.firstSentence)});

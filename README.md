@@ -57,6 +57,11 @@ javadoc -docletpath libs/markista-0.1.0.jar -doclet io.github.sandydunlop.markis
     all built in Java packages will be supported, as well as links to other
     projects' documentation.
 
+## Download
+
+JAR files for version 0.1.0 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.1.0).
+
+
 ## Source Code
 
 Markista's souce code is available on [Github](https://github.com/sandydunlop/markista) under the GPLv3 license.

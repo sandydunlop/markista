@@ -7,6 +7,7 @@ import java.util.Collections;
 import javax.lang.model.element.TypeElement;
 
 public class Api {
+    private List<PackageNode> topLevelPackages = new ArrayList<>();
     private List<PackageNode> packages = new ArrayList<>();
     private List<ClassNode> classes = new ArrayList<>();
     private List<InterfaceNode> interfaces = new ArrayList<>();

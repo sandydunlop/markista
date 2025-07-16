@@ -90,6 +90,14 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             api.addPackage(pkg);
             LinkResolver.addLocalPackage(pkg.qualifiedName);
             packageDoc = pkg;
+            Element enclosing = ee.getEnclosingElement();
+            if (enclosing.getKind() == ElementKind.PACKAGE) {
+                PackageElement p = (PackageElement)ee;
+                PackageNode owner = api.getPackageDoc(p.getQualifiedName().toString());
+                if (owner != null) {
+                    owner.getPackages().add(pkg);
+                }
+            }
         }
         return super.visitPackage(ee, depth);
     }
@@ -216,7 +224,6 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             
             methodDoc.thrownTypes = ee.getThrownTypes();
             methodDoc.deprecation = getDeprecationStatus(ee);
-            // methodDoc.extension = round.getExtensionName(ee); //TODO
             TypeElement ownerClassElement = getEnclosingTypeElement(ee);
             ClassNode ownerClass = api.getClassDoc(ownerClassElement);
             setMethodParams(methodDoc, ee);
