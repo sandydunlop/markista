@@ -1,0 +1,85 @@
+plugins {
+	id 'groovy'
+	id 'java'
+    id 'java-library'
+	id 'maven-publish'
+    id 'signing'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation(localGroovy())
+	testImplementation(platform('org.junit:junit-bom:5.13.3'))
+	testImplementation('org.junit.jupiter:junit-jupiter')
+	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_24
+    targetCompatibility = JavaVersion.VERSION_24
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(24)
+    }
+}
+
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
+}
+
+jar.doLast {
+    // ant.checksum file: archivePath
+    ant.checksum file: archivePath
+}
+
+signing {
+    sign publishing.publications
+}
+
+// configure the maven publication
+publishing {
+    publications {
+        myPub(MavenPublication) {
+            from components.java
+            pom {
+                name = 'Markista'
+                description = 'Markdown Doclet'
+                url = 'https://sandydunlop.github.io/markista'
+                licenses {
+                    license {
+                        name = 'GPLv3'
+                        url = 'https://www.gnu.org/licenses/gpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'sandydunlop'
+                        name = 'Sandy Dunlop'
+                        email = 'sandy.dunlop@gmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/sandydunlop/markista.git'
+                    developerConnection = 'scm:git:ssh://github.com:sandydunlop/markista.git'
+                    url = 'https://github.com/sandydunlop/markista'
+                }
+            }
+        }
+    }
+
+	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+	repositories {
+        maven {
+            name = "LocalMavenWithChecksums"
+            url = uri(layout.buildDirectory.dir("staging-deploy"))
+        }
+    }
+}
+
