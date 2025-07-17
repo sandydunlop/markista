@@ -11,6 +11,7 @@ import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.LinkResolver.Link;
@@ -25,8 +26,11 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.List;
 
+import javax.print.Doc;
+
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
+import com.sun.source.doctree.SeeTree;
 
 /// A class that outputs API documentation as Markdown.
 public class MarkdownWriter {
@@ -239,37 +243,66 @@ public class MarkdownWriter {
 
     /// Writes the markdown for a class's method details
     /// @param methods The list of methods to write the details of
-    /// @see http://example.com
+    /// @see <a href="http://example.com"/>
+    /// @see java.util.List
+    /// @since 0.1.0
     private void outputMethodDetails(List<MethodNode> methods) throws IOException {
-        for (MethodNode methodDoc : methods) {
-            writer.write("### " + methodDoc.simpleName + "\n\n");
-            writer.write("`" + methodDoc.fullSignature() + "`\n\n");
-            writer.write(formatTaggedText(methodDoc.getFullBody()) + "\n\n");
+        for (MethodNode method : methods) {
+            writer.write("### " + method.simpleName + "\n\n");
+            writer.write("`" + method.fullSignature() + "`\n\n");
+            writer.write(formatTaggedText(method.getFullBody()) + "\n\n");
 
-            //TODO: Overrides, exceptions. Annotations?
+            //TODO: Overrides, Annotations?
 
-            if (!methodDoc.params.isEmpty()) {
+            if (!method.params.isEmpty()) {
                 boolean showParameters = false;
-                for (ParamNode param : methodDoc.params) {
-                    if (!param.getFirstSentence().isEmpty()) showParameters = true; 
+                for (ParamNode param : method.params) {
+                    if (!param.getBody().isEmpty()) showParameters = true; 
                 }
                 if (showParameters) {
-                    writer.write("Parameters:\n\n");
-                    for (ParamNode param : methodDoc.params) {
-                        if (!param.getFirstSentence().isEmpty()) {
-                            writer.write("`" +param.simpleName + "` - " + inOneLine(formatTaggedText(param.getFirstSentence())) +"\n\n");
+                    writer.write("**Parameters:**\n\n");
+                    for (ParamNode param : method.params) {
+                        if (!param.getBody().isEmpty()) {
+                            writer.write("`" +param.simpleName + "` - " + 
+                                    inOneLine(formatTaggedText(param.getBody())) +"\n\n");
                         }
                     }
                 }
             }
 
-            if (!isNullOrEmpty(methodDoc.returnDescription)) {
-                writer.write("Returns:\n\n");
-                writer.write(methodDoc.returnDescription + "\n\n");
+            if (!isNullOrEmpty(method.returnDescription)) {
+                writer.write("**Returns:**\n\n");
+                writer.write(method.returnDescription + "\n\n");
             }
-            
-            // writer.write("#### See Also:\n\n");
+
+            //TODO: Throws
+
+
+            if (!method.since.isEmpty()) {
+                writer.write("**Since:**\n\n");
+                writer.write(formatTaggedText(method.since.text));
+                writer.write("\n\n");
+            }
+
+            List<Reference> references = method.getReferences();
+            if (references != null && !references.isEmpty()) {
+                writer.write("**See Also:**\n\n");
+                for (Reference ref : references) {
+                    writer.write("\n");
+                    writer.write("See: " + fromatReference(ref) + "\n\n");
+                }
+                writer.write("\n");
+            }
         }
+    }
+
+    private String fromatReference(Reference ref) {
+        if (ref.kind == Reference.Kind.URL) {
+            return mdDocumentLink(ref.url);
+        } else if (ref.kind == Reference.Kind.TYPE) {
+            return mdAutoLink(ref.typeName);
+        }
+        return "";
     }
 
     private String formatTaggedText(List<? extends DocTree> parsedSegments) {

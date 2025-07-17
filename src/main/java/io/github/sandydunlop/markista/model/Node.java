@@ -11,6 +11,7 @@ import java.util.Set;
 import javax.lang.model.element.Modifier;
 
 import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.SeeTree;
 
 
 public class Node {
@@ -20,10 +21,12 @@ public class Node {
     public String simpleName = "";
     public String qualifiedName = "";
     public String packageName = "";
+    public Text since = Text.empty();
 
     private List<? extends DocTree> firstSentence = new ArrayList<>();
     private List<? extends DocTree> body = new ArrayList<>();
     private List<? extends DocTree> fullBody = new ArrayList<>();
+    private List<Reference> references = new ArrayList<>();
 
     public void setFirstSentence(List<? extends DocTree> doc) {
         firstSentence = doc;
@@ -47,6 +50,14 @@ public class Node {
 
     public List<? extends DocTree> getFullBody() {
         return fullBody;
+    }
+
+    public void setReferences(List<Reference> refs) {
+        references = refs;
+    }
+
+    public List<Reference> getReferences() {
+        return references;
     }
 
     public String getModifiers() {
