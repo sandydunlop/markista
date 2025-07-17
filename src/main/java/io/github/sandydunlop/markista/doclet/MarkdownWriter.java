@@ -16,7 +16,6 @@ import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.LinkResolver.Link;
 import io.github.sandydunlop.markista.util.LinkResolver.Type;
 import io.github.sandydunlop.markista.util.NameUtils;
-import jdk.javadoc.doclet.DocletEnvironment;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -28,7 +27,6 @@ import java.util.List;
 
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
-import com.sun.source.util.DocTrees;
 
 /// A class that outputs API documentation as Markdown.
 public class MarkdownWriter {
@@ -223,19 +221,25 @@ public class MarkdownWriter {
         table.render(writer);
     }
 
+    /// Writes the markdown for a class's method summary table
+    /// @param methods The list of methods to include in the summary table
     private void outputMethodSummary(List<MethodNode> methods) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn("Modifier and Type")
                 .addColumn("Method")
                 .addColumn("Description");
         for (MethodNode methodDoc : methods) {
-            table.addRow(new String[]{methodDoc.getModifiers() + mdAutoLink(methodDoc.returnType.qualifiedName, true), 
+            table.addRow(new String[]{methodDoc.getModifiers() + 
+                        mdAutoLink(methodDoc.returnType.qualifiedName, true), 
                         mdAnchorLink(methodDoc.simpleName) + "(" + methodDoc.paramsString() + ")",
                         formatTaggedText(methodDoc.getFirstSentence())});
         }
         table.render(writer);
     }
 
+    /// Writes the markdown for a class's method details
+    /// @param methods The list of methods to write the details of
+    /// @see http://example.com
     private void outputMethodDetails(List<MethodNode> methods) throws IOException {
         for (MethodNode methodDoc : methods) {
             writer.write("### " + methodDoc.simpleName + "\n\n");
@@ -274,9 +278,6 @@ public class MarkdownWriter {
         }
         StringBuilder sb = new StringBuilder();
         for (DocTree segment : parsedSegments) {
-            if (segment.toString().indexOf("{@") > -1) {
-                sb=sb;
-            }
             if (segment.getKind() == Kind.MARKDOWN) {
                 sb.append(segment.toString());
             } else if (segment.getKind() == Kind.LINK) {
@@ -285,48 +286,38 @@ public class MarkdownWriter {
             } else if (segment.getKind() == Kind.LINK_PLAIN) {
                 String link = formatTaggedLinkPlain(segment);
                 sb.append(link);
-                // treeUtils.
-                // DCLink link = (DCLink)segment;
-                sb=sb;
-                
             }else{
-                System.out.println(segment.getKind().toString());
-                System.out.println("" + segment.toString());
+                System.out.println("Unhandled javadoc tag:");
+                System.out.println("  " + segment.getKind().toString());
+                System.out.println("  " + segment.toString());
             }
-            // System.out.println("" + segment.toString());
         }
         return sb.toString();
     }
 
     private String formatTaggedLink(DocTree link) {
-        //{@linkplain #process(String,List) process}
         String input = link.toString();
         String[] parts = input.split(" ");
         if (parts.length > 1) {
             parts[1] = parts[1].substring(0, parts[1].length() - 1);
             if (parts[0].equals("{@link")) {
                 return mdAutoLink(parts[1]);
-            } else {
-                System.out.println("UNKNOWN TAG: " + parts[0]);
             }
         }
-        System.out.println("OOPS");
+        System.out.println("Malformed Javadoc tag: " + link.toString());
         return "";
     }
 
     private String formatTaggedLinkPlain(DocTree link) {
-        //{@linkplain #process(String,List) process}
         String input = link.toString();
         String[] parts = input.split(" ");
         if (parts.length > 2) {
             parts[2] = parts[2].substring(0, parts[2].length() - 1);
             if (parts[0].equals("{@linkplain")) {
                 return "[" + mdAutoLink(parts[2]) + "](" + parts[1] + ")";
-            }else{
-                System.out.println("UNKNOWN TAG: " + parts[0]);
             }
         }
-        System.out.println("OOPS");
+        System.out.println("Malformed Javadoc tag: " + link.toString());
         return "";
     }
 

@@ -4,6 +4,7 @@ import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.ReturnTree;
+import com.sun.source.doctree.SeeTree;
 import com.sun.source.util.DocTrees;
 
 import io.github.sandydunlop.markista.model.AnnotationNode;
@@ -204,7 +205,6 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     public Void visitExecutable(ExecutableElement ee, Integer depth) {
         if (isIncludedInApi(ee)){
             TypeMirror tm = ee.getReturnType();
-            Element te = typeUtils.asElement(tm);
 
             // The return type...
             String qualifiedName = tm.toString();

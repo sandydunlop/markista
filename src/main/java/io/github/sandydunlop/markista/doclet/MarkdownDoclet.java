@@ -195,7 +195,13 @@ public class MarkdownDoclet implements Doclet {
     public boolean run(DocletEnvironment environment) {
         if (createExternalLinks) {
             // Tell the link resolver what web address to find docs for certain Java modules at
-            LinkResolver.addNativeModule("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
+            final String DOT_HTML = ".html";
+            final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
+            LinkResolver.addNativeModule("java.base", JAVA_24_URL + "java.base", DOT_HTML);
+            LinkResolver.addNativeModule("java.compiler", JAVA_24_URL + "java.compiler", DOT_HTML);
+            LinkResolver.addNativeModule("java.desktop", JAVA_24_URL + "java.desktop", DOT_HTML);
+            LinkResolver.addNativeModule("jdk.javadoc", JAVA_24_URL + "jdk.javadoc", DOT_HTML);
+            LinkResolver.addNativeModule("jdk.compiler", JAVA_24_URL + "jdk.compiler", DOT_HTML);
         }
 
         ApiCollector collector = new ApiCollector(environment);

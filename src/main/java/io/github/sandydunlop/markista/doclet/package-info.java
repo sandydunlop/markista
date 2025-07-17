@@ -1,3 +1,5 @@
+/// This package contains the main doclet classes.
+/// 
 /// The Markista doclet has3 main functions:
 /// 
 ///   - Collecting API and documentation infomation from the Java compiler
