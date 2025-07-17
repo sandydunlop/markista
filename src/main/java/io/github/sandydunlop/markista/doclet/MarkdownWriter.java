@@ -105,7 +105,6 @@ public class MarkdownWriter {
         writer.write("# " + subType + " " + typeDoc.simpleName + "\n");
         
         outputSupertypes(typeDoc);
-        //TODO: Type parameters eg  for Class Enum<E extends Enum<E>> explain E
         outputImplementedInterfaces(typeDoc);
         //TODO: For interfaces, All Known Implementing Classes
         outputEnclosingClass(typeDoc);
@@ -120,6 +119,12 @@ public class MarkdownWriter {
             writer.write("\n## Nested Class Summary\n\n");
             outputNestedClassSummary(typeDoc.classes);
         }
+
+        if (typeDoc instanceof EnumNode enumNode && !enumNode.constants.isEmpty()) {
+            writer.write("\n##Enum Constants\n\n");
+            outputEnumConstantsSummary(enumNode);
+        }
+
         if (!typeDoc.fields.isEmpty()) {
             writer.write("\n## Field Summary\n\n");
             outputFieldSummary(typeDoc.fields);
@@ -131,6 +136,11 @@ public class MarkdownWriter {
         if (!typeDoc.methods.isEmpty()) {
             writer.write("\n## Method Summary\n\n");
             outputMethodSummary(typeDoc.methods);
+        }
+
+        if (typeDoc instanceof EnumNode enumNode && !enumNode.constants.isEmpty()) {
+            writer.write("\n## Enum Constant Details\n\n");
+            outputEnumConstantDetails(enumNode.constants, enumNode);
         }
         if (!typeDoc.methods.isEmpty()) {
             writer.write("\n## Method Details\n\n");
@@ -201,6 +211,17 @@ public class MarkdownWriter {
         table.render(writer);
     }
 
+    private void outputEnumConstantsSummary(EnumNode enumNode) throws IOException {
+        MarkdownTable table = new MarkdownTable()
+                .addColumn("Enum Constant")
+                .addColumn("Description");
+        for (FieldNode constant : enumNode.constants) {
+            String link = mdAnchorLink(constant.simpleName);
+            table.addRow(new String[]{link, formatTaggedText(constant.getFirstSentence())});
+        }
+        table.render(writer);
+    }
+
     private void outputFieldSummary(List<FieldNode> fields) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn("Modifier and Type")
@@ -239,6 +260,31 @@ public class MarkdownWriter {
                         formatTaggedText(methodDoc.getFirstSentence())});
         }
         table.render(writer);
+    }
+
+    private void outputEnumConstantDetails(List<FieldNode> constants, EnumNode enumNode) throws IOException {
+        for (FieldNode constant : constants) {
+            writer.write("### " + constant.simpleName + "\n\n");
+            writer.write("public static final " + mdAutoLink(enumNode.qualifiedName, true));
+            writer.write(" " + constant.fullSignature() + "\n\n");
+            writer.write(formatTaggedText(constant.getFullBody()) + "\n\n");
+
+            if (!constant.since.isEmpty()) {
+                writer.write("**Since:**\n\n");
+                writer.write(formatTaggedText(constant.since.text));
+                writer.write("\n\n");
+            }
+
+            List<Reference> references = constant.getReferences();
+            if (references != null && !references.isEmpty()) {
+                writer.write("**See Also:**\n\n");
+                for (Reference ref : references) {
+                    writer.write("\n");
+                    writer.write("See: " + fromatReference(ref) + "\n\n");
+                }
+                writer.write("\n");
+            }
+        }
     }
 
     /// Writes the markdown for a class's method details

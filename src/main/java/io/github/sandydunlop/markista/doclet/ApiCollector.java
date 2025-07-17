@@ -42,7 +42,9 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -170,6 +172,13 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                 EnumNode doc = (EnumNode)api.getTypeDoc(qualifiedName, api.getEnums());
                 if (doc == null) {
                     doc = (EnumNode)typeDoc;
+                    List<? extends Element> enclosedElements = e.getEnclosedElements();
+                    for (Element element : enclosedElements) {
+                        if (element.getKind() == ElementKind.ENUM_CONSTANT) {
+                            FieldNode enumConstant = new FieldNode(null, element.getSimpleName().toString());
+                            doc.constants.add(enumConstant);
+                        }
+                    }
                     if (ownerClass != null) {
                         // Owner is a class
                         ownerClass.enumClasses.add(doc);
@@ -227,7 +236,6 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             method.modifiers.addAll(ee.getModifiers()); 
             DocCommentTree dct = treeUtils.getDocCommentTree(ee);
             if (dct != null) {
-                //TODO: @see, @since
                 method.setFirstSentence(dct.getFirstSentence());
                 method.setBody(dct.getBody());
                 method.setFullBody(dct.getFullBody());
@@ -303,6 +311,16 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         return super.visitVariable(ve, depth);
     }
 
+    @Override
+    public Void visitTypeParameter(TypeParameterElement e, Integer depth) {
+        return scan(e.getEnclosedElements(), depth);
+    }
+
+    @Override
+    public Void visitRecordComponent(RecordComponentElement e, Integer depth) {
+        return visitUnknown(e, depth);
+    }
+
     public boolean isInterface(TypeMirror typeMirror) {
         Element element = typeUtils.asElement(typeMirror);
         if (element == null) return false;
@@ -311,7 +329,6 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             return kind.isInterface();
         }
         return false;
-        // return element instanceof TypeElement && ((TypeElement) element).getKind().isInterface();
     }
 
     private TypeNode insantiateSubtype(ElementKind kind, String qualifiedName, String simpleName, String packageName) {
