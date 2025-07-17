@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.util.LinkResolver.Link;
-import io.github.sandydunlop.markista.util.LinkResolver.Type;
+import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.ClassNode;
 
 class LinkResolverTests {
@@ -29,37 +28,37 @@ class LinkResolverTests {
 
 	@Test
 	void resolve_qualifiedNativeClass() {
-		Link link = LinkResolver.resolve("", "java.util.List");
-		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html", link.path);
+		Reference link = LinkResolver.resolve("", "java.util.List");
+		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html", link.url);
 	}
 
 	@Test
 	void resolve_unqualifiedPackage_nextLevelPackage() {
-		Link link = LinkResolver.resolve("io.github.sandydunlop.markista", "doclet");
+		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista", "doclet");
 		assertEquals("doclet", link.path);
 	}
 
 	@Test
 	void resolve_unqualifiedPackage_sameLevelPackage() {
-		Link link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "doclet");
+		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "doclet");
 		assertEquals("../doclet", link.path);
 	}
 
 	@Test
 	void resolve_unqualifiedlClass_sameLevel() {
-		Link link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "MarkdownDoclet");
+		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "MarkdownDoclet");
 		assertEquals("../doclet/MarkdownDoclet", link.path);
 	}
 
 	@Test
 	void resolve_unqualifiedlPackage_prevLevel() {
-		Link link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "markista");
+		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "markista");
 		assertEquals("..", link.path);
 	}
 
 	@Test
 	void resolve_qualifiedlPackage_prevLevel() {
-		Link link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "io.github.sandydunlop.markista");
+		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "io.github.sandydunlop.markista");
 		assertEquals("..", link.path);
 	}
 
@@ -71,13 +70,13 @@ class LinkResolverTests {
 
 	// @Test
 	// void relativize_primitive() {
-	// 	Link link = LinkResolver.relativize("io.github.sandydunlop.markista.util", "boolean");
+	// 	Reference link = LinkResolver.relativize("io.github.sandydunlop.markista.util", "boolean");
 	// 	assertEquals(null, link.path);
 	// }
 
 	@Test
 	void resolve_primitive() {
-		Link link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "boolean");
-		assertEquals(Type.NOTHING, link.type);
+		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "boolean");
+		assertEquals(Reference.Kind.NONE, link.kind);
 	}
 }

@@ -18,6 +18,7 @@ public class Node {
     public Node owner = null;
     public Set<Modifier> modifiers = new HashSet<>();
     public Deprecation deprecation = Deprecation.NONE;
+    public Text deprecationText = Text.empty();
     public String simpleName = "";
     public String qualifiedName = "";
     public String packageName = "";

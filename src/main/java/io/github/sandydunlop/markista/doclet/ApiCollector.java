@@ -1,17 +1,15 @@
 package io.github.sandydunlop.markista.doclet;
 
+import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
 import com.sun.source.doctree.ErroneousTree;
 import com.sun.source.doctree.ParamTree;
-import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.doctree.ReturnTree;
 import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.SinceTree;
-import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.VariableTree;
-import com.sun.source.util.DocTreeFactory;
 import com.sun.source.util.DocTrees;
 
 import io.github.sandydunlop.markista.model.AnnotationNode;
@@ -23,12 +21,12 @@ import io.github.sandydunlop.markista.model.ExceptionNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.NameUtils;
 
 import java.io.Serializable;
@@ -102,7 +100,6 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                 pkg.setFullBody(dct.getFullBody());
             }
             api.addPackage(pkg);
-            LinkResolver.addLocalPackage(pkg.qualifiedName);
             packageDoc = pkg;
             Element enclosing = ee.getEnclosingElement();
             if (enclosing.getKind() == ElementKind.PACKAGE) {
@@ -243,9 +240,9 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                 method.setReferences(getReferences(dct));
                 method.since = getSince(dct);
             }
-            
+
             method.thrownTypes = ee.getThrownTypes(); //TODO convert to model.* types
-            method.deprecation = getDeprecationStatus(ee);
+            setDeprecationStatus(method, ee, dct);
             TypeElement ownerClassElement = getEnclosingTypeElement(ee);
             ClassNode ownerClass = api.getClassDoc(ownerClassElement);
             setMethodParams(method, ee);
@@ -295,9 +292,9 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                         TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
                         fieldDoc = new FieldNode(type, simpleName);
                         fieldDoc.constantValue = (Serializable) ve.getConstantValue();
-                        fieldDoc.deprecation = getDeprecationStatus(ve);
                         fieldDoc.modifiers.addAll(ve.getModifiers()); 
                         DocCommentTree dct = treeUtils.getDocCommentTree(ve);
+                        setDeprecationStatus(fieldDoc, ve, dct);
                         if (dct != null) {
                             fieldDoc.setFirstSentence(dct.getFirstSentence());
                             fieldDoc.setBody(dct.getBody());
@@ -369,6 +366,16 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             }
         }
     }
+
+    private DeprecatedTree getDeprecation(DocCommentTree docComment) {
+        if (docComment == null) return null;
+        for (DocTree docTree : docComment.getBlockTags()) {
+            if (docTree instanceof DeprecatedTree tree) {
+                return tree;
+            }
+        }
+        return null;
+    }        
 
     private String getReturnComment(DocCommentTree docComment) {
         for (DocTree docTree : docComment.getBlockTags()) {
@@ -449,9 +456,21 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         return null;
     }
 
-    private Deprecation getDeprecationStatus(Element e) {
-        Deprecated a = e.getAnnotation(Deprecated.class);
-        return a == null ? Deprecation.NONE : a.forRemoval() ? Deprecation.FOR_REMOVAL : Deprecation.DEPRECATED;
+    private void setDeprecationStatus(Node node, Element e, DocCommentTree dct) {
+        DeprecatedTree deprecatedTree = getDeprecation(dct);
+        Deprecated deprecatedAnnotation = e.getAnnotation(Deprecated.class);
+        node.deprecation = Deprecation.NONE;
+        if (deprecatedTree != null) {
+            node.deprecation = Deprecation.DEPRECATED;
+            node.deprecationText.set(deprecatedTree.getBody());
+        }
+        if (deprecatedAnnotation != null) {
+            if (deprecatedAnnotation.forRemoval()) {
+                node.deprecation = Deprecation.FOR_REMOVAL;
+            }else{
+                node.deprecation = Deprecation.DEPRECATED;
+            }
+        }
     }
 
     private boolean isIncludedInApi(Element e) {
@@ -487,7 +506,9 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         }
     }
 
-    private static VariableTree getVariableTree(List<? extends VariableTree> paramList, String paramName) {
+    /// To be removed
+    /// @deprecated use [new()](#new()) instead.  
+    public static VariableTree getVariableTree(List<? extends VariableTree> paramList, String paramName) {
         for (VariableTree varTree : paramList) {
             if (varTree.getName().toString().equals(paramName)) {
                 return varTree;

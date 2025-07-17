@@ -24,4 +24,8 @@ public class Text {
         return text == null || text.size() == 0;
     }
 
+    public void set(List<? extends DocTree> t) {
+        text = t;
+    }
+
 }

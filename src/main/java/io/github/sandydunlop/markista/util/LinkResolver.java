@@ -6,6 +6,7 @@ import java.util.Optional;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Reference;
 
 
 /// This class woks calculates the paths for Markdown documents 
@@ -25,11 +26,6 @@ public class LinkResolver {
         api = a;
     }
 
-    public static void addLocalPackage(String identifier) {
-        // localPackageNames.add(identifier);
-    }
-
-
     public static void addNativeModule(String moduleName, String baseUrl, String s) {
         Optional<Module> module = moduleLayer.findModule(moduleName);
         if (module.isPresent()) {
@@ -47,8 +43,7 @@ public class LinkResolver {
             return "";
         }
         int dot;
-        for (dot=0; dot<id.length() && !Character.isUpperCase(id.charAt(dot)); dot++) {
-        }
+        for (dot=0; dot<id.length() && !Character.isUpperCase(id.charAt(dot)); dot++);
         String packageName = id;
         if (dot > 0 && dot < id.length()) {
             return packageName.substring(0, dot - 1);
@@ -71,20 +66,20 @@ public class LinkResolver {
         return "";
     }
 
-    public static Link resolve(String from, String to) {
-        Link link = new Link();
+    public static Reference resolve(String from, String to) {
+        Reference link = new Reference();
         if (to == null) return link;
         if (to.indexOf("<") > -1) return link;
-        String url = resolveExternal(to);
+        String url = resolveNative(to);
         if (url != null) {
-            link.path = url;
-            link.type = Type.EXTERNAL;
+            link.url = url;
+            link.kind = Reference.Kind.URL;
+            link.scope = Reference.Scope.NATIVE;
             return link;
         }
         String fromPackageName = getPackageName(from);
         String toPackageName = getPackageName(to);
         String toClassName = getClassName(to);
-
         if (toPackageName.isEmpty()) {
             to = qualifyClass(fromPackageName, toClassName);
             toPackageName = getPackageName(to);
@@ -97,16 +92,17 @@ public class LinkResolver {
         }
         if (toPackageName.isEmpty()) return link;
         link.path =  relativize(fromPackageName, toPackageName);
-        link.type = Type.PACKAGE;
+        link.kind = Reference.Kind.PACKAGE;
+        link.scope = Reference.Scope.LOCAL;
         if (!toClassName.isEmpty()) {
             if (!link.path.isEmpty()) link.path += "/";
             link.path += toClassName;
-            link.type = Type.CLASS;
+            link.kind = Reference.Kind.TYPE;
         }
         return link;
     }
 
-    public static String resolveExternal(String to) {
+    public static String resolveNative(String to) {
         int dot = 0;
         do {
             dot = to.indexOf(".", dot + 1);
@@ -170,17 +166,5 @@ public class LinkResolver {
             rel.append(toParts[p]);
         }
         return rel.toString();
-    }
-
-    public enum Type {
-        PACKAGE,
-        CLASS,
-        EXTERNAL,
-        NOTHING
-    }
-
-    public static class Link {
-        public Type type = Type.NOTHING;
-        public String path = null;
     }
 }

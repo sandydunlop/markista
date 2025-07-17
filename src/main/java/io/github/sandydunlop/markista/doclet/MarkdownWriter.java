@@ -1,8 +1,12 @@
 package io.github.sandydunlop.markista.doclet;
 
+import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.DocTree.Kind;
+
 import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.Deprecation;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.ExceptionNode;
 import io.github.sandydunlop.markista.model.FieldNode;
@@ -12,10 +16,9 @@ import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.LinkResolver;
-import io.github.sandydunlop.markista.util.LinkResolver.Link;
-import io.github.sandydunlop.markista.util.LinkResolver.Type;
 import io.github.sandydunlop.markista.util.NameUtils;
 
 import java.io.BufferedOutputStream;
@@ -25,12 +28,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.List;
-
-import javax.print.Doc;
-
-import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.DocTree.Kind;
-import com.sun.source.doctree.SeeTree;
 
 /// A class that outputs API documentation as Markdown.
 public class MarkdownWriter {
@@ -298,6 +295,10 @@ public class MarkdownWriter {
             writer.write("`" + method.fullSignature() + "`\n\n");
             writer.write(formatTaggedText(method.getFullBody()) + "\n\n");
 
+            if (method.deprecation != Deprecation.NONE || !method.deprecationText.isEmpty()) {
+                outputDeprecation(method.deprecation, method.deprecationText);
+            }
+
             //TODO: Overrides, Annotations?
 
             if (!method.params.isEmpty()) {
@@ -323,7 +324,6 @@ public class MarkdownWriter {
 
             //TODO: Throws
 
-
             if (!method.since.isEmpty()) {
                 writer.write("**Since:**\n\n");
                 writer.write(formatTaggedText(method.since.text));
@@ -342,10 +342,21 @@ public class MarkdownWriter {
         }
     }
 
+    private void outputDeprecation(Deprecation status, Text text) throws IOException {
+        writer.write("\n\n");
+        writer.write("!!! note \"Deprecated\"\n");
+        if (text.isEmpty()) {
+            writer.write("    This has been marked as deprecated.\n");
+        } else {
+            writer.write("    " + formatTaggedText(text.text));
+        }
+        writer.write("\n\n");
+    }
+
     private String fromatReference(Reference ref) {
         if (ref.kind == Reference.Kind.URL) {
             return mdDocumentLink(ref.url);
-        } else if (ref.kind == Reference.Kind.TYPE) {
+        } else if (ref.kind == Reference.Kind.PACKAGE || ref.kind == Reference.Kind.TYPE) {
             return mdAutoLink(ref.typeName);
         }
         return "";
@@ -437,39 +448,26 @@ public class MarkdownWriter {
     /// @param qualify if true, the fully qualified identifier is shown
     /// @return markdown text for a link to a document for the specified identifier or an anchor link
     private String mdAutoLink(String identifier, boolean simplify) {
-        Link link = LinkResolver.resolve(linkFrom.qualifiedName, identifier);
+        Reference link = LinkResolver.resolve(linkFrom.qualifiedName, identifier);
         String text;
         if (identifier.indexOf('<') > -1){
             text = escape(NameUtils.simplifyGenerics(identifier));
         } else {
             text = escape(simplify ?  NameUtils.simplifyNames(identifier) : identifier);
         }
-        if (link.type == Type.NOTHING) {
+        if (link.kind == Reference.Kind.NONE) {
             return escape(text);
         }
-        if (link.type == Type.CLASS) {
-            // ClassNode classDoc = (ClassNode)api.getTypeDoc(identifier, api.getClasses());
-            // if (classDoc != null) {
-            //     return mdDocumentLink(qualify ? classDoc.qualifiedName : escape(classDoc.simpleName), link.path);
-            // }
-
-            // String text = qualify ?  link.path : NameUtils.simplifyNames(link.path);
+        if (link.kind == Reference.Kind.TYPE) {
             return String.format("[%s](%s.md)", text, link.path);
-        } else if (link.type == Type.PACKAGE) {
+        } else if (link.kind == Reference.Kind.PACKAGE) {
             return String.format("[%s](%s/index.md)", text, link.path);
-        } else if (link.type == Type.EXTERNAL) {
-            // String text = qualify ?  link.path : NameUtils.simplifyNames(link.path);
-            return String.format("[%s](%s)", text, link.path);
+        } else if (link.kind == Reference.Kind.URL) {
+            return String.format("[%s](%s)", text, link.url);
         } else {
             // How did we end up here?
             return escape(identifier);
         }
-        //     } else {
-        //         return mdDocumentLink(qualify ?  identifier : escape(NameUtils.simplifyNames(identifier)), link.path);
-        //     }
-        // } else {
-        //     return escape(qualify ?  identifier : NameUtils.simplifyNames(identifier));
-        // }
     }
 
     private String escape(String str) {
