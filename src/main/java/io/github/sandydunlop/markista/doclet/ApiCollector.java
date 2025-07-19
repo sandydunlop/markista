@@ -237,7 +237,10 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                 method.setFirstSentence(dct.getFirstSentence());
                 method.setBody(dct.getBody());
                 method.setFullBody(dct.getFullBody());
-                method.returnDescription = getReturnComment(dct);
+                ReturnTree returnTree = getReturnTree(dct);
+                if (returnTree != null) {
+                    method.setReturnComment(returnTree.getDescription());
+                }
                 method.setReferences(getReferences(dct));
                 method.since = getSince(dct);
             }
@@ -287,10 +290,14 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                     FieldNode fieldDoc = classDoc.getField(simpleName);
                     if (fieldDoc == null) {
                         String qualifiedClassName = classElement.getQualifiedName().toString();
-                        String qualifiedTypeName = getFieldType(elementUtils, qualifiedClassName, simpleName);
-                        String simpleTypeName = NameUtils.simplifyNames(qualifiedTypeName);
-                        String packageName = getPackageName(qualifiedTypeName);
-                        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
+
+                        // String qualifiedTypeName = getFieldType(elementUtils, qualifiedClassName, simpleName);
+                        // String simpleTypeName = NameUtils.simplifyNames(qualifiedTypeName);
+                        // String packageName = getPackageName(qualifiedTypeName);
+                        // TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
+
+                        TypeNode type = getFieldType(elementUtils, qualifiedClassName, simpleName);
+ 
                         fieldDoc = new FieldNode(type, simpleName);
                         fieldDoc.constantValue = (Serializable) ve.getConstantValue();
                         fieldDoc.modifiers.addAll(ve.getModifiers()); 
@@ -390,14 +397,16 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         return null;
     }        
 
-    private String getReturnComment(DocCommentTree docComment) {
-        for (DocTree docTree : docComment.getBlockTags()) {
-            if (docTree instanceof ReturnTree returnTree) {
-                return returnTree.getDescription().toString();
+    private ReturnTree getReturnTree(DocCommentTree dcTree) {
+        if (dcTree == null) return null;
+        for (DocTree docTree : dcTree.getBlockTags()) {
+            if (docTree instanceof ReturnTree tree) {
+                return tree;
+                //.getDescription().toString();
                 //TODO: Handle arrays
             }
         }
-        return "";
+        return null;
     }        
 
     private ParamTree getParamTree(DocCommentTree dcTree, VariableElement parameter) {
@@ -498,18 +507,9 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         for (VariableElement parameter : ee.getParameters()) {
             String simpleName = parameter.getSimpleName().toString();
             String qualifiedClassName = classElement.getQualifiedName().toString();
-            String qualifiedTypeName = getParamType(elementUtils, qualifiedClassName, ee, simpleName);
-            String packageName = getPackageName(qualifiedTypeName);
-            Element typeElement = typeUtils.asElement(parameter.asType());
-            String simpleTypeName = typeElement == null ? qualifiedTypeName : typeElement.getSimpleName().toString();
-
-            TypeMirror type = parameter.asType();
-            if (type.getKind() == TypeKind.ARRAY) {
-                simpleTypeName = getSimpleName(((ArrayType)type).getComponentType().toString()) + "[]";
-            }
-
-            TypeNode paramType = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
+            TypeNode paramType = getParamType(elementUtils, qualifiedClassName, ee, simpleName);
             ParamNode param = new ParamNode(paramType, simpleName);
+            // paramType.arrayBrackets = arrayBrackets;
 
             ParamTree paramTree = getParamTree(dct, parameter);
             if (paramTree != null) {
@@ -530,33 +530,58 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         return null;
     }
 
-    private static String getFieldType(Elements elementUtils, String className, String fieldName) {
+    private static TypeNode getFieldType(Elements elementUtils, String className, String fieldName) {
+        String qualifiedTypeName = null;
+        String arrayBrackets = "";
         TypeElement classElement = elementUtils.getTypeElement(className);
         for (VariableElement field : ElementFilter.fieldsIn(classElement.getEnclosedElements())) {
             if (field.getSimpleName().toString().equals(fieldName)) {
-                TypeMirror type = field.asType();
-                if (type.getKind() == TypeKind.ARRAY){
-                    TypeMirror array = ((ArrayType)type).getComponentType();
-                    return array.toString() + "\\[]";
+                TypeMirror typeMirror = field.asType();
+                if (typeMirror.getKind() == TypeKind.ARRAY){
+                    TypeMirror array = ((ArrayType)typeMirror).getComponentType();
+                    qualifiedTypeName = array.toString();
+                    arrayBrackets = "\\[]";                    
+                    break;
                 }
-                return type.toString();
+                qualifiedTypeName = typeMirror.toString();
+                break;
             }
         }
-        return null;
+        if (qualifiedTypeName == null) return null;
+
+        String simpleTypeName = NameUtils.simplifyNames(qualifiedTypeName);
+        String packageName = getPackageName(qualifiedTypeName);
+        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
+        type.arrayBrackets = arrayBrackets;
+
+        return type;
     }
 
-    private static String getParamType(Elements elementUtils, String className, ExecutableElement method, String fieldName) {
+    private static TypeNode getParamType(Elements elementUtils, String className, ExecutableElement method, String fieldName) {
+        String qualifiedTypeName = null;
+        String arrayBrackets = "";
         for (VariableElement param : method.getParameters()) {
             if (param.getSimpleName().toString().equals(fieldName)){
-                TypeMirror type = param.asType();
-                if (type.getKind() == TypeKind.ARRAY){
-                    TypeMirror array = ((ArrayType)type).getComponentType();
-                    return array.toString() + "\\[]";
+                TypeMirror typeMirror = param.asType();
+                if (typeMirror.getKind() == TypeKind.ARRAY){
+                    TypeMirror array = ((ArrayType)typeMirror).getComponentType();
+                    qualifiedTypeName = array.toString();
+                    arrayBrackets = "\\[]";
+                    
+                    break;
                 }
-                return type.toString();
+                qualifiedTypeName = typeMirror.toString();
+                break;
             }
         }
-        return null;
+        if (qualifiedTypeName == null) return null;
+
+        String simpleTypeName = NameUtils.simplifyNames(qualifiedTypeName);
+        String packageName = getPackageName(qualifiedTypeName);
+        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
+        type.arrayBrackets = arrayBrackets;
+
+        return type;
     }
 
     private static String getPackageName(String qualifiedTypeName) {

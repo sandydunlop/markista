@@ -9,6 +9,7 @@ public class TypeNode extends Node {
     public List<String> implementedInterfaces = new ArrayList<>();
     public List<String> supertypes = new ArrayList<>();
     public String fullDescription = "";
+    public String arrayBrackets = "";
     public List<ClassNode> classes = new ArrayList<>();
     public List<InterfaceNode> interfaces = new ArrayList<>();
     public List<EnumNode> enumClasses = new ArrayList<>();

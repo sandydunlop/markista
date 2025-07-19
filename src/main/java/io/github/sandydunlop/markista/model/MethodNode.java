@@ -6,16 +6,24 @@ import java.util.Collections;
 
 import javax.lang.model.type.TypeMirror;
 
+import com.sun.source.doctree.DocTree;
+
 public class MethodNode extends Node {
-    public String returnDescription = "";
-    public String fullDescription = "";
+    public List<? extends DocTree> returnDescription = new ArrayList<>();
+    // public String fullDescription = "";
     public TypeNode returnType = null;
     public List <ParamNode> params = new ArrayList<>();
     public List<? extends TypeMirror> thrownTypes = new ArrayList<>();
+
     public MethodNode(TypeNode returnType, String name) {
         this.returnType = returnType;
         this.simpleName = name;
     }
+
+    public void setReturnComment(List<? extends DocTree> doc) {
+        returnDescription = doc;
+    }
+
     public String signature(){
         String sig = returnType.qualifiedName + " ";
         sig += simpleName + "(";

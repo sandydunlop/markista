@@ -278,7 +278,7 @@ public class MarkdownWriter {
                 .addColumn("Constructor")
                 .addColumn("Description");
         for (MethodNode methodDoc : methods) {
-            table.addRow(new String[]{methodDoc.simpleName + "(" + methodDoc.paramsString() + ")",
+            table.addRow(new String[]{methodDoc.simpleName + "(" + paramsString(methodDoc.params) + ")",
                         formatTaggedText(methodDoc.getFirstSentence())});
         }
         table.render(writer);
@@ -294,8 +294,8 @@ public class MarkdownWriter {
         for (MethodNode methodDoc : methods) {
             table.addRow(new String[]{methodDoc.getModifiers() + 
                         mdAutoLink(methodDoc.returnType.qualifiedName, true), 
-                        mdAnchorLink(methodDoc.simpleName) + "(" + methodDoc.paramsString() + ")",
-                        formatTaggedText(methodDoc.getFirstSentence())});
+                        mdAnchorLink(methodDoc.simpleName) + "(" + paramsString(methodDoc.params) + ")",
+                        inOneLine(formatTaggedText(methodDoc.getFirstSentence()))});
         }
         table.render(writer);
     }
@@ -361,9 +361,9 @@ public class MarkdownWriter {
                     }
                 }
 
-                if (!isNullOrEmpty(method.returnDescription)) {
+                if (method.returnDescription != null) {
                     writer.write("**Returns:**\n\n");
-                    writer.write(method.returnDescription + "\n\n");
+                    writer.write(formatTaggedText(method.returnDescription) + "\n\n");
                 }
 
                 //TODO: Throws
@@ -421,6 +421,20 @@ public class MarkdownWriter {
         writer.flush();
         writer.close();
 
+    }
+
+    public String paramsString(List<ParamNode> params){
+        String str = "";
+        int paramCount = 0;
+        for (ParamNode param : params) {
+            if (paramCount++ > 0) str += ", ";
+            if (param.type.arrayBrackets.equals("[]")) {
+                params=params;
+            }
+            String typeName = mdAutoLink(param.type.qualifiedName, true);
+            str+=typeName + param.type.arrayBrackets + " " + param.simpleName; 
+        }
+        return str;
     }
 
     private String formatReference(Reference ref) {
@@ -529,9 +543,15 @@ public class MarkdownWriter {
         } else {
             text = escape(simplify ?  NameUtils.simplifyNames(name) : name);
         }
-        if (link.kind == Reference.Kind.NONE) {
-            return String.format("[%s](#%s)", escape(text), text);
-        } else if (link.kind == Reference.Kind.TYPE) {
+
+        // TODO: `run()` and `void`
+        // Commented out, this works with void. Uncommented it works with run()
+
+        // if (link.kind == Reference.Kind.NONE) {
+        //     return String.format("[%s](#%s)", escape(text), text);
+        // } else 
+
+        if (link.kind == Reference.Kind.TYPE) {
             return String.format("[%s](%s.md)", text, link.uri);
         } else if (link.kind == Reference.Kind.PACKAGE) {
             return String.format("[%s](%s/index.md)", text, link.uri);
