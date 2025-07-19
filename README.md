@@ -1,6 +1,6 @@
 # Markista
 
-The Markdown Doclet
+Serving Markdown Flavored Documentation
 
 
 ## Introduction

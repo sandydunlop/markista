@@ -68,10 +68,10 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     private Set<Element> encounteredSupertypes = new HashSet<>();
 
     public ApiCollector(DocletEnvironment environment) {
-        this.typeUtils = environment.getTypeUtils();
-        this.treeUtils = environment.getDocTrees();
-        this.elementUtils = environment.getElementUtils();
-        this.api = new Api();
+        typeUtils = environment.getTypeUtils();
+        treeUtils = environment.getDocTrees();
+        elementUtils = environment.getElementUtils();
+        api = new Api();
     }
 
     public void setDocumentPrivateMembers(boolean documentPrivateMembers) {

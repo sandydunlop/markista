@@ -18,8 +18,11 @@ import jdk.javadoc.doclet.Reporter;
 
 /// A doclet that renders javadoc comments as Markdown
 public class MarkdownDoclet implements Doclet {
-    private static final boolean OK = true;
-    private static final boolean FAILED = false;
+    /// Returned from [run(DocletEnvironment)] upon success
+    public static final boolean OK = true;
+    
+    /// Returned from [run(DocletEnvironment)] upon failure
+    public static final boolean FAILED = false; 
     private String outputDirectory = null;
     private boolean documentPrivateMembers = false;
     private boolean createExternalLinks = false;
@@ -29,6 +32,9 @@ public class MarkdownDoclet implements Doclet {
         // Nothing to see here
     }
 
+    /// The starting point of Markista if it is being used
+    /// withiout the Javadoc command. This is useful for debugging.
+    /// @param args this parameter is ignored.
     public static void main(String[] args) {
         String[] docletArgs = new String[]{
             "-doclet", MarkdownDoclet.class.getName(),

@@ -11,6 +11,7 @@ public class MarkdownTable {
     List<String[]> rows = new ArrayList<>();
     
     public MarkdownTable() {
+        // Nothing to do here
     }
 
     /// Adds a column with the specified heading to the table
@@ -67,6 +68,7 @@ public class MarkdownTable {
         writer.flush();
     }
 
+    /// A class to represent the name and width of a column within a table
     public class Column {
         String name;
         int width = 0;

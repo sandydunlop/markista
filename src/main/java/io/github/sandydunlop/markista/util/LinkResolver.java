@@ -120,6 +120,9 @@ public class LinkResolver {
 
     public static boolean isQualified(String from, String to) {
         int p = from.indexOf('.');
+        if (p == -1) {
+            return false;
+        }
         String first = from.substring(0, p);
         return to.length() > p && to.substring(0, p).equals(first);
     }

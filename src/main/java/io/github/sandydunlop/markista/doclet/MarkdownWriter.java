@@ -443,22 +443,22 @@ public class MarkdownWriter {
         return mdAutoLink(identifier, true);
     }
 
-    /// Create a markdown link, automatically deciding where it needs to link to
+    /// Create a markdown link, automatically deciding what kind of link to make
     /// @param identifier a type or package identifier
     /// @param qualify if true, the fully qualified identifier is shown
     /// @return markdown text for a link to a document for the specified identifier or an anchor link
     private String mdAutoLink(String identifier, boolean simplify) {
-        Reference link = LinkResolver.resolve(linkFrom.qualifiedName, identifier);
+        String name = NameUtils.removeParentheses(identifier);
+        Reference link = LinkResolver.resolve(linkFrom.qualifiedName, name);
         String text;
-        if (identifier.indexOf('<') > -1){
-            text = escape(NameUtils.simplifyGenerics(identifier));
+        if (name.indexOf('<') > -1){
+            text = escape(simplify ? NameUtils.simplifyGenerics(name) : name);
         } else {
-            text = escape(simplify ?  NameUtils.simplifyNames(identifier) : identifier);
+            text = escape(simplify ?  NameUtils.simplifyNames(name) : name);
         }
         if (link.kind == Reference.Kind.NONE) {
-            return escape(text);
-        }
-        if (link.kind == Reference.Kind.TYPE) {
+            return String.format("[%s](#%s)", escape(text), text);
+        } else if (link.kind == Reference.Kind.TYPE) {
             return String.format("[%s](%s.md)", text, link.path);
         } else if (link.kind == Reference.Kind.PACKAGE) {
             return String.format("[%s](%s/index.md)", text, link.path);
@@ -466,17 +466,17 @@ public class MarkdownWriter {
             return String.format("[%s](%s)", text, link.url);
         } else {
             // How did we end up here?
-            return escape(identifier);
+            return escape(name);
         }
     }
 
     private String escape(String str) {
-        return str.replace("(","\\(")
+        return str//.replace("(","\\(")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
     }
 
-    /// @param outputDirectory the parsed command line arguments
+    /// @param outputDirectory output path specified by the `-d` command line parameter
     /// @param packageName the name of the packageName
     private File buildContainingDirPath(String outputDirectory, String packageName) {
         final File rootDir;

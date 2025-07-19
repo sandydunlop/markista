@@ -26,13 +26,13 @@ public class TypeNode extends Node {
 
     public void sort() {
         Collections.sort(implementedInterfaces);
-        Collections.sort(classes, (o1, o2) -> { return o2.simpleName.compareTo(o1.simpleName); });
-        Collections.sort(interfaces, (o1, o2) -> { return o2.simpleName.compareTo(o1.simpleName); });
-        Collections.sort(enumClasses, (o1, o2) -> { return o2.simpleName.compareTo(o1.simpleName); });
-        Collections.sort(exceptionClasses, (o1, o2) -> { return o2.simpleName.compareTo(o1.simpleName); });
-        Collections.sort(annotationClasses, (o1, o2) -> { return o2.simpleName.compareTo(o1.simpleName); });
-        Collections.sort(constructors, (o1, o2) -> { return o2.simpleName.compareTo(o1.simpleName); });
-        Collections.sort(methods, (o1, o2) -> { return o2.simpleName.compareTo(o1.simpleName); });
-        Collections.sort(fields, (o1, o2) -> { return o2.simpleName.compareTo(o1.simpleName); });
+        Collections.sort(classes, (o1, o2) -> o2.simpleName.compareTo(o1.simpleName));
+        Collections.sort(interfaces, (o1, o2) -> o2.simpleName.compareTo(o1.simpleName));
+        Collections.sort(enumClasses, (o1, o2) -> o2.simpleName.compareTo(o1.simpleName));
+        Collections.sort(exceptionClasses, (o1, o2) -> o2.simpleName.compareTo(o1.simpleName));
+        Collections.sort(annotationClasses, (o1, o2) -> o2.simpleName.compareTo(o1.simpleName));
+        Collections.sort(constructors, (o1, o2) -> o2.simpleName.compareTo(o1.simpleName));
+        Collections.sort(methods, (o1, o2) -> o2.simpleName.compareTo(o1.simpleName));
+        Collections.sort(fields, (o1, o2) -> o2.simpleName.compareTo(o1.simpleName));
     }
 }
