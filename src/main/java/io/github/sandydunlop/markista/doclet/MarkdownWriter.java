@@ -334,7 +334,7 @@ public class MarkdownWriter {
         for (Node node : nodes) {
             writer.write("### " + node.simpleName + "\n\n");
             if (node instanceof MethodNode method) {
-                writer.write("`" + method.fullSignature() + "`\n\n");
+                writer.write(fullSignature(method) + "\n\n");
             }
             writer.write(formatTaggedText(node.getFullBody()) + "\n\n");
 
@@ -421,6 +421,13 @@ public class MarkdownWriter {
         writer.flush();
         writer.close();
 
+    }
+
+    public String fullSignature(MethodNode method ) {
+        String sig = method.getModifiers();
+        sig += mdAutoLink(method.returnType.qualifiedName, true) + " ";
+        sig += method.simpleName + "(" + paramsString(method.params) + ")";
+        return sig;
     }
 
     public String paramsString(List<ParamNode> params){
@@ -535,6 +542,7 @@ public class MarkdownWriter {
     /// @param qualify if true, the fully qualified identifier is shown
     /// @return markdown text for a link to a document for the specified identifier or an anchor link
     private String mdAutoLink(String identifier, boolean simplify) {
+        boolean isCall = identifier.indexOf('(') > -1;
         String name = NameUtils.removeParentheses(identifier);
         Reference link = LinkResolver.resolve(linkFrom.qualifiedName, name);
         String text;
@@ -543,14 +551,9 @@ public class MarkdownWriter {
         } else {
             text = escape(simplify ?  NameUtils.simplifyNames(name) : name);
         }
-
-        // TODO: `run()` and `void`
-        // Commented out, this works with void. Uncommented it works with run()
-
-        // if (link.kind == Reference.Kind.NONE) {
-        //     return String.format("[%s](#%s)", escape(text), text);
-        // } else 
-
+        if (isCall) {
+            return String.format("[%s](#%s)", escape(text), text);
+        } else
         if (link.kind == Reference.Kind.TYPE) {
             return String.format("[%s](%s.md)", text, link.uri);
         } else if (link.kind == Reference.Kind.PACKAGE) {
@@ -558,8 +561,7 @@ public class MarkdownWriter {
         } else if (link.kind == Reference.Kind.URL) {
             return String.format("[%s](%s)", text, link.uri);
         } else {
-            // How did we end up here?
-            return escape(name);
+            return escape(text);
         }
     }
 
