@@ -93,7 +93,7 @@ publishing {
     }
     task copyDocs(type: Copy) {
         duplicatesStrategy 'include'
-        from 'build/md-docs/io/github/sandydunlop/markista'
+        from 'build/md-docs'
         into '../../../website/docs/markista/javadoc'
     }
     website.dependsOn copyDocs

@@ -72,7 +72,7 @@ public class LinkResolver {
         if (to.indexOf("<") > -1) return link;
         String url = resolveNative(to);
         if (url != null) {
-            link.url = url;
+            link.uri = url;
             link.kind = Reference.Kind.URL;
             link.scope = Reference.Scope.NATIVE;
             return link;
@@ -91,12 +91,12 @@ public class LinkResolver {
             toClassName = getClassName(to);
         }
         if (toPackageName.isEmpty()) return link;
-        link.path =  relativize(fromPackageName, toPackageName);
+        link.uri =  relativize(fromPackageName, toPackageName);
         link.kind = Reference.Kind.PACKAGE;
         link.scope = Reference.Scope.LOCAL;
         if (!toClassName.isEmpty()) {
-            if (!link.path.isEmpty()) link.path += "/";
-            link.path += toClassName;
+            if (!link.uri.isEmpty()) link.uri += "/";
+            link.uri += toClassName;
             link.kind = Reference.Kind.TYPE;
         }
         return link;

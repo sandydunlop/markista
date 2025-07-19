@@ -27,12 +27,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 
 /// A class that outputs API documentation as Markdown.
 public class MarkdownWriter {
     private static final String BR = "<br/>";
     private static final String NBSP = "&nbsp;";
+    private boolean squashEmptyDirectories = false;
+    private String squashedDirectories = null;
     private String outputDirectory;
     private Node linkFrom = null;
     private Writer writer = null;
@@ -42,12 +45,47 @@ public class MarkdownWriter {
         this.outputDirectory = outputDirectory;
     }
 
+    public void setSquashEmptyDirectories(boolean b) {
+        squashEmptyDirectories = b;
+    }
+
     /// Ouput the documentation files for the specified API
     /// @param  api The API to output the documentation for
     public void writeDocs(Api api) throws IOException {
-        for (PackageNode packageDoc : api.getPackages()) {
-            outputPackageDoc(packageDoc);
+        setSquashedDirectories(api);
+        for (PackageNode packageNode : api.getPackages()) {
+            outputPackageDoc(packageNode);
         }
+        outputConstantValues(api);
+    }
+
+    private void setSquashedDirectories(Api api) {
+        squashedDirectories = null;
+        int dotCount = 0;
+        if (squashEmptyDirectories) {
+            for (PackageNode packageNode : api.getPackages()) {
+                if (squashedDirectories == null) {
+                    squashedDirectories = packageNode.qualifiedName;
+                    dotCount = countDots(squashedDirectories);
+                } else if (countDots(packageNode.qualifiedName) < dotCount) {
+                    dotCount = countDots(packageNode.qualifiedName);
+                    squashedDirectories = packageNode.qualifiedName;
+                }
+            }
+        }
+        if (squashedDirectories.lastIndexOf('.') > -1) {
+            squashedDirectories = squashedDirectories.substring(0, squashedDirectories.lastIndexOf('.'));
+        }
+    }
+
+    private static int countDots(String str) {
+        int count = 0;
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) == '.') {
+                count++;
+            }
+        }
+        return count;
     }
 
     private void outputPackageDoc(PackageNode packageDoc) throws IOException {
@@ -134,14 +172,17 @@ public class MarkdownWriter {
             writer.write("\n## Method Summary\n\n");
             outputMethodSummary(typeDoc.methods);
         }
-
         if (typeDoc instanceof EnumNode enumNode && !enumNode.constants.isEmpty()) {
             writer.write("\n## Enum Constant Details\n\n");
             outputEnumConstantDetails(enumNode.constants, enumNode);
         }
+        if (!typeDoc.fields.isEmpty()) {
+            writer.write("\n## Field Details\n\n");
+            outputDetails(new ArrayList<Node>(typeDoc.fields));
+        }
         if (!typeDoc.methods.isEmpty()) {
             writer.write("\n## Method Details\n\n");
-            outputMethodDetails(typeDoc.methods);
+            outputDetails(new ArrayList<Node>(typeDoc.methods));
         }
         writer.flush();
         writer.close();
@@ -277,65 +318,69 @@ public class MarkdownWriter {
                 writer.write("**See Also:**\n\n");
                 for (Reference ref : references) {
                     writer.write("\n");
-                    writer.write("See: " + fromatReference(ref) + "\n\n");
+                    writer.write("See: " + formatReference(ref) + "\n\n");
                 }
                 writer.write("\n");
             }
         }
     }
 
-    /// Writes the markdown for a class's method details
-    /// @param methods The list of methods to write the details of
+    /// Writes the markdown for a class's method or field details
+    /// @param nodes The list of methods to write the details of
     /// @see <a href="http://example.com"/>
     /// @see java.util.List
     /// @since 0.1.0
-    private void outputMethodDetails(List<MethodNode> methods) throws IOException {
-        for (MethodNode method : methods) {
-            writer.write("### " + method.simpleName + "\n\n");
-            writer.write("`" + method.fullSignature() + "`\n\n");
-            writer.write(formatTaggedText(method.getFullBody()) + "\n\n");
+    private void outputDetails(List<Node> nodes) throws IOException {
+        for (Node node : nodes) {
+            writer.write("### " + node.simpleName + "\n\n");
+            if (node instanceof MethodNode method) {
+                writer.write("`" + method.fullSignature() + "`\n\n");
+            }
+            writer.write(formatTaggedText(node.getFullBody()) + "\n\n");
 
-            if (method.deprecation != Deprecation.NONE || !method.deprecationText.isEmpty()) {
-                outputDeprecation(method.deprecation, method.deprecationText);
+            if (node.deprecation != Deprecation.NONE || !node.deprecationText.isEmpty()) {
+                outputDeprecation(node.deprecation, node.deprecationText);
             }
 
             //TODO: Overrides, Annotations?
 
-            if (!method.params.isEmpty()) {
-                boolean showParameters = false;
-                for (ParamNode param : method.params) {
-                    if (!param.getBody().isEmpty()) showParameters = true; 
-                }
-                if (showParameters) {
-                    writer.write("**Parameters:**\n\n");
+            if (node instanceof MethodNode method) {
+                if (!method.params.isEmpty()) {
+                    boolean showParameters = false;
                     for (ParamNode param : method.params) {
-                        if (!param.getBody().isEmpty()) {
-                            writer.write("`" +param.simpleName + "` - " + 
-                                    inOneLine(formatTaggedText(param.getBody())) +"\n\n");
+                        if (!param.getBody().isEmpty()) showParameters = true; 
+                    }
+                    if (showParameters) {
+                        writer.write("**Parameters:**\n\n");
+                        for (ParamNode param : method.params) {
+                            if (!param.getBody().isEmpty()) {
+                                writer.write("`" +param.simpleName + "` - " + 
+                                        inOneLine(formatTaggedText(param.getBody())) +"\n\n");
+                            }
                         }
                     }
                 }
+
+                if (!isNullOrEmpty(method.returnDescription)) {
+                    writer.write("**Returns:**\n\n");
+                    writer.write(method.returnDescription + "\n\n");
+                }
+
+                //TODO: Throws
             }
 
-            if (!isNullOrEmpty(method.returnDescription)) {
-                writer.write("**Returns:**\n\n");
-                writer.write(method.returnDescription + "\n\n");
-            }
-
-            //TODO: Throws
-
-            if (!method.since.isEmpty()) {
+            if (!node.since.isEmpty()) {
                 writer.write("**Since:**\n\n");
-                writer.write(formatTaggedText(method.since.text));
+                writer.write(formatTaggedText(node.since.text));
                 writer.write("\n\n");
             }
 
-            List<Reference> references = method.getReferences();
+            List<Reference> references = node.getReferences();
             if (references != null && !references.isEmpty()) {
                 writer.write("**See Also:**\n\n");
                 for (Reference ref : references) {
                     writer.write("\n");
-                    writer.write("See: " + fromatReference(ref) + "\n\n");
+                    writer.write(formatReference(ref) + "\n\n");
                 }
                 writer.write("\n");
             }
@@ -353,11 +398,39 @@ public class MarkdownWriter {
         writer.write("\n\n");
     }
 
-    private String fromatReference(Reference ref) {
+    private void outputConstantValues(Api api) throws IOException {
+        writer = createFile("constant-values", "");    
+        if (!api.getConstantValues().isEmpty()) {
+            writer.write("# Constant Field Values\n");
+            MarkdownTable table = new MarkdownTable()
+                    .addColumn("Modifier and Type")
+                    .addColumn("Constant Field")
+                    .addColumn("Value");
+            for (FieldNode constantValue : api.getConstantValues()) {
+                StringBuilder modifiersAndType = new StringBuilder();
+                if (constantValue.getModifiers().length() > 0) {
+                    modifiersAndType.append(constantValue.getModifiers());
+                    modifiersAndType.append(" ");
+                }
+                modifiersAndType.append(mdAutoLink(constantValue.type.qualifiedName, true));
+                table.addRow(new String[]{modifiersAndType.toString(), constantValue.simpleName, constantValue.constantValue.toString()});
+            }
+            table.render(writer);
+        }
+
+        writer.flush();
+        writer.close();
+
+    }
+
+    private String formatReference(Reference ref) {
         if (ref.kind == Reference.Kind.URL) {
-            return mdDocumentLink(ref.url);
+            return mdDocumentLink(ref.uri);
+        } else if (ref.kind == Reference.Kind.PAGE) {
+            String relativePath = LinkResolver.relativize(linkFrom.qualifiedName, "");
+            return mdDocumentLink(ref.name, relativePath + ref.uri);
         } else if (ref.kind == Reference.Kind.PACKAGE || ref.kind == Reference.Kind.TYPE) {
-            return mdAutoLink(ref.typeName);
+            return mdAutoLink(ref.name);
         }
         return "";
     }
@@ -459,11 +532,11 @@ public class MarkdownWriter {
         if (link.kind == Reference.Kind.NONE) {
             return String.format("[%s](#%s)", escape(text), text);
         } else if (link.kind == Reference.Kind.TYPE) {
-            return String.format("[%s](%s.md)", text, link.path);
+            return String.format("[%s](%s.md)", text, link.uri);
         } else if (link.kind == Reference.Kind.PACKAGE) {
-            return String.format("[%s](%s/index.md)", text, link.path);
+            return String.format("[%s](%s/index.md)", text, link.uri);
         } else if (link.kind == Reference.Kind.URL) {
-            return String.format("[%s](%s)", text, link.url);
+            return String.format("[%s](%s)", text, link.uri);
         } else {
             // How did we end up here?
             return escape(name);
@@ -486,7 +559,10 @@ public class MarkdownWriter {
             rootDir = new File(".");
         }
 
-        final String dirName = packageName.replace('.', pathSeparator());
+        String dirName = packageName.replace('.', pathSeparator());
+        if (squashEmptyDirectories && dirName.length() > 2) {
+           dirName = dirName.substring(squashedDirectories.length());
+        }
         final File containingDir = new File(rootDir,dirName);
         return containingDir;
     }

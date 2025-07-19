@@ -26,6 +26,7 @@ public class MarkdownDoclet implements Doclet {
     private String outputDirectory = null;
     private boolean documentPrivateMembers = false;
     private boolean createExternalLinks = false;
+    private boolean squashEmptyDirectories = false;
 
     /// The default constructor, does nothing.
     public MarkdownDoclet() {
@@ -42,6 +43,7 @@ public class MarkdownDoclet implements Doclet {
             "-d", "build/md-docs", 
             "--private", 
             "--external-links",
+            "--squash-empty",
             "-sourcepath", "src/main/java/", 
             "-subpackages", 
             "io.github.sandydunlop"
@@ -122,6 +124,15 @@ public class MarkdownDoclet implements Doclet {
                 public boolean process(String option,
                                        List<String> arguments) {
                     documentPrivateMembers = true;
+                    return OK;
+                }
+            },
+            new Option("--squash-empty", false,
+                    "squash empty directories", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    squashEmptyDirectories = true;
                     return OK;
                 }
             },
@@ -218,6 +229,7 @@ public class MarkdownDoclet implements Doclet {
         LinkResolver.setApi(api);
 
         MarkdownWriter writer = new MarkdownWriter(outputDirectory);
+        writer.setSquashEmptyDirectories(squashEmptyDirectories);
         try{
             writer.writeDocs(api);
         } catch (IOException ex) {

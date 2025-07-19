@@ -80,6 +80,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
 
     public Api collect(Set<? extends Element> elements) {
         scan(elements, 0);
+        addConstantFieldValuesReference();
         return api;
     }
 
@@ -318,6 +319,18 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         return visitUnknown(e, depth);
     }
 
+    private void addConstantFieldValuesReference() {
+        for (ClassNode classNode : api.getClasses()) {
+            for (FieldNode fieldNode : classNode.fields) {
+                if (fieldNode.constantValue != null) {
+                    Reference ref = new Reference(Reference.Kind.PAGE, "Constant Field Values", "constant-values.md");
+                    fieldNode.getReferences().add(ref);
+                    api.getConstantValues().add(fieldNode);
+                }
+            }
+        }
+    }
+
     public boolean isInterface(TypeMirror typeMirror) {
         Element element = typeUtils.asElement(typeMirror);
         if (element == null) return false;
@@ -408,12 +421,12 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                         // It's actually HTML, not Markdown.
                         Reference ref = new Reference();
                         ref.kind = Reference.Kind.URL;
-                        ref.url = getUrl(docRef.toString());
+                        ref.uri = getUrl(docRef.toString());
                         refs.add(ref);
                     } if (docRef.getKind() == Kind.REFERENCE) {
                         Reference ref = new Reference();
                         ref.kind = Reference.Kind.TYPE;
-                        ref.typeName = docRef.toString();
+                        ref.name = docRef.toString();
                         refs.add(ref);
                     } else if (docRef.getKind() == Kind.MARKDOWN) {
                         // Do nothing for now

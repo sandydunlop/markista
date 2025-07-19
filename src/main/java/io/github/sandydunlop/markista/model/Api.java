@@ -14,6 +14,7 @@ public class Api {
     private List<EnumNode> enums = new ArrayList<>();
     private List<ExceptionNode> exceptions = new ArrayList<>();
     private List<AnnotationNode> annotations = new ArrayList<>();
+    private List<FieldNode> constantValues = new ArrayList<>();
 
     public Api() {
         // Nothing to see here
@@ -41,6 +42,10 @@ public class Api {
 
     public List <AnnotationNode> getAnnotations() {
         return annotations;
+    }
+
+    public List<FieldNode> getConstantValues() {
+        return constantValues;
     }
 
     public void addPackage(PackageNode node) {
