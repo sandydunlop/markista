@@ -41,7 +41,7 @@ public class MarkdownDoclet implements Doclet {
             "-doclet", MarkdownDoclet.class.getName(),
             "-docletpath", "build/classes/java/main", 
             "-d", "build/md-docs", 
-            "--private", 
+            "--show-private", 
             "--external-links",
             "--squash-empty",
             "-sourcepath", "src/main/java/", 
@@ -118,7 +118,7 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
-            new Option("--private", false,
+            new Option("--show-private", false,
                     "include members with private modifier", null) {
                 @Override
                 public boolean process(String option,
