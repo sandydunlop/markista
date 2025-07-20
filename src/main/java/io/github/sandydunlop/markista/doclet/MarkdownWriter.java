@@ -205,9 +205,8 @@ public class MarkdownWriter {
     private void outputSupertypes(TypeNode typeDoc) throws IOException {
         int indentation = 0;
         for (String st : typeDoc.supertypes) {
-            String partiallySimplified = Util.simplifyGenerics(st);
             writer.write(NBSP.repeat(indentation));
-            writer.write(Util.mdAutoLink(partiallySimplified, false) + BR + "\n");
+            writer.write(Util.mdAutoLink(st, false) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -434,9 +433,6 @@ public class MarkdownWriter {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) str += ", ";
-            if (param.type.arrayBrackets.equals("[]")) {
-                params=params;
-            }
             String typeName = Util.mdAutoLink(param.type.qualifiedName, true);
             str+=typeName + param.type.arrayBrackets + " " + param.simpleName; 
         }
@@ -518,8 +514,7 @@ public class MarkdownWriter {
         if (squashEmptyDirectories && dirName.length() > 2) {
            dirName = dirName.substring(squashedDirectories.length());
         }
-        final File containingDir = new File(rootDir,dirName);
-        return containingDir;
+        return new File(rootDir, dirName);
     }
 
     private char pathSeparator() {

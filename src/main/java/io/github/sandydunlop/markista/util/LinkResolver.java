@@ -119,8 +119,9 @@ public class LinkResolver {
                 String id = to.substring(0, dot);
                 String baseUrl = nativePackageNames.get(id);
                 if (baseUrl != null) {
-                    String link = baseUrl + "/" + to.replace(".", "/") + suffix.get(id);
-                    return link;
+                    String toPackage = getPackageName(to);
+                    String toClass = getClassName(to);
+                    return baseUrl + "/" + toPackage.replace(".", "/") + "/" + toClass+ suffix.get(id);
                 }
             }
         } while(dot != -1);
@@ -174,7 +175,7 @@ public class LinkResolver {
                     break;
                 }
             }
-            if (rel.length() > 0) rel.append("/");
+            if (!rel.isEmpty()) rel.append("/");
             rel.append("..");
         }
         for (;p < toParts.length; p++) {
