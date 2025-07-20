@@ -28,7 +28,7 @@ class LinkResolverTests {
 
 	@Test
 	void resolve_qualifiedNativeClass() {
-		Reference link = LinkResolver.resolve("", "java.util.List");
+		Reference link = LinkResolver.resolve("java.util.List");
 		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html", link.uri);
 	}
 

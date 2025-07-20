@@ -27,7 +27,7 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.util.NameUtils;
+import io.github.sandydunlop.markista.util.Util;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -225,7 +225,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
 
             // The return type...
             String qualifiedName = tm.toString();
-            String simpleName = NameUtils.simplifyNames(qualifiedName);
+            String simpleName = Util.simplifyNames(qualifiedName);
             PackageElement packageElement = getEnclosingPackageElement(ee);
             String packageName = packageElement.getQualifiedName().toString();                
             TypeNode returnType = new TypeNode(qualifiedName, simpleName, packageName);
@@ -549,7 +549,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         }
         if (qualifiedTypeName == null) return null;
 
-        String simpleTypeName = NameUtils.simplifyNames(qualifiedTypeName);
+        String simpleTypeName = Util.simplifyNames(qualifiedTypeName);
         String packageName = getPackageName(qualifiedTypeName);
         TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
         type.arrayBrackets = arrayBrackets;
@@ -576,7 +576,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         }
         if (qualifiedTypeName == null) return null;
 
-        String simpleTypeName = NameUtils.simplifyNames(qualifiedTypeName);
+        String simpleTypeName = Util.simplifyNames(qualifiedTypeName);
         String packageName = getPackageName(qualifiedTypeName);
         TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
         type.arrayBrackets = arrayBrackets;

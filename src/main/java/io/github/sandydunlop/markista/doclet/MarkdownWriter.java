@@ -19,7 +19,7 @@ import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.LinkResolver;
-import io.github.sandydunlop.markista.util.NameUtils;
+import io.github.sandydunlop.markista.util.Util;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -37,7 +37,6 @@ public class MarkdownWriter {
     private boolean squashEmptyDirectories = false;
     private String squashedDirectories = null;
     private String outputDirectory;
-    private Node linkFrom = null;
     private Writer writer = null;
 
     /// Constructor that sets up the locations API documents will be written to.
@@ -89,7 +88,7 @@ public class MarkdownWriter {
     }
 
     private void outputPackageDoc(PackageNode packageDoc) throws IOException {
-        linkFrom = packageDoc; // Used for generating link URLs
+        LinkResolver.setLocation(packageDoc.qualifiedName); // Used for generating link URLs
         writer = createFile(null, packageDoc.qualifiedName);    
         writer.write("# Package " + packageDoc.qualifiedName + "\n");
         writer.write("\n\n" + formatTaggedText(packageDoc.getFullBody()) + "\n\n");
@@ -129,7 +128,7 @@ public class MarkdownWriter {
                 .addColumn(memberKind)
                 .addColumn("Description");
         for (Node member : (List<Node>)members) {
-            table.addRow(new String[]{mdDocumentLink(member.simpleName), inOneLine(formatTaggedText(member.getFirstSentence()))});
+            table.addRow(new String[]{Util.mdDocumentLink(member.simpleName), Util.inOneLine(formatTaggedText(member.getFirstSentence()))});
         }
         table.render(writer, 4);
     }
@@ -206,9 +205,9 @@ public class MarkdownWriter {
     private void outputSupertypes(TypeNode typeDoc) throws IOException {
         int indentation = 0;
         for (String st : typeDoc.supertypes) {
-            String partiallySimplified = NameUtils.simplifyGenerics(st);
+            String partiallySimplified = Util.simplifyGenerics(st);
             writer.write(NBSP.repeat(indentation));
-            writer.write(mdAutoLink(partiallySimplified, false) + BR + "\n");
+            writer.write(Util.mdAutoLink(partiallySimplified, false) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -222,7 +221,7 @@ public class MarkdownWriter {
             writer.write(NBSP.repeat(4));
             for (int i=0; i<typeDoc.implementedInterfaces.size(); i++) {
                 if (i > 0) writer.write(", ");
-                writer.write(mdAutoLink(typeDoc.implementedInterfaces.get(i)));
+                writer.write(Util.mdAutoLink(typeDoc.implementedInterfaces.get(i)));
             }
             writer.write("\n\n");
         }
@@ -232,7 +231,7 @@ public class MarkdownWriter {
         if (typeDoc.owner != null && typeDoc.owner instanceof ClassNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
-            writer.write(mdAutoLink(typeDoc.owner.simpleName) + "\n\n");
+            writer.write(Util.mdAutoLink(typeDoc.owner.simpleName) + "\n\n");
         }
     }
 
@@ -243,7 +242,7 @@ public class MarkdownWriter {
                 .addColumn("Description");
         for (ClassNode nestedClass : nestedClasses) {
             table.addRow(new String[]{nestedClass.getModifiers(),
-                        mdDocumentLink(nestedClass.simpleName), 
+                        Util.mdDocumentLink(nestedClass.simpleName), 
                         formatTaggedText(nestedClass.getFirstSentence())});
         }
         table.render(writer);
@@ -254,7 +253,7 @@ public class MarkdownWriter {
                 .addColumn("Enum Constant")
                 .addColumn("Description");
         for (FieldNode constant : enumNode.constants) {
-            String link = mdAnchorLink(constant.simpleName);
+            String link = Util.mdAnchorLink(constant.simpleName);
             table.addRow(new String[]{link, formatTaggedText(constant.getFirstSentence())});
         }
         table.render(writer);
@@ -266,7 +265,7 @@ public class MarkdownWriter {
                 .addColumn("Field")
                 .addColumn("Description");
         for (FieldNode fieldDoc : fields) {
-            String link = mdAutoLink(fieldDoc.type.qualifiedName, true);
+            String link = Util.mdAutoLink(fieldDoc.type.qualifiedName, true);
             table.addRow(new String[]{fieldDoc.getModifiers() + link, 
                         fieldDoc.simpleName, formatTaggedText(fieldDoc.getFirstSentence())});
         }
@@ -293,9 +292,9 @@ public class MarkdownWriter {
                 .addColumn("Description");
         for (MethodNode methodDoc : methods) {
             table.addRow(new String[]{methodDoc.getModifiers() + 
-                        mdAutoLink(methodDoc.returnType.qualifiedName, true), 
-                        mdAnchorLink(methodDoc.simpleName) + "(" + paramsString(methodDoc.params) + ")",
-                        inOneLine(formatTaggedText(methodDoc.getFirstSentence()))});
+                        Util.mdAutoLink(methodDoc.returnType.qualifiedName, true), 
+                        Util.mdAnchorLink(methodDoc.simpleName) + "(" + paramsString(methodDoc.params) + ")",
+                        Util.inOneLine(formatTaggedText(methodDoc.getFirstSentence()))});
         }
         table.render(writer);
     }
@@ -303,7 +302,7 @@ public class MarkdownWriter {
     private void outputEnumConstantDetails(List<FieldNode> constants, EnumNode enumNode) throws IOException {
         for (FieldNode constant : constants) {
             writer.write("### " + constant.simpleName + "\n\n");
-            writer.write("public static final " + mdAutoLink(enumNode.qualifiedName, true));
+            writer.write("public static final " + Util.mdAutoLink(enumNode.qualifiedName, true));
             writer.write(" " + constant.fullSignature() + "\n\n");
             writer.write(formatTaggedText(constant.getFullBody()) + "\n\n");
 
@@ -325,7 +324,7 @@ public class MarkdownWriter {
         }
     }
 
-    /// Writes the markdown for a class's method or field details
+    /// Writes the markdown for a class's method or field details.
     /// @param nodes The list of methods to write the details of
     /// @see <a href="http://example.com"/>
     /// @see java.util.List
@@ -355,7 +354,7 @@ public class MarkdownWriter {
                         for (ParamNode param : method.params) {
                             if (!param.getBody().isEmpty()) {
                                 writer.write("`" +param.simpleName + "` - " + 
-                                        inOneLine(formatTaggedText(param.getBody())) +"\n\n");
+                                        Util.inOneLine(formatTaggedText(param.getBody())) +"\n\n");
                             }
                         }
                     }
@@ -412,7 +411,7 @@ public class MarkdownWriter {
                     modifiersAndType.append(constantValue.getModifiers());
                     modifiersAndType.append(" ");
                 }
-                modifiersAndType.append(mdAutoLink(constantValue.type.qualifiedName, true));
+                modifiersAndType.append(Util.mdAutoLink(constantValue.type.qualifiedName, true));
                 table.addRow(new String[]{modifiersAndType.toString(), constantValue.simpleName, constantValue.constantValue.toString()});
             }
             table.render(writer);
@@ -425,7 +424,7 @@ public class MarkdownWriter {
 
     public String fullSignature(MethodNode method ) {
         String sig = method.getModifiers();
-        sig += mdAutoLink(method.returnType.qualifiedName, true) + " ";
+        sig += Util.mdAutoLink(method.returnType.qualifiedName, true) + " ";
         sig += method.simpleName + "(" + paramsString(method.params) + ")";
         return sig;
     }
@@ -438,7 +437,7 @@ public class MarkdownWriter {
             if (param.type.arrayBrackets.equals("[]")) {
                 params=params;
             }
-            String typeName = mdAutoLink(param.type.qualifiedName, true);
+            String typeName = Util.mdAutoLink(param.type.qualifiedName, true);
             str+=typeName + param.type.arrayBrackets + " " + param.simpleName; 
         }
         return str;
@@ -446,12 +445,12 @@ public class MarkdownWriter {
 
     private String formatReference(Reference ref) {
         if (ref.kind == Reference.Kind.URL) {
-            return mdDocumentLink(ref.uri);
+            return Util.mdDocumentLink(ref.uri);
         } else if (ref.kind == Reference.Kind.PAGE) {
-            String relativePath = LinkResolver.relativize(linkFrom.qualifiedName, "");
-            return mdDocumentLink(ref.name, relativePath + ref.uri);
+            String relativePath = LinkResolver.relativize("");
+            return Util.mdDocumentLink(ref.name, relativePath + ref.uri);
         } else if (ref.kind == Reference.Kind.PACKAGE || ref.kind == Reference.Kind.TYPE) {
-            return mdAutoLink(ref.name);
+            return Util.mdAutoLink(ref.name);
         }
         return "";
     }
@@ -485,7 +484,7 @@ public class MarkdownWriter {
         if (parts.length > 1) {
             parts[1] = parts[1].substring(0, parts[1].length() - 1);
             if (parts[0].equals("{@link")) {
-                return mdAutoLink(parts[1]);
+                return Util.mdAutoLink(parts[1]);
             }
         }
         System.out.println("Malformed Javadoc tag: " + link.toString());
@@ -498,77 +497,11 @@ public class MarkdownWriter {
         if (parts.length > 2) {
             parts[2] = parts[2].substring(0, parts[2].length() - 1);
             if (parts[0].equals("{@linkplain")) {
-                return "[" + mdAutoLink(parts[2]) + "](" + parts[1] + ")";
+                return "[" + Util.mdAutoLink(parts[2]) + "](" + parts[1] + ")";
             }
         }
         System.out.println("Malformed Javadoc tag: " + link.toString());
         return "";
-    }
-
-    private boolean isNullOrEmpty(String s) {
-        return s == null || s.isEmpty();
-    }
-
-    private static String inOneLine(String text) {
-        if (text == null) return "";
-        return text.replace("\n", " ");
-    }
-
-    private static String mdAnchor(String phrase) {
-        return phrase.toLowerCase().replace(" ","");
-    }
-
-    private String mdAnchorLink(String phrase){
-        return "[" + phrase + "](#" + mdAnchor(phrase) + ")";
-    }
-
-    private String mdDocumentLink(String docName) {
-        return mdDocumentLink(docName, docName);
-    }
-
-    private String mdDocumentLink(String phrase, String docName) {
-        if (docName.contains("://") || docName.endsWith(".md")){
-            return String.format("[%s](%s)", phrase, docName);
-        }
-        return String.format("[%s](%s.md)", phrase, docName);
-    }
-
-    private String mdAutoLink(String identifier) {
-        return mdAutoLink(identifier, true);
-    }
-
-    /// Create a markdown link, automatically deciding what kind of link to make
-    /// @param identifier a type or package identifier
-    /// @param qualify if true, the fully qualified identifier is shown
-    /// @return markdown text for a link to a document for the specified identifier or an anchor link
-    private String mdAutoLink(String identifier, boolean simplify) {
-        boolean isCall = identifier.indexOf('(') > -1;
-        String name = NameUtils.removeParentheses(identifier);
-        Reference link = LinkResolver.resolve(linkFrom.qualifiedName, name);
-        String text;
-        if (name.indexOf('<') > -1){
-            text = escape(simplify ? NameUtils.simplifyGenerics(name) : name);
-        } else {
-            text = escape(simplify ?  NameUtils.simplifyNames(name) : name);
-        }
-        if (isCall) {
-            return String.format("[%s](#%s)", escape(text), text);
-        } else
-        if (link.kind == Reference.Kind.TYPE) {
-            return String.format("[%s](%s.md)", text, link.uri);
-        } else if (link.kind == Reference.Kind.PACKAGE) {
-            return String.format("[%s](%s/index.md)", text, link.uri);
-        } else if (link.kind == Reference.Kind.URL) {
-            return String.format("[%s](%s)", text, link.uri);
-        } else {
-            return escape(text);
-        }
-    }
-
-    private String escape(String str) {
-        return str//.replace("(","\\(")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
     }
 
     /// @param outputDirectory output path specified by the `-d` command line parameter

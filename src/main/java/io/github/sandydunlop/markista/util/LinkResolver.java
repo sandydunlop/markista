@@ -13,6 +13,7 @@ import io.github.sandydunlop.markista.model.Reference;
 /// to link between different packages and to URLs of external
 /// packages and their contents.
 public class LinkResolver {
+    private static String location = null;
     private static HashMap<String,String> nativePackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
@@ -24,6 +25,10 @@ public class LinkResolver {
 
     public static void setApi(Api a) {
         api = a;
+    }
+
+    public static void setLocation(String loc) {
+        location = loc;
     }
 
     public static void addNativeModule(String moduleName, String baseUrl, String s) {
@@ -64,6 +69,10 @@ public class LinkResolver {
             return className.substring(dot);
         }
         return "";
+    }
+
+    public static Reference resolve(String to) {
+        return resolve(location, to);
     }
 
     public static Reference resolve(String from, String to) {
@@ -146,6 +155,10 @@ public class LinkResolver {
             }
         }
         return "";
+    }
+
+    public static String relativize(String to) {
+        return relativize(location, to);
     }
 
     public static String relativize(String from, String to) {

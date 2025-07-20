@@ -1,8 +1,11 @@
 package io.github.sandydunlop.markista.util;
 
+import io.github.sandydunlop.markista.model.Reference;
+
 /// A set of utility methods for changing between qualified and unqualified names.
-public class NameUtils {
-    private NameUtils(){
+public class Util {
+
+    private Util(){
         // This hides the public constructor
     }
 
@@ -91,5 +94,71 @@ public class NameUtils {
             return r;
         }
         return expression;
+    }
+
+
+    public static boolean isNullOrEmpty(String s) {
+        return s == null || s.isEmpty();
+    }
+
+    public static String inOneLine(String text) {
+        if (text == null) return "";
+        return text.replace("\n", " ");
+    }
+
+    public static String mdAnchor(String phrase) {
+        return phrase.toLowerCase().replace(" ","");
+    }
+
+    public static String mdAnchorLink(String phrase){
+        return "[" + phrase + "](#" + mdAnchor(phrase) + ")";
+    }
+
+    public static String mdDocumentLink(String docName) {
+        return mdDocumentLink(docName, docName);
+    }
+
+    public static String mdDocumentLink(String phrase, String docName) {
+        if (docName.contains("://") || docName.endsWith(".md")){
+            return String.format("[%s](%s)", phrase, docName);
+        }
+        return String.format("[%s](%s.md)", phrase, docName);
+    }
+
+    public static String mdAutoLink(String identifier) {
+        return mdAutoLink(identifier, true);
+    }
+
+    /// Create a markdown link, automatically deciding what kind of link to make
+    /// @param identifier a package, type, or method identifier
+    /// @param simplify if true, the fully simplified version of the identifier is shown
+    /// @return markdown text for a link to a document for the specified identifier or an anchor link
+    public static String mdAutoLink(String identifier, boolean simplify) {
+        boolean isMethod = identifier.indexOf('(') > -1;
+        String name = Util.removeParentheses(identifier);
+        Reference link = LinkResolver.resolve(name);
+        String text;
+        if (name.indexOf('<') > -1){
+            text = escape(simplify ? Util.simplifyGenerics(name) : name);
+        } else {
+            text = escape(simplify ?  Util.simplifyNames(name) : name);
+        }
+        if (isMethod) {
+            return String.format("[%s](#%s)", escape(text), text);
+        } else if (link.kind == Reference.Kind.TYPE) {
+            return String.format("[%s](%s.md)", text, link.uri);
+        } else if (link.kind == Reference.Kind.PACKAGE) {
+            return String.format("[%s](%s/index.md)", text, link.uri);
+        } else if (link.kind == Reference.Kind.URL) {
+            return String.format("[%s](%s)", text, link.uri);
+        } else {
+            return escape(text);
+        }
+    }
+
+    public static String escape(String str) {
+        return str//.replace("(","\\(")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 }
