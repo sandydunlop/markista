@@ -16,10 +16,19 @@ public class Util {
     public static String mdAutoLink(String identifier, boolean simplify) {
         boolean isMethod = identifier.indexOf('(') > -1;
         String name = Util.removeParentheses(identifier);
-        Reference link = LinkResolver.resolve(name);
+
         String pre = "";
         String text;
-        if (name.indexOf('<') > -1) {
+        String anchor = "";
+        int a = name.indexOf('#');
+        if (a > 0) {
+            anchor = name.substring(a);
+            name = Util.removeGenerics(name.substring(0, a));
+        }
+
+        if (name == null) {
+            return identifier;
+        } else if (name.indexOf('<') > -1) {
             text = escape(simplify ? Util.linkGenerics(name, simplify) : name);
             return text;
         } else if (name.indexOf(',') > -1) {
@@ -28,20 +37,22 @@ public class Util {
             int p = name.lastIndexOf(' ');
             pre = name.substring(0, p) + " ";
             name = name.substring(p + 1);
-            link = LinkResolver.resolve(name);
         }
+        Reference link = LinkResolver.resolve(name);
         text = escape(simplify ?  Util.simplifyNames(name) : name);
+        if (!anchor.isEmpty()) {
+            text = anchor.substring(1);
+        }
         if (isMethod) {
             return String.format("%s[%s](#%s)", pre, text, text);
-        } else if (link.kind == Reference.Kind.TYPE) {
-            return String.format("%s[%s](%s.md)", pre, text, link.uri);
-        } else if (link.kind == Reference.Kind.PACKAGE) {
-            return String.format("%s[%s](%s/index.md)", pre, text, link.uri);
-        } else if (link.kind == Reference.Kind.URL) {
-            return String.format("%s[%s](%s)", pre, text, link.uri);
-        } else {
-            return String.format("%s%s", pre, text);
+        } else if (link.getKind() == Reference.Kind.TYPE) {
+            return String.format("%s[%s](%s.md%s)", pre, text, link.getUri(), anchor);
+        } else if (link.getKind() == Reference.Kind.PACKAGE) {
+            return String.format("%s[%s](%s/index.md%s)", pre, text, link.getUri(), anchor);
+        } else if (link.getKind() == Reference.Kind.URL) {
+            return String.format("%s[%s](%s%s)", pre, text, link.getUri(), anchor);
         }
+        return String.format("%s%s", pre, text);
     }
 
     public static String splitAndLink(String typesString) {
@@ -77,6 +88,18 @@ public class Util {
         return mdAutoLink(str, simplifiy);
     }
 
+    public static String removeGenerics(String str) {
+        if (str == null || str.isEmpty()) return str;
+        int start = str.indexOf("<");
+        if (start > -1) {
+            int end = str.indexOf(">");
+            if (end > start) {
+                return str.substring(0, start);
+            }
+        }
+        return str;
+    }
+
     /// Removes parentheses and what they contain from an expression
     /// @param expression An expression such as `classname.method(parameter)`.
     /// @return The expression with the parentheses removed
@@ -107,7 +130,8 @@ public class Util {
         char prev = (char)0;
         qualifiedStart = -1;
         simpleStart = -1;
-        for (int i=0; i<=simplified.length(); i++) {
+        int i = 0;
+        while (i<=simplified.length()) {
             char c = i<simplified.length() ? simplified.charAt(i) : ' ';
             if (qualifiedStart > -1 && simpleStart > -1 && (i == simplified.length()  || !isValidSimpleNameChar(c))){
                 String tmp = "";
@@ -127,6 +151,7 @@ public class Util {
                 qualifiedStart = -1;
             }
             prev = c;
+            i++;
         }
         return simplified;
     }

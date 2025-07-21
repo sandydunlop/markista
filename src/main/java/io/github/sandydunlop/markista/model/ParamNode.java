@@ -9,4 +9,20 @@ public class ParamNode extends Node {
         this.type = type;
         this.simpleName = name;
     }
+
+    public void setSimpleName(String name) {
+        simpleName = name;
+    }
+
+    public String getSimpleName() {
+        return simpleName;
+    }
+
+    public void setQualifiedName(String name) {
+        qualifiedName = name;
+    }
+
+    public String getQualifiedName() {
+        return qualifiedName;
+    }
 }

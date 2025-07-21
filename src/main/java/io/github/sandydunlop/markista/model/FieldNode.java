@@ -11,7 +11,7 @@ public class FieldNode extends ParamNode {
     }
 
     public String fullSignature() {
-        String sig = getModifiers();
+        String sig = getModifiersString();
         if (!sig.isEmpty()) sig += " ";
         sig += simpleName;
         return sig;

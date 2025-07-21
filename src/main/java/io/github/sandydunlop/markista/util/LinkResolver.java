@@ -1,10 +1,13 @@
 package io.github.sandydunlop.markista.util;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.List;
 
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 
@@ -13,6 +16,7 @@ import io.github.sandydunlop.markista.model.Reference;
 /// to link between different packages and to URLs of external
 /// packages and their contents.
 public class LinkResolver {
+    private static final List<String> primatives = Arrays.asList("boolean","byte","char","short","int","long","float","double");
     private static String location = null;
     private static HashMap<String,String> nativePackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
@@ -76,14 +80,27 @@ public class LinkResolver {
     }
 
     public static Reference resolve(String from, String to) {
+        String original = to;
         Reference link = new Reference();
         if (to == null) return link;
-        if (to.indexOf("<") > -1) return link;
+        if (to.equals("?") || to.indexOf("<") > -1) {
+            return link;
+        }
+        if ("void".equals(to) || "Void".equals(to)){
+            link.setKind(Reference.Kind.VOID);
+            link.setScope(Reference.Scope.NATIVE);
+            return link;
+        }
+        if (primatives.contains(to)){
+            link.setKind(Reference.Kind.PRIMITIVE);
+            link.setScope(Reference.Scope.NATIVE);
+            return link;
+        }
         String url = resolveNative(to);
         if (url != null) {
-            link.uri = url;
-            link.kind = Reference.Kind.URL;
-            link.scope = Reference.Scope.NATIVE;
+            link.setUri(url);
+            link.setKind(Reference.Kind.URL);
+            link.setScope(Reference.Scope.NATIVE);
             return link;
         }
         String fromPackageName = getPackageName(from);
@@ -99,14 +116,18 @@ public class LinkResolver {
             toPackageName = getPackageName(to);
             toClassName = getClassName(to);
         }
-        if (toPackageName.isEmpty()) return link;
-        link.uri =  relativize(fromPackageName, toPackageName);
-        link.kind = Reference.Kind.PACKAGE;
-        link.scope = Reference.Scope.LOCAL;
+        if (toPackageName.isEmpty()) {
+            System.out.println("ERROR: Reference not found: " + original);
+            link.setKind(Reference.Kind.NONE);
+            return link;
+        }
+        link.setUri(relativize(fromPackageName, toPackageName));
+        link.setKind(Reference.Kind.PACKAGE);
+        link.setScope(Reference.Scope.LOCAL);
         if (!toClassName.isEmpty()) {
-            if (!link.uri.isEmpty()) link.uri += "/";
-            link.uri += toClassName;
-            link.kind = Reference.Kind.TYPE;
+            if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
+            link.setUri(link.getUri() + toClassName);
+            link.setKind(Reference.Kind.TYPE);
         }
         return link;
     }
@@ -139,9 +160,11 @@ public class LinkResolver {
 
     public static String qualifyClass(String from, String to) {
         // 'from' could be used to ensure the closest matching class is chosen
-        for (ClassNode node : api.getClasses()) {
-            if (node.simpleName.equals(to)) {
-                return node.qualifiedName;
+        for (PackageMember member : api.getClasses()) {
+            if (member instanceof ClassNode classNode) {
+                if (classNode.getSimpleName().equals(to)) {
+                    return classNode.getQualifiedName();
+                }
             }
         }
         return "";
@@ -150,9 +173,9 @@ public class LinkResolver {
     public static String qualifyPackage(String from, String to) {
         // 'from' could be used to ensure the closest matching package is chosen
         for (PackageNode node : api.getPackages()) {
-            int p = node.qualifiedName.lastIndexOf(".");
-            if (node.qualifiedName.substring(p + 1).equals(to)) {
-                return node.qualifiedName;
+            int p = node.getName().lastIndexOf(".");
+            if (node.getName().substring(p + 1).equals(to)) {
+                return node.getName();
             }
         }
         return "";

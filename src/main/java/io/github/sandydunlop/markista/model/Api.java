@@ -6,14 +6,8 @@ import java.util.Collections;
 
 import javax.lang.model.element.TypeElement;
 
-public class Api {
-    private List<PackageNode> topLevelPackages = new ArrayList<>();
+public class Api extends AbstractTypeOwner {
     private List<PackageNode> packages = new ArrayList<>();
-    private List<ClassNode> classes = new ArrayList<>();
-    private List<InterfaceNode> interfaces = new ArrayList<>();
-    private List<EnumNode> enums = new ArrayList<>();
-    private List<ExceptionNode> exceptions = new ArrayList<>();
-    private List<AnnotationNode> annotations = new ArrayList<>();
     private List<FieldNode> constantValues = new ArrayList<>();
 
     public Api() {
@@ -24,26 +18,6 @@ public class Api {
         return packages;
     }
 
-    public List<ClassNode> getClasses() {
-        return classes;
-    }
-
-    public List<InterfaceNode> getInterfaces() {
-        return interfaces;
-    }
-
-    public List<EnumNode> getEnums() {
-        return enums;
-    }
-
-    public List<ExceptionNode> getExceptions() {
-        return exceptions;
-    }
-
-    public List <AnnotationNode> getAnnotations() {
-        return annotations;
-    }
-
     public List<FieldNode> getConstantValues() {
         return constantValues;
     }
@@ -52,27 +26,7 @@ public class Api {
         packages.add(node);
     }
 
-    public void addClass(ClassNode node) {
-        classes.add(node);
-    }
-
-    public void addInterface(InterfaceNode node) {
-        interfaces.add(node);
-    }
-
-    public void addEnum(EnumNode node) {
-        enums.add(node);
-    }
-
-    public void addException(ExceptionNode node) {
-        exceptions.add(node);
-    }
-
-    public void addAnnotation(AnnotationNode node) {
-        annotations.add(node);
-    }
-
-    public PackageNode getPackageDoc(String qualifiedName) {
+    public PackageNode getPackageNode(String qualifiedName) {
         for (PackageNode packageDoc : packages) {
             if (packageDoc.qualifiedName.equals(qualifiedName)){
                 return packageDoc;
@@ -81,26 +35,33 @@ public class Api {
         return null;
     }
 
-    public ClassNode getClassDoc(TypeElement type) {
+    public ClassNode getClassNode(TypeElement type) {
         if (type == null) return null;
-        return (ClassNode)getTypeDoc(type.getQualifiedName().toString(), classes);
+        return (ClassNode)getTypeNode(type.getQualifiedName().toString());
     }
 
-    //TODO: Make this efficient
-    public TypeNode getTypeDoc(String qualifiedName, List<?> docs) {
-        List<TypeNode> docList = (List<TypeNode>) docs;
-        for (TypeNode doc : docList) {
-            if (doc.qualifiedName.equals(qualifiedName)){
-                return doc;
+    public TypeNode getTypeNode(String qualifiedName) {
+        if (types == null) return null;
+        for (TypeNode typeNode : types) {
+            if (typeNode.qualifiedName.equals(qualifiedName)){
+                return typeNode;
             }
         }
         return null;
     }
 
+    public TypeNode getTypeNode(TypeElement type) {
+        return getTypeNode(type.getQualifiedName().toString());
+    }
+
     public void sort() {
-        Collections.sort(packages, (o1, o2) -> { return o2.qualifiedName.compareTo(o1.qualifiedName); });
-        for (ClassNode node : classes) {
+        Collections.sort(packages, (o1, o2) -> o2.qualifiedName.compareTo(o1.qualifiedName) );
+        for (TypeNode node : getTypes()) {
             node.sort();
         }
+    }
+
+    public String getName() {
+        return null;
     }
 }

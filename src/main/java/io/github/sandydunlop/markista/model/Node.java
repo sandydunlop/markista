@@ -2,7 +2,6 @@ package io.github.sandydunlop.markista.model;
 
 import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -11,45 +10,74 @@ import java.util.Set;
 import javax.lang.model.element.Modifier;
 
 import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.SeeTree;
 
 
 public class Node {
-    public Node owner = null;
-    public Set<Modifier> modifiers = new HashSet<>();
-    public Deprecation deprecation = Deprecation.NONE;
-    public Text deprecationText = Text.empty();
-    public String simpleName = "";
-    public String qualifiedName = "";
-    public String packageName = "";
-    public Text since = Text.empty();
-
-    private List<? extends DocTree> firstSentence = new ArrayList<>();
-    private List<? extends DocTree> body = new ArrayList<>();
-    private List<? extends DocTree> fullBody = new ArrayList<>();
+    protected String simpleName = "";
+    protected String qualifiedName = "";
+    protected PackageNode packageNode = null;
+    private Set<Modifier> modifiers = new HashSet<>();
+    private Deprecation deprecation = Deprecation.NONE;
+    private Text deprecationText = Text.empty();
+    private Text since = Text.empty();
+    protected Text firstSentence = Text.empty();
+    private Text body = Text.empty();
+    private Text fullBody = Text.empty();
     private List<Reference> references = new ArrayList<>();
 
-    public void setFirstSentence(List<? extends DocTree> doc) {
-        firstSentence = doc;
+    public String getSimpleName() {
+        return simpleName;
+    }
+    
+    public Set<Modifier> getModifiers() {
+        return modifiers;
     }
 
-    public List<? extends DocTree> getFirstSentence() {
+    public void setDeprecation(Deprecation deprecation) {
+        this.deprecation = deprecation;
+    }
+
+    public Deprecation getDeprecation() {
+        return deprecation;
+    }
+
+    public void setDeprecationText(Text text) {
+        deprecationText = text;
+    }
+
+    public Text getDeprecationText() {
+        return deprecationText;
+    }
+
+    public void setSince(Text text) {
+        since = text;
+    }
+
+    public Text getSince() {
+        return since;
+    }
+
+    public void setFirstSentence(List<? extends DocTree> doc) {
+        firstSentence.set(doc);
+    }
+
+    public Text getFirstSentence() {
         return firstSentence;
     }
 
     public void setBody(List<? extends DocTree> doc) {
-        body = doc;
+        body.set(doc);
     }
 
-    public List<? extends DocTree> getBody() {
+    public Text getBody() {
         return body;
     }
 
     public void setFullBody(List<? extends DocTree> doc) {
-        fullBody = doc;
+        fullBody.set(doc);
     }
 
-    public List<? extends DocTree> getFullBody() {
+    public Text getFullBody() {
         return fullBody;
     }
 
@@ -61,7 +89,7 @@ public class Node {
         return references;
     }
 
-    public String getModifiers() {
+    public String getModifiersString() {
         String mods = "";
         List<Modifier> modifierList = ModifierSorter.sortModifiers(modifiers);
         for (Modifier mod : modifierList) {

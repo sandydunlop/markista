@@ -1,10 +1,10 @@
 package io.github.sandydunlop.markista.model;
 
 public class Reference {
-    public Kind kind = Kind.NONE;
-    public Scope scope = Scope.NONE;
-    public String name = "";
-    public String uri = "";
+    private Kind kind = Kind.NONE;
+    private Scope scope = Scope.NONE;
+    private String name = "";
+    private String uri = "";
 
     public Reference() {
     }
@@ -19,13 +19,47 @@ public class Reference {
         this.uri = uri;
         this.name = name;
     }
+
+    public void setKind(Kind kind) {
+        this.kind = kind;
+    }
+
+    public Kind getKind() {
+        return kind;
+    }
+
+    public void setScope(Scope scope) {
+        this.scope = scope;
+    }
+
+    public Scope getScope() {
+        return scope;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setUri(String uri) {
+        this.uri = uri;
+    }
+
+    public String getUri() {
+        return uri;
+    }
     
     public enum Kind {
         NONE,
         PACKAGE,
         TYPE,
         PAGE,
-        URL
+        URL,
+        PRIMITIVE,
+        VOID
     }
 
     public enum Scope {

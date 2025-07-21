@@ -5,7 +5,8 @@ import java.util.List;
 
 public class EnumNode extends TypeNode {
     public List<FieldNode> constants = new ArrayList<>();
-    public EnumNode(String qualifiedName, String simpleName, String packageName) {
-        super(qualifiedName, simpleName, packageName);
+    public EnumNode(String qualifiedName, String simpleName, PackageNode packageNode) {
+        super(qualifiedName, simpleName, packageNode);
+        kind = TypeNode.Kind.ENUM;
     }
 }

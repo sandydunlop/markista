@@ -2,26 +2,29 @@ package io.github.sandydunlop.markista.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collections;
 
 import javax.lang.model.type.TypeMirror;
 
-import com.sun.source.doctree.DocTree;
-
 public class MethodNode extends Node {
-    public List<? extends DocTree> returnDescription = new ArrayList<>();
+    private Text returnDescription = Text.empty();
     // public String fullDescription = "";
     public TypeNode returnType = null;
+    public OverriddenMethodNode overrides = null;
     public List <ParamNode> params = new ArrayList<>();
     public List<? extends TypeMirror> thrownTypes = new ArrayList<>();
+    public TypeNode owner = null;
 
     public MethodNode(TypeNode returnType, String name) {
         this.returnType = returnType;
         this.simpleName = name;
     }
 
-    public void setReturnComment(List<? extends DocTree> doc) {
-        returnDescription = doc;
+    public void setReturnDescription(Text text) {
+        returnDescription = text;
+    }
+
+    public Text getReturnDescription() {
+        return returnDescription;
     }
 
     public String signature(){
@@ -38,7 +41,7 @@ public class MethodNode extends Node {
         return sig;
     }
     public String fullSignature() {
-        String sig = getModifiers();
+        String sig = getModifiersString();
         sig += returnType.simpleName + " ";
         sig += simpleName + "(" + paramsString() + ")";
         return sig;
@@ -53,5 +56,21 @@ public class MethodNode extends Node {
             str+=typeName + " " + param.simpleName; 
         }
         return str;
+    }
+
+    public void setSimpleName(String name) {
+        simpleName = name;
+    }
+
+    public String getSimpleName() {
+        return simpleName;
+    }
+
+    public void setQualifiedName(String name) {
+        qualifiedName = name;
+    }
+
+    public String getQualifiedName() {
+        return qualifiedName;
     }
 }

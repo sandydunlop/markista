@@ -3,19 +3,28 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PackageNode extends Node {
-    public List<PackageNode> packages = new ArrayList<>();
-    public List<ClassNode> classes = new ArrayList<>();
-    public List<InterfaceNode> interfaces = new ArrayList<>();
-    public List<EnumNode> enumClasses = new ArrayList<>();
-    public List<ExceptionNode> exceptionClasses = new ArrayList<>();
-    public List<AnnotationNode> annotationClasses = new ArrayList<>();
+public class PackageNode extends AbstractTypeOwner implements PackageMember {
+    private List<PackageMember> packages = new ArrayList<>();
 
     public PackageNode(String packageName) {
         this.qualifiedName = packageName;
     }
 
-    public List<PackageNode> getPackages() {
+    public List<PackageMember> getPackages() {
         return packages;
+    }
+
+    public void addPackage(PackageNode packageNode) {
+        packages.add(packageNode);
+    }
+
+    @Override
+    public String getName() {
+        return qualifiedName;
+    }
+
+    @Override
+    public Text getDescription() {
+        return firstSentence;
     }
 }
