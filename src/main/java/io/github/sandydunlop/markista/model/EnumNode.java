@@ -4,9 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class EnumNode extends TypeNode {
-    public List<FieldNode> constants = new ArrayList<>();
+    private List<FieldNode> constants = new ArrayList<>();
+
     public EnumNode(String qualifiedName, String simpleName, PackageNode packageNode) {
         super(qualifiedName, simpleName, packageNode);
         kind = TypeNode.Kind.ENUM;
+    }
+
+    public void addConstant(FieldNode constant) {
+        constants.add(constant);
+    }
+
+    public List<FieldNode> getConstants() {
+        return constants;
     }
 }

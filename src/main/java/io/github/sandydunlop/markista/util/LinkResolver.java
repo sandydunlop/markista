@@ -5,11 +5,16 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.List;
 
+import javax.tools.Diagnostic;
+
+import java.util.List;
+
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
+import jdk.javadoc.doclet.Reporter;
 
 
 /// This class woks calculates the paths for Markdown documents 
@@ -22,6 +27,7 @@ public class LinkResolver {
     private static HashMap<String,String> suffix = new HashMap<>();
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
     private static Api api = null;
+    private static Reporter reporter;
 
     private LinkResolver() {
         // This hides the public constructor
@@ -29,6 +35,10 @@ public class LinkResolver {
 
     public static void setApi(Api a) {
         api = a;
+    }
+
+    public static void setReporter(Reporter r) {
+        reporter = r;
     }
 
     public static void setLocation(String loc) {
@@ -42,8 +52,6 @@ public class LinkResolver {
                 nativePackageNames.put(packageName, baseUrl);
                 suffix.put(packageName, s);
             }
-        } else {
-            System.err.println("Module not found: " + moduleName);
         }
     }
 
@@ -117,7 +125,7 @@ public class LinkResolver {
             toClassName = getClassName(to);
         }
         if (toPackageName.isEmpty()) {
-            System.out.println("ERROR: Reference not found: " + original);
+            reporter.print(Diagnostic.Kind.WARNING, "Reference not found: " + original);
             link.setKind(Reference.Kind.NONE);
             return link;
         }

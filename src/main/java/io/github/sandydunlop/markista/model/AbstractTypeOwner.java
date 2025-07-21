@@ -1,6 +1,7 @@
 package io.github.sandydunlop.markista.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -56,5 +57,9 @@ public abstract class AbstractTypeOwner extends Node implements TypeOwner {
 
     public void addAnnotation(AnnotationNode node) {
         types.add(node);
+    }
+
+    public void sort() {
+        Collections.sort(types, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
     }
 }

@@ -25,10 +25,6 @@ public class Node {
     private Text fullBody = Text.empty();
     private List<Reference> references = new ArrayList<>();
 
-    public String getSimpleName() {
-        return simpleName;
-    }
-    
     public Set<Modifier> getModifiers() {
         return modifiers;
     }

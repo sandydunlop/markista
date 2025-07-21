@@ -9,7 +9,6 @@ import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.ReturnTree;
 import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.SinceTree;
-import com.sun.source.tree.VariableTree;
 
 import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.Api;
@@ -53,20 +52,24 @@ import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.ElementScanner9;
 import javax.lang.model.util.Elements;
+import javax.tools.Diagnostic;
 
 import jdk.javadoc.doclet.DocletEnvironment;
+import jdk.javadoc.doclet.Reporter;
 
 import static javax.lang.model.element.Modifier.*;
 
 /// A class that scans code and generates an API tree representing code and Javadoc comments.
-public class ApiCollector extends ElementScanner9<Void, Integer> {
+public class ApiScanner extends ElementScanner9<Void, Integer> {
     private Api api;
     private boolean documentPrivateMembers = false;
     private Set<Element> encounteredSupertypes = new HashSet<>();
-    DocletEnvironment environment;
+    private DocletEnvironment environment;
+    private Reporter reporter;
 
-    public ApiCollector(DocletEnvironment environment) {
+    public ApiScanner(DocletEnvironment environment, Reporter reporter) {
         this.environment = environment;
+        this.reporter = reporter;
         api = new Api();
     }
 
@@ -74,7 +77,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         this.documentPrivateMembers = documentPrivateMembers;
     }
 
-    public Api collect(Set<? extends Element> elements) {
+    public Api scan(Set<? extends Element> elements) {
         scan(elements, 0);
         addConstantFieldValuesReference();
         return api;
@@ -112,14 +115,12 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     public Void visitType(TypeElement e, Integer depth) { 
         if (isIncludedInApi(e)){
             TypeNode typeNode = nodeFromElement(e);
-
             DocCommentTree dct = environment.getDocTrees().getDocCommentTree(e);
-            if (dct != null) {
+            if (dct != null && typeNode != null) {
                 typeNode.setFirstSentence(dct.getFirstSentence());
                 typeNode.setBody(dct.getBody());
                 typeNode.setFullBody(dct.getFullBody());
             }
-
         }
         return super.visitType(e, depth);
     }
@@ -127,79 +128,39 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     @Override
     public Void visitExecutable(ExecutableElement ee, Integer depth) {
         if (isIncludedInApi(ee)){
-            TypeMirror tm = ee.getReturnType();
-
-            // The return type...
-            String qualifiedName = tm.toString();
-            String simpleName = Util.simplifyNames(qualifiedName);
-            PackageElement packageElement = getEnclosingPackageElement(ee);
-            PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
-            TypeNode returnType = new TypeNode(qualifiedName, simpleName, packageNode);
-
-            MethodNode method = new MethodNode(returnType, ee.getSimpleName().toString());
-            DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
-            if (dct != null) {
-                method.setFirstSentence(dct.getFirstSentence());
-                method.setBody(dct.getBody());
-                method.setFullBody(dct.getFullBody());
-                ReturnTree returnTree = getReturnTree(dct);
-                if (returnTree != null) {
-                    method.setReturnDescription(Text.fromDocTree(returnTree.getDescription()));
-                }
-                method.setReferences(getReferences(dct));
-                method.setSince(getSince(dct));
-            }
-
-            TypeElement ownerElement = getEnclosingTypeElement(ee);
-            TypeNode ownerType = api.getTypeNode(ownerElement);
-            setMethodParams(method, ee);
-
-            method.getModifiers().addAll(ee.getModifiers()); 
-            method.thrownTypes = ee.getThrownTypes();
-            method.owner = ownerType;
-
-            if (ee.getKind() == ElementKind.METHOD) {
-                MethodNode existingMethodNode = ownerType.getMethod(method);
-                if (existingMethodNode == null) {   
-                    ownerType.methods.add(method);
-                }
-            }else if (ee.getKind() == ElementKind.CONSTRUCTOR) {
-                method.setSimpleName(ownerType.getSimpleName());
-                MethodNode existingMethodNode = ownerType.getConstructor(method);
-                if (existingMethodNode == null) {
-                    ownerType.constructors.add(method);
+            MethodNode methodNode = nodeFromElement(ee);
+            if (methodNode != null) {
+                DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
+                setDeprecationStatus(methodNode, ee, dct);
+                if (dct != null) {
+                    methodNode.setFirstSentence(dct.getFirstSentence());
+                    methodNode.setBody(dct.getBody());
+                    methodNode.setFullBody(dct.getFullBody());
+                    ReturnTree returnTree = getReturnTree(dct);
+                    if (returnTree != null) {
+                        methodNode.setReturnDescription(Text.fromDocTree(returnTree.getDescription()));
+                    }
+                    methodNode.setReferences(getReferences(dct));
+                    methodNode.setSince(getSince(dct));
                 }
             }
-            setMethodDeprecationStatus(method, ee, dct);
-            setMethodAnnotations(method, ee);
         }
         return super.visitExecutable(ee, depth);
     }
 
     @Override
     public Void visitVariable(VariableElement ve, Integer depth) {
-        if (isIncludedInApi(ve)){
-            if (ve.getKind() == ElementKind.FIELD) {
-                TypeElement classElement = getEnclosingTypeElement(ve);
-                TypeNode typeNode = api.getTypeNode(classElement);
-                if (typeNode != null) {
-                    String simpleName = ve.getSimpleName().toString();
-                    FieldNode fieldNode = typeNode.getField(simpleName);
-                    if (fieldNode == null) {
-                        String qualifiedClassName = classElement.getQualifiedName().toString();
-                        TypeNode type = getFieldType(environment.getElementUtils(), qualifiedClassName, simpleName);
-                        fieldNode = new FieldNode(type, simpleName);
-                        fieldNode.constantValue = (Serializable) ve.getConstantValue();
-                        fieldNode.getModifiers().addAll(ve.getModifiers()); 
-                        DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ve);
-                        setMethodDeprecationStatus(fieldNode, ve, dct);
-                        if (dct != null) {
-                            fieldNode.setFirstSentence(dct.getFirstSentence());
-                            fieldNode.setBody(dct.getBody());
-                            fieldNode.setFullBody(dct.getFullBody());
-                        }
-                        typeNode.fields.add(fieldNode);
-                    }
+        if (isIncludedInApi(ve) && ve.getKind() == ElementKind.FIELD) {
+            FieldNode fieldNode = nodeFromElement(ve);
+            if (fieldNode != null ) {
+                fieldNode.setConstantValue((Serializable) ve.getConstantValue());
+                fieldNode.getModifiers().addAll(ve.getModifiers()); 
+                DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ve);
+                setDeprecationStatus(fieldNode, ve, dct);
+                if (dct != null) {
+                    fieldNode.setFirstSentence(dct.getFirstSentence());
+                    fieldNode.setBody(dct.getBody());
+                    fieldNode.setFullBody(dct.getFullBody());
                 }
             }
         }
@@ -222,16 +183,104 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         if (typeNode == null) {
             PackageElement packageElement = getEnclosingPackageElement(element);
             String simpleName = element.getSimpleName().toString();
+            if (packageElement == null) {
+                reporter.print(Diagnostic.Kind.ERROR, "No package for " + qualifiedName);
+                return null;
+            }
             PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
             typeNode = createTypeNode(qualifiedName, simpleName, packageNode, element.getKind());
+            if (typeNode == null) {
+                reporter.print(Diagnostic.Kind.ERROR, "Unsupported type kind: " + element.getKind());
+                return null;
+            }
+            if (typeNode instanceof EnumNode enumNode) {
+                setEnumConstants(enumNode, element);
+            }
             setTypeOwnership(typeNode, element);
             typeNode.getModifiers().addAll(element.getModifiers());
-            collectAllSupertypes(element.asType(), typeNode.supertypes);
-            typeNode.supertypes.add(0, "java.lang.Object");
-            findImplementedInterfaces(element, typeNode.implementedInterfaces);
+            collectAllSupertypes(element.asType(), typeNode.getSupertypes());
+            typeNode.getSupertypes().add(0, "java.lang.Object");
+            findImplementedInterfaces(element, typeNode.getImplementedInterfaces());
             api.addType(typeNode);
         }
         return typeNode;
+    }
+
+    private void setEnumConstants(EnumNode enumNode, TypeElement e) {
+        List<? extends Element> enclosedElements = e.getEnclosedElements();
+        for (Element element : enclosedElements) {
+            if (element.getKind() == ElementKind.ENUM_CONSTANT) {
+                FieldNode enumConstant = new FieldNode(null, element.getSimpleName().toString());
+                enumNode.getConstants().add(enumConstant);
+            }
+        }
+    }
+
+    private MethodNode nodeFromElement(ExecutableElement element) {
+        TypeMirror typeMirror = element.getReturnType();
+        String qualifiedTypeName = typeMirror.toString();
+        String arrayBrackets = "";
+        if (typeMirror.getKind() == TypeKind.ARRAY) {
+            TypeMirror array = ((ArrayType)typeMirror).getComponentType();
+            qualifiedTypeName = array.toString();
+            arrayBrackets = "\\[]";                    
+        }
+        // The return type...
+        String simpleName = Util.simplifyNames(qualifiedTypeName);
+        PackageElement packageElement = getEnclosingPackageElement(element);
+        if (packageElement == null) {
+            reporter.print(Diagnostic.Kind.ERROR, "No package for " + qualifiedTypeName);
+            return null;
+        }
+        PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
+        TypeNode returnType = new TypeNode(qualifiedTypeName, simpleName, packageNode);
+        returnType.setArrayBrackets(arrayBrackets);
+        MethodNode methodNode = new MethodNode(returnType, element.getSimpleName().toString());
+
+        TypeElement ownerElement = getEnclosingTypeElement(element);
+        TypeNode ownerType = api.getTypeNode(ownerElement);
+        setMethodParams(methodNode, element);
+
+        methodNode.getModifiers().addAll(element.getModifiers()); 
+        methodNode.setThrownTypes(element.getThrownTypes());
+        methodNode.setOwner(ownerType);
+
+        if (element.getKind() == ElementKind.METHOD) {
+            MethodNode existingMethodNode = ownerType.getMethod(methodNode);
+            if (existingMethodNode == null) {   
+                ownerType.getMethods().add(methodNode);
+            }
+        }else if (element.getKind() == ElementKind.CONSTRUCTOR) {
+            methodNode.setSimpleName(ownerType.getSimpleName());
+            MethodNode existingMethodNode = ownerType.getConstructor(methodNode);
+            if (existingMethodNode == null) {
+                ownerType.getConstructors().add(methodNode);
+            }
+        }
+        setMethodAnnotations(methodNode, element);
+        setSpecifiedBy(methodNode, element);
+        return methodNode;
+    }
+
+    private FieldNode nodeFromElement(VariableElement element) {
+        TypeElement classElement = getEnclosingTypeElement(element);
+        if (classElement == null) {
+            reporter.print(Diagnostic.Kind.ERROR, "No enclosing type for " + element.getSimpleName().toString());
+            return null;
+        }
+        TypeNode typeNode = api.getTypeNode(classElement);
+        if (typeNode != null) {
+            String simpleName = element.getSimpleName().toString();
+            FieldNode fieldNode = typeNode.getField(simpleName);
+            if (fieldNode == null) {
+                String qualifiedClassName = classElement.getQualifiedName().toString();
+                TypeNode type = getFieldType(environment.getElementUtils(), qualifiedClassName, simpleName);
+                fieldNode = new FieldNode(type, simpleName);
+                typeNode.getFields().add(fieldNode);
+            }
+            return fieldNode;
+        }
+        return null;
     }
 
     private TypeNode createTypeNode(String qualifiedName, String simpleName, PackageNode packageNode, ElementKind elementKind) {
@@ -250,17 +299,18 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     }
 
     private void setTypeOwnership(TypeNode typeNode, TypeElement element) {
+        if (typeNode == null) return;
         TypeElement owner = getEnclosingTypeElement(element);
         TypeNode ownerTypeNode = owner == null ? null : api.getTypeNode(owner);
         if (ownerTypeNode != null) {
             // Owner is a type (class, interface, enum, annotation)
-            typeNode.owner = ownerTypeNode;
+            typeNode.setOwner(ownerTypeNode);
             typeNode.setSimpleName(ownerTypeNode.getSimpleName() + "." + typeNode.getSimpleName());
         } else {
             // Owner is a package
-            typeNode.owner = typeNode.getPackage();
+            typeNode.setOwner(typeNode.getPackage());
         }
-        typeNode.owner.addType(typeNode);
+        typeNode.getOwner().addType(typeNode);
     }
 
     public void setMethodAnnotations(MethodNode method, ExecutableElement methodElement) {
@@ -269,38 +319,51 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             Element typeElement = declaredType.asElement();
             if ("Override".equals(typeElement.getSimpleName().toString())) {
                 OverriddenMethodNode overrides = getOverriddenMethod(method, methodElement);
-                method.overrides = overrides;
+                method.setOverriddenMethod(overrides);
+            }
+        }
+    }
+
+    private void setSpecifiedBy(MethodNode methodNode, ExecutableElement methodElement) {
+        List<String> interfaces = methodNode.getOwner().getImplementedInterfaces();
+        if (interfaces == null || interfaces.isEmpty()) return;
+        for (String interfaceName : interfaces) {
+            TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceName);
+            if (interfaceElement == null) continue;
+            for (ExecutableElement interfaceMethod : ElementFilter.methodsIn(interfaceElement.getEnclosedElements())) {
+                if (interfaceMethod.getSimpleName().equals(methodElement.getSimpleName())) {
+                    methodNode.setSpecifiedBy(interfaceName);
+                    return;
+                }
             }
         }
     }
 
     private OverriddenMethodNode getOverriddenMethod(MethodNode method, ExecutableElement methodElement) {
-        if (method.owner == null) return null;
-        OverriddenMethodNode overridden = new OverriddenMethodNode();
+        if (method.getOwner() == null) return null;
 
-        for (int i=method.owner.supertypes.size() - 1; i>=0; i--) {
-            String typeName = method.owner.supertypes.get(i);
+        for (int i=method.getOwner().getSupertypes().size() - 1; i>=0; i--) {
+            String typeName = method.getOwner().getSupertypes().get(i);
             TypeElement superclass = environment.getElementUtils().getTypeElement(typeName);
-            if (superclass != null) {
-                for (Element superMethod : superclass.getEnclosedElements()) {
-                    if (superMethod instanceof ExecutableElement && superMethod.getSimpleName().equals(methodElement.getSimpleName())) {
-                        overridden.qualifiedClassName = typeName;
-                        overridden.methodName = superMethod.getSimpleName().toString();
-                        return overridden;
-                    }
-                }
-            }else{
-                overridden = getOverriddenNativeMethod(typeName, method);
-                if (overridden != null){
-                    return overridden;
-                }
+            OverriddenMethodNode overridden = getOverriddenMethod(superclass, methodElement);
+            if (overridden != null) return overridden;
+            overridden = getOverriddenNativeMethod(typeName, method);
+            if (overridden != null) return overridden;
+        }
+        return null;
+    }
+
+    private OverriddenMethodNode getOverriddenMethod(TypeElement superclass, ExecutableElement methodElement) {
+        if (superclass == null) return null;
+        for (Element superMethod : superclass.getEnclosedElements()) {
+            if (superMethod instanceof ExecutableElement && superMethod.getSimpleName().equals(methodElement.getSimpleName())) {
+                return new OverriddenMethodNode(superclass.getQualifiedName().toString(), superMethod.getSimpleName().toString());
             }
         }
-        return overridden;
+        return null;
     }
 
     private OverriddenMethodNode getOverriddenNativeMethod(String qualifiedTypeName, MethodNode method) {
-        OverriddenMethodNode overridden = new OverriddenMethodNode();
         try {
             String canonicalName = Util.removeGenerics(qualifiedTypeName);
             Class<?> cls = Class.forName(canonicalName);
@@ -308,21 +371,18 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             for (Method listMethod : listMethods) {
                 // Compare method names and parameter types
                 if (listMethod.getName().equals(method.getSimpleName()) &&
-                    listMethod.getParameterCount() == method.params.size()) {
+                    listMethod.getParameterCount() == method.getParams().size()) {
                     boolean parametersMatch = true;
                     Class<?>[] listMethodParamTypes = listMethod.getParameterTypes();
                     for (int i = 0; i < listMethodParamTypes.length; i++) {
-                        Class<?> clsB = Class.forName(method.params.get(i).type.getQualifiedName());
+                        Class<?> clsB = Class.forName(method.getParams().get(i).getType().getQualifiedName());
                         if (!listMethodParamTypes[i].isAssignableFrom(clsB)) {
                             parametersMatch = false;
                             break;
                         }
                     }
-
                     if (parametersMatch) {
-                        overridden.qualifiedClassName = qualifiedTypeName;
-                        overridden.methodName = listMethod.getName();
-                        return overridden; // Found an overridden method
+                        return new OverriddenMethodNode(qualifiedTypeName, listMethod.getName());
                     }
                 }
             }
@@ -335,8 +395,8 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     private void addConstantFieldValuesReference() {
         for (PackageMember member : api.getClasses()) {
             if (member instanceof ClassNode classNode) {
-                for (FieldNode fieldNode : classNode.fields) {
-                    if (fieldNode.constantValue != null) {
+                for (FieldNode fieldNode : classNode.getFields()) {
+                    if (fieldNode.getConstantValue() != null) {
                         Reference ref = new Reference(Reference.Kind.PAGE, "Constant Field Values", "constant-values.md");
                         fieldNode.getReferences().add(ref);
                         api.getConstantValues().add(fieldNode);
@@ -411,7 +471,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     }
 
     private List<Reference> getReferences(DocCommentTree dcTree) {
-        if (dcTree == null) return null;
+        if (dcTree == null) return new ArrayList<>();
         List<Reference> refs = new ArrayList<>();
         for (DocTree tagTree : dcTree.getBlockTags()) {
             if (tagTree instanceof SeeTree seeTree) {
@@ -423,19 +483,17 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                         ref.setKind(Reference.Kind.URL);
                         ref.setUri(getUrl(docRef.toString()));
                         refs.add(ref);
-                    } if (docRef.getKind() == Kind.REFERENCE) {
+                    } else if (docRef.getKind() == Kind.REFERENCE) {
                         Reference ref = new Reference();
                         ref.setKind(Reference.Kind.TYPE);
                         ref.setName(docRef.toString());
                         refs.add(ref);
-                    } else if (docRef.getKind() == Kind.MARKDOWN) {
-                        // Do nothing for now
                     } else {
-                        System.out.println("Unhandled reference type: " + docRef.getKind().toString());
+                        reporter.print(Diagnostic.Kind.WARNING, "Unhandled reference type: " + docRef.getKind().toString());
                     }
                 }
             } else if (tagTree instanceof ErroneousTree) {
-                System.out.println("Erroneous tag: " + tagTree.toString());
+                reporter.print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
             }
         }
         return refs;
@@ -447,7 +505,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
             if (tagTree instanceof SinceTree sinceTree) {
                 return new Text(sinceTree.getBody());
             } else if (tagTree instanceof ErroneousTree) {
-                System.out.println("Erroneous tag: " + tagTree.toString());
+                reporter.print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
             }
         }
         return Text.empty();
@@ -469,7 +527,8 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         return null;
     }
 
-    private void setMethodDeprecationStatus(Node node, Element e, DocCommentTree dct) {
+    private void setDeprecationStatus(Node node, Element e, DocCommentTree dct) {
+        if (node == null) return;
         DeprecatedTree deprecatedTree = getDeprecation(dct);
         Deprecated deprecatedAnnotation = e.getAnnotation(Deprecated.class);
         node.setDeprecation(Deprecation.NONE);
@@ -492,31 +551,18 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
     }
 
     private void setMethodParams(MethodNode methodDoc, ExecutableElement ee) {
-        methodDoc.params.clear();
-        TypeElement classElement = getEnclosingTypeElement(ee);
+        methodDoc.getParams().clear();
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
         for (VariableElement parameter : ee.getParameters()) {
             String simpleName = parameter.getSimpleName().toString();
-            String qualifiedClassName = classElement.getQualifiedName().toString();
-            TypeNode paramType = getParamType(environment.getElementUtils(), qualifiedClassName, ee, simpleName);
+            TypeNode paramType = getParamType(ee, simpleName);
             ParamNode param = new ParamNode(paramType, simpleName);
             ParamTree paramTree = getParamTree(dct, parameter);
             if (paramTree != null) {
                 param.setBody(paramTree.getDescription());
             }
-            methodDoc.params.add(param);
+            methodDoc.getParams().add(param);
         }
-    }
-
-    /// To be removed
-    /// @deprecated use [new()](#new()) instead.  
-    public static VariableTree getVariableTree(List<? extends VariableTree> paramList, String paramName) {
-        for (VariableTree varTree : paramList) {
-            if (varTree.getName().toString().equals(paramName)) {
-                return varTree;
-            }
-        }
-        return null;
     }
 
     private TypeNode getFieldType(Elements elementUtils, String className, String fieldName) {
@@ -526,13 +572,13 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         for (VariableElement field : ElementFilter.fieldsIn(classElement.getEnclosedElements())) {
             if (field.getSimpleName().toString().equals(fieldName)) {
                 TypeMirror typeMirror = field.asType();
-                if (typeMirror.getKind() == TypeKind.ARRAY){
+                if (typeMirror.getKind() == TypeKind.ARRAY) {
                     TypeMirror array = ((ArrayType)typeMirror).getComponentType();
                     qualifiedTypeName = array.toString();
                     arrayBrackets = "\\[]";                    
-                    break;
+                } else {
+                    qualifiedTypeName = typeMirror.toString();
                 }
-                qualifiedTypeName = typeMirror.toString();
                 break;
             }
         }
@@ -542,12 +588,12 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         String packageName = getPackageName(qualifiedTypeName);
         PackageNode packageNode = api.getPackageNode(packageName);
         TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageNode);
-        type.arrayBrackets = arrayBrackets;
+        type.setArrayBrackets(arrayBrackets);
 
         return type;
     }
 
-    private TypeNode getParamType(Elements elementUtils, String className, ExecutableElement method, String fieldName) {
+    private TypeNode getParamType(ExecutableElement method, String fieldName) {
         String qualifiedTypeName = null;
         String arrayBrackets = "";
         for (VariableElement param : method.getParameters()) {
@@ -557,10 +603,9 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
                     TypeMirror array = ((ArrayType)typeMirror).getComponentType();
                     qualifiedTypeName = array.toString();
                     arrayBrackets = "\\[]";
-                    
-                    break;
+                } else {
+                    qualifiedTypeName = typeMirror.toString();
                 }
-                qualifiedTypeName = typeMirror.toString();
                 break;
             }
         }
@@ -570,7 +615,7 @@ public class ApiCollector extends ElementScanner9<Void, Integer> {
         String packageName = getPackageName(qualifiedTypeName);
         PackageNode packageNode = api.getPackageNode(packageName);
         TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageNode);
-        type.arrayBrackets = arrayBrackets;
+        type.setArrayBrackets(arrayBrackets);
 
         return type;
     }

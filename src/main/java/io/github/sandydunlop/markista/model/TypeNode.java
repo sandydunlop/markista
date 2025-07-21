@@ -2,29 +2,54 @@ package io.github.sandydunlop.markista.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collections;
 
 
 public class TypeNode extends AbstractTypeOwner implements PackageMember {
-    public TypeOwner owner = null;
-    public List<String> implementedInterfaces = new ArrayList<>();
-    public List<String> supertypes = new ArrayList<>();
-    public String fullDescription = "";
-    public String arrayBrackets = "";
-    public List<ClassNode> classes = new ArrayList<>();
-    public List<InterfaceNode> interfaces = new ArrayList<>();
-    public List<EnumNode> enumClasses = new ArrayList<>();
-    public List<ExceptionNode> exceptionClasses = new ArrayList<>();
-    public List<AnnotationNode> annotationClasses = new ArrayList<>();
-    public List<MethodNode> constructors = new ArrayList<>();
-    public List<MethodNode> methods = new ArrayList<>();
-    public List<FieldNode> fields = new ArrayList<>();
+    private TypeOwner owner = null;
+    private List<String> implementedInterfaces = new ArrayList<>();
+    private List<String> supertypes = new ArrayList<>();
+    private String arrayBrackets = "";
+    private List<MethodNode> constructors = new ArrayList<>();
+    private List<MethodNode> methods = new ArrayList<>();
+    private List<FieldNode> fields = new ArrayList<>();
     protected Kind kind = Kind.NONE;
     
     public TypeNode(String qualifiedName, String simpleName, PackageNode packageNode) {
         this.qualifiedName = qualifiedName;
         this.simpleName = simpleName;
         this.packageNode = packageNode;
+    }
+
+    public void setArrayBrackets(String brackets) {
+        this.arrayBrackets = brackets;
+    }
+
+    public String getArrayBrackets() {
+        return arrayBrackets;
+    }
+
+    public void setImplementedInterfaces(List<String> implementedInterfaces) {
+        this.implementedInterfaces = implementedInterfaces;
+    }
+
+    public void setSupertypes(List<String> supertypes) {
+        this.supertypes = supertypes;
+    }
+
+    public List<String> getSupertypes() {
+        return supertypes;
+    }
+
+    public List<String> getImplementedInterfaces() {
+        return implementedInterfaces;
+    }
+
+    public void setOwner(TypeOwner owner) {
+        this.owner = owner;
+    }
+
+    public TypeOwner getOwner() {
+        return owner;
     }
 
     public void setSimpleName(String name) {
@@ -60,6 +85,30 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
         return kind;
     }
 
+    public void addMethod(MethodNode method) {
+        methods.add(method);
+    }
+
+    public List<MethodNode> getMethods() {
+        return methods;
+    }
+
+    public void addConstructor(MethodNode constructor) {
+        constructors.add(constructor);
+    }
+
+    public List<MethodNode> getConstructors() {
+        return constructors;
+    }
+
+    public void addField(FieldNode field) {
+        fields.add(field);
+    }
+
+    public List<FieldNode> getFields() {
+        return fields;
+    }
+
     public FieldNode getField(String fieldName) {
         for (FieldNode fieldDoc : fields) {
             if (fieldDoc.simpleName.equals(fieldName)){
@@ -87,18 +136,6 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
             }
         }
         return null;
-    }
-
-    public void sort() {
-        Collections.sort(implementedInterfaces);
-        Collections.sort(classes, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
-        Collections.sort(interfaces, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
-        Collections.sort(enumClasses, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
-        Collections.sort(exceptionClasses, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
-        Collections.sort(annotationClasses, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
-        Collections.sort(constructors, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
-        Collections.sort(methods, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
-        Collections.sort(fields, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
     }
 
     public String getName() {

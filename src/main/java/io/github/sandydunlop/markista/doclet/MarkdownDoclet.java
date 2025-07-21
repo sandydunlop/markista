@@ -3,12 +3,17 @@ package io.github.sandydunlop.markista.doclet;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.util.LinkResolver;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 import javax.lang.model.SourceVersion;
+import javax.tools.Diagnostic;
 import javax.tools.DocumentationTool;
 import javax.tools.ToolProvider;
 
@@ -18,11 +23,12 @@ import jdk.javadoc.doclet.Reporter;
 
 /// A doclet that renders javadoc comments as Markdown
 public class MarkdownDoclet implements Doclet {
-    /// Returned from [run(DocletEnvironment)] upon success
-    public static final boolean OK = true;
-    
-    /// Returned from [run(DocletEnvironment)] upon failure
-    public static final boolean FAILED = false; 
+    private static final boolean OK = true;
+    private static final boolean FAILED = false; 
+    private static final String DOT_HTML = ".html";
+    private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
+    private Reporter reporter;
+
     private String outputDirectory = null;
     private boolean documentPrivateMembers = false;
     private boolean createExternalLinks = false;
@@ -49,7 +55,7 @@ public class MarkdownDoclet implements Doclet {
             "io.github.sandydunlop"
         };
         DocumentationTool docTool = ToolProvider.getSystemDocumentationTool();
-        docTool.run(System.in, System.out, System.err, docletArgs);
+        docTool.run(System.in, System.out, System.err, docletArgs); //NOSONAR
     }
 
     /// A base class for declaring options.
@@ -97,6 +103,8 @@ public class MarkdownDoclet implements Doclet {
         }
     }
  
+    private static final String UNUSED_OPTION_DESCRIPTION = "Unused option";
+
     private final Set<Option> options = Set.of(
             new Option("-d", true,
                     "output directory", null) {
@@ -138,7 +146,7 @@ public class MarkdownDoclet implements Doclet {
             },
             // The following options aren't used, but are needed for compatibility with Gradle
             new Option("-doctitle", true,
-                    "unused", null) {
+                    UNUSED_OPTION_DESCRIPTION, null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -149,7 +157,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("-notimestamp", false,
-                    "unused", null) {
+                    UNUSED_OPTION_DESCRIPTION, null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -160,7 +168,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("-quiet", false,
-                    "unused", null) {
+                    UNUSED_OPTION_DESCRIPTION, null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -171,7 +179,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("-windowtitle", true,
-                    "unused", null) {
+                    UNUSED_OPTION_DESCRIPTION, null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -188,9 +196,9 @@ public class MarkdownDoclet implements Doclet {
     /// @param reporter The reporter used for messages
     @Override
     public void init(Locale locale, Reporter reporter) {
-        // Nothing to see here
+        this.reporter = reporter;
     }
- 
+
     @Override
     public String getName() {
         return getClass().getSimpleName();
@@ -210,21 +218,25 @@ public class MarkdownDoclet implements Doclet {
     /// @return  true if completed without errors, false if errors occurred.
     @Override
     public boolean run(DocletEnvironment environment) {
+        LinkResolver.setReporter(reporter);
+
         if (createExternalLinks) {
-            // Tell the link resolver what web address to find docs for certain Java modules at
-            final String DOT_HTML = ".html";
-            final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
-            LinkResolver.addNativeModule("java.base", JAVA_24_URL + "java.base", DOT_HTML);
-            LinkResolver.addNativeModule("java.compiler", JAVA_24_URL + "java.compiler", DOT_HTML);
-            LinkResolver.addNativeModule("java.desktop", JAVA_24_URL + "java.desktop", DOT_HTML);
-            LinkResolver.addNativeModule("jdk.javadoc", JAVA_24_URL + "jdk.javadoc", DOT_HTML);
-            LinkResolver.addNativeModule("jdk.compiler", JAVA_24_URL + "jdk.compiler", DOT_HTML);
+            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+            InputStream inputStream = classloader.getResourceAsStream("java_platform_modules.text");
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                String moduleName;
+                while ((moduleName = reader.readLine()) != null) {
+                    addNativeModule(moduleName);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
-        ApiCollector collector = new ApiCollector(environment);
-        collector.setDocumentPrivateMembers(documentPrivateMembers);
+        ApiScanner scanner = new ApiScanner(environment, reporter);
+        scanner.setDocumentPrivateMembers(documentPrivateMembers);
 
-        Api api = collector.collect(environment.getIncludedElements());
+        Api api = scanner.scan(environment.getIncludedElements());
         api.sort();
         LinkResolver.setApi(api);
 
@@ -233,10 +245,15 @@ public class MarkdownDoclet implements Doclet {
         try{
             writer.writeDocs(api);
         } catch (IOException ex) {
-            System.err.println(ex.getMessage());
-            System.err.println(ex.getStackTrace());
+            reporter.print(Diagnostic.Kind.ERROR, ex.getMessage());
+            reporter.print(Diagnostic.Kind.ERROR, Arrays.toString(ex.getStackTrace()));
             return FAILED;
         }
         return OK;
+    }
+
+    private void addNativeModule(String moduleName) {
+        // Tell the link resolver what web address to find docs for certain Java modules at
+        LinkResolver.addNativeModule(moduleName, JAVA_24_URL + moduleName, DOT_HTML);
     }
 }
