@@ -123,25 +123,24 @@ public class Util {
     /// @param  str A string that may contain one or more qualified names.
     /// @return The input string, with all qualified names changed to unqualified names.
     public static String simplifyNames(String str) {
-        String simplified = str;
-        if (simplified == null || simplified.isEmpty()) return "";
-        int qualifiedStart;
-        int simpleStart;
+        if (str == null || str.isEmpty()) return "";
+        return simplifyNamesLoop(str);
+    }
+
+    private static String simplifyNamesLoop(String input) {
+        String simplified = input;
+        int qualifiedStart = -1;
+        int simpleStart = -1;
         char prev = (char)0;
-        qualifiedStart = -1;
-        simpleStart = -1;
         int i = 0;
-        while (i<=simplified.length()) {
-            char c = i<simplified.length() ? simplified.charAt(i) : ' ';
-            if (qualifiedStart > -1 && simpleStart > -1 && (i == simplified.length()  || !isValidSimpleNameChar(c))){
-                String tmp = "";
-                if (qualifiedStart > 0) tmp = simplified.substring(0, qualifiedStart);
-                tmp += simplified.substring(simpleStart);
-                simplified = tmp;
-                i = qualifiedStart + (i-simpleStart);
+        while (i <= simplified.length()) {
+            char c = i < simplified.length() ? simplified.charAt(i) : ' ';
+            if (shouldReplaceQualifiedWithSimple(qualifiedStart, simpleStart, i, simplified.length(), c)) {
+                simplified = replaceQualifiedWithSimple(simplified, qualifiedStart, simpleStart, i);
+                i = qualifiedStart + (i - simpleStart);
                 simpleStart = -1;
                 qualifiedStart = -1;
-            }  else if (simpleStart > -1 && isValidSimpleNameChar(c)) {
+            } else if (simpleStart > -1 && isValidSimpleNameChar(c)) {
                 // skip
             } else if (qualifiedStart == -1 && isValidQualifiedNameChar(c) && !isValidSimpleNameChar(prev)) {
                 qualifiedStart = i;
@@ -154,6 +153,18 @@ public class Util {
             i++;
         }
         return simplified;
+    }
+
+    private static boolean shouldReplaceQualifiedWithSimple(int qualifiedStart, int simpleStart, int i, int length, char c) {
+        return qualifiedStart > -1 && simpleStart > -1 && (i == length || !isValidSimpleNameChar(c));
+    }
+
+    private static String replaceQualifiedWithSimple(String simplified, int qualifiedStart, int simpleStart, int i) {
+        StringBuilder tmp = new StringBuilder();
+        if (qualifiedStart > 0) tmp.append(simplified, 0, qualifiedStart);
+        tmp.append(simplified.substring(simpleStart, i));
+        if (i < simplified.length()) tmp.append(simplified.substring(i));
+        return tmp.toString();
     }
 
     /// Checks if the given character is valid in an unqualified name.

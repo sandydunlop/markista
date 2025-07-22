@@ -373,19 +373,7 @@ public class MarkdownWriter {
 
     private void outputMethodDetails(MethodNode method) throws IOException {
         if (!method.getParams().isEmpty()) {
-            boolean showParameters = false;
-            for (ParamNode param : method.getParams()) {
-                if (!param.getBody().isEmpty()) showParameters = true; 
-            }
-            if (showParameters) {
-                writer.write("**Parameters:**\n\n");
-                for (ParamNode param : method.getParams()) {
-                    if (!param.getBody().isEmpty()) {
-                        writer.write("`" +param.getSimpleName() + "` - " + 
-                                Util.inOneLine(formatTaggedText(param.getBody())) +"\n\n");
-                    }
-                }
-            }
+            outputMethodParams(method);
         }
 
         if (!method.getReturnDescription().isEmpty()) {
@@ -418,6 +406,22 @@ public class MarkdownWriter {
         }        
     }
 
+    private void outputMethodParams(MethodNode method) throws IOException {
+        boolean showParameters = false;
+        for (ParamNode param : method.getParams()) {
+            if (!param.getBody().isEmpty()) showParameters = true; 
+        }
+        if (showParameters) {
+            writer.write("**Parameters:**\n\n");
+            for (ParamNode param : method.getParams()) {
+                if (!param.getBody().isEmpty()) {
+                    writer.write("`" +param.getSimpleName() + "` - " + 
+                            Util.inOneLine(formatTaggedText(param.getBody())) +"\n\n");
+                }
+            }
+        }
+    }
+
     private void outputDeprecation(Deprecation status, Text text) throws IOException {
         writer.write("\n\n");
         writer.write("!!! note \"Deprecated\"\n");
@@ -439,12 +443,12 @@ public class MarkdownWriter {
                     .addColumn("Value");
             for (FieldNode constantValue : api.getConstantValues()) {
                 StringBuilder modifiersAndType = new StringBuilder();
-                if (constantValue.getModifiersString().length() > 0) {
+                if (constantValue.getModifiersString().isEmpty()) {
                     modifiersAndType.append(constantValue.getModifiersString());
                     modifiersAndType.append(" ");
                 }
                 modifiersAndType.append(Util.mdAutoLink(constantValue.getType().getQualifiedName(), true));
-                table.addRow(new String[]{modifiersAndType.toString(), constantValue.getSimpleName(), constantValue.getConstantValue().toString()});
+                table.addRow(modifiersAndType.toString(), constantValue.getSimpleName(), constantValue.getConstantValue().toString());
             }
             table.render(writer);
         }
