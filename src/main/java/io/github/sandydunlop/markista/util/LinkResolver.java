@@ -7,8 +7,6 @@ import java.util.List;
 
 import javax.tools.Diagnostic;
 
-import java.util.List;
-
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.PackageMember;
@@ -28,6 +26,7 @@ public class LinkResolver {
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
     private static Api api = null;
     private static Reporter reporter;
+    private static String squashedDirectories = null;
 
     private LinkResolver() {
         // This hides the public constructor
@@ -35,6 +34,10 @@ public class LinkResolver {
 
     public static void setApi(Api a) {
         api = a;
+    }
+
+    public static void setSquashedDirectories(String sd) {
+        squashedDirectories = sd;
     }
 
     public static void setReporter(Reporter r) {
@@ -195,11 +198,19 @@ public class LinkResolver {
 
     public static String relativize(String from, String to) {
         if (from == null || to == null) return null;
+        if (squashedDirectories != null && !squashedDirectories.isEmpty()) {
+            if (from.startsWith(squashedDirectories)) {
+                from = from.substring(squashedDirectories.length() + 1);
+            }
+            if (to.startsWith(squashedDirectories)) {
+                to = to.substring(squashedDirectories.length() + 1);
+            }
+        }
         String[] fromParts = from.split("\\.");
         String[] toParts = to.split("\\.");
         StringBuilder rel = new StringBuilder();
         int p;
-        for (p=fromParts.length-1; p>0; p--) {
+        for (p=fromParts.length-1; p>=0; p--) {
             if (p<toParts.length) {
                 if (fromParts[p].equals(toParts[p])) {
                     p++;
@@ -209,6 +220,7 @@ public class LinkResolver {
             if (!rel.isEmpty()) rel.append("/");
             rel.append("..");
         }
+        if (p == -1) p = 0;
         for (;p < toParts.length; p++) {
             if (!rel.isEmpty()) rel.append("/");
             rel.append(toParts[p]);

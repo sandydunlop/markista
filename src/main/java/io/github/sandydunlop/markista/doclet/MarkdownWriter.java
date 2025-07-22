@@ -80,6 +80,7 @@ public class MarkdownWriter {
         }
         if (squashedDirectories != null && squashedDirectories.lastIndexOf('.') > -1) {
             squashedDirectories = squashedDirectories.substring(0, squashedDirectories.lastIndexOf('.'));
+            LinkResolver.setSquashedDirectories(squashedDirectories);
         }
     }
 
@@ -269,7 +270,7 @@ public class MarkdownWriter {
         for (FieldNode fieldNode : fields) {
             String link = Util.mdAutoLink(fieldNode.getType().getQualifiedName(), true);
             table.addRow(fieldNode.getModifiersString() + link, 
-                        fieldNode.getSimpleName(), formatTaggedText(fieldNode.getFirstSentence()));
+                        Util.mdAnchorLink(fieldNode.getSimpleName()), formatTaggedText(fieldNode.getFirstSentence()));
         }
         table.render(writer);
     }

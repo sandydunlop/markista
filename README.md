@@ -29,6 +29,7 @@ configurations {
 ### Step 2: Add the Markista Dependency
 
 Add Markista as a dependency under the configuration you just created.
+Markista is available in the [Maven Central](https://central.sonatype.com/artifact/io.github.sandydunlop/markista) repository.
 
 ```groovy
 dependencies {
