@@ -1,6 +1,6 @@
 # Markista
 
-Serving Markdown Flavored Documentation
+*Serving Markdown Flavored Documentation*
 
 
 ## Introduction
@@ -10,7 +10,7 @@ Markista is a [doclet](https://docs.oracle.com/javase/8/docs/technotes/guides/ja
 Marklist is under active development and has reached a point where it is becoming useful. There will be features that aren't completely implemented yet.
 
 As a demonstration, the Markdown Javadoc for Markista itself is [available here](https://sandydunlop.github.io/markista/javadoc/doclet/MarkdownDoclet/).
-It was produced with the `--private` parameter which tells Markista to document private members of classes. By default only public and protected members are documented.
+It was produced with the `-private` parameter which tells Markista to document private members of classes. By default only public and protected members are documented.
 
 ## Gradle
 
@@ -33,7 +33,7 @@ Markista is available in the [Maven Central](https://central.sonatype.com/artifa
 
 ```groovy
 dependencies {
-    markista("io.github.sandydunlop:markista:0.1.3")
+    markista("io.github.sandydunlop:markista:0.1.4")
 }
 ```
 
@@ -47,8 +47,8 @@ javadoc {
         docletpath = configurations.markista.files.asType(List)
         doclet = 'io.github.sandydunlop.markista.doclet.MarkdownDoclet'
         source = null
-        addBooleanOption('-squash-empty', true)
-        addBooleanOption('-external-links', true)
+        addBooleanOption('flatten', true)
+        addBooleanOption('external', true)
     }
 }
 ```
@@ -59,7 +59,7 @@ javadoc {
 Markista can be used from the command line with the `javadoc` command as follows:
 
 ```bash
-javadoc -docletpath libs/markista-0.1.3.jar -doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet src/main/java/my.package/Hello.java
+javadoc -docletpath libs/markista-0.1.4.jar -doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet src/main/java/my.package/Hello.java
 ```
 
 ### Parameters
@@ -67,20 +67,23 @@ javadoc -docletpath libs/markista-0.1.3.jar -doclet io.github.sandydunlop.markis
 `-d <directory>`
 :   The directory to write the Markdown files to.
 
-`--show-private`
+`-private`
 :   Generate docs for private members. By default only public 
     and abstract members are documented.
 
-`--external-links`
+`-external`
 :  Create links to classes defined outside of the API being 
    documented (eg. [java.utils.String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html))
 
-`--squash-empty`
+`-flatten`
 :  Don't create directories that contain no classes
+
+`-verbose`
+:  Display progress information
 
 ## Download
 
-JAR files for version 0.1.3 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.1.3).
+JAR files for version 0.1.4 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.1.4).
 
 
 ## Source Code

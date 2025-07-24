@@ -43,15 +43,15 @@ public class MarkdownTable {
 
     /// Renders the table as Markdown text with a given indentation level
     public void render(Writer writer, int indent) throws IOException {
+        writer.write(" ".repeat(indent));
         for (Column column : columns) {
-            writer.write(" ".repeat(indent));
             writer.write("| ");
             writer.write(column.name);
             writer.write(" ".repeat(column.width - column.name.length() + 1));
         }
         writer.write("|\n");
+        writer.write(" ".repeat(indent));
         for (Column column : columns) {
-            writer.write(" ".repeat(indent));
             writer.write("|");
             writer.write("-".repeat(column.width + 2));
         }

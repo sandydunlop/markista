@@ -2,12 +2,12 @@ plugins {
 	id 'groovy'
 	id 'java'
     id 'java-library'
-	id 'maven-publish'
     id 'signing'
+	id 'maven-publish'
 }
 
 group = 'io.github.sandydunlop'
-version = '0.1.3'
+version = '0.1.4'
 
 repositories {
 	mavenCentral()
@@ -37,8 +37,20 @@ test {
 	}
 }
 
+def user = ["whoami"].execute().text.trim()
+jar {
+    manifest {
+        attributes( 'Main-Class': 'io.github.sandydunlop.markista.doclet.MarkdownDoclet',
+                    'Implementation-Title': 'Markista',
+                    'Implementation-Version': version,
+                    'Implementation-Vendor': group,
+                    'Automatic-Module-Name': 'io.github.sandydunlop.markista',
+                    'Built-By': "${user}",
+                    'Built-Date': new Date())
+    }
+}
+
 jar.doLast {
-    // ant.checksum file: archivePath
     ant.checksum file: archivePath
 }
 
@@ -99,3 +111,13 @@ publishing {
     website.dependsOn copyDocs
 }
 
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+    }
+}

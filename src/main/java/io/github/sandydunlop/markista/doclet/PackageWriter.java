@@ -1,15 +1,11 @@
 package io.github.sandydunlop.markista.doclet;
 
-import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.DocTree.Kind;
-import com.sun.source.doctree.StartElementTree;
-
-import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Deprecation;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
@@ -18,87 +14,51 @@ import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.LinkResolver;
+import io.github.sandydunlop.markista.util.Markdown;
+import io.github.sandydunlop.markista.util.Files;
 import io.github.sandydunlop.markista.util.Util;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.lang.model.element.Name;
 import javax.lang.model.type.TypeMirror;
 
 /// A class that outputs API documentation as Markdown.
-public class MarkdownWriter {
+public class PackageWriter {
     private static final String TEXT_CLASS = "Class";
     private static final String TEXT_DESCRIPTION = "Description";
     private static final String TEXT_MODIFIER_AND_TYPE = "Modifier and Type";
     private static final String BR = "<br/>";
     private static final String NBSP = "&nbsp;";
 
-    private boolean squashEmptyDirectories = false;
-    private String squashedDirectories = null;
     private String outputDirectory;
     private Writer writer = null;
+    private Files fileUtils;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public MarkdownWriter(String outputDirectory) {
+    public PackageWriter(String outputDirectory) {
         this.outputDirectory = outputDirectory;
     }
 
-    public void setSquashEmptyDirectories(boolean b) {
-        squashEmptyDirectories = b;
-    }
-
     /// Ouput the documentation files for the specified API
-    /// @param  api The API to output the documentation for
-    public void writeDocs(Api api) throws IOException {
-        setSquashedDirectories(api);
-        for (PackageNode packageNode : api.getPackages()) {
-            outputPackageDoc(packageNode);
-        }
-        outputConstantValues(api);
-    }
-
-    private void setSquashedDirectories(Api api) {
-        squashedDirectories = null;
-        int dotCount = 0;
-        if (squashEmptyDirectories) {
-            for (PackageNode packageNode : api.getPackages()) {
-                if (squashedDirectories == null) {
-                    squashedDirectories = packageNode.getName();
-                    dotCount = countDots(squashedDirectories);
-                } else if (countDots(packageNode.getName()) < dotCount) {
-                    dotCount = countDots(packageNode.getName());
-                    squashedDirectories = packageNode.getName();
-                }
+    /// @param moduleNode  The module containing the packages to output the documentation for
+    public void writeDocs(ModuleNode moduleNode) throws IOException {
+        fileUtils = new Files(moduleNode, outputDirectory);
+        for (PackageMember node : moduleNode.getPackages()) {
+            if (node instanceof PackageNode packageNode) {
+                // outputConstantValues(moduleNode);
+                outputPackageDoc(packageNode);
             }
         }
-        if (squashedDirectories != null && squashedDirectories.lastIndexOf('.') > -1) {
-            squashedDirectories = squashedDirectories.substring(0, squashedDirectories.lastIndexOf('.'));
-            LinkResolver.setSquashedDirectories(squashedDirectories);
-        }
-    }
-
-    private static int countDots(String str) {
-        int count = 0;
-        for (int i = 0; i < str.length(); i++) {
-            if (str.charAt(i) == '.') {
-                count++;
-            }
-        }
-        return count;
     }
 
     private void outputPackageDoc(PackageNode packageNode) throws IOException {
         LinkResolver.setLocation(packageNode.getName()); // Used for generating link URLs
-        writer = createFile(null, packageNode.getName());    
+        writer = fileUtils.createFile(null, packageNode.getName());    
         writer.write("# Package " + packageNode.getName() + "\n");
-        writer.write("\n\n" + formatTaggedText(packageNode.getFullBody()) + "\n\n");
+        writer.write("\n\n" + Markdown.formatTaggedText(packageNode.getFullBody()) + "\n\n");
         outputPackageMembers("Packages", packageNode.getPackages());
         outputPackageMembers("Classes", packageNode.getClasses());
         outputPackageMembers("Interfaces", packageNode.getInterfaces());
@@ -131,7 +91,7 @@ public class MarkdownWriter {
                 .addColumn(memberKind)
                 .addColumn(TEXT_DESCRIPTION);
         for (PackageMember member : members) {
-            table.addRow(Util.mdDocumentLink(member.getName()), Util.inOneLine(formatTaggedText(member.getDescription())));
+            table.addRow(Markdown.mdDocumentLink(member.getName()), Util.inOneLine(Markdown.formatTaggedText(member.getDescription())));
         }
         table.render(writer, 4);
     }
@@ -141,7 +101,7 @@ public class MarkdownWriter {
     }
 
     private void outputTypeDoc(TypeNode typeNode, String typeKind) throws IOException {
-        writer = createFile(typeNode.getSimpleName(), typeNode.getPackageName());    
+        writer = fileUtils.createFile(typeNode.getSimpleName(), typeNode.getPackageName());    
         writer.write("Package [" + typeNode.getPackageName() + "](index.md)\n\n");
         writer.write("# " + typeKind + " " + typeNode.getSimpleName() + "\n");
         
@@ -151,7 +111,7 @@ public class MarkdownWriter {
         writer.write("\n----\n\n");
 
         if (!typeNode.getBody().isEmpty()) {
-            writer.write(formatTaggedText(typeNode.getBody()));
+            writer.write(Markdown.formatTaggedText(typeNode.getBody()));
             writer.write("\n\n");
         }
 
@@ -209,7 +169,7 @@ public class MarkdownWriter {
         int indentation = 0;
         for (String st : typeDoc.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(Util.mdAutoLink(st, false) + BR + "\n");
+            writer.write(Markdown.mdAutoLink(st, false) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -223,7 +183,7 @@ public class MarkdownWriter {
             writer.write(NBSP.repeat(4));
             for (int i=0; i<typeDoc.getImplementedInterfaces().size(); i++) {
                 if (i > 0) writer.write(", ");
-                writer.write(Util.mdAutoLink(typeDoc.getImplementedInterfaces().get(i)));
+                writer.write(Markdown.mdAutoLink(typeDoc.getImplementedInterfaces().get(i)));
             }
             writer.write("\n\n");
         }
@@ -233,7 +193,7 @@ public class MarkdownWriter {
         if (typeDoc.getOwner() instanceof ClassNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
-            writer.write(Util.mdAutoLink(typeDoc.getOwner().getName()) + "\n\n");
+            writer.write(Markdown.mdAutoLink(typeDoc.getOwner().getName()) + "\n\n");
         }
     }
 
@@ -245,8 +205,8 @@ public class MarkdownWriter {
         for (PackageMember member : nestedClasses) {
             if (!(member instanceof TypeNode nestedClassNode)) continue;
             table.addRow(nestedClassNode.getModifiersString(),
-                        Util.mdDocumentLink(nestedClassNode.getSimpleName()), 
-                        formatTaggedText(nestedClassNode.getFirstSentence()));
+                        Markdown.mdDocumentLink(nestedClassNode.getSimpleName()), 
+                        Markdown.formatTaggedText(nestedClassNode.getFirstSentence()));
         }
         table.render(writer);
     }
@@ -256,8 +216,8 @@ public class MarkdownWriter {
                 .addColumn("Enum Constant")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode constantNode : enumNode.getConstants()) {
-            String link = Util.mdAnchorLink(constantNode.getSimpleName());
-            table.addRow(link, formatTaggedText(constantNode.getFirstSentence()));
+            String link = Markdown.mdAnchorLink(constantNode.getSimpleName());
+            table.addRow(link, Markdown.formatTaggedText(constantNode.getFirstSentence()));
         }
         table.render(writer);
     }
@@ -268,9 +228,9 @@ public class MarkdownWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = Util.mdAutoLink(fieldNode.getType().getQualifiedName(), true);
+            String link = Markdown.mdAutoLink(fieldNode.getType().getQualifiedName(), true);
             table.addRow(fieldNode.getModifiersString() + link, 
-                        Util.mdAnchorLink(fieldNode.getSimpleName()), formatTaggedText(fieldNode.getFirstSentence()));
+                        Markdown.mdAnchorLink(fieldNode.getSimpleName()), Markdown.formatTaggedText(fieldNode.getFirstSentence()));
         }
         table.render(writer);
     }
@@ -280,8 +240,8 @@ public class MarkdownWriter {
                 .addColumn("Constructor")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            table.addRow(methodNode.getSimpleName() + "(" + paramsString(methodNode.getParams()) + ")",
-                        formatTaggedText(methodNode.getFirstSentence()));
+            table.addRow(methodNode.getSimpleName() + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
+                        Markdown.formatTaggedText(methodNode.getFirstSentence()));
         }
         table.render(writer);
     }
@@ -295,9 +255,9 @@ public class MarkdownWriter {
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
             table.addRow(methodNode.getModifiersString() + 
-                        Util.mdAutoLink(methodNode.getReturnType().getQualifiedName(), true), 
-                        Util.mdAnchorLink(methodNode.getSimpleName()) + "(" + paramsString(methodNode.getParams()) + ")",
-                        Util.inOneLine(formatTaggedText(methodNode.getFirstSentence())));
+                        Markdown.mdAutoLink(methodNode.getReturnType().getQualifiedName(), true), 
+                        Markdown.mdAnchorLink(methodNode.getSimpleName()) + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
+                        Util.inOneLine(Markdown.formatTaggedText(methodNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -305,13 +265,13 @@ public class MarkdownWriter {
     private void outputEnumConstantDetails(List<FieldNode> constants, EnumNode enumNode) throws IOException {
         for (FieldNode constant : constants) {
             writer.write("### " + constant.getSimpleName() + "\n\n");
-            writer.write("public static final " + Util.mdAutoLink(enumNode.getQualifiedName(), true));
+            writer.write("public static final " + Markdown.mdAutoLink(enumNode.getQualifiedName(), true));
             writer.write(" " + constant.fullSignature() + "\n\n");
-            writer.write(formatTaggedText(constant.getFullBody()) + "\n\n");
+            writer.write(Markdown.formatTaggedText(constant.getFullBody()) + "\n\n");
 
             if (!constant.getSince().isEmpty()) {
                 writer.write("**Since:**\n\n");
-                writer.write(formatTaggedText(constant.getSince()));
+                writer.write(Markdown.formatTaggedText(constant.getSince()));
                 writer.write("\n\n");
             }
 
@@ -320,7 +280,7 @@ public class MarkdownWriter {
                 writer.write("**See Also:**\n\n");
                 for (Reference ref : references) {
                     writer.write("\n");
-                    writer.write("See: " + formatReference(ref) + "\n\n");
+                    writer.write("See: " + Markdown.formatReference(ref) + "\n\n");
                 }
                 writer.write("\n");
             }
@@ -336,11 +296,11 @@ public class MarkdownWriter {
         for (Node node : nodes) {
             if (node instanceof MethodNode method) {
                 writer.write("### " + method.getSimpleName() + "\n\n");
-                writer.write(fullSignature(method) + "\n\n");
+                writer.write(Markdown.fullSignature(method) + "\n\n");
             } else if (node instanceof FieldNode field) {
                 writer.write("### " + field.getSimpleName() + "\n\n");
             }
-            writer.write(formatTaggedText(node.getFullBody()) + "\n\n");
+            writer.write(Markdown.formatTaggedText(node.getFullBody()) + "\n\n");
 
             if (node.getDeprecation() != Deprecation.NONE || !node.getDeprecationText().isEmpty()) {
                 outputDeprecation(node.getDeprecation(), node.getDeprecationText());
@@ -352,7 +312,7 @@ public class MarkdownWriter {
 
             if (!node.getSince().isEmpty()) {
                 writer.write("**Since:**\n\n");
-                writer.write(formatTaggedText(node.getSince()));
+                writer.write(Markdown.formatTaggedText(node.getSince()));
                 writer.write("\n\n");
             }
 
@@ -365,7 +325,7 @@ public class MarkdownWriter {
             writer.write("**See Also:**\n\n");
             for (Reference ref : node.getReferences()) {
                 writer.write("\n");
-                writer.write(formatReference(ref) + "\n\n");
+                writer.write(Markdown.formatReference(ref) + "\n\n");
             }
             writer.write("\n");
         }
@@ -378,7 +338,7 @@ public class MarkdownWriter {
 
         if (!method.getReturnDescription().isEmpty()) {
             writer.write("**Returns:**\n\n");
-            writer.write(formatTaggedText(method.getReturnDescription()) + "\n\n");
+            writer.write(Markdown.formatTaggedText(method.getReturnDescription()) + "\n\n");
         }
 
         if (!method.getThrownTypes().isEmpty()) {
@@ -390,18 +350,18 @@ public class MarkdownWriter {
                 }
                 String qualifiedNAme = typeMirror.toString();
 
-                writer.write(Util.mdAutoLink(qualifiedNAme, true) + "\n");
+                writer.write(Markdown.mdAutoLink(qualifiedNAme, true) + "\n");
             }
             writer.write("\n");
         }
         if (!method.getSpecifiedBy().isEmpty()) {
             writer.write("**Specified By:**\n\n");
-            writer.write(Util.mdAutoLink(method.getSpecifiedBy(), false));
+            writer.write(Markdown.mdAutoLink(method.getSpecifiedBy(), false));
             writer.write("\n\n");
         }
         if (method.getOverriddenMethod() != null && !method.getOverriddenMethod().getClassName().isEmpty() && !method.getOverriddenMethod().getMethodName().isEmpty()) {
             writer.write("**Overrides:**\n\n");
-            writer.write(Util.mdAutoLink(method.getOverriddenMethod().getClassName() + "#" + method.getOverriddenMethod().getMethodName()) + " from " + Util.mdAutoLink(method.getOverriddenMethod().getClassName()));
+            writer.write(Markdown.mdAutoLink(method.getOverriddenMethod().getClassName() + "#" + method.getOverriddenMethod().getMethodName()) + " from " + Markdown.mdAutoLink(method.getOverriddenMethod().getClassName()));
             writer.write("\n\n");
         }        
     }
@@ -416,7 +376,7 @@ public class MarkdownWriter {
             for (ParamNode param : method.getParams()) {
                 if (!param.getBody().isEmpty()) {
                     writer.write("`" +param.getSimpleName() + "` - " + 
-                            Util.inOneLine(formatTaggedText(param.getBody())) +"\n\n");
+                            Util.inOneLine(Markdown.formatTaggedText(param.getBody())) +"\n\n");
                 }
             }
         }
@@ -428,179 +388,31 @@ public class MarkdownWriter {
         if (text.isEmpty()) {
             writer.write("    This has been marked as deprecated.\n");
         } else {
-            writer.write("    " + formatTaggedText(text));
+            writer.write("    " + Markdown.formatTaggedText(text));
         }
         writer.write("\n\n");
     }
 
-    private void outputConstantValues(Api api) throws IOException {
-        writer = createFile("constant-values", "");    
-        if (!api.getConstantValues().isEmpty()) {
+    private void outputConstantValues(ModuleNode moduleNode) throws IOException {
+        writer = fileUtils.createFile("constant-values", "");    
+        if (!moduleNode.getConstantValues().isEmpty()) {
             writer.write("# Constant Field Values\n");
             MarkdownTable table = new MarkdownTable()
                     .addColumn(TEXT_MODIFIER_AND_TYPE)
                     .addColumn("Constant Field")
                     .addColumn("Value");
-            for (FieldNode constantValue : api.getConstantValues()) {
+            for (FieldNode constantValue : moduleNode.getConstantValues()) {
                 StringBuilder modifiersAndType = new StringBuilder();
                 if (constantValue.getModifiersString().isEmpty()) {
                     modifiersAndType.append(constantValue.getModifiersString());
                     modifiersAndType.append(" ");
                 }
-                modifiersAndType.append(Util.mdAutoLink(constantValue.getType().getQualifiedName(), true));
+                modifiersAndType.append(Markdown.mdAutoLink(constantValue.getType().getQualifiedName(), true));
                 table.addRow(modifiersAndType.toString(), constantValue.getSimpleName(), constantValue.getConstantValue().toString());
             }
             table.render(writer);
         }
-
         writer.flush();
         writer.close();
-
-    }
-
-    public String fullSignature(MethodNode method ) {
-        String sig = method.getModifiersString();
-        sig += Util.mdAutoLink(method.getReturnType().getQualifiedName(), true) + " ";
-        sig += method.getSimpleName() + "(" + paramsString(method.getParams()) + ")";
-        return sig;
-    }
-
-    public String paramsString(List<ParamNode> params){
-        String str = "";
-        int paramCount = 0;
-        for (ParamNode param : params) {
-            if (paramCount++ > 0) str += ", ";
-            String typeName = Util.mdAutoLink(param.getType().getQualifiedName(), true);
-            str+=typeName + param.getType().getArrayBrackets() + " " + param.getSimpleName(); 
-        }
-        return str;
-    }
-
-    private String formatReference(Reference ref) {
-        if (ref.getKind() == Reference.Kind.URL) {
-            return Util.mdDocumentLink(ref.getUri());
-        } else if (ref.getKind() == Reference.Kind.PAGE) {
-            String relativePath = LinkResolver.relativize("");
-            return Util.mdDocumentLink(ref.getName(), relativePath + ref.getUri());
-        } else if (ref.getKind() == Reference.Kind.PACKAGE || ref.getKind() == Reference.Kind.TYPE) {
-            return Util.mdAutoLink(ref.getName());
-        }
-        return "";
-    }
-
-    private String formatTaggedText(Text text) {
-        List<? extends DocTree> parsedSegments = text.getSegments();
-        if (parsedSegments == null) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
-        for (DocTree segment : parsedSegments) {
-            if (segment.getKind() == Kind.MARKDOWN) {
-                sb.append(segment.toString());
-            } else if (segment.getKind() == Kind.LINK) {
-                String link = formatTaggedLink(segment);
-                sb.append(link);
-            } else if (segment.getKind() == Kind.LINK_PLAIN) {
-                String link = formatTaggedLinkPlain(segment);
-                sb.append(link);
-            } else if (segment.getKind() == Kind.CODE) {
-                sb.append(formatTaggedCode(segment));
-            } else if (segment.getKind() == Kind.TEXT) {
-                sb.append(segment.toString());
-            } else if (segment.getKind() == Kind.START_ELEMENT) {
-                StartElementTree se = (StartElementTree)segment;
-                Name name = se.getName();
-                if ("p".equals(name.toString())) {
-                    sb.append("\n\n");
-                }
-            } else if (segment.getKind() == Kind.END_ELEMENT) {
-                sb.append(segment.toString());
-            } else {
-                System.out.println("Unhandled javadoc tag:");
-                System.out.println("  " + segment.getKind().toString());
-                System.out.println("  " + segment.toString());
-            }
-        }
-        return sb.toString();
-    }
-
-    private String formatTaggedCode(DocTree code) {
-        String input = code.toString();
-        String[] parts = input.split(" ");
-        if (parts.length > 1) {
-            if (parts[0].equals("{@code")) {
-                parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
-                StringBuilder sb = new StringBuilder();
-                sb.append("`");
-                for (int i = 1; i<parts.length; i++) {
-                    if (i > 1) {
-                        sb.append(" ");
-                    }
-                    sb.append(parts[i]);
-                }
-                sb.append("`");
-                return "`" + parts[1] + "`";
-            }
-        }
-        System.out.println("Malformed Javadoc tag: " + code.toString());
-        return "";
-    }
-
-    private String formatTaggedLink(DocTree link) {
-        String input = link.toString();
-        String[] parts = input.split(" ");
-        if (parts.length > 1) {
-            parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
-            if (parts[0].equals("{@link")) {
-                return Util.mdAutoLink(parts[1]);
-            }
-        }
-        System.out.println("Malformed Javadoc tag: " + link.toString());
-        return "";
-    }
-
-    private String formatTaggedLinkPlain(DocTree link) {
-        String input = link.toString();
-        String[] parts = input.split(" ");
-        if (parts.length > 2) {
-            parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
-            if (parts[0].equals("{@linkplain")) {
-                return "[" + Util.mdAutoLink(parts[2]) + "](" + parts[1] + ")";
-            }
-        }
-        System.out.println("Malformed Javadoc tag: " + link.toString());
-        return "";
-    }
-
-    /// @param outputDirectory output path specified by the `-d` command line parameter
-    /// @param packageName the name of the packageName
-    private File buildContainingDirPath(String outputDirectory, String packageName) {
-        final File rootDir;
-        if (outputDirectory != null) {
-            rootDir = new File(outputDirectory);
-        } else {
-            rootDir = new File(".");
-        }
-
-        String dirName = packageName.replace('.', pathSeparator());
-        if (squashEmptyDirectories && dirName.length() > 2) {
-           dirName = dirName.substring(squashedDirectories.length());
-        }
-        return new File(rootDir, dirName);
-    }
-
-    private char pathSeparator() {
-        // File.pathSeparatorChar is returnng ":" on macOS (Sequoia 15.5) when it should be "/"
-        return File.pathSeparatorChar == ':' ? '/' : File.pathSeparatorChar;
-    }
-
-    private Writer createFile(String className, String packageName) throws IOException{
-        File containingDir = buildContainingDirPath(outputDirectory, packageName);
-        if (!containingDir.exists()) containingDir.mkdirs();
-        if (className == null) className = "index";
-        File classFile = new File(containingDir, className + ".md");
-        FileOutputStream fileOutputStream = new FileOutputStream(classFile);
-        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
-        return new OutputStreamWriter(bufferedOutputStream);
     }
 }

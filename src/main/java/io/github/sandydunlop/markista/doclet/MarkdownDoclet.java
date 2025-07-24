@@ -2,6 +2,7 @@ package io.github.sandydunlop.markista.doclet;
  
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.util.LinkResolver;
+import io.github.sandydunlop.markista.util.ModuleDirectiveGenerator;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -23,16 +24,11 @@ import jdk.javadoc.doclet.Reporter;
 
 /// A doclet that renders javadoc comments as Markdown
 public class MarkdownDoclet implements Doclet {
-    private static final boolean OK = true;
+    public static final boolean OK = true;
     private static final boolean FAILED = false; 
     private static final String DOT_HTML = ".html";
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
     private Reporter reporter;
-
-    private String outputDirectory = null;
-    private boolean documentPrivateMembers = false;
-    private boolean createExternalLinks = false;
-    private boolean squashEmptyDirectories = false;
 
     /// The default constructor, does nothing.
     public MarkdownDoclet() {
@@ -47,12 +43,17 @@ public class MarkdownDoclet implements Doclet {
             "-doclet", MarkdownDoclet.class.getName(),
             "-docletpath", "build/classes/java/main", 
             "-d", "build/md-docs", 
-            "--show-private", 
-            "--external-links",
-            "--squash-empty",
-            "-sourcepath", "src/main/java/", 
-            "-subpackages", 
-            "io.github.sandydunlop"
+            "-private", 
+            "-external",
+            "-flatten",
+
+            "-sourcepath", "src/main/java/",
+            "-subpackages", "io.github.sandydunlop",
+
+            // "--module-source-path", "src/main/java",
+            // "--module", "sandydunlop.markista",
+
+            "-verbose"
         };
         DocumentationTool docTool = ToolProvider.getSystemDocumentationTool();
         docTool.run(System.in, System.out, System.err, docletArgs); //NOSONAR
@@ -63,7 +64,7 @@ public class MarkdownDoclet implements Doclet {
     /// the [process][#process(String,List)] method
     /// to handle instances of the option found on the
     /// command line.
-    abstract class Option implements Doclet.Option {
+    public abstract class Option implements Doclet.Option {
         private final String name;
         private final boolean hasArg;
         private final String description;
@@ -112,39 +113,11 @@ public class MarkdownDoclet implements Doclet {
                 public boolean process(String option,
                                        List<String> arguments) {
                     if (arguments != null && !arguments.isEmpty()) {
-                        outputDirectory = arguments.get(0);
+                        Configuration.setOutputDirectory(arguments.get(0));
                     }
                     return OK;
                 }
             },
-            new Option("--external-links", false,
-                    "create external links", null) {
-                @Override
-                public boolean process(String option,
-                                       List<String> arguments) {
-                    createExternalLinks = true;
-                    return OK;
-                }
-            },
-            new Option("--show-private", false,
-                    "include members with private modifier", null) {
-                @Override
-                public boolean process(String option,
-                                       List<String> arguments) {
-                    documentPrivateMembers = true;
-                    return OK;
-                }
-            },
-            new Option("--squash-empty", false,
-                    "squash empty directories", null) {
-                @Override
-                public boolean process(String option,
-                                       List<String> arguments) {
-                    squashEmptyDirectories = true;
-                    return OK;
-                }
-            },
-            // The following options aren't used, but are needed for compatibility with Gradle
             new Option("-doctitle", true,
                     UNUSED_OPTION_DESCRIPTION, null) {
                 @Override
@@ -153,6 +126,24 @@ public class MarkdownDoclet implements Doclet {
                     if (arguments != null && !arguments.isEmpty()) {
                         // Do nothing
                     }
+                    return OK;
+                }
+            },
+            new Option("-external", false,
+                    "create external links", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    Configuration.setCreateExternalLinks(true);
+                    return OK;
+                }
+            },
+            new Option("-flatten", false,
+                    "prevents directories for empty packages being created", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    Configuration.setFlattenDirectories(true);
                     return OK;
                 }
             },
@@ -167,6 +158,15 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
+            new Option("-private", false,
+                    "View all classes and members.", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    Configuration.setDocumentPrivateMembers(true);
+                    return OK;
+                }
+            },
             new Option("-quiet", false,
                     UNUSED_OPTION_DESCRIPTION, null) {
                 @Override
@@ -175,6 +175,15 @@ public class MarkdownDoclet implements Doclet {
                     if (arguments != null && !arguments.isEmpty()) {
                         // Do nothing
                     }
+                    return OK;
+                }
+            },
+            new Option("-verbose", false,
+                    "Output informational messages", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    Configuration.setVerbose(true);
                     return OK;
                 }
             },
@@ -220,7 +229,7 @@ public class MarkdownDoclet implements Doclet {
     public boolean run(DocletEnvironment environment) {
         LinkResolver.setReporter(reporter);
 
-        if (createExternalLinks) {
+        if (Configuration.getCreateExternalLinks()) {
             ClassLoader classloader = Thread.currentThread().getContextClassLoader();
             InputStream inputStream = classloader.getResourceAsStream("java_platform_modules.text");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -233,15 +242,13 @@ public class MarkdownDoclet implements Doclet {
             }
         }
 
+        ModuleDirectiveGenerator.setEnvironment(environment);
         ApiScanner scanner = new ApiScanner(environment, reporter);
-        scanner.setDocumentPrivateMembers(documentPrivateMembers);
-
         Api api = scanner.scan(environment.getIncludedElements());
         api.sort();
         LinkResolver.setApi(api);
 
-        MarkdownWriter writer = new MarkdownWriter(outputDirectory);
-        writer.setSquashEmptyDirectories(squashEmptyDirectories);
+        ModuleWriter writer = new ModuleWriter();
         try{
             writer.writeDocs(api);
         } catch (IOException ex) {
