@@ -597,7 +597,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             if (paramTree != null) {
                 param.setBody(paramTree.getDescription());
             }
-            methodDoc.getParams().add(param);
+            methodDoc.addParam(param);
         }
     }
 

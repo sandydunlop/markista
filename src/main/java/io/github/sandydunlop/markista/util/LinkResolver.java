@@ -13,14 +13,13 @@ import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
-import jdk.javadoc.doclet.Reporter;
 
 
 /// This class woks calculates the paths for Markdown documents 
 /// to link between different packages and to URLs of external
 /// packages and their contents.
 public class LinkResolver {
-    private static final List<String> primatives = Arrays.asList("boolean","byte","char","short","int","long","float","double");
+    private static final List<String> primitives = Arrays.asList("boolean","byte","char","short","int","long","float","double");
     private static String location = null;
     private static HashMap<String,String> nativePackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
@@ -98,7 +97,7 @@ public class LinkResolver {
             link.setScope(Reference.Scope.NATIVE);
             return link;
         }
-        if (primatives.contains(to)){
+        if (primitives.contains(to)){
             link.setKind(Reference.Kind.PRIMITIVE);
             link.setScope(Reference.Scope.NATIVE);
             return link;
@@ -118,7 +117,7 @@ public class LinkResolver {
             toPackageName = getPackageName(to);
             toClassName = getClassName(to);
         }
-        if (!isQualified(fromPackageName, toPackageName)) {
+        if (!isPackageQualified(fromPackageName, toPackageName)) {
             to = qualifyPackage(fromPackageName, toPackageName);
             toPackageName = getPackageName(to);
             toClassName = getClassName(to);
@@ -156,13 +155,8 @@ public class LinkResolver {
         return null;
     }
 
-    public static boolean isQualified(String from, String to) {
-        int p = from.indexOf('.');
-        if (p == -1) {
-            return false;
-        }
-        String first = from.substring(0, p);
-        return to.length() > p && to.substring(0, p).equals(first);
+    public static boolean isPackageQualified(String from, String to) {
+        return to.indexOf('.') > -1;
     }
 
     public static String qualifyClass(String from, String to) {
@@ -205,16 +199,18 @@ public class LinkResolver {
         String[] fromParts = from.split("\\.");
         String[] toParts = to.split("\\.");
         StringBuilder rel = new StringBuilder();
-        int p;
-        for (p=fromParts.length-1; p>=0; p--) {
-            if (p<toParts.length) {
-                if (fromParts[p].equals(toParts[p])) {
-                    p++;
-                    break;
+        int p = 0;
+        if (!from.isEmpty()) {
+            for (p=fromParts.length-1; p>=0; p--) {
+                if (p<toParts.length) {
+                    if (fromParts[p].equals(toParts[p])) {
+                        p++;
+                        break;
+                    }
                 }
+                if (!rel.isEmpty()) rel.append("/");
+                rel.append("..");
             }
-            if (!rel.isEmpty()) rel.append("/");
-            rel.append("..");
         }
         if (p == -1) p = 0;
         for (;p < toParts.length; p++) {

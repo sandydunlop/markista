@@ -13,40 +13,40 @@ import io.github.sandydunlop.markista.model.PackageMember;
 
 public class Files {
     private String outputDirectory;
-    private String squashedDirectories = null;
+    private String flattenedDirectories = null;
 
     public Files(ModuleNode moduleNode, String outputDir) {
         outputDirectory = outputDir;
         if (Configuration.getFlattenDirectories() && moduleNode != null) {
-            setSquashedDirectories(moduleNode);
+            setFlattenedDirectories(moduleNode);
         }
     }
 
     public String getFlattenedDirectories() {
-        return squashedDirectories;
+        return flattenedDirectories;
     }
 
-    public void setSquashedDirectories(ModuleNode moduleNode) {
-        squashedDirectories = null;
+    public void setFlattenedDirectories(ModuleNode moduleNode) {
+        flattenedDirectories = null;
         int dotCount = 0;
         if (Configuration.getFlattenDirectories()) {
             for (PackageMember packageNode : moduleNode.getPackages()) {
-                if (squashedDirectories == null) {
-                    squashedDirectories = packageNode.getName();
-                    dotCount = countDots(squashedDirectories);
+                if (flattenedDirectories == null) {
+                    flattenedDirectories = packageNode.getName();
+                    dotCount = countDots(flattenedDirectories);
                 } else if (countDots(packageNode.getName()) < dotCount) {
                     dotCount = countDots(packageNode.getName());
-                    squashedDirectories = packageNode.getName();
+                    flattenedDirectories = packageNode.getName();
                 }
             }
         }
-        if (squashedDirectories != null && squashedDirectories.lastIndexOf('.') > -1) {
-            squashedDirectories = squashedDirectories.substring(0, squashedDirectories.lastIndexOf('.'));
-            LinkResolver.setSquashedDirectories(squashedDirectories);
+        if (flattenedDirectories != null && flattenedDirectories.lastIndexOf('.') > -1) {
+            flattenedDirectories = flattenedDirectories.substring(0, flattenedDirectories.lastIndexOf('.'));
+            LinkResolver.setSquashedDirectories(flattenedDirectories);
         }
     }
 
-    private int countDots(String str) {
+    public int countDots(String str) {
         int count = 0;
         for (int i = 0; i < str.length(); i++) {
             if (str.charAt(i) == '.') {
@@ -68,13 +68,13 @@ public class Files {
 
         String dirName = packageName.replace('.', pathSeparator());
         if (Configuration.getFlattenDirectories() && dirName.length() > 2) {
-           dirName = dirName.substring(squashedDirectories.length());
+           dirName = dirName.substring(flattenedDirectories.length());
         }
         return new File(rootDir, dirName);
     }
 
     public char pathSeparator() {
-        // File.pathSeparatorChar is returnng ":" on macOS (Sequoia 15.5) when it should be "/"
+        // File.pathSeparatorChar is returning ":" on macOS (Sequoia 15.5) when it should be "/"
         return File.pathSeparatorChar == ':' ? '/' : File.pathSeparatorChar;
     }
 

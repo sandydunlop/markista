@@ -1,39 +1,90 @@
 package io.github.sandydunlop.markista.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import com.sun.source.util.DocTreePath;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
+import io.github.sandydunlop.markista.doclet.Configuration;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.ModuleNode;
 
+import javax.lang.model.element.Element;
+import javax.tools.Diagnostic.Kind;
+
+import jdk.javadoc.doclet.Reporter;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@ExtendWith(MockitoExtension.class)
 class LinkResolverTests {
-	private static Api api;
-    @BeforeAll
+	private Api api;
+    private ModuleNode module;
+    private PackageNode model;
+    private PackageNode doclet;
+    private ClassNode node;
+    private ClassNode markdownDoclet;
+
+	@Mock static Reporter reporter = new Reporter() {
+        @Override
+        public void print(Kind kind, String message) {
+            System.out.println(kind + ": " + message);
+        }
+
+        @Override
+        public void print(Kind kind, DocTreePath path, String message) {
+            // Do nothing
+        }
+
+        @Override
+        public void print(Kind kind, Element element, String message) {
+            // Do nothing
+        }
+    };
+
+	@BeforeAll
     static void initAll() {
+		Configuration.setReporter(reporter);
+        LinkResolver.addNativeModule("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
+    }
+
+    @BeforeEach
+    void init() {
 		api = new Api();
-		api.addPackage(new PackageNode("io.github.sandydunlop"));
-		PackageNode markista = new PackageNode("io.github.sandydunlop.markista");
+        api.addPackage(new PackageNode("io.github.sandydunlop"));
+        PackageNode markista = new PackageNode("io.github.sandydunlop.markista");
 		PackageNode util = new PackageNode("io.github.sandydunlop.markista.util");
-		PackageNode doclet = new PackageNode("io.github.sandydunlop.markista.doclet");
+		doclet = new PackageNode("io.github.sandydunlop.markista.doclet");
+		model = new PackageNode("io.github.sandydunlop.markista.model");
 		api.addPackage(markista);
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addClass(new ClassNode("io.github.sandydunlop.markista.util.LinkResolver","LinkResolver", util));
 		api.addClass(new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet));
 		api.addClass(new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", doclet));
-		LinkResolver.setApi(api);
-        LinkResolver.addNativeModule("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
-    }
 
-    @BeforeEach
-    void init() {
+        module = new ModuleNode("sandydunlop.markista");
+		module.addPackage(markista);
+		module.addPackage(util);
+		module.addPackage(doclet);
+
+        node = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", model);
+        model.addClass(node);
+
+        markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
+        model.addClass(markdownDoclet);
+
+
+		LinkResolver.setApi(api);
 		LinkResolver.setSquashedDirectories(null);
-    }
+	}
 
 	@Test
 	void resolve_qualifiedNativeClass() {
@@ -54,19 +105,25 @@ class LinkResolverTests {
 	}
 
 	@Test
-	void resolve_unqualifiedlClass_sameLevel() {
+	void resolve_unqualifiedClass_sameLevel() {
 		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "MarkdownDoclet");
 		assertEquals("../doclet/MarkdownDoclet", link.getUri());
 	}
 
 	@Test
-	void resolve_unqualifiedlPackage_prevLevel() {
+	void resolve_qualifiedClass_noLevel() {
+		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.model.Node");
+		assertEquals("io/github/sandydunlop/markista/model/Node", link.getUri());
+	}
+
+	@Test
+	void resolve_unqualifiedPackage_prevLevel() {
 		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "markista");
 		assertEquals("..", link.getUri());
 	}
 
 	@Test
-	void resolve_qualifiedlPackage_prevLevel() {
+	void resolve_qualifiedPackage_prevLevel() {
 		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "io.github.sandydunlop.markista");
 		assertEquals("..", link.getUri());
 	}
@@ -90,9 +147,22 @@ class LinkResolverTests {
 	}
 
 	@Test
+	void relativize_fromNoLevel() {
+		String path = LinkResolver.relativize("", "io.github.sandydunlop.markista.model.Node");
+		assertEquals("io/github/sandydunlop/markista/model/Node", path);
+	}
+
+	@Test
 	void relativize_squashed_toSameLevel() {
 		LinkResolver.setSquashedDirectories("io.github.sandydunlop.markista");
-		String link = LinkResolver.relativize("io.github.sandydunlop.markista.util", "io.github.sandydunlop.markista.doclet");
-		assertEquals("../doclet", link);
+		String path = LinkResolver.relativize("io.github.sandydunlop.markista.util", "io.github.sandydunlop.markista.doclet");
+		assertEquals("../doclet", path);
+	}
+
+	@Test
+	void relativize_squashed_fromNoLevel() {
+		LinkResolver.setSquashedDirectories("io.github.sandydunlop.markista");
+		String path = LinkResolver.relativize("", "io.github.sandydunlop.markista.doclet");
+		assertEquals("doclet", path);
 	}
 }

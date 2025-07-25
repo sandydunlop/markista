@@ -43,6 +43,9 @@ public class Markdown {
     }
 
     public static String formatReference(Reference ref) {
+        if (ref.getName() == null || ref.getName().isEmpty()) {
+            ref.setName(ref.getUri());
+        }
         if (ref.getKind() == Reference.Kind.URL) {
             return mdDocumentLink(ref.getUri());
         } else if (ref.getKind() == Reference.Kind.PAGE) {
@@ -189,21 +192,21 @@ public class Markdown {
     /// Changes qualified generic type names to unqualified generic type names and adds links to their API documentation.
     /// @param str A string containing a qualified generic name.
     /// @return    A string with the qualified names changed to unqualified names and links to types added
-    public static String linkGenerics(String str, boolean simplifiy) {
+    public static String linkGenerics(String str, boolean simplify) {
         if (str == null || str.isEmpty()) return str;
         int start = str.indexOf("<");
         if (start > -1) {
             int end = str.indexOf(">");
             if (end > start) {
                 String before = str.substring(0, start);
-                before = Markdown.mdAutoLink(before, simplifiy);
+                before = Markdown.mdAutoLink(before, simplify);
                 String after = str.substring(end + 1);
                 String mid = str.substring(start + 1, end);
                 String simplified = splitAndLink(mid);
                 return before + "<" + simplified + ">" + after;
             }
         }
-        return mdAutoLink(str, simplifiy);
+        return mdAutoLink(str, simplify);
     }
 
     public static String splitAndLink(String typesString) {

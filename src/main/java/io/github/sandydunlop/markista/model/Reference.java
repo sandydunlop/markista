@@ -9,8 +9,8 @@ public class Reference {
     public Reference() {
     }
     
-    public Reference(Kind kind, String name, String value) {
-        this(Scope.LOCAL, kind, name, value);
+    public Reference(Kind kind, String name, String uri) {
+        this(Scope.LOCAL, kind, name, uri);
     }
 
     public Reference(Scope scope, Kind kind, String name, String uri) {
