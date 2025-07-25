@@ -7,11 +7,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.lang.model.element.Modifier;
-
-import com.sun.source.doctree.DocTree;
-
-
 public class Node {
     protected String simpleName = "";
     protected String qualifiedName = "";
@@ -24,6 +19,10 @@ public class Node {
     private Text body = Text.empty();
     private Text fullBody = Text.empty();
     private List<Reference> references = new ArrayList<>();
+
+    public void addModifier(Modifier mod) {
+        modifiers.add(mod);    
+    }
 
     public Set<Modifier> getModifiers() {
         return modifiers;
@@ -53,24 +52,24 @@ public class Node {
         return since;
     }
 
-    public void setFirstSentence(List<? extends DocTree> doc) {
-        firstSentence.set(doc);
+    public void setFirstSentence(Text text) {
+        firstSentence.set(text);
     }
 
     public Text getFirstSentence() {
         return firstSentence;
     }
 
-    public void setBody(List<? extends DocTree> doc) {
-        body.set(doc);
+    public void setBody(Text text) {
+        body.set(text);
     }
 
     public Text getBody() {
         return body;
     }
 
-    public void setFullBody(List<? extends DocTree> doc) {
-        fullBody.set(doc);
+    public void setFullBody(Text text) {
+        fullBody.set(text);
     }
 
     public Text getFullBody() {
@@ -86,22 +85,21 @@ public class Node {
     }
 
     public String getModifiersString() {
-        String mods = "";
+        StringBuilder mods = new StringBuilder();
         List<Modifier> modifierList = ModifierSorter.sortModifiers(modifiers);
         for (Modifier mod : modifierList) {
             if (mod != Modifier.PUBLIC) {
-                mods += mod.toString() + " ";
+                mods.append(mod.toString()).append(" ");
             }
         }
-        return mods;
-    }
-
-    public void sortModifiers() {
-
-        ModifierSorter.sortModifiers(modifiers);
+        return mods.toString();
     }
 
     public class ModifierSorter {
+        private ModifierSorter() {
+            // Hiding the public constructor
+        }
+
         private static final List<Modifier> ORDER = Arrays.asList(
             Modifier.PUBLIC, Modifier.PROTECTED, Modifier.PRIVATE,
             Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT,
@@ -111,7 +109,7 @@ public class Node {
 
         public static List<Modifier> sortModifiers(Set<Modifier> modifierSet) {
             List<Modifier> modifierList = new ArrayList<>(modifierSet);
-            modifierList.sort(Comparator.comparingInt(o -> ORDER.indexOf(o)));
+            modifierList.sort(Comparator.comparingInt(ORDER::indexOf));
             return modifierList;
         }
     }

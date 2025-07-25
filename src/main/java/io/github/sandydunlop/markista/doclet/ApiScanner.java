@@ -9,6 +9,7 @@ import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.ReturnTree;
 import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.SinceTree;
+import com.sun.source.doctree.StartElementTree;
 
 import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.Api;
@@ -29,6 +30,7 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.util.ModuleDirectiveGenerator;
 import io.github.sandydunlop.markista.util.Util;
 
@@ -46,6 +48,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.ModuleElement.Directive;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.PackageElement;
@@ -128,7 +131,6 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 Configuration.getReporter().print(Diagnostic.Kind.NOTE, "  PACKAGE: " + pkg.getName());
             }
             if (environment.getElementUtils().getModuleOf(ee) != null) {
-                // ModuleNode module = api.getModuleNode(environment.getElementUtils().getModuleOf(ee).getQualifiedName().toString());
                 if (currentModule != null) {
                     pkg.setModule(currentModule);
                     currentModule.addPackage(pkg);
@@ -164,12 +166,12 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
                 setDeprecationStatus(methodNode, ee, dct);
                 if (dct != null) {
-                    methodNode.setFirstSentence(dct.getFirstSentence());
-                    methodNode.setBody(dct.getBody());
-                    methodNode.setFullBody(dct.getFullBody());
+                    methodNode.setFirstSentence(createText(dct.getFirstSentence()));
+                    methodNode.setBody(createText(dct.getBody()));
+                    methodNode.setFullBody(createText(dct.getFullBody()));
                     ReturnTree returnTree = getReturnTree(dct);
                     if (returnTree != null) {
-                        methodNode.setReturnDescription(Text.fromDocTree(returnTree.getDescription()));
+                        methodNode.setReturnDescription(createText(returnTree.getDescription()));
                     }
                     methodNode.setReferences(getReferences(dct));
                     methodNode.setSince(getSince(dct));
@@ -185,10 +187,10 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             FieldNode fieldNode = nodeFromElement(ve);
             if (fieldNode != null ) {
                 fieldNode.setConstantValue((Serializable) ve.getConstantValue());
-                fieldNode.getModifiers().addAll(ve.getModifiers()); 
                 DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ve);
-                setDeprecationStatus(fieldNode, ve, dct);
                 setDocumentation(fieldNode, ve);
+                setModifiers(fieldNode, ve.getModifiers());
+                setDeprecationStatus(fieldNode, ve, dct);
             }
         }
         return super.visitVariable(ve, depth);
@@ -224,7 +226,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 setEnumConstants(enumNode, element);
             }
             setTypeOwnership(typeNode, element);
-            typeNode.getModifiers().addAll(element.getModifiers());
+            setModifiers(typeNode, element.getModifiers());
             collectAllSupertypes(element.asType(), typeNode.getSupertypes());
             typeNode.getSupertypes().add(0, "java.lang.Object");
             findImplementedInterfaces(element, typeNode.getImplementedInterfaces());
@@ -268,7 +270,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         TypeNode ownerType = api.getTypeNode(ownerElement);
         setMethodParams(methodNode, element);
 
-        methodNode.getModifiers().addAll(element.getModifiers()); 
+        setModifiers(methodNode, element.getModifiers());
         methodNode.setThrownTypes(element.getThrownTypes());
         methodNode.setOwner(ownerType);
 
@@ -325,12 +327,82 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         }
     }
 
+    private Text createText(List<? extends DocTree> dtList) {
+        Text text = Text.empty();
+        for (DocTree docTree : dtList) {
+            text.append(createTextSegment(docTree));
+        }
+        return text;
+    }
+
+    private Text.Segment createTextSegment(DocTree docTree) {
+        Text.Segment segment = Text.Segment.empty();
+        switch(docTree.getKind()) {
+            case MARKDOWN:
+                segment.setKind(SegmentKind.MARKDOWN);
+                segment.setText(docTree.toString());
+                break;
+            case TEXT:
+                segment.setKind(SegmentKind.TEXT);
+                segment.setText(docTree.toString());
+                break;
+            case LINK, LINK_PLAIN:
+                segment.setKind(SegmentKind.LINK);
+                segment.setLink(getDocTreePart(docTree, 1));
+                break;
+            case CODE:
+                segment.setKind(SegmentKind.CODE);
+                segment.setText(getDocTreeText(docTree, 1));
+                break;
+            case START_ELEMENT:
+                segment.setKind(SegmentKind.START);
+                StartElementTree se = (StartElementTree)docTree;
+                if ("p".equals(se.getName().toString())) {
+                    segment.setText("\n\n");
+                }
+                break;
+            case END_ELEMENT:
+                segment.setKind(SegmentKind.END);
+                break;
+            default:
+                break;
+        }
+        return segment;
+    }
+
+    public String getDocTreeText(DocTree docTree, int start) {
+        String input = docTree.toString();
+        String[] parts = input.split(" ");
+        if (parts.length >= start) {
+            parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 1; i<parts.length; i++) {
+                if (i > 1) {
+                    sb.append(" ");
+                }
+                sb.append(parts[i]);
+            }
+            return sb.toString();
+        }
+        return "";
+    }
+
+    public String getDocTreePart(DocTree docTree, int n) {
+        String input = docTree.toString();
+        String[] parts = input.split(" ");
+        if (n < parts.length) {
+            parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
+            return parts[n];
+        }
+        return "";
+    }
+
     private void setDocumentation(Node node, Element e) {
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(e);
         if (dct != null) {
-            node.setFirstSentence(dct.getFirstSentence());
-            node.setBody(dct.getBody());
-            node.setFullBody(dct.getFullBody());
+            node.setFirstSentence(createText(dct.getFirstSentence()));
+            node.setBody(createText(dct.getBody()));
+            node.setFullBody(createText(dct.getFullBody()));
         }
     }
         
@@ -539,7 +611,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (dcTree == null) return null;
         for (DocTree tagTree : dcTree.getBlockTags()) {
             if (tagTree instanceof SinceTree sinceTree) {
-                return new Text(sinceTree.getBody());
+                return createText(sinceTree.getBody());
             } else if (tagTree instanceof ErroneousTree) {
                 Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
             }
@@ -563,6 +635,14 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         return null;
     }
 
+    private void setModifiers(Node node, Set<Modifier> modifiers) {
+        for (Modifier modifier : modifiers) {
+            io.github.sandydunlop.markista.model.Modifier mod = 
+                io.github.sandydunlop.markista.model.Modifier.valueOf(modifier.name());
+            node.addModifier(mod);
+        }
+    }
+
     private void setDeprecationStatus(Node node, Element e, DocCommentTree dct) {
         if (node == null) return;
         DeprecatedTree deprecatedTree = getDeprecation(dct);
@@ -570,7 +650,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         node.setDeprecation(Deprecation.NONE);
         if (deprecatedTree != null) {
             node.setDeprecation(Deprecation.DEPRECATED);
-            node.setDeprecationText(Text.fromDocTree(deprecatedTree.getBody()));
+            node.setDeprecationText(createText(deprecatedTree.getBody()));
         }
         if (deprecatedAnnotation != null) {
             if (deprecatedAnnotation.forRemoval()) {
@@ -595,7 +675,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             ParamNode param = new ParamNode(paramType, simpleName);
             ParamTree paramTree = getParamTree(dct, parameter);
             if (paramTree != null) {
-                param.setBody(paramTree.getDescription());
+                param.setBody(createText(paramTree.getDescription()));
             }
             methodDoc.addParam(param);
         }

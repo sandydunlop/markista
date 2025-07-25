@@ -174,4 +174,8 @@ class MarkdownTests {
         assertEquals("[mdautolink](../util/Markdown.md#mdautolink)", markdown);
     }
 
+    // @Test
+    // void formatTaggedText() {
+    //     List<DocTree> 
+    // }
 }

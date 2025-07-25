@@ -57,86 +57,43 @@ public class Markdown {
         return "";
     }
 
-    public static String formatTaggedText(Text text) {
-        List<? extends DocTree> parsedSegments = text.getSegments();
+    public static String formatText(Text text) {
+        List<Text.Segment> parsedSegments = text.getSegments();
         if (parsedSegments == null) {
             return "";
         }
         StringBuilder sb = new StringBuilder();
-        for (DocTree segment : parsedSegments) {
-            if (segment.getKind() == Kind.MARKDOWN) {
-                sb.append(segment.toString());
-            } else if (segment.getKind() == Kind.LINK) {
-                String link = formatTaggedLink(segment);
-                sb.append(link);
-            } else if (segment.getKind() == Kind.LINK_PLAIN) {
-                String link = formatTaggedLinkPlain(segment);
-                sb.append(link);
-            } else if (segment.getKind() == Kind.CODE) {
-                sb.append(formatTaggedCode(segment));
-            } else if (segment.getKind() == Kind.TEXT) {
-                sb.append(segment.toString());
-            } else if (segment.getKind() == Kind.START_ELEMENT) {
-                StartElementTree se = (StartElementTree)segment;
-                Name name = se.getName();
-                if ("p".equals(name.toString())) {
-                    sb.append("\n\n");
-                }
-            } else if (segment.getKind() == Kind.END_ELEMENT) {
-                sb.append(segment.toString());
-            } else {
-                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Unhandled javadoc tag:");
-                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "  " + segment.getKind().toString());
-                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "  " + segment.toString());
+        for (Text.Segment segment : parsedSegments) {
+            switch (segment.getKind()) {
+                case Text.SegmentKind.TEXT, Text.SegmentKind.END, Text.SegmentKind.MARKDOWN:
+                    sb.append(segment.toString());
+                    break;
+                case Text.SegmentKind.CODE:
+                    sb.append("`");
+                    sb.append(segment.getText());
+                    sb.append("`");
+                    break;
+                case Text.SegmentKind.LINK:
+                    break;
+                case Text.SegmentKind.START:
+                    break;
+                default:
+                    Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Unhandled javadoc tag:");
+                    Configuration.getReporter().print(Diagnostic.Kind.WARNING, "  " + segment.getKind().toString());
+                    Configuration.getReporter().print(Diagnostic.Kind.WARNING, "  " + segment.toString());
             }
         }
         return sb.toString();
     }
 
-    public static String formatTaggedCode(DocTree code) {
-        String input = code.toString();
-        String[] parts = input.split(" ");
-        if (parts.length > 1 && parts[0].equals("{@code")) {
-            parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
-            StringBuilder sb = new StringBuilder();
-            sb.append("`");
-            for (int i = 1; i<parts.length; i++) {
-                if (i > 1) {
-                    sb.append(" ");
-                }
-                sb.append(parts[i]);
-            }
-            sb.append("`");
-            return sb.toString();
+    public static String formatLink(Text.Segment segment) {
+        if (segment.getText().isBlank()) {
+            return mdAutoLink(segment.getLink());
+        } else {
+            Reference ref = LinkResolver.resolve(segment.getLink());
+            ref.setName(segment.getText());
+            return mdRefLink(ref);
         }
-        Configuration.getReporter().print(Diagnostic.Kind.WARNING, TEXT_MALFORMED_TAG + code.toString());
-        return "";
-    }
-
-    public static String formatTaggedLink(DocTree link) {
-        String input = link.toString();
-        String[] parts = input.split(" ");
-        if (parts.length > 1) {
-            parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
-            if (parts[0].equals("{@link")) {
-                return mdAutoLink(parts[1]);
-            }
-        }
-        Configuration.getReporter().print(Diagnostic.Kind.WARNING, TEXT_MALFORMED_TAG + link.toString());
-        return "";
-    }
-
-    public static String formatTaggedLinkPlain(DocTree link) {
-        String input = link.toString();
-        String[] parts = input.split(" ");
-        if (parts.length > 2) {
-            parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
-            if (parts[0].equals("{@linkplain")) {
-                return "[" + mdAutoLink(parts[2]) + "](" + parts[1] + ")";
-            }
-        }
-        Configuration.getReporter().print(Diagnostic.Kind.WARNING, TEXT_MALFORMED_TAG + link.toString());
-        return "";
     }
    
     public static String mdAutoLink(String identifier) {
@@ -177,18 +134,28 @@ public class Markdown {
         if (!anchor.isEmpty()) {
             text = anchor.substring(1);
         }
-        if (isMethod) {
-            return String.format("%s[%s](#%s)", pre, text, text);
-        } else if (link.getKind() == Reference.Kind.TYPE) {
-            return String.format("%s[%s](%s.md%s)", pre, text, link.getUri(), anchor);
-        } else if (link.getKind() == Reference.Kind.PACKAGE) {
-            return String.format("%s[%s](%s/index.md%s)", pre, text, link.getUri(), anchor);
-        } else if (link.getKind() == Reference.Kind.URL) {
-            return String.format("%s[%s](%s%s)", pre, text, link.getUri(), anchor);
-        }
-        return String.format("%s%s", pre, text);
+        link.setName(text);
+        link.setAnchor(anchor);
+        return mdRefLink(pre, link, isMethod);
     }
 
+    public static String mdRefLink(String pre, Reference link, boolean isMethod) {
+        if (isMethod) {
+            return String.format("%s[%s](#%s)", pre, link.getName(), link.getName());
+        } else if (link.getKind() == Reference.Kind.TYPE) {
+            return String.format("%s[%s](%s.md%s)", pre, link.getName(), link.getUri(), link.getAnchor());
+        } else if (link.getKind() == Reference.Kind.PACKAGE) {
+            return String.format("%s[%s](%s/index.md%s)", pre, link.getName(), link.getUri(), link.getAnchor());
+        } else if (link.getKind() == Reference.Kind.URL) {
+            return String.format("%s[%s](%s%s)", pre, link.getName(), link.getUri(), link.getAnchor());
+        }
+        return String.format("%s%s", pre, link.getName());
+    }
+
+    public static String mdRefLink(Reference link) {
+        return mdRefLink("", link, false);
+    }
+    
     /// Changes qualified generic type names to unqualified generic type names and adds links to their API documentation.
     /// @param str A string containing a qualified generic name.
     /// @return    A string with the qualified names changed to unqualified names and links to types added

@@ -42,14 +42,14 @@ public class ModuleWriter {
         } else {
             writer.write("# Module " + moduleNode.getName() + "\n");
         }
-        writer.write("\n\n" + Markdown.formatTaggedText(moduleNode.getFullBody()) + "\n\n");
+        writer.write("\n\n" + Markdown.formatText(moduleNode.getFullBody()) + "\n\n");
         if (!moduleNode.getPackages().isEmpty()) {
             writer.write("## Packages\n\n");
             MarkdownTable table = new MarkdownTable()
                     .addColumn(TEXT_PACKAGE)
                     .addColumn(TEXT_DESCRIPTION);
             for (PackageMember member : moduleNode.getPackages()) {
-                table.addRow(formatPackageLink(member), Util.inOneLine(Markdown.formatTaggedText(member.getDescription())));
+                table.addRow(formatPackageLink(member), Util.inOneLine(Markdown.formatText(member.getDescription())));
             }
             table.render(writer);
         }

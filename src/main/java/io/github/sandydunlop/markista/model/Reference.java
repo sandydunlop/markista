@@ -5,6 +5,7 @@ public class Reference {
     private Scope scope = Scope.NONE;
     private String name = "";
     private String uri = "";
+    private String anchor = "";
 
     public Reference() {
     }
@@ -50,6 +51,14 @@ public class Reference {
 
     public String getUri() {
         return uri;
+    }
+
+    public void setAnchor(String anchor) {
+        this.anchor = anchor;
+    }
+
+    public String getAnchor() {
+        return anchor;
     }
     
     public enum Kind {
