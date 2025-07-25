@@ -392,27 +392,4 @@ public class PackageWriter {
         }
         writer.write("\n\n");
     }
-
-    private void outputConstantValues(ModuleNode moduleNode) throws IOException {
-        writer = fileUtils.createFile("constant-values", "");    
-        if (!moduleNode.getConstantValues().isEmpty()) {
-            writer.write("# Constant Field Values\n");
-            MarkdownTable table = new MarkdownTable()
-                    .addColumn(TEXT_MODIFIER_AND_TYPE)
-                    .addColumn("Constant Field")
-                    .addColumn("Value");
-            for (FieldNode constantValue : moduleNode.getConstantValues()) {
-                StringBuilder modifiersAndType = new StringBuilder();
-                if (constantValue.getModifiersString().isEmpty()) {
-                    modifiersAndType.append(constantValue.getModifiersString());
-                    modifiersAndType.append(" ");
-                }
-                modifiersAndType.append(Markdown.mdAutoLink(constantValue.getType().getQualifiedName(), true));
-                table.addRow(modifiersAndType.toString(), constantValue.getSimpleName(), constantValue.getConstantValue().toString());
-            }
-            table.render(writer);
-        }
-        writer.flush();
-        writer.close();
-    }
 }

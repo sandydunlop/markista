@@ -70,13 +70,11 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     private Api api;
     private Set<Element> encounteredSupertypes = new HashSet<>();
     private DocletEnvironment environment;
-    private Reporter reporter;
     private ModuleNode unnamedModule;
     private ModuleNode currentModule;
 
-    public ApiScanner(DocletEnvironment environment, Reporter reporter) {
+    public ApiScanner(DocletEnvironment environment) {
         this.environment = environment;
-        this.reporter = reporter;
         api = new Api();
         unnamedModule = api.getUnnamedModuleNode();
         currentModule = api.getUnnamedModuleNode();
@@ -99,7 +97,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (e.getQualifiedName().toString().isEmpty()) {
             mod = unnamedModule;
             if (Configuration.getVerbose()) {
-                reporter.print(Diagnostic.Kind.NOTE, "UNNAMED MODULE");
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, "UNNAMED MODULE");
             }
         } else {
             mod = api.getModuleNode(e.getQualifiedName().toString());
@@ -107,7 +105,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (mod == null) {
             mod = new ModuleNode(e.getQualifiedName().toString());
             if (Configuration.getVerbose()) {
-                reporter.print(Diagnostic.Kind.NOTE, "MODULE: " + mod.getName());
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, "MODULE: " + mod.getName());
             }
             setDocumentation(mod, e);
             List<? extends Directive>  directives = e.getDirectives();
@@ -127,7 +125,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (pkg == null) {
             pkg = new PackageNode(ee.getQualifiedName().toString());
             if (Configuration.getVerbose()) {
-                reporter.print(Diagnostic.Kind.NOTE, "  PACKAGE: " + pkg.getName());
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, "  PACKAGE: " + pkg.getName());
             }
             if (environment.getElementUtils().getModuleOf(ee) != null) {
                 // ModuleNode module = api.getModuleNode(environment.getElementUtils().getModuleOf(ee).getQualifiedName().toString());
@@ -213,13 +211,13 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             PackageElement packageElement = getEnclosingPackageElement(element);
             String simpleName = element.getSimpleName().toString();
             if (packageElement == null) {
-                reporter.print(Diagnostic.Kind.ERROR, "No package for " + qualifiedName);
+                Configuration.getReporter().print(Diagnostic.Kind.ERROR, "No package for " + qualifiedName);
                 return null;
             }
             PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
             typeNode = createTypeNode(qualifiedName, simpleName, packageNode, element.getKind());
             if (typeNode == null) {
-                reporter.print(Diagnostic.Kind.ERROR, "Unsupported type kind: " + element.getKind());
+                Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Unsupported type kind: " + element.getKind());
                 return null;
             }
             if (typeNode instanceof EnumNode enumNode) {
@@ -258,7 +256,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         String simpleName = Util.simplifyNames(qualifiedTypeName);
         PackageElement packageElement = getEnclosingPackageElement(element);
         if (packageElement == null) {
-            reporter.print(Diagnostic.Kind.ERROR, "No package for " + qualifiedTypeName);
+            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "No package for " + qualifiedTypeName);
             return null;
         }
         PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
@@ -294,7 +292,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     private FieldNode nodeFromElement(VariableElement element) {
         TypeElement classElement = getEnclosingTypeElement(element);
         if (classElement == null) {
-            reporter.print(Diagnostic.Kind.ERROR, "No enclosing type for " + element.getSimpleName().toString());
+            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "No enclosing type for " + element.getSimpleName().toString());
             return null;
         }
         TypeNode typeNode = api.getTypeNode(classElement);
@@ -527,11 +525,11 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                         ref.setName(docRef.toString());
                         refs.add(ref);
                     } else {
-                        reporter.print(Diagnostic.Kind.WARNING, "Unhandled reference type: " + docRef.getKind().toString());
+                        Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Unhandled reference type: " + docRef.getKind().toString());
                     }
                 }
             } else if (tagTree instanceof ErroneousTree) {
-                reporter.print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
+                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
             }
         }
         return refs;
@@ -543,7 +541,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             if (tagTree instanceof SinceTree sinceTree) {
                 return new Text(sinceTree.getBody());
             } else if (tagTree instanceof ErroneousTree) {
-                reporter.print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
+                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
             }
         }
         return Text.empty();

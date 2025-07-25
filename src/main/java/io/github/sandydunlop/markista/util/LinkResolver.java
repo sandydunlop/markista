@@ -7,6 +7,7 @@ import java.util.List;
 
 import javax.tools.Diagnostic;
 
+import io.github.sandydunlop.markista.doclet.Configuration;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.PackageMember;
@@ -25,7 +26,6 @@ public class LinkResolver {
     private static HashMap<String,String> suffix = new HashMap<>();
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
     private static Api api = null;
-    private static Reporter reporter;
     private static String squashedDirectories = null;
 
     private LinkResolver() {
@@ -38,10 +38,6 @@ public class LinkResolver {
 
     public static void setSquashedDirectories(String sd) {
         squashedDirectories = sd;
-    }
-
-    public static void setReporter(Reporter r) {
-        reporter = r;
     }
 
     public static void setLocation(String loc) {
@@ -128,7 +124,7 @@ public class LinkResolver {
             toClassName = getClassName(to);
         }
         if (toPackageName.isEmpty()) {
-            reporter.print(Diagnostic.Kind.WARNING, "Reference not found: " + original);
+            Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Reference not found: " + original);
             link.setKind(Reference.Kind.NONE);
             return link;
         }

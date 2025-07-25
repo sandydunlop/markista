@@ -6,14 +6,17 @@ import com.sun.source.doctree.StartElementTree;
 
 import java.util.List;
 
+import javax.tools.Diagnostic;
 import javax.lang.model.element.Name;
 
+import io.github.sandydunlop.markista.doclet.Configuration;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 
 public class Markdown {
+    private static final String TEXT_MALFORMED_TAG = "Malformed Javadoc tag: ";
     private Markdown() {
         // This hides the public constructor
     }
@@ -26,14 +29,17 @@ public class Markdown {
     }
 
     public static String formatParams(List<ParamNode> params){
-        String str = "";
+        StringBuilder sb = new StringBuilder();
         int paramCount = 0;
         for (ParamNode param : params) {
-            if (paramCount++ > 0) str += ", ";
+            if (paramCount++ > 0) sb.append(", ");
             String typeName = mdAutoLink(param.getType().getQualifiedName(), true);
-            str+=typeName + param.getType().getArrayBrackets() + " " + param.getSimpleName(); 
+            sb.append(typeName);
+            sb.append(param.getType().getArrayBrackets());
+            sb.append(" ");
+            sb.append(param.getSimpleName()); 
         }
-        return str;
+        return sb.toString();
     }
 
     public static String formatReference(Reference ref) {
@@ -76,9 +82,9 @@ public class Markdown {
             } else if (segment.getKind() == Kind.END_ELEMENT) {
                 sb.append(segment.toString());
             } else {
-                System.out.println("Unhandled javadoc tag:");
-                System.out.println("  " + segment.getKind().toString());
-                System.out.println("  " + segment.toString());
+                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Unhandled javadoc tag:");
+                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "  " + segment.getKind().toString());
+                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "  " + segment.toString());
             }
         }
         return sb.toString();
@@ -87,22 +93,20 @@ public class Markdown {
     public static String formatTaggedCode(DocTree code) {
         String input = code.toString();
         String[] parts = input.split(" ");
-        if (parts.length > 1) {
-            if (parts[0].equals("{@code")) {
-                parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
-                StringBuilder sb = new StringBuilder();
-                sb.append("`");
-                for (int i = 1; i<parts.length; i++) {
-                    if (i > 1) {
-                        sb.append(" ");
-                    }
-                    sb.append(parts[i]);
+        if (parts.length > 1 && parts[0].equals("{@code")) {
+            parts[parts.length-1] = parts[parts.length-1].substring(0, parts[parts.length-1].length() - 1);
+            StringBuilder sb = new StringBuilder();
+            sb.append("`");
+            for (int i = 1; i<parts.length; i++) {
+                if (i > 1) {
+                    sb.append(" ");
                 }
-                sb.append("`");
-                return "`" + parts[1] + "`";
+                sb.append(parts[i]);
             }
+            sb.append("`");
+            return sb.toString();
         }
-        System.out.println("Malformed Javadoc tag: " + code.toString());
+        Configuration.getReporter().print(Diagnostic.Kind.WARNING, TEXT_MALFORMED_TAG + code.toString());
         return "";
     }
 
@@ -115,7 +119,7 @@ public class Markdown {
                 return mdAutoLink(parts[1]);
             }
         }
-        System.out.println("Malformed Javadoc tag: " + link.toString());
+        Configuration.getReporter().print(Diagnostic.Kind.WARNING, TEXT_MALFORMED_TAG + link.toString());
         return "";
     }
 
@@ -128,7 +132,7 @@ public class Markdown {
                 return "[" + mdAutoLink(parts[2]) + "](" + parts[1] + ")";
             }
         }
-        System.out.println("Malformed Javadoc tag: " + link.toString());
+        Configuration.getReporter().print(Diagnostic.Kind.WARNING, TEXT_MALFORMED_TAG + link.toString());
         return "";
     }
    
@@ -149,7 +153,7 @@ public class Markdown {
         String anchor = "";
         int a = name.indexOf('#');
         if (a > 0) {
-            anchor = name.substring(a);
+            anchor = name.substring(a).toLowerCase();
             name = Util.removeGenerics(name.substring(0, a));
         }
 

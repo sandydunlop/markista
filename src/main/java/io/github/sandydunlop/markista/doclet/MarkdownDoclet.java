@@ -28,7 +28,6 @@ public class MarkdownDoclet implements Doclet {
     private static final boolean FAILED = false; 
     private static final String DOT_HTML = ".html";
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
-    private Reporter reporter;
 
     /// The default constructor, does nothing.
     public MarkdownDoclet() {
@@ -205,7 +204,7 @@ public class MarkdownDoclet implements Doclet {
     /// @param reporter The reporter used for messages
     @Override
     public void init(Locale locale, Reporter reporter) {
-        this.reporter = reporter;
+        Configuration.setReporter(reporter);
     }
 
     @Override
@@ -227,8 +226,6 @@ public class MarkdownDoclet implements Doclet {
     /// @return  true if completed without errors, false if errors occurred.
     @Override
     public boolean run(DocletEnvironment environment) {
-        LinkResolver.setReporter(reporter);
-
         if (Configuration.getCreateExternalLinks()) {
             ClassLoader classloader = Thread.currentThread().getContextClassLoader();
             InputStream inputStream = classloader.getResourceAsStream("java_platform_modules.text");
@@ -243,7 +240,7 @@ public class MarkdownDoclet implements Doclet {
         }
 
         ModuleDirectiveGenerator.setEnvironment(environment);
-        ApiScanner scanner = new ApiScanner(environment, reporter);
+        ApiScanner scanner = new ApiScanner(environment);
         Api api = scanner.scan(environment.getIncludedElements());
         api.sort();
         LinkResolver.setApi(api);
@@ -252,8 +249,8 @@ public class MarkdownDoclet implements Doclet {
         try{
             writer.writeDocs(api);
         } catch (IOException ex) {
-            reporter.print(Diagnostic.Kind.ERROR, ex.getMessage());
-            reporter.print(Diagnostic.Kind.ERROR, Arrays.toString(ex.getStackTrace()));
+            Configuration.getReporter().print(Diagnostic.Kind.ERROR, ex.getMessage());
+            Configuration.getReporter().print(Diagnostic.Kind.ERROR, Arrays.toString(ex.getStackTrace()));
             return FAILED;
         }
         return OK;
