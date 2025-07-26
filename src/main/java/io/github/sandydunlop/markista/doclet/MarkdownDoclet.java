@@ -47,15 +47,16 @@ public class MarkdownDoclet implements Doclet {
             "-external",
             "-flatten",
 
-            // "-sourcepath", "src/main/java/",
-            // "-subpackages", "io.github.sandydunlop",
+            "-sourcepath", "src/main/java/",
+            "-subpackages", "io.github.sandydunlop",
 
             // "--module-source-path", "src/main/java",
-            // "--module", "sandydunlop.markista",
+            // "--module-path", "build/libs",
+            // "--module", "markista",
 
-            "--module-source-path", "/Users/sandy/git/cu/dev/food-example/*/src/main/java",
-            "--module", "serviceinterface,consumer,provider",
-            "--module-path", "../food-example/*/build/libs",
+            // "--module-source-path", "/Users/sandy/git/cu/dev/food-example/*/src/main/java",
+            // "--module-path", "../food-example/*/build/libs",
+            // "--module", "serviceinterface,consumer,provider",
 
             "-verbose"
         };
