@@ -8,30 +8,30 @@ class UtilTests {
 	@Test
 	void simplifyName_primitive() {
 		assertEquals("int", 
-				Util.simplifyNames("int"));
+				Utils.simplifyNames("int"));
 	}
 
 	@Test
 	void simplifyName_simpleName() {
 		assertEquals("PackageElement", 
-				Util.simplifyNames("PackageElement"));
+				Utils.simplifyNames("PackageElement"));
 	}
 
 	@Test
 	void simplifyName_qualifiedName() {
 		assertEquals("PackageElement", 
-				Util.simplifyNames("javax.lang.model.element.PackageElement"));
+				Utils.simplifyNames("javax.lang.model.element.PackageElement"));
 	}
 
 	@Test
 	void simplifyName_arrayOfualifiedName() {
 		assertEquals("Object[]", 
-				Util.simplifyNames("java.lang.Object[]"));
+				Utils.simplifyNames("java.lang.Object[]"));
 	}
 
 	@Test
 	void simplifyName_setOfQualifiedName() {
-		assertEquals("Set<? extends MarkdownDoclet.Option>", Util.simplifyNames(
+		assertEquals("Set<? extends MarkdownDoclet.Option>", Utils.simplifyNames(
 					"java.util.Set<? extends io.github.sandydunlop.markdown.MarkdownDoclet.Option>"));
 	}
 }

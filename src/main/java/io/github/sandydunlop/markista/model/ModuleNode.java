@@ -2,9 +2,10 @@ package io.github.sandydunlop.markista.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ModuleNode extends Node implements PackageOwner{
-    private List<ModuleDirectiveNode> directives = new ArrayList<>();
+    private List<DirectiveNode> directives = new ArrayList<>();
     private List<PackageMember> packages = new ArrayList<>();
     private List<FieldNode> constantValues = new ArrayList<>();
 
@@ -26,11 +27,11 @@ public class ModuleNode extends Node implements PackageOwner{
         packages.add(packageNode);
     }
 
-    public void addDirective(ModuleDirectiveNode directive) {
+    public void addDirective(DirectiveNode directive) {
         directives.add(directive);
     }
 
-    public List<ModuleDirectiveNode> getDirectives() {
+    public List<DirectiveNode> getDirectives() {
         return directives;
     }
 
@@ -40,5 +41,35 @@ public class ModuleNode extends Node implements PackageOwner{
 
     public List<FieldNode> getConstantValues() {
         return constantValues;
+    }
+
+    public List<DirectiveNode> getExports() {
+        return directives.stream()
+                             .filter(item -> item.getKind() == DirectiveNode.Kind.EXPORTS)
+                             .collect(Collectors.toList());
+    }
+
+    public List<DirectiveNode> getRequires() {
+        return directives.stream()
+                             .filter(item -> item.getKind() == DirectiveNode.Kind.REQUIRES)
+                             .collect(Collectors.toList());
+    }
+
+    public List<DirectiveNode> getOpens() {
+        return directives.stream()
+                             .filter(item -> item.getKind() == DirectiveNode.Kind.OPENS)
+                             .collect(Collectors.toList());
+    }
+
+    public List<DirectiveNode> getUses() {
+        return directives.stream()
+                             .filter(item -> item.getKind() == DirectiveNode.Kind.USES)
+                             .collect(Collectors.toList());
+    }
+
+    public List<DirectiveNode> getProvides() {
+        return directives.stream()
+                             .filter(item -> item.getKind() == DirectiveNode.Kind.PROVIDES)
+                             .collect(Collectors.toList());
     }
 }

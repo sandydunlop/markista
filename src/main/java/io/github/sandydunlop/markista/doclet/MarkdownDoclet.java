@@ -1,6 +1,7 @@
 package io.github.sandydunlop.markista.doclet;
  
 import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.util.Configuration;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.ModuleDirectiveGenerator;
 
@@ -35,7 +36,7 @@ public class MarkdownDoclet implements Doclet {
     }
 
     /// The starting point of Markista if it is being used
-    /// withiout the Javadoc command. This is useful for debugging.
+    /// without the Javadoc command. This is useful for debugging.
     /// @param args this parameter is ignored.
     public static void main(String[] args) {
         String[] docletArgs = new String[]{
@@ -50,7 +51,12 @@ public class MarkdownDoclet implements Doclet {
             "-subpackages", "io.github.sandydunlop",
 
             // "--module-source-path", "src/main/java",
-            // "--module", "sandydunlop.markista",
+            // "--module-path", "build/libs",
+            // "--module", "markista",
+
+            // "--module-source-path", "/Users/sandy/git/cu/dev/food-example/*/src/main/java",
+            // "--module-path", "../food-example/*/build/libs",
+            // "--module", "serviceinterface,consumer,provider",
 
             "-verbose"
         };

@@ -1,0 +1,11 @@
+{
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.debug.settings.onBuildFailureProceed": true,
+    "cSpell.words": [
+        "markista",
+        "mdautolink",
+        "NOSONAR",
+        "sandydunlop",
+        "Supertypes"
+    ]
+}

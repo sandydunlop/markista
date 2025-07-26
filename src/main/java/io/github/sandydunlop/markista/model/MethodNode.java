@@ -35,8 +35,8 @@ public class MethodNode extends Node {
         return returnType;
     }
 
-    public void setParams(List<ParamNode> params) {
-        this.params = params;
+    public void addParam(ParamNode param) {
+        params.add(param);
     }
 
     public List<ParamNode> getParams() {

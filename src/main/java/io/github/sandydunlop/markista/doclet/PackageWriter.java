@@ -15,8 +15,8 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.Files;
-import io.github.sandydunlop.markista.util.Util;
+import io.github.sandydunlop.markista.util.FileUtils;
+import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -35,30 +35,29 @@ public class PackageWriter {
 
     private String outputDirectory;
     private Writer writer = null;
-    private Files fileUtils;
+    private FileUtils fileUtils;
 
     /// Constructor that sets up the locations API documents will be written to.
     public PackageWriter(String outputDirectory) {
         this.outputDirectory = outputDirectory;
     }
 
-    /// Ouput the documentation files for the specified API
+    /// Output the documentation files for the specified API
     /// @param moduleNode  The module containing the packages to output the documentation for
     public void writeDocs(ModuleNode moduleNode) throws IOException {
-        fileUtils = new Files(moduleNode, outputDirectory);
+        fileUtils = new FileUtils(moduleNode, outputDirectory);
         for (PackageMember node : moduleNode.getPackages()) {
             if (node instanceof PackageNode packageNode) {
-                // outputConstantValues(moduleNode);
                 outputPackageDoc(packageNode);
             }
         }
     }
 
     private void outputPackageDoc(PackageNode packageNode) throws IOException {
-        LinkResolver.setLocation(packageNode.getName()); // Used for generating link URLs
+        LinkResolver.setCurrentPackageName(packageNode.getName()); // Used for generating link URLs
         writer = fileUtils.createFile(null, packageNode.getName());    
         writer.write("# Package " + packageNode.getName() + "\n");
-        writer.write("\n\n" + Markdown.formatTaggedText(packageNode.getFullBody()) + "\n\n");
+        writer.write("\n\n" + Markdown.formatText(packageNode.getFullBody()) + "\n\n");
         outputPackageMembers("Packages", packageNode.getPackages());
         outputPackageMembers("Classes", packageNode.getClasses());
         outputPackageMembers("Interfaces", packageNode.getInterfaces());
@@ -91,7 +90,7 @@ public class PackageWriter {
                 .addColumn(memberKind)
                 .addColumn(TEXT_DESCRIPTION);
         for (PackageMember member : members) {
-            table.addRow(Markdown.mdDocumentLink(member.getName()), Util.inOneLine(Markdown.formatTaggedText(member.getDescription())));
+            table.addRow(Markdown.mdDocumentLink(member.getName()), Utils.inOneLine(Markdown.formatText(member.getDescription())));
         }
         table.render(writer, 4);
     }
@@ -111,7 +110,7 @@ public class PackageWriter {
         writer.write("\n----\n\n");
 
         if (!typeNode.getBody().isEmpty()) {
-            writer.write(Markdown.formatTaggedText(typeNode.getBody()));
+            writer.write(Markdown.formatText(typeNode.getBody()));
             writer.write("\n\n");
         }
 
@@ -206,7 +205,7 @@ public class PackageWriter {
             if (!(member instanceof TypeNode nestedClassNode)) continue;
             table.addRow(nestedClassNode.getModifiersString(),
                         Markdown.mdDocumentLink(nestedClassNode.getSimpleName()), 
-                        Markdown.formatTaggedText(nestedClassNode.getFirstSentence()));
+                        Markdown.formatText(nestedClassNode.getFirstSentence()));
         }
         table.render(writer);
     }
@@ -217,7 +216,7 @@ public class PackageWriter {
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode constantNode : enumNode.getConstants()) {
             String link = Markdown.mdAnchorLink(constantNode.getSimpleName());
-            table.addRow(link, Markdown.formatTaggedText(constantNode.getFirstSentence()));
+            table.addRow(link, Markdown.formatText(constantNode.getFirstSentence()));
         }
         table.render(writer);
     }
@@ -230,7 +229,7 @@ public class PackageWriter {
         for (FieldNode fieldNode : fields) {
             String link = Markdown.mdAutoLink(fieldNode.getType().getQualifiedName(), true);
             table.addRow(fieldNode.getModifiersString() + link, 
-                        Markdown.mdAnchorLink(fieldNode.getSimpleName()), Markdown.formatTaggedText(fieldNode.getFirstSentence()));
+                        Markdown.mdAnchorLink(fieldNode.getSimpleName()), Markdown.formatText(fieldNode.getFirstSentence()));
         }
         table.render(writer);
     }
@@ -241,7 +240,7 @@ public class PackageWriter {
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
             table.addRow(methodNode.getSimpleName() + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
-                        Markdown.formatTaggedText(methodNode.getFirstSentence()));
+                        Markdown.formatText(methodNode.getFirstSentence()));
         }
         table.render(writer);
     }
@@ -257,7 +256,7 @@ public class PackageWriter {
             table.addRow(methodNode.getModifiersString() + 
                         Markdown.mdAutoLink(methodNode.getReturnType().getQualifiedName(), true), 
                         Markdown.mdAnchorLink(methodNode.getSimpleName()) + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
-                        Util.inOneLine(Markdown.formatTaggedText(methodNode.getFirstSentence())));
+                        Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -267,11 +266,11 @@ public class PackageWriter {
             writer.write("### " + constant.getSimpleName() + "\n\n");
             writer.write("public static final " + Markdown.mdAutoLink(enumNode.getQualifiedName(), true));
             writer.write(" " + constant.fullSignature() + "\n\n");
-            writer.write(Markdown.formatTaggedText(constant.getFullBody()) + "\n\n");
+            writer.write(Markdown.formatText(constant.getFullBody()) + "\n\n");
 
             if (!constant.getSince().isEmpty()) {
                 writer.write("**Since:**\n\n");
-                writer.write(Markdown.formatTaggedText(constant.getSince()));
+                writer.write(Markdown.formatText(constant.getSince()));
                 writer.write("\n\n");
             }
 
@@ -300,7 +299,7 @@ public class PackageWriter {
             } else if (node instanceof FieldNode field) {
                 writer.write("### " + field.getSimpleName() + "\n\n");
             }
-            writer.write(Markdown.formatTaggedText(node.getFullBody()) + "\n\n");
+            writer.write(Markdown.formatText(node.getFullBody()) + "\n\n");
 
             if (node.getDeprecation() != Deprecation.NONE || !node.getDeprecationText().isEmpty()) {
                 outputDeprecation(node.getDeprecation(), node.getDeprecationText());
@@ -312,7 +311,7 @@ public class PackageWriter {
 
             if (!node.getSince().isEmpty()) {
                 writer.write("**Since:**\n\n");
-                writer.write(Markdown.formatTaggedText(node.getSince()));
+                writer.write(Markdown.formatText(node.getSince()));
                 writer.write("\n\n");
             }
 
@@ -338,7 +337,7 @@ public class PackageWriter {
 
         if (!method.getReturnDescription().isEmpty()) {
             writer.write("**Returns:**\n\n");
-            writer.write(Markdown.formatTaggedText(method.getReturnDescription()) + "\n\n");
+            writer.write(Markdown.formatText(method.getReturnDescription()) + "\n\n");
         }
 
         if (!method.getThrownTypes().isEmpty()) {
@@ -376,7 +375,7 @@ public class PackageWriter {
             for (ParamNode param : method.getParams()) {
                 if (!param.getBody().isEmpty()) {
                     writer.write("`" +param.getSimpleName() + "` - " + 
-                            Util.inOneLine(Markdown.formatTaggedText(param.getBody())) +"\n\n");
+                            Utils.inOneLine(Markdown.formatText(param.getBody())) +"\n\n");
                 }
             }
         }
@@ -388,7 +387,7 @@ public class PackageWriter {
         if (text.isEmpty()) {
             writer.write("    This has been marked as deprecated.\n");
         } else {
-            writer.write("    " + Markdown.formatTaggedText(text));
+            writer.write("    " + Markdown.formatText(text));
         }
         writer.write("\n\n");
     }

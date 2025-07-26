@@ -1,6 +1,6 @@
 package io.github.sandydunlop.markista.util;
 
-import io.github.sandydunlop.markista.model.ModuleDirectiveNode;
+import io.github.sandydunlop.markista.model.DirectiveNode;
 
 import java.util.List;
 
@@ -15,7 +15,6 @@ import javax.lang.model.element.ModuleElement.RequiresDirective;
 import javax.lang.model.element.ModuleElement.UsesDirective;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -30,7 +29,7 @@ public class ModuleDirectiveGenerator {
         environment = env;
     }
 
-    public static ModuleDirectiveNode createFrom(Directive directive) {
+    public static DirectiveNode createFrom(Directive directive) {
         switch(directive.getKind()) {
             case DirectiveKind.REQUIRES:
                 return createRequiresDirective(directive);
@@ -47,23 +46,23 @@ public class ModuleDirectiveGenerator {
         }
     }
 
-    public static ModuleDirectiveNode createRequiresDirective(Directive directive) {
-        ModuleDirectiveNode.Kind kind = ModuleDirectiveNode.Kind.REQUIRES;
+    public static DirectiveNode createRequiresDirective(Directive directive) {
+        DirectiveNode.Kind kind = DirectiveNode.Kind.REQUIRES;
         RequiresDirective requires = (RequiresDirective) directive;
         Element dependency = requires.getDependency();
         ModuleElement directiveModuleElement = environment.getElementUtils().getModuleOf(dependency);
         String name = directiveModuleElement.getQualifiedName().toString();
         boolean transitive = requires.isTransitive();
-        return new ModuleDirectiveNode(kind, name, transitive);
+        return new DirectiveNode(kind, name, transitive);
     }
 
-    public static ModuleDirectiveNode createExportsDirective(Directive directive) {
-        ModuleDirectiveNode.Kind kind = ModuleDirectiveNode.Kind.EXPORTS;
+    public static DirectiveNode createExportsDirective(Directive directive) {
+        DirectiveNode.Kind kind = DirectiveNode.Kind.EXPORTS;
         ExportsDirective exports = (ExportsDirective) directive;
         PackageElement directivePackageElement = exports.getPackage();
         String name = directivePackageElement.getQualifiedName().toString();
         List<? extends ModuleElement> modules = exports.getTargetModules();
-        ModuleDirectiveNode directiveNode = new ModuleDirectiveNode(kind, name);
+        DirectiveNode directiveNode = new DirectiveNode(kind, name);
         if (modules != null) {
             for (ModuleElement moduleElement : modules) {
                 directiveNode.addPackage(moduleElement.getQualifiedName().toString());
@@ -72,13 +71,13 @@ public class ModuleDirectiveGenerator {
         return directiveNode; 
     }
 
-    public static ModuleDirectiveNode createOpensDirective(Directive directive) {
-        ModuleDirectiveNode.Kind kind = ModuleDirectiveNode.Kind.OPENS;
+    public static DirectiveNode createOpensDirective(Directive directive) {
+        DirectiveNode.Kind kind = DirectiveNode.Kind.OPENS;
         OpensDirective opens = (OpensDirective) directive;
         PackageElement directivePackageElement = opens.getPackage();
         String name = directivePackageElement.getQualifiedName().toString();
         List<? extends ModuleElement> modules = opens.getTargetModules();
-        ModuleDirectiveNode directiveNode = new ModuleDirectiveNode(kind, name);
+        DirectiveNode directiveNode = new DirectiveNode(kind, name);
         if (modules != null) {
             for (ModuleElement moduleElement : modules) {
                 directiveNode.addPackage(moduleElement.getQualifiedName().toString());
@@ -87,22 +86,21 @@ public class ModuleDirectiveGenerator {
         return directiveNode; 
     }
 
-    public static ModuleDirectiveNode createUsesDirective(Directive directive) {
-        ModuleDirectiveNode.Kind kind = ModuleDirectiveNode.Kind.USES;
+    public static DirectiveNode createUsesDirective(Directive directive) {
+        DirectiveNode.Kind kind = DirectiveNode.Kind.USES;
         UsesDirective uses = (UsesDirective) directive;
-        //TODO details
-        String name = "";
-        return new ModuleDirectiveNode(kind, name);
+        String name = uses.getService().getQualifiedName().toString();
+        return new DirectiveNode(kind, name);
     }
 
-    public static ModuleDirectiveNode createProvidesDirective(Directive directive) {
-        ModuleDirectiveNode.Kind kind = ModuleDirectiveNode.Kind.PROVIDES;
+    public static DirectiveNode createProvidesDirective(Directive directive) {
+        DirectiveNode.Kind kind = DirectiveNode.Kind.PROVIDES;
         ProvidesDirective provides = (ProvidesDirective) directive;
         TypeElement service = provides.getService();
-        //TODO details 'provides interface/abstract with implementation'
-        String name = service.getQualifiedName().toString(); // Implementation
-        ModuleDirectiveNode directiveNode = new ModuleDirectiveNode(kind, name);
-        List<? extends TypeMirror> interfaces = service.getInterfaces();
+        String name = service.getQualifiedName().toString();
+        DirectiveNode directiveNode = new DirectiveNode(kind, name);
+        TypeUtils.setImplementations(directiveNode, provides.getImplementations());
+        directiveNode.setInterface(service.getQualifiedName().toString());
         return directiveNode;
     }
 }

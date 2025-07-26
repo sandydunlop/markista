@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.doclet;
+package io.github.sandydunlop.markista.util;
 
 import jdk.javadoc.doclet.Reporter;
 

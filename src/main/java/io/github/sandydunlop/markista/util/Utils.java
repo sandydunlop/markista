@@ -1,9 +1,9 @@
 package io.github.sandydunlop.markista.util;
 
 /// A set of utility methods for changing between qualified and unqualified names.
-public class Util {
+public class Utils {
 
-    private Util(){
+    private Utils(){
         // This hides the public constructor
     }
 

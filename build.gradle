@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'io.github.sandydunlop'
-version = '0.1.4'
+version = '0.1.5'
 
 repositories {
 	mavenCentral()
@@ -16,7 +16,9 @@ repositories {
 dependencies {
 	implementation(localGroovy())
 	testImplementation(platform('org.junit:junit-bom:5.13.3'))
-	testImplementation('org.junit.jupiter:junit-jupiter')
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
+    testImplementation 'org.mockito:mockito-core:5.18.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.18.0'
 	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 }
 
@@ -109,15 +111,4 @@ publishing {
         into '../../../website/docs/markista/javadoc'
     }
     website.dependsOn copyDocs
-}
-
-subprojects {
-    apply plugin: 'java'
-
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-    }
 }

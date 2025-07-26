@@ -5,12 +5,17 @@ public class Reference {
     private Scope scope = Scope.NONE;
     private String name = "";
     private String uri = "";
+    private String anchor = "";
 
     public Reference() {
     }
     
-    public Reference(Kind kind, String name, String value) {
-        this(Scope.LOCAL, kind, name, value);
+    public Reference(Kind kind, String name, String uri) {
+        this(Scope.LOCAL, kind, name, uri);
+    }
+
+    public Reference(Scope scope, Kind kind, String name) {
+        this(scope, kind, name, "");
     }
 
     public Reference(Scope scope, Kind kind, String name, String uri) {
@@ -51,13 +56,22 @@ public class Reference {
     public String getUri() {
         return uri;
     }
+
+    public void setAnchor(String anchor) {
+        this.anchor = anchor;
+    }
+
+    public String getAnchor() {
+        return anchor;
+    }
     
     public enum Kind {
         NONE,
+        URL,
+        PAGE,
+        MODULE,
         PACKAGE,
         TYPE,
-        PAGE,
-        URL,
         PRIMITIVE,
         VOID
     }
