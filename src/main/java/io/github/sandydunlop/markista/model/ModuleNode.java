@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ModuleNode extends Node implements PackageOwner{
-    private List<ModuleDirectiveNode> directives = new ArrayList<>();
+    private List<DirectiveNode> directives = new ArrayList<>();
     private List<PackageMember> packages = new ArrayList<>();
     private List<FieldNode> constantValues = new ArrayList<>();
 
@@ -26,11 +26,11 @@ public class ModuleNode extends Node implements PackageOwner{
         packages.add(packageNode);
     }
 
-    public void addDirective(ModuleDirectiveNode directive) {
+    public void addDirective(DirectiveNode directive) {
         directives.add(directive);
     }
 
-    public List<ModuleDirectiveNode> getDirectives() {
+    public List<DirectiveNode> getDirectives() {
         return directives;
     }
 

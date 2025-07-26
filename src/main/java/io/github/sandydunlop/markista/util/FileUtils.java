@@ -7,15 +7,14 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 
-import io.github.sandydunlop.markista.doclet.Configuration;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 
-public class Files {
+public class FileUtils {
     private String outputDirectory;
     private String flattenedDirectories = null;
 
-    public Files(ModuleNode moduleNode, String outputDir) {
+    public FileUtils(ModuleNode moduleNode, String outputDir) {
         outputDirectory = outputDir;
         if (Configuration.getFlattenDirectories() && moduleNode != null) {
             setFlattenedDirectories(moduleNode);

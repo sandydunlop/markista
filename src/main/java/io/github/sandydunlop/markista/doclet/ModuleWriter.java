@@ -7,16 +7,17 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
-import io.github.sandydunlop.markista.util.Files;
+import io.github.sandydunlop.markista.util.Configuration;
+import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.Util;
+import io.github.sandydunlop.markista.util.Utils;
 
 public class ModuleWriter {
     private static final String TEXT_PACKAGE = "Package";
     private static final String TEXT_DESCRIPTION = "Description";
     private static final String TEXT_MODIFIER_AND_TYPE = "Modifier and Type";
 
-    private Files fileUtils;
+    private FileUtils fileUtils;
 
     /// Constructor that sets up the locations API documents will be written to.
     public ModuleWriter() {
@@ -35,7 +36,7 @@ public class ModuleWriter {
     }
 
     private void outputModuleDoc(ModuleNode moduleNode) throws IOException {
-        fileUtils = new Files(moduleNode, Configuration.getOutputDirectory());
+        fileUtils = new FileUtils(moduleNode, Configuration.getOutputDirectory());
         Writer writer = fileUtils.createModuleFile(moduleNode.getName(), "index.md");
         if (moduleNode.getName().isEmpty()) {
             writer.write("# API\n");
@@ -49,7 +50,7 @@ public class ModuleWriter {
                     .addColumn(TEXT_PACKAGE)
                     .addColumn(TEXT_DESCRIPTION);
             for (PackageMember member : moduleNode.getPackages()) {
-                table.addRow(formatPackageLink(member), Util.inOneLine(Markdown.formatText(member.getDescription())));
+                table.addRow(formatPackageLink(member), Utils.inOneLine(Markdown.formatText(member.getDescription())));
             }
             table.render(writer);
         }

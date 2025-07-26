@@ -1,22 +1,15 @@
 package io.github.sandydunlop.markista.util;
 
-import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.DocTree.Kind;
-import com.sun.source.doctree.StartElementTree;
-
 import java.util.List;
 
 import javax.tools.Diagnostic;
-import javax.lang.model.element.Name;
 
-import io.github.sandydunlop.markista.doclet.Configuration;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 
 public class Markdown {
-    private static final String TEXT_MALFORMED_TAG = "Malformed Javadoc tag: ";
     private Markdown() {
         // This hides the public constructor
     }
@@ -106,7 +99,7 @@ public class Markdown {
     /// @return markdown text for a link to a document for the specified identifier or an anchor link
     public static String mdAutoLink(String identifier, boolean simplify) {
         boolean isMethod = identifier.indexOf('(') > -1;
-        String name = Util.removeParentheses(identifier);
+        String name = Utils.removeParentheses(identifier);
 
         String pre = "";
         String text;
@@ -114,7 +107,7 @@ public class Markdown {
         int a = name.indexOf('#');
         if (a > 0) {
             anchor = name.substring(a).toLowerCase();
-            name = Util.removeGenerics(name.substring(0, a));
+            name = Utils.removeGenerics(name.substring(0, a));
         }
 
         if (name == null) {
@@ -130,7 +123,7 @@ public class Markdown {
             name = name.substring(p + 1);
         }
         Reference link = LinkResolver.resolve(name);
-        text = escape(simplify ?  Util.simplifyNames(name) : name);
+        text = escape(simplify ?  Utils.simplifyNames(name) : name);
         if (!anchor.isEmpty()) {
             text = anchor.substring(1);
         }

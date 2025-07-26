@@ -2,7 +2,6 @@ package io.github.sandydunlop.markista.util;
 
 import com.sun.source.util.DocTreePath;
 
-import io.github.sandydunlop.markista.doclet.Configuration;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;

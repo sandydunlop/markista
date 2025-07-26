@@ -3,19 +3,19 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModuleDirectiveNode {
+public class DirectiveNode {
     private Kind kind;
     private String name;
     private boolean transitive;
     private List<String> packages = new ArrayList<>();
 
-    public ModuleDirectiveNode(Kind kind, String name, boolean transitive) {
+    public DirectiveNode(Kind kind, String name, boolean transitive) {
         this.kind = kind;
         this.name = name;
         this.transitive = transitive;
     }
 
-    public ModuleDirectiveNode(Kind kind, String name) {
+    public DirectiveNode(Kind kind, String name) {
         this.kind = kind;
         this.name = name;
     }

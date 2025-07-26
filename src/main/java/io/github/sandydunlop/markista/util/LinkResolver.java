@@ -7,7 +7,6 @@ import java.util.List;
 
 import javax.tools.Diagnostic;
 
-import io.github.sandydunlop.markista.doclet.Configuration;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.PackageMember;

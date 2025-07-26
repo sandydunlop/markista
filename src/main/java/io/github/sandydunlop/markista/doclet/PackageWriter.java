@@ -15,8 +15,8 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.Files;
-import io.github.sandydunlop.markista.util.Util;
+import io.github.sandydunlop.markista.util.FileUtils;
+import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -35,7 +35,7 @@ public class PackageWriter {
 
     private String outputDirectory;
     private Writer writer = null;
-    private Files fileUtils;
+    private FileUtils fileUtils;
 
     /// Constructor that sets up the locations API documents will be written to.
     public PackageWriter(String outputDirectory) {
@@ -45,7 +45,7 @@ public class PackageWriter {
     /// Ouput the documentation files for the specified API
     /// @param moduleNode  The module containing the packages to output the documentation for
     public void writeDocs(ModuleNode moduleNode) throws IOException {
-        fileUtils = new Files(moduleNode, outputDirectory);
+        fileUtils = new FileUtils(moduleNode, outputDirectory);
         for (PackageMember node : moduleNode.getPackages()) {
             if (node instanceof PackageNode packageNode) {
                 // outputConstantValues(moduleNode);
@@ -91,7 +91,7 @@ public class PackageWriter {
                 .addColumn(memberKind)
                 .addColumn(TEXT_DESCRIPTION);
         for (PackageMember member : members) {
-            table.addRow(Markdown.mdDocumentLink(member.getName()), Util.inOneLine(Markdown.formatText(member.getDescription())));
+            table.addRow(Markdown.mdDocumentLink(member.getName()), Utils.inOneLine(Markdown.formatText(member.getDescription())));
         }
         table.render(writer, 4);
     }
@@ -257,7 +257,7 @@ public class PackageWriter {
             table.addRow(methodNode.getModifiersString() + 
                         Markdown.mdAutoLink(methodNode.getReturnType().getQualifiedName(), true), 
                         Markdown.mdAnchorLink(methodNode.getSimpleName()) + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
-                        Util.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
+                        Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -376,7 +376,7 @@ public class PackageWriter {
             for (ParamNode param : method.getParams()) {
                 if (!param.getBody().isEmpty()) {
                     writer.write("`" +param.getSimpleName() + "` - " + 
-                            Util.inOneLine(Markdown.formatText(param.getBody())) +"\n\n");
+                            Utils.inOneLine(Markdown.formatText(param.getBody())) +"\n\n");
                 }
             }
         }

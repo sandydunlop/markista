@@ -4,9 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.sun.source.util.DocTreePath;
 
-import io.github.sandydunlop.markista.doclet.Configuration;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 
@@ -18,12 +15,10 @@ import javax.tools.Diagnostic.Kind;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 class FilesTests {
-    Files files;
+    FileUtils files;
     ModuleNode module;
 
     @Mock static Reporter reporter = new Reporter() {
@@ -51,7 +46,7 @@ class FilesTests {
     @BeforeEach
     void init() {
         module = new ModuleNode("sandydunlop.markista");
-        files = new Files(module, "/tmp/doc");
+        files = new FileUtils(module, "/tmp/doc");
     }
 
     @Test
