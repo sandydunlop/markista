@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
@@ -9,6 +10,7 @@ import javax.tools.Diagnostic;
 
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
@@ -19,7 +21,8 @@ import io.github.sandydunlop.markista.model.Reference;
 /// packages and their contents.
 public class LinkResolver {
     private static final List<String> primitives = Arrays.asList("boolean","byte","char","short","int","long","float","double");
-    private static String location = null;
+    private static String location = "";
+    private static HashMap<String,String> nativeModuleNames = new HashMap<>();
     private static HashMap<String,String> nativePackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
@@ -45,6 +48,7 @@ public class LinkResolver {
     public static void addNativeModule(String moduleName, String baseUrl, String s) {
         Optional<Module> module = moduleLayer.findModule(moduleName);
         if (module.isPresent()) {
+            nativeModuleNames.put(moduleName, baseUrl);
             for (String packageName : module.get().getPackages()) {
                 nativePackageNames.put(packageName, baseUrl);
                 suffix.put(packageName, s);
@@ -86,26 +90,21 @@ public class LinkResolver {
 
     public static Reference resolve(String from, String to) {
         String original = to;
-        Reference link = new Reference();
-        if (to == null) return link;
-        if (to.equals("?") || to.indexOf("<") > -1) {
-            return link;
+        if (to == null || to.isEmpty() || to.equals("?") || to.indexOf("<") > -1) {
+            return new Reference();
         }
         if ("void".equals(to) || "Void".equals(to)){
-            link.setKind(Reference.Kind.VOID);
-            link.setScope(Reference.Scope.NATIVE);
-            return link;
+            return new Reference(Reference.Scope.NATIVE, Reference.Kind.VOID, to);
         }
         if (primitives.contains(to)){
-            link.setKind(Reference.Kind.PRIMITIVE);
-            link.setScope(Reference.Scope.NATIVE);
+            return new Reference(Reference.Scope.NATIVE, Reference.Kind.PRIMITIVE, to);
+        }
+        Reference link = resolveModule(to);
+        if (link.getKind() != Reference.Kind.NONE) {
             return link;
         }
-        String url = resolveNative(to);
-        if (url != null) {
-            link.setUri(url);
-            link.setKind(Reference.Kind.URL);
-            link.setScope(Reference.Scope.NATIVE);
+        link = resolveNative(to);
+        if (link.getKind() != Reference.Kind.NONE) {
             return link;
         }
         String fromPackageName = getPackageName(from);
@@ -137,7 +136,7 @@ public class LinkResolver {
         return link;
     }
 
-    public static String resolveNative(String to) {
+    public static Reference resolveNative(String to) {
         int dot = 0;
         do {
             dot = to.indexOf(".", dot + 1);
@@ -147,11 +146,25 @@ public class LinkResolver {
                 if (baseUrl != null) {
                     String toPackage = getPackageName(to);
                     String toClass = getClassName(to);
-                    return baseUrl + "/" + toPackage.replace(".", "/") + "/" + toClass+ suffix.get(id);
+                    String uri = baseUrl + "/" + toPackage.replace(".", "/") + "/" + toClass+ suffix.get(id);
+                    return new Reference(Reference.Scope.NATIVE, Reference.Kind.URL, to, uri);
                 }
             }
         } while(dot != -1);
-        return null;
+        return new Reference();
+    }
+
+    public static Reference resolveModule(String to) {
+        for (ModuleNode moduleNode : api.getModules()) {
+            if (moduleNode.getName().equals(to)) {
+                return new Reference(Reference.Scope.LOCAL, Reference.Kind.MODULE, to, "../" + to);
+            }
+        }
+        String baseUrl = nativeModuleNames.get(to);
+        if (baseUrl != null) {
+            return new Reference(Reference.Scope.NATIVE, Reference.Kind.URL, to, baseUrl + "/module-summary.html");
+        }
+        return new Reference();
     }
 
     public static boolean isPackageQualified(String from, String to) {

@@ -14,6 +14,10 @@ public class Reference {
         this(Scope.LOCAL, kind, name, uri);
     }
 
+    public Reference(Scope scope, Kind kind, String name) {
+        this(scope, kind, name, "");
+    }
+
     public Reference(Scope scope, Kind kind, String name, String uri) {
         this.scope = scope;
         this.kind = kind;
@@ -63,10 +67,11 @@ public class Reference {
     
     public enum Kind {
         NONE,
+        URL,
+        PAGE,
+        MODULE,
         PACKAGE,
         TYPE,
-        PAGE,
-        URL,
         PRIMITIVE,
         VOID
     }

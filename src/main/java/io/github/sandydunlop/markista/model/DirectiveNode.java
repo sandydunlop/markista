@@ -8,6 +8,8 @@ public class DirectiveNode {
     private String name;
     private boolean transitive;
     private List<String> packages = new ArrayList<>();
+    private List<String> implementations = new ArrayList<>();
+    private List<String> interfaces = new ArrayList<>();
 
     public DirectiveNode(Kind kind, String name, boolean transitive) {
         this.kind = kind;
@@ -40,6 +42,21 @@ public class DirectiveNode {
         return packages;
     }
 
+    public void addImplementation(String implementationName) {
+        implementations.add(implementationName);
+    }
+
+    public List<String> getImplementations() {
+        return implementations;
+    }
+
+    public void addInterface(String interfaceName) {
+        interfaces.add(interfaceName);
+    }
+
+    public List<String> getInterfaces() {
+        return interfaces;
+    }
     public enum Kind {
         NONE,
         REQUIRES,

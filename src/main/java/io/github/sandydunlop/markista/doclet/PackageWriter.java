@@ -42,13 +42,12 @@ public class PackageWriter {
         this.outputDirectory = outputDirectory;
     }
 
-    /// Ouput the documentation files for the specified API
+    /// Output the documentation files for the specified API
     /// @param moduleNode  The module containing the packages to output the documentation for
     public void writeDocs(ModuleNode moduleNode) throws IOException {
         fileUtils = new FileUtils(moduleNode, outputDirectory);
         for (PackageMember node : moduleNode.getPackages()) {
             if (node instanceof PackageNode packageNode) {
-                // outputConstantValues(moduleNode);
                 outputPackageDoc(packageNode);
             }
         }

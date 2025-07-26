@@ -15,6 +15,7 @@ import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Deprecation;
+import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
@@ -40,6 +41,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.ModuleElement.Directive;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.VariableElement;
@@ -538,6 +540,18 @@ public class TypeUtils {
                 param.setBody(createText(paramTree.getDescription()));
             }
             methodDoc.addParam(param);
+        }
+    }
+
+    public static void setImplementations(DirectiveNode directiveNode, List<? extends TypeElement> implementations) {
+        for (TypeElement e : implementations) {
+            directiveNode.addImplementation(e.getQualifiedName().toString());
+        }
+    }
+
+    public static void setInterfaces(DirectiveNode directiveNode, List<? extends TypeMirror> implementations) {
+        for (TypeMirror e : implementations) {
+            directiveNode.addInterface(e.toString());
         }
     }
 

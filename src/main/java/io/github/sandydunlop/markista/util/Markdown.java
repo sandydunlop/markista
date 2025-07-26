@@ -67,6 +67,7 @@ public class Markdown {
                     sb.append("`");
                     break;
                 case Text.SegmentKind.LINK:
+                    sb.append(formatLink(segment));
                     break;
                 case Text.SegmentKind.START:
                     break;
@@ -100,7 +101,6 @@ public class Markdown {
     public static String mdAutoLink(String identifier, boolean simplify) {
         boolean isMethod = identifier.indexOf('(') > -1;
         String name = Utils.removeParentheses(identifier);
-
         String pre = "";
         String text;
         String anchor = "";
@@ -109,7 +109,6 @@ public class Markdown {
             anchor = name.substring(a).toLowerCase();
             name = Utils.removeGenerics(name.substring(0, a));
         }
-
         if (name == null) {
             return identifier;
         } else if (name.indexOf('<') > -1) {
@@ -139,6 +138,8 @@ public class Markdown {
             return String.format("%s[%s](%s.md%s)", pre, link.getName(), link.getUri(), link.getAnchor());
         } else if (link.getKind() == Reference.Kind.PACKAGE) {
             return String.format("%s[%s](%s/index.md%s)", pre, link.getName(), link.getUri(), link.getAnchor());
+        } else if (link.getKind() == Reference.Kind.MODULE) {
+            return String.format("%s[%s](%s/index.md)", pre, link.getName(), link.getUri());
         } else if (link.getKind() == Reference.Kind.URL) {
             return String.format("%s[%s](%s%s)", pre, link.getName(), link.getUri(), link.getAnchor());
         }

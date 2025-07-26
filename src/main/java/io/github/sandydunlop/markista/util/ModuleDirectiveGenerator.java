@@ -15,7 +15,6 @@ import javax.lang.model.element.ModuleElement.RequiresDirective;
 import javax.lang.model.element.ModuleElement.UsesDirective;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -90,8 +89,7 @@ public class ModuleDirectiveGenerator {
     public static DirectiveNode createUsesDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.USES;
         UsesDirective uses = (UsesDirective) directive;
-        //TODO details
-        String name = "";
+        String name = uses.getService().getQualifiedName().toString();
         return new DirectiveNode(kind, name);
     }
 
@@ -99,10 +97,10 @@ public class ModuleDirectiveGenerator {
         DirectiveNode.Kind kind = DirectiveNode.Kind.PROVIDES;
         ProvidesDirective provides = (ProvidesDirective) directive;
         TypeElement service = provides.getService();
-        //TODO details 'provides interface/abstract with implementation'
-        String name = service.getQualifiedName().toString(); // Implementation
+        String name = service.getQualifiedName().toString();
         DirectiveNode directiveNode = new DirectiveNode(kind, name);
-        List<? extends TypeMirror> interfaces = service.getInterfaces();
+        TypeUtils.setImplementations(directiveNode, provides.getImplementations());
+        TypeUtils.setInterfaces(directiveNode, service.getInterfaces());
         return directiveNode;
     }
 }
