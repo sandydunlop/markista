@@ -129,24 +129,18 @@ public class LinkResolver {
             link.setKind(Reference.Kind.NONE);
             return link;
         }
-        if (to.indexOf("ServiceInterface") > -1) {
-            System.out.println(currentModuleName);
-            System.out.println(currentPackageName);
-            to=to;
-            //TODO: relativize needs to use currentModuleName, destination module, getModule()
-        }
         link.setUri(relativizeWithModules(fromPackageName, toPackageName));
         link.setKind(Reference.Kind.PACKAGE);
         link.setScope(Reference.Scope.LOCAL);
         if (!toClassName.isEmpty()) {
-            if (link.getUri() == null || !link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
-            link.setUri(link.getUri() + toClassName);
-            link.setKind(Reference.Kind.TYPE);
+            if (link.getUri() == null) {
+                link.setKind(Reference.Kind.NONE);
+            } else {
+                if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
+                link.setUri(link.getUri() + toClassName);
+                link.setKind(Reference.Kind.TYPE);
+            }
         }
-        //TODO
-        // else{
-        //     link.setKind(Reference.Kind.NONE);
-        // }
         return link;
     }
 

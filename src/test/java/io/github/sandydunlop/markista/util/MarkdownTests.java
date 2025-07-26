@@ -140,13 +140,12 @@ class MarkdownTests {
         assertEquals("[model](../model/index.md)", markdown);
     }
 
-    //TODO
-    // @Test
-    // void formatReference_TYPE_qualified_wrongPackage() {
-    //     Reference ref = new Reference(Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null);
-    //     String markdown = Markdown.formatReference(ref);
-    //     assertEquals("Node", markdown);
-    // }
+    @Test
+    void formatReference_TYPE_qualified_wrongPackage() {
+        Reference ref = new Reference(Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null);
+        String markdown = Markdown.formatReference(ref);
+        assertEquals("Node", markdown);
+    }
 
     @Test
     void formatReference_TYPE_qualified() {
