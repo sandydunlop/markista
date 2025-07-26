@@ -41,7 +41,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.ModuleElement.Directive;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.VariableElement;
@@ -546,12 +545,6 @@ public class TypeUtils {
     public static void setImplementations(DirectiveNode directiveNode, List<? extends TypeElement> implementations) {
         for (TypeElement e : implementations) {
             directiveNode.addImplementation(e.getQualifiedName().toString());
-        }
-    }
-
-    public static void setInterfaces(DirectiveNode directiveNode, List<? extends TypeMirror> implementations) {
-        for (TypeMirror e : implementations) {
-            directiveNode.addInterface(e.toString());
         }
     }
 

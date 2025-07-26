@@ -23,7 +23,7 @@ public class ModuleWriter {
     private static final String TITLE_DESCRIPTION = "Description";
     private static final String TITLE_EXPORTS = "Exports";
     private static final String TITLE_IMPLEMENTATIONS = "Implementations";
-    private static final String TITLE_INTERFACES = "Interfaces";
+    private static final String TITLE_INTERFACE = "Interface";
     private static final String TITLE_MODIFIER_AND_TYPE = "Modifier and Type";
     private static final String TITLE_MODULE = "Module";
     private static final String TITLE_OPENS = "Opens";
@@ -57,7 +57,8 @@ public class ModuleWriter {
     }
 
     private void outputModuleDoc(ModuleNode moduleNode) throws IOException {
-        LinkResolver.setLocation("");
+        LinkResolver.setCurrentModuleName(moduleNode.getName());
+        LinkResolver.setCurrentPackageName("");
         fileUtils = new FileUtils(moduleNode, Configuration.getOutputDirectory());
         writer = fileUtils.createModuleFile(moduleNode.getName(), "index.md");
         if (moduleNode.getName().isEmpty()) {
@@ -98,35 +99,32 @@ public class ModuleWriter {
                 .addColumn(kind)
                 .addColumn(TITLE_DESCRIPTION);
         for (DirectiveNode directive : directives) {
-            table.addRow(Markdown.mdAutoLink(directive.getName()), getDirectivePackageDoc(directive));
+            table.addRow(Markdown.mdAutoLink(directive.getName()), formatDirectivePackageDoc(directive));
         }
         table.render(writer, 4);
     }
 
     private void outputModuleProvidesDirectives(List<DirectiveNode> directives) throws IOException {
         if (directives.isEmpty()) return;
-        writer.write("=== \"" + TITLE_PROVIDES + "\"\n\n");
+        writer.write("\n=== \"" + TITLE_PROVIDES + "\"\n\n");
         MarkdownTable table = new MarkdownTable()
-                .addColumn(TITLE_IMPLEMENTATIONS)
-                .addColumn(TITLE_INTERFACES);
+                .addColumn(TITLE_INTERFACE)
+                .addColumn(TITLE_IMPLEMENTATIONS);
         for (DirectiveNode directive : directives) {
-            // table.addRow(Markdown.mdAutoLink(directive.getName()),
-            //              Markdown.mdAutoLink(directive.getName()));
-            table.addRow(multiLink(directive.getImplementations()),
-                         multiLink(directive.getInterfaces()));
+            table.addRow(Markdown.mdAutoLink(directive.getInterface()),
+                         multiLink(directive.getImplementations()));
         }
         table.render(writer, 4);
     }
 
     private String multiLink(List<String> names) {
-        return Markdown.mdAutoLink(names.toString());
+        return Markdown.mdAutoLink(String.join(",",names));
     }
 
-    private String getDirectivePackageDoc(DirectiveNode directive) {
+    private String formatDirectivePackageDoc(DirectiveNode directive) {
         PackageNode pkg = api.getPackageNode(directive.getName());
         if (pkg != null) {
-            String formatted = Markdown.formatText(pkg.getFirstSentence());
-            return Utils.inOneLine(formatted);
+            return Utils.inOneLine(Markdown.formatText(pkg.getFirstSentence()));
         }
         return "";
     }

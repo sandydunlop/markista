@@ -96,10 +96,8 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             if (Configuration.getVerbose()) {
                 Configuration.getReporter().print(Diagnostic.Kind.NOTE, "  PACKAGE: " + pkg.getName());
             }
-            if (environment.getElementUtils().getModuleOf(ee) != null && currentModule != null) {
-                pkg.setModule(currentModule);
-                currentModule.addPackage(pkg);
-            }
+            pkg.setModule(currentModule);
+            currentModule.addPackage(pkg);
             TypeUtils.setDocumentation(pkg, ee);
             api.addPackage(pkg);
             Element enclosing = ee.getEnclosingElement();

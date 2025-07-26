@@ -41,7 +41,7 @@ public class FileUtils {
         }
         if (flattenedDirectories != null && flattenedDirectories.lastIndexOf('.') > -1) {
             flattenedDirectories = flattenedDirectories.substring(0, flattenedDirectories.lastIndexOf('.'));
-            LinkResolver.setSquashedDirectories(flattenedDirectories);
+            LinkResolver.setFlattenedDirectories(flattenedDirectories);
         }
     }
 

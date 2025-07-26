@@ -54,7 +54,7 @@ public class PackageWriter {
     }
 
     private void outputPackageDoc(PackageNode packageNode) throws IOException {
-        LinkResolver.setLocation(packageNode.getName()); // Used for generating link URLs
+        LinkResolver.setCurrentPackageName(packageNode.getName()); // Used for generating link URLs
         writer = fileUtils.createFile(null, packageNode.getName());    
         writer.write("# Package " + packageNode.getName() + "\n");
         writer.write("\n\n" + Markdown.formatText(packageNode.getFullBody()) + "\n\n");

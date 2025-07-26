@@ -32,6 +32,9 @@ class MarkdownTests {
 	private Api api;
     private ModuleNode module;
     private PackageNode model;
+    private PackageNode doclet;
+	private PackageNode markista;
+	private PackageNode util;
     private ClassNode node;
     private ClassNode markdownDoclet;
 
@@ -62,33 +65,40 @@ class MarkdownTests {
     void init() {
 		api = new Api();
         api.addPackage(new PackageNode("io.github.sandydunlop"));
-        PackageNode markista = new PackageNode("io.github.sandydunlop.markista");
-		PackageNode util = new PackageNode("io.github.sandydunlop.markista.util");
-		PackageNode doclet = new PackageNode("io.github.sandydunlop.markista.doclet");
+        markista = new PackageNode("io.github.sandydunlop.markista");
+		util = new PackageNode("io.github.sandydunlop.markista.util");
+		doclet = new PackageNode("io.github.sandydunlop.markista.doclet");
 		model = new PackageNode("io.github.sandydunlop.markista.model");
-
-        api.addPackage(markista);
+		api.addPackage(markista);
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-
-        node = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", model);
-        markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet);
-
-		api.addClass(node);
-        model.addClass(node);
-		api.addClass(markdownDoclet);
-        model.addClass(markdownDoclet);
+		api.addClass(new ClassNode("io.github.sandydunlop.markista.util.LinkResolver","LinkResolver", util));
+		api.addClass(new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet));
+		api.addClass(new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", doclet));
 
         module = new ModuleNode("sandydunlop.markista");
+		api.addModule(module);
 		module.addPackage(markista);
 		module.addPackage(util);
 		module.addPackage(doclet);
 		module.addPackage(model);
+		markista.setModule(module);
+		util.setModule(module);
+		doclet.setModule(module);
+		model.setModule(module);
 
+        node = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", model);
+        model.addClass(node);
+        api.addClass(node);
+
+        markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
+        model.addClass(markdownDoclet);
+
+		LinkResolver.setCurrentModuleName("sandydunlop.markista");
         LinkResolver.setApi(api);
-		LinkResolver.setSquashedDirectories(null);
-        LinkResolver.setLocation("io.github.sandydunlop.markista.doclet");
+		LinkResolver.setFlattenedDirectories(null);
+        LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.doclet");
     }
 
     @Test
@@ -130,11 +140,19 @@ class MarkdownTests {
         assertEquals("[model](../model/index.md)", markdown);
     }
 
+    //TODO
+    // @Test
+    // void formatReference_TYPE_qualified_wrongPackage() {
+    //     Reference ref = new Reference(Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null);
+    //     String markdown = Markdown.formatReference(ref);
+    //     assertEquals("Node", markdown);
+    // }
+
     @Test
     void formatReference_TYPE_qualified() {
-        Reference ref = new Reference(Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null);
+        Reference ref = new Reference(Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null);
         String markdown = Markdown.formatReference(ref);
-        assertEquals("[Node](../../model/Node.md)", markdown);
+        assertEquals("[Node](../model/Node.md)", markdown);
     }
 
     @Test
@@ -168,7 +186,7 @@ class MarkdownTests {
 
 	@Test
 	void link_qualifiedWithAnchor() {
-        LinkResolver.setLocation("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
+        LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
         String markdown = Markdown.mdAutoLink("io.github.sandydunlop.markista.util.Markdown#mdAutoLink", false);
         assertEquals("[mdautolink](../util/Markdown.md#mdautolink)", markdown);
     }

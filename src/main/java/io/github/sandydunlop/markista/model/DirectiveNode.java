@@ -9,7 +9,7 @@ public class DirectiveNode {
     private boolean transitive;
     private List<String> packages = new ArrayList<>();
     private List<String> implementations = new ArrayList<>();
-    private List<String> interfaces = new ArrayList<>();
+    private String interfaceName = "";
 
     public DirectiveNode(Kind kind, String name, boolean transitive) {
         this.kind = kind;
@@ -50,13 +50,14 @@ public class DirectiveNode {
         return implementations;
     }
 
-    public void addInterface(String interfaceName) {
-        interfaces.add(interfaceName);
+    public void setInterface(String interfaceName) {
+        this.interfaceName = interfaceName;
     }
 
-    public List<String> getInterfaces() {
-        return interfaces;
+    public String getInterface() {
+        return interfaceName;
     }
+
     public enum Kind {
         NONE,
         REQUIRES,

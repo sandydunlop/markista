@@ -1,6 +1,5 @@
 package io.github.sandydunlop.markista.util;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Optional;
@@ -21,7 +20,8 @@ import io.github.sandydunlop.markista.model.Reference;
 /// packages and their contents.
 public class LinkResolver {
     private static final List<String> primitives = Arrays.asList("boolean","byte","char","short","int","long","float","double");
-    private static String location = "";
+    private static String currentModuleName = "";
+    private static String currentPackageName = "";
     private static HashMap<String,String> nativeModuleNames = new HashMap<>();
     private static HashMap<String,String> nativePackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
@@ -37,12 +37,16 @@ public class LinkResolver {
         api = a;
     }
 
-    public static void setSquashedDirectories(String sd) {
+    public static void setFlattenedDirectories(String sd) {
         squashedDirectories = sd;
     }
 
-    public static void setLocation(String loc) {
-        location = loc;
+    public static void setCurrentPackageName(String name) {
+        currentPackageName = name;
+    }
+
+    public static void setCurrentModuleName(String name) {
+        currentModuleName = name;
     }
 
     public static void addNativeModule(String moduleName, String baseUrl, String s) {
@@ -85,7 +89,7 @@ public class LinkResolver {
     }
 
     public static Reference resolve(String to) {
-        return resolve(location, to);
+        return resolve(currentPackageName, to);
     }
 
     public static Reference resolve(String from, String to) {
@@ -125,14 +129,24 @@ public class LinkResolver {
             link.setKind(Reference.Kind.NONE);
             return link;
         }
-        link.setUri(relativize(fromPackageName, toPackageName));
+        if (to.indexOf("ServiceInterface") > -1) {
+            System.out.println(currentModuleName);
+            System.out.println(currentPackageName);
+            to=to;
+            //TODO: relativize needs to use currentModuleName, destination module, getModule()
+        }
+        link.setUri(relativizeWithModules(fromPackageName, toPackageName));
         link.setKind(Reference.Kind.PACKAGE);
         link.setScope(Reference.Scope.LOCAL);
         if (!toClassName.isEmpty()) {
-            if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
+            if (link.getUri() == null || !link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
             link.setUri(link.getUri() + toClassName);
             link.setKind(Reference.Kind.TYPE);
         }
+        //TODO
+        // else{
+        //     link.setKind(Reference.Kind.NONE);
+        // }
         return link;
     }
 
@@ -155,16 +169,24 @@ public class LinkResolver {
     }
 
     public static Reference resolveModule(String to) {
-        for (ModuleNode moduleNode : api.getModules()) {
-            if (moduleNode.getName().equals(to)) {
-                return new Reference(Reference.Scope.LOCAL, Reference.Kind.MODULE, to, "../" + to);
-            }
+        ModuleNode moduleNode = getModule(to);
+        if (moduleNode != null) {
+            return new Reference(Reference.Scope.LOCAL, Reference.Kind.MODULE, to, "../" + to);
         }
         String baseUrl = nativeModuleNames.get(to);
         if (baseUrl != null) {
             return new Reference(Reference.Scope.NATIVE, Reference.Kind.URL, to, baseUrl + "/module-summary.html");
         }
         return new Reference();
+    }
+
+    public static ModuleNode getModule(String name) {
+        for (ModuleNode moduleNode : api.getModules()) {
+            if (moduleNode.getName().equals(name)) {
+                return moduleNode;
+            }
+        }
+        return null;
     }
 
     public static boolean isPackageQualified(String from, String to) {
@@ -195,7 +217,35 @@ public class LinkResolver {
     }
 
     public static String relativize(String to) {
-        return relativize(location, to);
+        return relativize(currentPackageName, to);
+    }
+
+    public static String relativizeWithModules(String from, String to) {
+        PackageNode toPackage = api.getPackageNode(to);
+        if (toPackage == null) {
+            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Error resolving package for: " + to);
+            return null;
+        }
+        ModuleNode toModule = toPackage.getModule();
+        ModuleNode fromModule = api.getModuleNode(currentModuleName);
+        if (toModule == null) {
+            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Error resolving module for: " + to);
+            return null;
+        }
+        if (fromModule == null) {
+            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Error resolving module for: " + from);
+            return null;
+        }
+        if (fromModule.getName().equals(toModule.getName())) {
+            // to and from are members of the same module
+            return relativize(from, to);
+        } else {
+            String packageRoot = relativize(from, "");
+            String toModulePath = packageRoot + "../" + toModule.getName();
+            String toPackagePath = relativize("", to);
+            String rel = toModulePath + "/" + toPackagePath;
+            return rel;
+        }
     }
 
     public static String relativize(String from, String to) {

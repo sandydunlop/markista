@@ -100,7 +100,7 @@ public class ModuleDirectiveGenerator {
         String name = service.getQualifiedName().toString();
         DirectiveNode directiveNode = new DirectiveNode(kind, name);
         TypeUtils.setImplementations(directiveNode, provides.getImplementations());
-        TypeUtils.setInterfaces(directiveNode, service.getInterfaces());
+        directiveNode.setInterface(service.getQualifiedName().toString());
         return directiveNode;
     }
 }
