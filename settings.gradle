@@ -1,1 +1,3 @@
-rootProject.name = 'markista'
+rootProject.name = 'Markista'
+
+include('markista')

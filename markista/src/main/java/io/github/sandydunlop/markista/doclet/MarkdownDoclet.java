@@ -47,16 +47,15 @@ public class MarkdownDoclet implements Doclet {
             "-external",
             "-flatten",
 
-            "-sourcepath", "src/main/java/",
+            "-sourcepath", "markista/src/main/java/",
             "-subpackages", "io.github.sandydunlop",
 
-            // "--module-source-path", "src/main/java",
-            // "--module-path", "build/libs",
+            // "--module-source-path", "/Users/sandy/git/cu/dev/markista/*/src/main/java",
             // "--module", "markista",
 
             // "--module-source-path", "/Users/sandy/git/cu/dev/food-example/*/src/main/java",
-            // "--module-path", "../food-example/*/build/libs",
             // "--module", "serviceinterface,consumer,provider",
+
 
             "-verbose"
         };
@@ -233,16 +232,7 @@ public class MarkdownDoclet implements Doclet {
     @Override
     public boolean run(DocletEnvironment environment) {
         if (Configuration.getCreateExternalLinks()) {
-            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-            InputStream inputStream = classloader.getResourceAsStream("java_platform_modules.text");
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-                String moduleName;
-                while ((moduleName = reader.readLine()) != null) {
-                    addNativeModule(moduleName);
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            addNativeModules();
         }
 
         ModuleDirectiveGenerator.setEnvironment(environment);
@@ -265,5 +255,64 @@ public class MarkdownDoclet implements Doclet {
     private void addNativeModule(String moduleName) {
         // Tell the link resolver what web address to find docs for certain Java modules at
         LinkResolver.addNativeModule(moduleName, JAVA_24_URL + moduleName, DOT_HTML);
+    }
+
+    private void addNativeModules() {
+        addNativeModule("java.base");
+        addNativeModule("java.compiler");
+        addNativeModule("java.desktop");
+        addNativeModule("java.instrument");
+        addNativeModule("java.logging");
+        addNativeModule("java.management");
+        addNativeModule("java.management.rmi");
+        addNativeModule("java.naming");
+        addNativeModule("java.net.http");
+        addNativeModule("java.prefs");
+        addNativeModule("java.rmi");
+        addNativeModule("java.scripting");
+        addNativeModule("java.se");
+        addNativeModule("java.security.jgss");
+        addNativeModule("java.security.sasl");
+        addNativeModule("java.smartcardio");
+        addNativeModule("java.sql");
+        addNativeModule("java.sql.rowset");
+        addNativeModule("java.transaction.xa");
+        addNativeModule("java.xml");
+        addNativeModule("java.xml.crypto");
+        addNativeModule("jdk.accessibility");
+        addNativeModule("jdk.attach");
+        addNativeModule("jdk.javadoc");
+        addNativeModule("jdk.compiler");
+        addNativeModule("jdk.crypto.cryptoki");
+        addNativeModule("jdk.dynalink");
+        addNativeModule("jdk.editpad");
+        addNativeModule("jdk.hotspot.agent");
+        addNativeModule("jdk.httpserver");
+        addNativeModule("jdk.incubator.vector");
+        addNativeModule("jdk.jartool");
+        addNativeModule("jdk.jcmd");
+        addNativeModule("jdk.jconsole");
+        addNativeModule("jdk.jdeps");
+        addNativeModule("jdk.jdi");
+        addNativeModule("jdk.jdwp.agent");
+        addNativeModule("jdk.jfr");
+        addNativeModule("jdk.jlink");
+        addNativeModule("jdk.jpackage");
+        addNativeModule("jdk.jshell");
+        addNativeModule("jdk.jsobject");
+        addNativeModule("jdk.jstatd");
+        addNativeModule("jdk.localedata");
+        addNativeModule("jdk.management");
+        addNativeModule("jdk.management.agent");
+        addNativeModule("jdk.management.jfr");
+        addNativeModule("jdk.naming.dns");
+        addNativeModule("jdk.naming.rmi");
+        addNativeModule("jdk.net");
+        addNativeModule("jdk.nio.mapmode");
+        addNativeModule("jdk.sctp");
+        addNativeModule("jdk.security.auth");
+        addNativeModule("jdk.security.jgss");
+        addNativeModule("jdk.xml.dom");
+        addNativeModule("jdk.zipfs");        
     }
 }
