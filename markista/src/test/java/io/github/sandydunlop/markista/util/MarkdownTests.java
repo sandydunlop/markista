@@ -78,7 +78,7 @@ class MarkdownTests {
 		api.addClass(new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet));
 		api.addClass(new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", doclet));
 
-        module = new ModuleNode("sandydunlop.markista");
+        module = new ModuleNode("markista");
 		api.addModule(module);
 		module.addPackage(markista);
 		module.addPackage(util);
@@ -98,7 +98,7 @@ class MarkdownTests {
 
         LinkResolver.setApi(api);
 		LinkResolver.setFlattenedDirectories(null);
-		LinkResolver.setCurrentModuleName("sandydunlop.markista");
+		LinkResolver.setCurrentModuleName("markista");
         LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.doclet");
     }
 

@@ -7,8 +7,11 @@ public class Utils {
         // This hides the public constructor
     }
 
+    /// Removes the generic type and its surrounding <> from a string, if present
+    /// @param str The string
+    /// @return The string with the generic type and surrounding <> removed
     public static String removeGenerics(String str) {
-        if (str == null || str.isEmpty()) return str;
+        if (isNullOrEmpty(str)) return "";
         int start = str.indexOf("<");
         if (start > -1) {
             int end = str.indexOf(">");
@@ -42,7 +45,7 @@ public class Utils {
     /// @param  str A string that may contain one or more qualified names.
     /// @return The input string, with all qualified names changed to unqualified names.
     public static String simplifyNames(String str) {
-        if (str == null || str.isEmpty()) return "";
+        if (isNullOrEmpty(str)) return "";
         return simplifyNamesLoop(str);
     }
 
@@ -100,13 +103,19 @@ public class Utils {
         return (Character.isAlphabetic(c) && Character.isLowerCase(c)) || c == '.';
     }
 
-    public static boolean isNullOrEmpty(String s) {
-        return s == null || s.isEmpty();
+    /// Checks if a string is null or empty
+    /// @param str The string
+    /// @return True if the string either null or empty
+    public static boolean isNullOrEmpty(String str) {
+        return str == null || str.isEmpty();
     }
 
-    public static String inOneLine(String text) {
-        if (text == null) return "";
-        return text.replace("\n", " ");
+    /// Removes new line characters from a string, replacing them with spaces
+    /// @param str The string
+    /// @return The string, with newlines converted to spaces
+    public static String inOneLine(String str) {
+        if (isNullOrEmpty(str)) return "";
+        return str.replace("\n", " ");
     }
 
 }

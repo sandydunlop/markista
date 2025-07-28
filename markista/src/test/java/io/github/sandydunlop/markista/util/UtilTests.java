@@ -6,6 +6,43 @@ import org.junit.jupiter.api.Test;
 
 class UtilTests {
 	@Test
+	void inOneLine() {
+		assertEquals("one two three", Utils.inOneLine("one\ntwo\nthree"));
+	}
+
+	@Test
+	void inOneLine_emptyString() {
+		assertEquals("", Utils.inOneLine(""));
+	}
+
+	@Test
+	void inOneLine_null() {
+		assertEquals("", Utils.inOneLine(null));
+	}
+
+	@Test
+	void isNullOrEmpty() {
+		assertEquals(true, Utils.isNullOrEmpty(null));
+		assertEquals(true, Utils.isNullOrEmpty(""));
+		assertEquals(false, Utils.isNullOrEmpty("text"));
+	}
+
+	@Test
+	void removeGenerics() {
+		String x = Utils.removeGenerics("List<String>");
+		assertEquals("List", x);
+		assertEquals("List", Utils.removeGenerics("List<? extends ArrayList>"));
+		assertEquals("List", Utils.removeGenerics("List<String[]>"));
+		assertEquals("", Utils.removeGenerics(""));
+		assertEquals("", Utils.removeGenerics(null));
+	}
+
+	@Test
+	void removeParentheses() {
+		assertEquals("method", Utils.removeParentheses("method(param1,param2)"));
+	}
+
+	@Test
 	void simplifyName_primitive() {
 		assertEquals("int", 
 				Utils.simplifyNames("int"));
@@ -24,7 +61,7 @@ class UtilTests {
 	}
 
 	@Test
-	void simplifyName_arrayOfualifiedName() {
+	void simplifyName_arrayOfQualifiedName() {
 		assertEquals("Object[]", 
 				Utils.simplifyNames("java.lang.Object[]"));
 	}

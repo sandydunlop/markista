@@ -11,5 +11,11 @@
         "sandydunlop",
         "sonarqube",
         "Supertypes"
-    ]
+    ],
+    "java.test.config": [
+		{
+			"name": "t",
+			"modulePaths": ["${workspaceFolder}/bin/main", "${workspaceFolder}/module/"],
+		}
+	],
 }

@@ -99,13 +99,15 @@ public class LinkResolver {
         if (primitiveOrVoid != null) {
             return primitiveOrVoid;
         }
-        Reference link = resolveModule(to);
+        Reference link = resolveNative(to);
         if (link.getKind() != Reference.Kind.NONE) {
             return link;
         }
-        link = resolveNative(to);
-        if (link.getKind() != Reference.Kind.NONE) {
-            return link;
+        if (Utils.isNullOrEmpty(from) && link.getKind() == Reference.Kind.NONE) {
+            link = resolveModule(from, to);
+            if (link.getKind() != Reference.Kind.NONE) {
+                return link;
+            }
         }
         String[] qualified = qualify(to);
         String toPackageName = qualified[0];
@@ -179,14 +181,19 @@ public class LinkResolver {
         return new Reference();
     }
 
-    public static Reference resolveModule(String to) {
+    public static Reference resolveModule(String from, String to) {
+        String apiRoot = relativize(from, "");
         ModuleNode moduleNode = getModule(to);
         if (moduleNode != null) {
-            return new Reference(Reference.Scope.LOCAL, Reference.Kind.MODULE, to, "../" + to);
+            String path = FileUtils.joinPaths(apiRoot, "..");
+            path = FileUtils.joinPaths(path, to);
+            return new Reference(Reference.Scope.LOCAL, Reference.Kind.MODULE, to, path);
         }
         String baseUrl = nativeModuleNames.get(to);
         if (baseUrl != null) {
-            return new Reference(Reference.Scope.NATIVE, Reference.Kind.URL, to, baseUrl + "/module-summary.html");
+            String path = FileUtils.joinPaths(apiRoot, "..");
+            path = FileUtils.joinPaths(path, to);
+            return new Reference(Reference.Scope.NATIVE, Reference.Kind.URL, path, baseUrl + "/module-summary.html");
         }
         return new Reference();
     }
@@ -235,24 +242,28 @@ public class LinkResolver {
             Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Error resolving package for: " + to);
             return null;
         }
+        String fromModuleName = "";
+        String toModuleName = "";
         ModuleNode toModule = toPackage.getModule();
         ModuleNode fromModule = api.getModuleNode(currentModuleName);
-        if (toModule == null) {
-            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Error resolving module for: " + to);
-            return null;
+        if (toModule != null) {
+            toModuleName = toModule.getName();
+        } else{
+            Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Error resolving module for: " + to);
         }
-        if (fromModule == null) {
-            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Error resolving module for: " + from);
-            return null;
+        if (fromModule != null) {
+            fromModuleName = fromModule.getName();
+        } else {
+            Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Error resolving module for: " + from);
         }
-        if (fromModule.getName().equals(toModule.getName())) {
+        if (fromModuleName.equals(toModuleName)) {
             // to and from are members of the same module
             return relativize(from, to);
         } else {
-            String packageRoot = relativize(from, "");
-            String toModulePath = packageRoot + "../" + toModule.getName();
-            String toPackagePath = relativize("", to);
-            return toModulePath + "/" + toPackagePath;
+            String rel = relativize(from, "");
+            rel = FileUtils.joinPaths(rel, toModuleName);
+            rel = FileUtils.joinPaths(rel, relativize("", to));
+            return rel;
         }
     }
 
