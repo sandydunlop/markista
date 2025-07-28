@@ -359,7 +359,7 @@ public class TypeUtils {
                 }
             }
         } catch (SecurityException | ClassNotFoundException e) {
-            e.printStackTrace();
+            Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Failed to read information for " + qualifiedTypeName + "." + method.getSimpleName());
         }
         return null; // No overridden method found
     }

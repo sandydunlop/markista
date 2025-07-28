@@ -292,7 +292,7 @@ public class LinkResolver {
 
     private static void appendParentDirs(StringBuilder rel, int count) {
         for (int i = 0; i < count; i++) {
-            if (rel.length() > 0) rel.append("/");
+            if (!rel.isEmpty()) rel.append("/");
             rel.append("..");
         }
     }
@@ -300,7 +300,7 @@ public class LinkResolver {
     private static void appendTargetDirs(StringBuilder rel, String[] toParts, int start) {
         for (int i = start; i < toParts.length; i++) {
             if (toParts[i].isEmpty()) continue;
-            if (rel.length() > 0) rel.append("/");
+            if (!rel.isEmpty()) rel.append("/");
             rel.append(toParts[i]);
         }
     }
