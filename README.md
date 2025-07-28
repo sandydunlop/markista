@@ -7,7 +7,7 @@
 
 Markista is a [doclet](https://docs.oracle.com/javase/8/docs/technotes/guides/javadoc/doclet/overview.html) that turns your Java documentation comments into Markdown, suitable for use with [Github](https://github.com/), [MkDocs](https://www.mkdocs.org/), etc. 
 
-Marklist is under active development and has reached a point where it is becoming useful. There will be features that aren't completely implemented yet.
+Markista is under active development and has reached a point where it is becoming useful. There will be features that aren't completely implemented yet.
 
 As a demonstration, the Markdown Javadoc for Markista itself is [available here](https://sandydunlop.github.io/markista/javadoc/markista/doclet/MarkdownDoclet/).
 It was produced with the `-private` parameter which tells Markista to document private members of classes. By default only public and protected members are documented.

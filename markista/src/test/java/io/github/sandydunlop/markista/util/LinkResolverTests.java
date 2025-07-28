@@ -90,10 +90,10 @@ class LinkResolverTests {
         markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
         model.addClass(markdownDoclet);
 
-
-		LinkResolver.setCurrentModuleName("sandydunlop.markista");
 		LinkResolver.setApi(api);
 		LinkResolver.setFlattenedDirectories(null);
+		LinkResolver.setCurrentModuleName("sandydunlop.markista");
+        LinkResolver.setCurrentPackageName("");
 	}
 
 	@Test

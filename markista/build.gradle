@@ -1,7 +1,8 @@
 plugins {
-	id 'groovy'
 	id 'java'
     id 'java-library'
+    id "org.sonarqube" version "6.2.0.5505"
+    id 'jacoco'
     id 'signing'
 	id 'maven-publish'
 }
@@ -32,11 +33,29 @@ java {
     }
 }
 
+sonar {
+  properties {
+    property "sonar.projectKey", "sandydunlop_markista"
+    property "sonar.organization", "sandydunlop"
+    property "sonar.host.url", "https://sonarcloud.io"
+  }
+}
+
 test {
 	useJUnitPlatform()
 	testLogging {
 		events "passed", "skipped", "failed"
 	}
+    finalizedBy jacocoTestReport // report is always generated after tests run
+}
+
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+}
+
+jacoco {
+    toolVersion = "0.8.13"
+    // reportsDirectory = layout.buildDirectory.dir('customJacocoReportDir')
 }
 
 def user = ["whoami"].execute().text.trim()
@@ -98,17 +117,17 @@ publishing {
             url = uri(layout.buildDirectory.dir("staging-deploy"))
         }
     }
-
-    task website (type: Copy) {
-        duplicatesStrategy 'include'
-        from 'README.md'
-        into '../../../website/docs/markista'
-        rename ('README.md','index.md')
-    }
-    task copyDocs(type: Copy) {
-        duplicatesStrategy 'include'
-        from 'build/md-docs'
-        into '../../../website/docs/markista/javadoc'
-    }
-    website.dependsOn copyDocs
 }
+
+task website (type: Copy) {
+    duplicatesStrategy 'include'
+    from 'README.md'
+    into '../../../../website/docs/markista'
+    rename ('README.md','index.md')
+}
+task copyDocs(type: Copy) {
+    duplicatesStrategy 'include'
+    from 'build/md-docs'
+    into '../../../../website/docs/markista/javadoc'
+}
+website.dependsOn copyDocs

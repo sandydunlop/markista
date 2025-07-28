@@ -2,11 +2,14 @@
     "java.configuration.updateBuildConfiguration": "automatic",
     "java.debug.settings.onBuildFailureProceed": true,
     "cSpell.words": [
+        "doclet",
+        "jacoco",
         "markista",
         "mdautolink",
         "NOSONAR",
         "prefs",
         "sandydunlop",
+        "sonarqube",
         "Supertypes"
     ]
 }

@@ -102,12 +102,13 @@ public class Markdown {
         boolean isMethod = identifier.indexOf('(') > -1;
         String name = Utils.removeParentheses(identifier);
         String pre = "";
+        String post = "";
         String text;
         String anchor = "";
-        int a = name.indexOf('#');
-        if (a > 0) {
-            anchor = name.substring(a).toLowerCase();
-            name = Utils.removeGenerics(name.substring(0, a));
+        int pos = name.indexOf('#');
+        if (pos > 0) {
+            anchor = name.substring(pos).toLowerCase();
+            name = Utils.removeGenerics(name.substring(0, pos));
         }
         if (name == null) {
             return identifier;
@@ -121,6 +122,11 @@ public class Markdown {
             pre = name.substring(0, p) + " ";
             name = name.substring(p + 1);
         }
+        pos = name.indexOf('[');
+        if (pos > 0) {
+            post = name.substring(pos);
+            name = name.substring(0, pos);
+        }
         Reference link = LinkResolver.resolve(name);
         text = escape(simplify ?  Utils.simplifyNames(name) : name);
         if (!anchor.isEmpty()) {
@@ -128,26 +134,26 @@ public class Markdown {
         }
         link.setName(text);
         link.setAnchor(anchor);
-        return mdRefLink(pre, link, isMethod);
+        return mdRefLink(pre, link, post, isMethod);
     }
 
-    public static String mdRefLink(String pre, Reference link, boolean isMethod) {
+    public static String mdRefLink(String pre, Reference link, String post, boolean isMethod) {
         if (isMethod) {
-            return String.format("%s[%s](#%s)", pre, link.getName(), link.getName());
+            return String.format("%s[%s](#%s)%s", pre, link.getName(), link.getName(), post);
         } else if (link.getKind() == Reference.Kind.TYPE) {
-            return String.format("%s[%s](%s.md%s)", pre, link.getName(), link.getUri(), link.getAnchor());
+            return String.format("%s[%s](%s.md%s)%s", pre, link.getName(), link.getUri(), link.getAnchor(), post);
         } else if (link.getKind() == Reference.Kind.PACKAGE) {
-            return String.format("%s[%s](%s/index.md%s)", pre, link.getName(), link.getUri(), link.getAnchor());
+            return String.format("%s[%s](%s/index.md%s)%s", pre, link.getName(), link.getUri(), link.getAnchor(), post);
         } else if (link.getKind() == Reference.Kind.MODULE) {
-            return String.format("%s[%s](%s/index.md)", pre, link.getName(), link.getUri());
+            return String.format("%s[%s](%s/index.md)%s", pre, link.getName(), link.getUri(), post);
         } else if (link.getKind() == Reference.Kind.URL) {
-            return String.format("%s[%s](%s%s)", pre, link.getName(), link.getUri(), link.getAnchor());
+            return String.format("%s[%s](%s%s)%s", pre, link.getName(), link.getUri(), link.getAnchor(), post);
         }
-        return String.format("%s%s", pre, link.getName());
+        return String.format("%s%s%s", pre, link.getName(), post);
     }
 
     public static String mdRefLink(Reference link) {
-        return mdRefLink("", link, false);
+        return mdRefLink("", link, "", false);
     }
     
     /// Changes qualified generic type names to unqualified generic type names and adds links to their API documentation.
