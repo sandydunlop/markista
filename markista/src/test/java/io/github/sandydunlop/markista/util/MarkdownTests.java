@@ -29,6 +29,7 @@ import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
 class MarkdownTests {
+    private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
 	private Api api;
     private ModuleNode module;
     private PackageNode model;
@@ -95,9 +96,9 @@ class MarkdownTests {
         markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
         model.addClass(markdownDoclet);
 
-		LinkResolver.setCurrentModuleName("sandydunlop.markista");
         LinkResolver.setApi(api);
 		LinkResolver.setFlattenedDirectories(null);
+		LinkResolver.setCurrentModuleName("sandydunlop.markista");
         LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.doclet");
     }
 
@@ -107,7 +108,7 @@ class MarkdownTests {
         TypeNode param1type = new TypeNode("java.lang.String", "String", model);
         method.addParam(new ParamNode(param1type, "name"));
         String sig = Markdown.fullSignature(method);
-        assertEquals("[Node](../model/Node.md) subject([String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html) name)", sig);
+        assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
     }
 
     @Test
@@ -116,7 +117,7 @@ class MarkdownTests {
         TypeNode param1type = new TypeNode("java.lang.String", "String", model);
         params.add(new ParamNode(param1type, "name"));
         String markdown = Markdown.formatParams(params);
-        assertEquals("[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html) name", markdown);
+        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html) name", markdown);
     }
 
     @Test
@@ -194,4 +195,30 @@ class MarkdownTests {
     // void formatTaggedText() {
     //     List<DocTree> 
     // }
+
+    //"java.util.List<java.lang.String[]>"
+
+	@Test
+	void autoLink_array() {
+        String markdown = Markdown.mdAutoLink("java.lang.String[]", true);
+        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
+    }
+
+    @Test
+	void autoLink_listOfArrays() {
+        String markdown = Markdown.mdAutoLink("java.util.List<java.lang.String[]>", true);
+        assertEquals("[List](" + JAVA_24_URL + "java.base/java/util/List.html)&lt;[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]&gt;", markdown);
+    }
+
+	@Test
+	void splitAndLink_oneArray() {
+        String markdown = Markdown.splitAndLink("java.lang.String[]");
+        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
+    }
+
+	@Test
+	void splitAndLink_two() {
+        String markdown = Markdown.splitAndLink("java.lang.String, java.util.List");
+        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html), [List](" + JAVA_24_URL + "java.base/java/util/List.html)", markdown);
+    }
 }
