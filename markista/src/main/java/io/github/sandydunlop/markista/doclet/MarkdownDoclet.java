@@ -50,10 +50,6 @@ public class MarkdownDoclet implements Doclet {
             // "--module-source-path", "/Users/sandy/git/cu/dev/markista/*/src/main/java",
             // "--module", "markista",
 
-            // "--module-source-path", "/Users/sandy/git/cu/dev/food-example/*/src/main/java",
-            // "--module", "serviceinterface,consumer,provider",
-
-
             "-verbose"
         };
         DocumentationTool docTool = ToolProvider.getSystemDocumentationTool();

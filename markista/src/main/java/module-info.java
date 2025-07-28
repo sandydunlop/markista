@@ -8,4 +8,5 @@ module markista {
     requires transitive java.compiler;
 
     exports io.github.sandydunlop.markista.doclet;
+    exports io.github.sandydunlop.markista.model;
 }

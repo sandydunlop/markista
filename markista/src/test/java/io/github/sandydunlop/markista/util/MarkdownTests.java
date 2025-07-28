@@ -141,25 +141,20 @@ class MarkdownTests {
         assertEquals("[model](../model/index.md)", markdown);
     }
 
-    @Test
-    void formatReference_TYPE_qualified_wrongPackage() {
-        Reference ref = new Reference(Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null);
-        String markdown = Markdown.formatReference(ref);
-        assertEquals("Node", markdown);
+    static List<Object[]> typeReferenceProvider() {
+        return List.of(
+            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null, "Node" },
+            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
+            new Object[] { Reference.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
+        );
     }
 
-    @Test
-    void formatReference_TYPE_qualified() {
-        Reference ref = new Reference(Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null);
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
+    void formatReference_TYPE_variants(Reference.Kind kind, String name, String url, String expected) {
+        Reference ref = new Reference(kind, name, url);
         String markdown = Markdown.formatReference(ref);
-        assertEquals("[Node](../model/Node.md)", markdown);
-    }
-
-    @Test
-    void formatReference_TYPE_unqualified() {
-        Reference ref = new Reference(Reference.Kind.TYPE, "Node", null);
-        String markdown = Markdown.formatReference(ref);
-        assertEquals("[Node](../model/Node.md)", markdown);
+        assertEquals(expected, markdown);
     }
 
     @Test
@@ -190,13 +185,6 @@ class MarkdownTests {
         String markdown = Markdown.mdAutoLink("io.github.sandydunlop.markista.util.Markdown#mdAutoLink", false);
         assertEquals("[mdautolink](../util/Markdown.md#mdautolink)", markdown);
     }
-
-    // @Test
-    // void formatTaggedText() {
-    //     List<DocTree> 
-    // }
-
-    //"java.util.List<java.lang.String[]>"
 
 	@Test
 	void autoLink_array() {

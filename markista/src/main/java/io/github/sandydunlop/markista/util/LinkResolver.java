@@ -27,7 +27,7 @@ public class LinkResolver {
     private static HashMap<String,String> suffix = new HashMap<>();
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
     private static Api api = null;
-    private static String squashedDirectories = null;
+    private static String FlattenedDirectories = null;
 
     private LinkResolver() {
         // This hides the public constructor
@@ -38,7 +38,7 @@ public class LinkResolver {
     }
 
     public static void setFlattenedDirectories(String sd) {
-        squashedDirectories = sd;
+        FlattenedDirectories = sd;
     }
 
     public static void setCurrentPackageName(String name) {
@@ -258,35 +258,68 @@ public class LinkResolver {
 
     public static String relativize(String from, String to) {
         if (from == null || to == null) return null;
-        if (squashedDirectories != null && !squashedDirectories.isEmpty()) {
-            if (from.startsWith(squashedDirectories)) {
-                from = from.substring(squashedDirectories.length() + 1);
-            }
-            if (to.startsWith(squashedDirectories)) {
-                to = to.substring(squashedDirectories.length() + 1);
-            }
-        }
+        from = flattenDirectory(from);
+        to = flattenDirectory(to);
         String[] fromParts = from.split("\\.");
         String[] toParts = to.split("\\.");
+        int commonIndex = findCommonIndex(fromParts, toParts);
+
         StringBuilder rel = new StringBuilder();
-        int p = 0;
+        // int p = 0;
+        // if (!from.isEmpty()) {
+        //     for (p=fromParts.length-1; p>=0; p--) {
+        //         if (p<toParts.length &&fromParts[p].equals(toParts[p])) {
+        //             p++;
+        //             break;
+        //         }
+        //         if (!rel.isEmpty()) rel.append("/");
+        //         rel.append("..");
+        //     }
+        // }
+
+        // if (p == -1) p = 0;
+        // for (;p < toParts.length; p++) {
+        //     if (!rel.isEmpty()) rel.append("/");
+        //     rel.append(toParts[p]);
+        // }
         if (!from.isEmpty()) {
-            for (p=fromParts.length-1; p>=0; p--) {
-                if (p<toParts.length) {
-                    if (fromParts[p].equals(toParts[p])) {
-                        p++;
-                        break;
-                    }
-                }
-                if (!rel.isEmpty()) rel.append("/");
-                rel.append("..");
-            }
+            appendParentDirs(rel, fromParts.length - commonIndex);
         }
-        if (p == -1) p = 0;
-        for (;p < toParts.length; p++) {
-            if (!rel.isEmpty()) rel.append("/");
-            rel.append(toParts[p]);
-        }
+        appendTargetDirs(rel, toParts, commonIndex);
         return rel.toString();
+    }
+
+    private static String flattenDirectory(String path) {
+        if (FlattenedDirectories != null && !FlattenedDirectories.isEmpty() && path.startsWith(FlattenedDirectories)) {
+            return path.substring(FlattenedDirectories.length() + 1);
+        }
+        return path;
+    }
+
+    private static int findCommonIndex(String[] fromParts, String[] toParts) {
+        if (fromParts.length ==0 || toParts.length == 0) {
+            return 0;
+        }
+        int len = Math.min(fromParts.length, toParts.length);
+        int i = 0;
+        while (i < len && fromParts[i].equals(toParts[i])) {
+            i++;
+        }
+        return i;
+    }
+
+    private static void appendParentDirs(StringBuilder rel, int count) {
+        for (int i = 0; i < count; i++) {
+            if (rel.length() > 0) rel.append("/");
+            rel.append("..");
+        }
+    }
+
+    private static void appendTargetDirs(StringBuilder rel, String[] toParts, int start) {
+        for (int i = start; i < toParts.length; i++) {
+            if (toParts[i].isEmpty()) continue;
+            if (rel.length() > 0) rel.append("/");
+            rel.append(toParts[i]);
+        }
     }
 }

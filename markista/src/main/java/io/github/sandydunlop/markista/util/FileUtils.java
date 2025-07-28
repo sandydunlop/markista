@@ -72,7 +72,7 @@ public class FileUtils {
         return new File(rootDir, dirName);
     }
 
-    public char pathSeparator() {
+    public static char pathSeparator() {
         // File.pathSeparatorChar is returning ":" on macOS (Sequoia 15.5) when it should be "/"
         return File.pathSeparatorChar == ':' ? '/' : File.pathSeparatorChar;
     }
@@ -94,5 +94,15 @@ public class FileUtils {
         FileOutputStream fileOutputStream = new FileOutputStream(moduleFile);
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
         return new OutputStreamWriter(bufferedOutputStream);
+    }
+
+    public static String joinPaths(String base, String part) {
+        if (base.isEmpty()) {
+            return part;
+        }
+        if (part.isEmpty()) {
+            return base;
+        }
+        return base + pathSeparator() + part;
     }
 }
