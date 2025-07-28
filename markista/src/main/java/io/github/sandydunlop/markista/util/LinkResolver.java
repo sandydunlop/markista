@@ -80,6 +80,7 @@ public class LinkResolver {
         }
         int dot;
         for (dot=0; dot<id.length() && !Character.isUpperCase(id.charAt(dot)); dot++) {
+            // Looking for class name
         }
         String className = id;
         if (dot > 0 && dot < id.length()) {
@@ -94,14 +95,9 @@ public class LinkResolver {
 
     public static Reference resolve(String from, String to) {
         String original = to;
-        if (to == null || to.isEmpty() || to.equals("?") || to.indexOf("<") > -1) {
-            return new Reference();
-        }
-        if ("void".equals(to) || "Void".equals(to)){
-            return new Reference(Reference.Scope.NATIVE, Reference.Kind.VOID, to);
-        }
-        if (primitives.contains(to)){
-            return new Reference(Reference.Scope.NATIVE, Reference.Kind.PRIMITIVE, to);
+        Reference primitiveOrVoid = resolvePrimitiveOrVoid(to);
+        if (primitiveOrVoid != null) {
+            return primitiveOrVoid;
         }
         Reference link = resolveModule(to);
         if (link.getKind() != Reference.Kind.NONE) {
@@ -111,24 +107,15 @@ public class LinkResolver {
         if (link.getKind() != Reference.Kind.NONE) {
             return link;
         }
-        String fromPackageName = getPackageName(from);
-        String toPackageName = getPackageName(to);
-        String toClassName = getClassName(to);
-        if (toPackageName.isEmpty()) {
-            to = qualifyClass(fromPackageName, toClassName);
-            toPackageName = getPackageName(to);
-            toClassName = getClassName(to);
-        }
-        if (!isPackageQualified(fromPackageName, toPackageName)) {
-            to = qualifyPackage(fromPackageName, toPackageName);
-            toPackageName = getPackageName(to);
-            toClassName = getClassName(to);
-        }
+        String[] qualified = qualify(to);
+        String toPackageName = qualified[0];
+        String toClassName = qualified[1];
         if (toPackageName.isEmpty()) {
             Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Reference not found: " + original);
             link.setKind(Reference.Kind.NONE);
             return link;
         }
+        String fromPackageName = getPackageName(from);
         link.setUri(relativizeWithModules(fromPackageName, toPackageName));
         link.setKind(Reference.Kind.PACKAGE);
         link.setScope(Reference.Scope.LOCAL);
@@ -142,6 +129,36 @@ public class LinkResolver {
             }
         }
         return link;
+    }
+
+    private static Reference resolvePrimitiveOrVoid(String to) {
+        if (to == null || to.isEmpty() || to.equals("?") || to.indexOf("<") > -1) {
+            return new Reference();
+        }
+        if ("void".equals(to) || "Void".equals(to)){
+            return new Reference(Reference.Scope.NATIVE, Reference.Kind.VOID, to);
+        }
+        if (primitives.contains(to)){
+            return new Reference(Reference.Scope.NATIVE, Reference.Kind.PRIMITIVE, to);
+        }
+        return null;
+    }
+
+    // Returns [toPackageName, toClassName, qualifiedTo]
+    private static String[] qualify(String name) {
+        String toPackageName = getPackageName(name);
+        String toClassName = getClassName(name);
+        if (toPackageName.isEmpty()) {
+            String qualifiedTo = qualifyClass(toClassName);
+            toPackageName = getPackageName(qualifiedTo);
+            toClassName = getClassName(qualifiedTo);
+        }
+        if (!isPackageQualified(toPackageName)) {
+            String qualifiedTo = qualifyPackage(toPackageName);
+            toPackageName = getPackageName(qualifiedTo);
+            toClassName = getClassName(qualifiedTo);
+        }
+        return new String[] { toPackageName, toClassName };
     }
 
     public static Reference resolveNative(String to) {
@@ -183,23 +200,21 @@ public class LinkResolver {
         return null;
     }
 
-    public static boolean isPackageQualified(String from, String to) {
-        return to.indexOf('.') > -1;
+    public static boolean isPackageQualified(String name) {
+        return name.indexOf('.') > -1;
     }
 
-    public static String qualifyClass(String from, String to) {
+    public static String qualifyClass(String name) {
         // 'from' could be used to ensure the closest matching class is chosen
         for (PackageMember member : api.getClasses()) {
-            if (member instanceof ClassNode classNode) {
-                if (classNode.getSimpleName().equals(to)) {
-                    return classNode.getQualifiedName();
-                }
+            if (member instanceof ClassNode classNode && classNode.getSimpleName().equals(name)) {
+                return classNode.getQualifiedName();
             }
         }
         return "";
     }
 
-    public static String qualifyPackage(String from, String to) {
+    public static String qualifyPackage(String to) {
         // 'from' could be used to ensure the closest matching package is chosen
         for (PackageNode node : api.getPackages()) {
             int p = node.getName().lastIndexOf(".");
@@ -237,8 +252,7 @@ public class LinkResolver {
             String packageRoot = relativize(from, "");
             String toModulePath = packageRoot + "../" + toModule.getName();
             String toPackagePath = relativize("", to);
-            String rel = toModulePath + "/" + toPackagePath;
-            return rel;
+            return toModulePath + "/" + toPackagePath;
         }
     }
 
