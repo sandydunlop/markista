@@ -27,7 +27,7 @@ public class LinkResolver {
     private static HashMap<String,String> suffix = new HashMap<>();
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
     private static Api api = null;
-    private static String FlattenedDirectories = null;
+    private static String flattenedDirectories = null;
 
     private LinkResolver() {
         // This hides the public constructor
@@ -38,7 +38,7 @@ public class LinkResolver {
     }
 
     public static void setFlattenedDirectories(String sd) {
-        FlattenedDirectories = sd;
+        flattenedDirectories = sd;
     }
 
     public static void setCurrentPackageName(String name) {
@@ -263,25 +263,7 @@ public class LinkResolver {
         String[] fromParts = from.split("\\.");
         String[] toParts = to.split("\\.");
         int commonIndex = findCommonIndex(fromParts, toParts);
-
         StringBuilder rel = new StringBuilder();
-        // int p = 0;
-        // if (!from.isEmpty()) {
-        //     for (p=fromParts.length-1; p>=0; p--) {
-        //         if (p<toParts.length &&fromParts[p].equals(toParts[p])) {
-        //             p++;
-        //             break;
-        //         }
-        //         if (!rel.isEmpty()) rel.append("/");
-        //         rel.append("..");
-        //     }
-        // }
-
-        // if (p == -1) p = 0;
-        // for (;p < toParts.length; p++) {
-        //     if (!rel.isEmpty()) rel.append("/");
-        //     rel.append(toParts[p]);
-        // }
         if (!from.isEmpty()) {
             appendParentDirs(rel, fromParts.length - commonIndex);
         }
@@ -290,8 +272,8 @@ public class LinkResolver {
     }
 
     private static String flattenDirectory(String path) {
-        if (FlattenedDirectories != null && !FlattenedDirectories.isEmpty() && path.startsWith(FlattenedDirectories)) {
-            return path.substring(FlattenedDirectories.length() + 1);
+        if (flattenedDirectories != null && !flattenedDirectories.isEmpty() && path.startsWith(flattenedDirectories)) {
+            return path.substring(flattenedDirectories.length() + 1);
         }
         return path;
     }
