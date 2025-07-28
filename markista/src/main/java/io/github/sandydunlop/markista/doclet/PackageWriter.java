@@ -383,9 +383,13 @@ public class PackageWriter {
 
     private void outputDeprecation(Deprecation status, Text text) throws IOException {
         writer.write("\n\n");
-        writer.write("!!! note \"Deprecated\"\n");
+        writer.write("!!! note \"Deprecation\"\n");
         if (text.isEmpty()) {
-            writer.write("    This has been marked as deprecated.\n");
+            if (status == Deprecation.FOR_REMOVAL) {
+                writer.write("    This has been marked for removal.\n");
+            } else {
+                writer.write("    This has been marked as deprecated.\n");
+            }
         } else {
             writer.write("    " + Markdown.formatText(text));
         }

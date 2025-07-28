@@ -43,7 +43,7 @@ public class Markdown {
             return mdDocumentLink(ref.getUri());
         } else if (ref.getKind() == Reference.Kind.PAGE) {
             String relativePath = LinkResolver.relativize("");
-            return mdDocumentLink(ref.getName(), relativePath + ref.getUri());
+            return mdDocumentLink(ref.getName(), FileUtils.joinPaths(relativePath, ref.getUri()));
         } else if (ref.getKind() == Reference.Kind.PACKAGE || ref.getKind() == Reference.Kind.TYPE) {
             return mdAutoLink(ref.getName());
         }
