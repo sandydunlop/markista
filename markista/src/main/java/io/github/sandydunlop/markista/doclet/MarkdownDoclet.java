@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.doclet;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.util.Configuration;
 import io.github.sandydunlop.markista.util.LinkResolver;
-import io.github.sandydunlop.markista.util.ModuleDirectiveGenerator;
+import io.github.sandydunlop.markista.util.ModuleDirectives;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -45,7 +45,7 @@ public class MarkdownDoclet implements Doclet {
             "-flatten",
 
             "-sourcepath", "markista/src/main/java/",
-            "-subpackages", "io.github.sandydunlop",
+            "-subpackages", "io.github.sandydunlop.markista",
 
             // "--module-source-path", "/Users/sandy/git/cu/dev/markista/*/src/main/java",
             // "--module", "markista",
@@ -228,7 +228,7 @@ public class MarkdownDoclet implements Doclet {
             addNativeModules();
         }
 
-        ModuleDirectiveGenerator.setEnvironment(environment);
+        ModuleDirectives.setEnvironment(environment);
         ApiScanner scanner = new ApiScanner(environment);
         Api api = scanner.scan(environment.getIncludedElements());
         api.sort();

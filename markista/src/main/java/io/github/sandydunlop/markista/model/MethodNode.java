@@ -3,15 +3,13 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.lang.model.type.TypeMirror;
-
 public class MethodNode extends Node {
     private Text returnDescription = Text.empty();
     private String specifiedBy = "";
     private TypeNode returnType = null;
     private OverriddenMethodNode overrides = null;
-    private List <ParamNode> params = new ArrayList<>();
-    private List<? extends TypeMirror> thrownTypes = new ArrayList<>();
+    private List<ParamNode> params = new ArrayList<>();
+    private List<String> thrownTypes = new ArrayList<>();
     private TypeNode owner = null;
 
     public MethodNode(TypeNode returnType, String name) {
@@ -27,10 +25,6 @@ public class MethodNode extends Node {
         return overrides;
     }
     
-    public void setReturnType(TypeNode returnType) {
-        this.returnType = returnType;
-    }
-
     public TypeNode getReturnType() {
         return returnType;
     }
@@ -43,11 +37,11 @@ public class MethodNode extends Node {
         return params;
     }
 
-    public void setThrownTypes(List<? extends TypeMirror> thrownTypes) {
-        this.thrownTypes = thrownTypes;
+    public void addThrownType(String name) {
+        thrownTypes.add(name);
     }
 
-    public List<? extends TypeMirror> getThrownTypes() {
+    public List<String> getThrownTypes() {
         return thrownTypes;
     }
 
@@ -76,34 +70,20 @@ public class MethodNode extends Node {
     }
 
     public String signature(){
-        String sig = returnType.qualifiedName + " ";
-        sig += simpleName + "(";
+        StringBuilder sb = new StringBuilder();
+        sb.append(returnType.qualifiedName);
+        sb.append(" ");
+        sb.append(simpleName);
+        sb.append("(");
         int paramCount = 0;
         for (ParamNode param : params) {
-            if (paramCount++ > 0) sig += ", ";
+            if (paramCount++ > 0) sb.append(", ");
             String typeName = param.getType().qualifiedName;
             if (typeName == null) typeName = param.getType().simpleName;
-            sig+=typeName;
+            sb.append(typeName);
         }
-        sig += ")";
-        return sig;
-    }
-    public String fullSignature() {
-        String sig = getModifiersString();
-        sig += returnType.simpleName + " ";
-        sig += simpleName + "(" + paramsString() + ")";
-        return sig;
-    }
-    public String paramsString(){
-        String str = "";
-        int paramCount = 0;
-        for (ParamNode param : params) {
-            if (paramCount++ > 0) str += ", ";
-            String typeName = param.getType().simpleName;
-            if (typeName == null) typeName = param.getType().simpleName;
-            str+=typeName + " " + param.simpleName; 
-        }
-        return str;
+        sb.append(")");
+        return sb.toString();
     }
 
     public void setSimpleName(String name) {
@@ -112,13 +92,5 @@ public class MethodNode extends Node {
 
     public String getSimpleName() {
         return simpleName;
-    }
-
-    public void setQualifiedName(String name) {
-        qualifiedName = name;
-    }
-
-    public String getQualifiedName() {
-        return qualifiedName;
     }
 }

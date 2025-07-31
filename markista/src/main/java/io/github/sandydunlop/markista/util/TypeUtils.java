@@ -49,13 +49,11 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
 import static javax.lang.model.element.Modifier.*;
-
 
 public class TypeUtils {
     private static DocletEnvironment environment;
@@ -132,10 +130,17 @@ public class TypeUtils {
 
         TypeElement ownerElement = getEnclosingTypeElement(element);
         TypeNode ownerType = api.getTypeNode(ownerElement);
+        if (ownerType == null) {
+            // This has happened in testing only
+            Configuration.getReporter().print(Diagnostic.Kind.ERROR, String.format(
+                    "Unable to determine owner of method '%s' in package '%s'",
+                    methodNode.getSimpleName(), packageNode.getName()));
+            return null;
+        }
         setMethodParams(methodNode, element);
 
         setModifiers(methodNode, element.getModifiers());
-        methodNode.setThrownTypes(element.getThrownTypes());
+        setThrownTypes(methodNode, element.getThrownTypes());
         methodNode.setOwner(ownerType);
 
         if (element.getKind() == ElementKind.METHOD) {
@@ -167,7 +172,7 @@ public class TypeUtils {
             FieldNode fieldNode = typeNode.getField(simpleName);
             if (fieldNode == null) {
                 String qualifiedClassName = classElement.getQualifiedName().toString();
-                TypeNode type = getFieldType(environment.getElementUtils(), qualifiedClassName, simpleName);
+                TypeNode type = getFieldType(qualifiedClassName, simpleName);
                 fieldNode = new FieldNode(type, simpleName);
                 typeNode.getFields().add(fieldNode);
             }
@@ -328,13 +333,15 @@ public class TypeUtils {
     public static OverriddenMethodNode getOverriddenMethod(TypeElement superclass, ExecutableElement methodElement) {
         if (superclass == null) return null;
         for (Element superMethod : superclass.getEnclosedElements()) {
-            if (superMethod instanceof ExecutableElement && superMethod.getSimpleName().equals(methodElement.getSimpleName())) {
+            if (superMethod instanceof ExecutableElement && superMethod.getSimpleName().toString().equals(methodElement.getSimpleName().toString())) {
                 return new OverriddenMethodNode(superclass.getQualifiedName().toString(), superMethod.getSimpleName().toString());
             }
         }
         return null;
     }
 
+    /// Returns a method that is overridden by the specified method when the 
+    /// overridden method belongs to a Java native type.
     public static OverriddenMethodNode getOverriddenNativeMethod(String qualifiedTypeName, MethodNode method) {
         try {
             String canonicalName = Utils.removeGenerics(qualifiedTypeName);
@@ -358,7 +365,7 @@ public class TypeUtils {
                     }
                 }
             }
-        } catch (SecurityException | ClassNotFoundException e) {
+        } catch (SecurityException | ClassNotFoundException _) {
             Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Failed to read information for " + qualifiedTypeName + "." + method.getSimpleName());
         }
         return null; // No overridden method found
@@ -439,6 +446,8 @@ public class TypeUtils {
         return null;
     }
 
+    /// Returns a list of `Reference` objects. Each one represents an
+    /// occurrence of `@see` in a Javadoc comment.
     public static List<Reference> getReferences(DocCommentTree dcTree) {
         if (dcTree == null) return new ArrayList<>();
         List<Reference> refs = new ArrayList<>();
@@ -447,7 +456,7 @@ public class TypeUtils {
                 List<? extends DocTree> see = seeTree.getReference();
                 for (DocTree docRef : see) {
                     if (docRef.getKind() == Kind.MARKDOWN) {
-                        // It's actually HTML, not Markdown.
+                        // This is sometimes HTML, not Markdown?
                         Reference ref = new Reference();
                         ref.setKind(Reference.Kind.URL);
                         ref.setUri(getUrl(docRef.toString()));
@@ -504,6 +513,15 @@ public class TypeUtils {
         }
     }
 
+    public static void setThrownTypes(MethodNode methodNode, List<? extends TypeMirror> thrownTypes) {
+        for (TypeMirror typeMirror : thrownTypes) {
+            Element element = environment.getTypeUtils().asElement(typeMirror);
+            if (element instanceof TypeElement typeElement) {
+                methodNode.addThrownType(typeElement.getQualifiedName().toString());
+            }
+        }
+    }
+
     public static void setDeprecationStatus(Node node, Element e, DocCommentTree dct) {
         if (node == null) return;
         DeprecatedTree deprecatedTree = getDeprecation(dct);
@@ -548,10 +566,10 @@ public class TypeUtils {
         }
     }
 
-    public static TypeNode getFieldType(Elements elementUtils, String className, String fieldName) {
+    public static TypeNode getFieldType(String className, String fieldName) {
         String qualifiedTypeName = null;
         String arrayBrackets = "";
-        TypeElement classElement = elementUtils.getTypeElement(className);
+        TypeElement classElement = environment.getElementUtils().getTypeElement(className);
         for (VariableElement field : ElementFilter.fieldsIn(classElement.getEnclosedElements())) {
             if (field.getSimpleName().toString().equals(fieldName)) {
                 TypeMirror typeMirror = field.asType();

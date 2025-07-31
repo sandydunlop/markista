@@ -2,7 +2,6 @@ package io.github.sandydunlop.markista.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ModuleNode extends Node implements PackageOwner{
     private List<DirectiveNode> directives = new ArrayList<>();
@@ -46,30 +45,30 @@ public class ModuleNode extends Node implements PackageOwner{
     public List<DirectiveNode> getExports() {
         return directives.stream()
                              .filter(item -> item.getKind() == DirectiveNode.Kind.EXPORTS)
-                             .collect(Collectors.toList());
+                             .toList();
     }
 
     public List<DirectiveNode> getRequires() {
         return directives.stream()
                              .filter(item -> item.getKind() == DirectiveNode.Kind.REQUIRES)
-                             .collect(Collectors.toList());
+                             .toList();
     }
 
     public List<DirectiveNode> getOpens() {
         return directives.stream()
                              .filter(item -> item.getKind() == DirectiveNode.Kind.OPENS)
-                             .collect(Collectors.toList());
+                             .toList();
     }
 
     public List<DirectiveNode> getUses() {
         return directives.stream()
                              .filter(item -> item.getKind() == DirectiveNode.Kind.USES)
-                             .collect(Collectors.toList());
+                             .toList();
     }
 
     public List<DirectiveNode> getProvides() {
         return directives.stream()
                              .filter(item -> item.getKind() == DirectiveNode.Kind.PROVIDES)
-                             .collect(Collectors.toList());
+                             .toList();
     }
 }

@@ -37,12 +37,6 @@ public class Api extends AbstractTypeOwner {
     }
 
     public ModuleNode getUnnamedModuleNode() {
-        // ModuleNode unnamedModule = new ModuleNode("");
-        // for (PackageNode packageNode : packages) {
-        //     if (packageNode.getModule().getName().isEmpty()) { 
-        //         unnamedModule.addPackage(packageNode);
-        //     }
-        // }
         return unnamedModule;
     }
 
@@ -74,14 +68,11 @@ public class Api extends AbstractTypeOwner {
     }
 
     public TypeNode getTypeNode(TypeElement type) {
+        if (type == null) return null;
         return getTypeNode(type.getQualifiedName().toString());
     }
 
-    public ClassNode getClassNode(TypeElement type) {
-        if (type == null) return null;
-        return (ClassNode)getTypeNode(type.getQualifiedName().toString());
-    }
-
+    @Override
     public void sort() {
         Collections.sort(packages, (o1, o2) -> o2.qualifiedName.compareTo(o1.qualifiedName) );
         for (TypeNode node : getTypes()) {

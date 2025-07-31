@@ -144,6 +144,13 @@ class LinkResolverTests {
 	}
 
 	@Test
+	void resolve_packageFromModule() {
+		LinkResolver.setFlattenedDirectories("io.github.sandydunlop.markista");
+		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.doclet");
+		assertEquals("doclet", link.getUri());
+	}
+
+	@Test
 	void resolve_primitive() {
 		Reference link = LinkResolver.resolve("io.github.sandydunlop.markista.util", "boolean");
 		assertEquals(Reference.Kind.PRIMITIVE, link.getKind());

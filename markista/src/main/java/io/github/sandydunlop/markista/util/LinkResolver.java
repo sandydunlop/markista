@@ -244,17 +244,13 @@ public class LinkResolver {
         }
         String fromModuleName = "";
         String toModuleName = "";
-        ModuleNode toModule = toPackage.getModule();
         ModuleNode fromModule = api.getModuleNode(currentModuleName);
-        if (toModule != null) {
-            toModuleName = toModule.getName();
-        } else{
-            Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Error resolving module for: " + to);
-        }
+        ModuleNode toModule = toPackage.getModule();
         if (fromModule != null) {
             fromModuleName = fromModule.getName();
-        } else {
-            Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Error resolving module for: " + from);
+        }
+        if (toModule != null) {
+            toModuleName = toModule.getName();
         }
         if (fromModuleName.equals(toModuleName)) {
             // to and from are members of the same module

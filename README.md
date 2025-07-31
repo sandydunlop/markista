@@ -2,7 +2,6 @@
 
 *Serving Markdown Flavored Documentation*
 
-
 ## Introduction
 
 Markista is a [doclet](https://docs.oracle.com/javase/8/docs/technotes/guides/javadoc/doclet/overview.html) that turns your Java documentation comments into Markdown, suitable for use with [Github](https://github.com/), [MkDocs](https://www.mkdocs.org/), etc. 
@@ -33,7 +32,7 @@ Markista is available in the [Maven Central](https://central.sonatype.com/artifa
 
 ```groovy
 dependencies {
-    markista("io.github.sandydunlop:markista:0.1.5")
+    markista("io.github.sandydunlop:markista:0.1.6")
 }
 ```
 
@@ -59,7 +58,7 @@ javadoc {
 Markista can be used from the command line with the `javadoc` command as follows:
 
 ```bash
-javadoc -docletpath libs/markista-0.1.5.jar -doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet src/main/java/my.package/Hello.java
+javadoc -docletpath libs/markista-0.1.6.jar -doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet src/main/java/my.package/Hello.java
 ```
 
 ### Parameters
@@ -83,9 +82,14 @@ javadoc -docletpath libs/markista-0.1.5.jar -doclet io.github.sandydunlop.markis
 
 ## Download
 
-JAR files for version 0.1.5 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.1.5).
+JAR files for version 0.1.6 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.1.6).
 
 
 ## Source Code
 
 Markista's source code is available on [Github](https://github.com/sandydunlop/markista) under the GPLv3 license.
+
+---
+
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=sandydunlop_markista&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=sandydunlop_markista)
+

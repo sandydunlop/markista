@@ -9,7 +9,9 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.Text.Segment;
 import jdk.javadoc.doclet.Reporter;
 
 import javax.lang.model.element.Element;
@@ -56,10 +58,18 @@ class MarkdownTests {
         }
     };
     
+    static List<Object[]> typeReferenceProvider() {
+        return List.of(
+            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null, "Node" },
+            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
+            new Object[] { Reference.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
+        );
+    }
+
     @BeforeAll
     static void initAll() {
 		Configuration.setReporter(reporter);
-        LinkResolver.addNativeModule("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
+        LinkResolver.addNativeModule("java.base", JAVA_24_URL + "java.base", ".html");
     }
 
     @BeforeEach
@@ -103,14 +113,22 @@ class MarkdownTests {
     }
 
     @Test
-    void fullSignature() {
-        MethodNode method = new MethodNode(node, "subject");
-        TypeNode param1type = new TypeNode("java.lang.String", "String", model);
-        method.addParam(new ParamNode(param1type, "name"));
-        String sig = Markdown.fullSignature(method);
-        assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
+	void autoLink_array() {
+        String markdown = Markdown.mdAutoLink("java.lang.String[]", true);
+        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
     }
 
+    @Test
+	void autoLink_listOfArrays() {
+        String markdown = Markdown.mdAutoLink("java.util.List<java.lang.String[]>", true);
+        assertEquals("[List](" + JAVA_24_URL + "java.base/java/util/List.html)&lt;[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]&gt;", markdown);
+    }
+
+	@Test
+	void splitAndLink_oneArray() {
+        String markdown = Markdown.splitAndLink("java.lang.String[]");
+        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
+    }
     @Test
     void formatParams() {
         List<ParamNode> params = new ArrayList<>();
@@ -139,14 +157,6 @@ class MarkdownTests {
         Reference ref = new Reference(Reference.Kind.PACKAGE, "model", null);
         String markdown = Markdown.formatReference(ref);
         assertEquals("[model](../model/index.md)", markdown);
-    }
-
-    static List<Object[]> typeReferenceProvider() {
-        return List.of(
-            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null, "Node" },
-            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
-            new Object[] { Reference.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
-        );
     }
 
     @org.junit.jupiter.params.ParameterizedTest
@@ -179,6 +189,52 @@ class MarkdownTests {
         assertEquals("", markdown);
     }
 
+    @Test
+    void formatText_markdown() {
+        Text text = Text.empty();
+        text.append(Segment.empty()
+                .setKind(Text.SegmentKind.MARKDOWN)
+                .setText("one [Node] two"));
+        String formatted = Markdown.formatText(text);
+        assertEquals("one [Node](../model/Node.md) two", formatted);
+    }
+
+    @Test
+    void formatText_text() {
+        Text text = Text.empty();
+        text.append(Segment.empty()
+                .setKind(Text.SegmentKind.TEXT)
+                .setText("hello world"));
+        String formatted = Markdown.formatText(text);
+        assertEquals("hello world", formatted);
+    }
+
+    @Test
+    void formatText_text_link_text() {
+        Text text = Text.empty();
+        text.append(Segment.empty()
+                .setKind(Text.SegmentKind.TEXT)
+                .setText("hello "));
+        text.append(Segment.empty()
+                .setKind(Text.SegmentKind.LINK)
+                .setText("link")
+                .setLink("http://example.com"));
+        text.append(Segment.empty()
+                .setKind(Text.SegmentKind.TEXT)
+                .setText(" world"));
+        String formatted = Markdown.formatText(text);
+        assertEquals("hello [link](http://example.com) world", formatted);
+    }
+
+    @Test
+    void fullSignature() {
+        MethodNode method = new MethodNode(node, "subject");
+        TypeNode param1type = new TypeNode("java.lang.String", "String", model);
+        method.addParam(new ParamNode(param1type, "name"));
+        String sig = Markdown.fullSignature(method);
+        assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
+    }
+
 	@Test
 	void link_qualifiedWithAnchor() {
         LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
@@ -186,22 +242,52 @@ class MarkdownTests {
         assertEquals("[mdautolink](../util/Markdown.md#mdautolink)", markdown);
     }
 
-	@Test
-	void autoLink_array() {
-        String markdown = Markdown.mdAutoLink("java.lang.String[]", true);
-        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
+    @Test
+    void link_generics_qualified() {
+        String markdown = Markdown.linkGenerics("java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>");
+        assertEquals("[Function](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html), [Optional](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html)&gt;&gt;", markdown);
     }
 
     @Test
-	void autoLink_listOfArrays() {
-        String markdown = Markdown.mdAutoLink("java.util.List<java.lang.String[]>", true);
-        assertEquals("[List](" + JAVA_24_URL + "java.base/java/util/List.html)&lt;[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]&gt;", markdown);
+    void resolveLinks_qualifiedLocalPackage() {
+        String markdown = Markdown.resolveLinks("one [model](io.github.sandydunlop.markista.model) two");
+        assertEquals("one [model](../model/index.md) two", markdown);
     }
 
-	@Test
-	void splitAndLink_oneArray() {
-        String markdown = Markdown.splitAndLink("java.lang.String[]");
-        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
+    @Test
+    void resolveLinks_unqualifiedLocalClass() {
+        String markdown = Markdown.resolveLinks("one [Node](Node) two");
+        assertEquals("one [Node](../model/Node.md) two", markdown);
+    }
+
+    @Test
+    void resolveLinks_unqualifiedLocalClass_noParentheses() {
+        String markdown = Markdown.resolveLinks("one [Node] two");
+        assertEquals("one [Node](../model/Node.md) two", markdown);
+    }
+
+    @Test
+    void resolveLinks_unqualifiedLocalClass_withAnchor() {
+        String markdown = Markdown.resolveLinks("one [Node](Node#anchor) two");
+        assertEquals("one [Node](../model/Node.md#anchor) two", markdown);
+    }
+
+    @Test
+    void resolveLinks_qualifiedLocalClass() {
+        String markdown = Markdown.resolveLinks("one [Node](io.github.sandydunlop.markista.model.Node) two");
+        assertEquals("one [Node](../model/Node.md) two", markdown);
+    }
+
+    @Test
+    void resolveLinks_qualifiedNativeClass() {
+        String markdown = Markdown.resolveLinks("one [String](java.lang.String) two");
+        assertEquals("one [String](" + JAVA_24_URL + "java.base/java/lang/String.html) two", markdown);
+    }
+
+    @Test
+    void resolveLinks_qualifiedNativeClass_withAnchor() {
+        String markdown = Markdown.resolveLinks("one [String](java.lang.String#anchor) two");
+        assertEquals("one [String](" + JAVA_24_URL + "java.base/java/lang/String.html#anchor) two", markdown);
     }
 
 	@Test

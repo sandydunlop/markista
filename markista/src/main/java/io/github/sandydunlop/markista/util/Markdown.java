@@ -58,8 +58,11 @@ public class Markdown {
         StringBuilder sb = new StringBuilder();
         for (Text.Segment segment : parsedSegments) {
             switch (segment.getKind()) {
-                case Text.SegmentKind.TEXT, Text.SegmentKind.END, Text.SegmentKind.MARKDOWN:
+                case Text.SegmentKind.TEXT, Text.SegmentKind.END:
                     sb.append(segment.toString());
+                    break;
+                case Text.SegmentKind.MARKDOWN:
+                    sb.append(formatMarkdown(segment.toString()));
                     break;
                 case Text.SegmentKind.CODE:
                     sb.append("`");
@@ -80,7 +83,21 @@ public class Markdown {
         return sb.toString();
     }
 
+    public static String formatMarkdown(String markdown) {
+        if (markdown.indexOf("[") == -1) {
+            return markdown;
+        }
+        return resolveLinks(markdown);
+    }
+
     public static String formatLink(Text.Segment segment) {
+        if (segment.getLink().indexOf("://") > -1) {
+            Reference ref = new Reference();
+            ref.setKind(Reference.Kind.URL);
+            ref.setName(segment.getText());
+            ref.setUri(segment.getLink());
+            return mdRefLink(ref);
+        }
         if (segment.getText().isBlank()) {
             return mdAutoLink(segment.getLink());
         } else {
@@ -88,6 +105,55 @@ public class Markdown {
             ref.setName(segment.getText());
             return mdRefLink(ref);
         }
+    }
+
+    public static String resolveLinks(String markdown) {
+        int openBracket = markdown.length() - 1;
+        int openParenthesis = -1;
+        int closeBracket = -1;
+        int closeParenthesis = -1;
+        while (openBracket > 0) {
+            char c = markdown.charAt(openBracket);
+            if (c == ')') {
+                closeParenthesis = openBracket;
+                openParenthesis = -1;
+            } else if (c == ']') {
+                closeBracket = openBracket;
+            } else if (c == '(' && closeParenthesis > -1) {
+                openParenthesis = openBracket;
+                closeBracket = -1;
+            } else if (c == '[' && closeBracket > -1) {
+                markdown = processMarkdownLink(markdown, openBracket, closeBracket, openParenthesis, closeParenthesis);
+            }
+            openBracket--;
+        }
+        return markdown;
+    }
+
+    private static String processMarkdownLink(String markdown, int openBracket, int closeBracket, int openParenthesis, int closeParenthesis) {
+        String before = markdown.substring(0, openBracket);
+        String text = markdown.substring(openBracket + 1, closeBracket);
+        Reference link;
+        String after = "";
+        if (openParenthesis > -1) {
+            // Brackets with link in parentheses
+            after = markdown.substring(closeParenthesis + 1);
+            String path = markdown.substring(openParenthesis + 1, closeParenthesis);
+            int pos = path.indexOf('#');
+            String anchor = "";
+            if (pos > 0) {
+                anchor = path.substring(pos).toLowerCase();
+                path = Utils.removeGenerics(path.substring(0, pos));
+            }
+            link = LinkResolver.resolve(path);
+            link.setAnchor(anchor);
+        } else {
+            // Brackets without parentheses
+            after = markdown.substring(closeBracket + 1);
+            link = LinkResolver.resolve(text);
+        }
+        link.setName(text);
+        return mdRefLink(before, link, after, false);
     }
    
     public static String mdAutoLink(String identifier) {
@@ -113,7 +179,7 @@ public class Markdown {
         if (name == null) {
             return identifier;
         } else if (name.indexOf('<') > -1) {
-            text = escape(simplify ? linkGenerics(name, simplify) : name);
+            text = escape(simplify ? linkGenerics(name) : name);
             return text;
         } else if (name.indexOf(',') > -1) {
             return splitAndLink(name);
@@ -159,21 +225,16 @@ public class Markdown {
     /// Changes qualified generic type names to unqualified generic type names and adds links to their API documentation.
     /// @param str A string containing a qualified generic name.
     /// @return    A string with the qualified names changed to unqualified names and links to types added
-    public static String linkGenerics(String str, boolean simplify) {
+    public static String linkGenerics(String str) {
         if (str == null || str.isEmpty()) return str;
-        int start = str.indexOf("<");
-        if (start > -1) {
-            int end = str.indexOf(">");
-            if (end > start) {
-                String before = str.substring(0, start);
-                before = Markdown.mdAutoLink(before, simplify);
-                String after = str.substring(end + 1);
-                String mid = str.substring(start + 1, end);
-                String simplified = splitAndLink(mid);
-                return before + "<" + simplified + ">" + after;
-            }
-        }
-        return mdAutoLink(str, simplify);
+        int openingChevron = str.indexOf("<");
+        int closingChevron = str.lastIndexOf(">");
+        String before = str.substring(0, openingChevron);
+        String mid = str.substring(openingChevron + 1, closingChevron);
+        String after = str.substring(closingChevron + 1);
+        before = mdAutoLink(before);
+        mid = splitAndLink(mid);
+        return before + "&lt;" + mid + "&gt;" + after;
     }
 
     public static String splitAndLink(String typesString) {

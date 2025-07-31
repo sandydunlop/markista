@@ -3,6 +3,8 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.sandydunlop.markista.util.Utils;
+
 public class Text {
     private List<Segment> segments = new ArrayList<>();
 
@@ -57,8 +59,9 @@ public class Text {
             return new Segment();
         }
 
-        public void setKind(SegmentKind k) {
+        public Segment setKind(SegmentKind k) {
             kind = k;
+            return this;
         }
 
         public SegmentKind getKind() {
@@ -66,19 +69,24 @@ public class Text {
         }
 
         public String toString() {
+            if (Utils.isNullOrEmpty(text)) {
+                return link;
+            }
             return text;
         }
 
-        public void setText(String text) {
+        public Segment setText(String text) {
             this.text = text;
+            return this;
         }
 
         public String getText() {
             return text;
         }
 
-        public void setLink(String link) {
+        public Segment setLink(String link) {
             this.link = link;
+            return this;
         }
 
         public String getLink() {

@@ -1,6 +1,6 @@
 package io.github.sandydunlop.markista.model;
 
-/// A class to hold infomation about method parameters.
+/// A class to hold information about method parameters.
 public class ParamNode extends Node {
     private TypeNode type = null;
 

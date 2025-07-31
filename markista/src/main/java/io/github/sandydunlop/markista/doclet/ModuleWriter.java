@@ -51,42 +51,43 @@ public class ModuleWriter {
         for (ModuleNode moduleNode : api.getModules()) {
             outputModuleDoc(moduleNode);
         }
-        if (!api.getUnnamedModuleNode().getPackages().isEmpty()) {
-            outputModuleDoc(api.getUnnamedModuleNode());
-        }
+        outputModuleDoc(api.getUnnamedModuleNode());
     }
 
     private void outputModuleDoc(ModuleNode moduleNode) throws IOException {
         LinkResolver.setCurrentModuleName(moduleNode.getName());
         LinkResolver.setCurrentPackageName("");
         fileUtils = new FileUtils(moduleNode, Configuration.getOutputDirectory());
-        writer = fileUtils.createModuleFile(moduleNode.getName(), "index.md");
-        if (moduleNode.getName().isEmpty()) {
-            writer.write("# " + TITLE_API + "\n");
-        } else {
-            writer.write("# " + TITLE_MODULE + " " + moduleNode.getName() + "\n");
-        }
-        writer.write("\n\n" + Markdown.formatText(moduleNode.getFullBody()) + "\n\n");
-        if (moduleNode.getName().isEmpty() && !moduleNode.getPackages().isEmpty()) {
-            writer.write("## " + TITLE_PACKAGES + "\n\n");
-            MarkdownTable table = new MarkdownTable()
-                    .addColumn(TITLE_PACKAGE)
-                    .addColumn(TITLE_DESCRIPTION);
-            for (PackageMember member : moduleNode.getPackages()) {
-                table.addRow(Markdown.mdAutoLink(member.getName()), Utils.inOneLine(Markdown.formatText(member.getDescription())));
+
+        if (!moduleNode.getPackages().isEmpty()) {
+            writer = fileUtils.createModuleFile(moduleNode.getName(), "index.md");
+            if (moduleNode.getName().isEmpty()) {
+                writer.write("# " + TITLE_API + "\n");
+            } else {
+                writer.write("# " + TITLE_MODULE + " " + moduleNode.getName() + "\n");
             }
-            table.render(writer);
+            writer.write("\n\n" + Markdown.formatText(moduleNode.getFullBody()) + "\n\n");
+            if (moduleNode.getName().isEmpty() && !moduleNode.getPackages().isEmpty()) {
+                writer.write("## " + TITLE_PACKAGES + "\n\n");
+                MarkdownTable table = new MarkdownTable()
+                        .addColumn(TITLE_PACKAGE)
+                        .addColumn(TITLE_DESCRIPTION);
+                for (PackageMember member : moduleNode.getPackages()) {
+                    table.addRow(Markdown.mdAutoLink(member.getName()), Utils.inOneLine(Markdown.formatText(member.getDescription())));
+                }
+                table.render(writer);
+            }
+            outputModuleDirectives(TITLE_EXPORTS, TITLE_PACKAGE, moduleNode.getExports());
+            outputModuleDirectives(TITLE_REQUIRES, TITLE_MODULE, moduleNode.getRequires());
+            outputModuleDirectives(TITLE_OPENS, TITLE_PACKAGE, moduleNode.getOpens());
+            outputModuleDirectives(TITLE_USES, TITLE_PACKAGE, moduleNode.getUses());
+            outputModuleProvidesDirectives(moduleNode.getProvides());
+            writer.flush();
+            writer.close();
+            String moduleDir = Configuration.getOutputDirectory() + "/" + moduleNode.getName();
+            PackageWriter packageWriter = new PackageWriter(moduleDir);
+            packageWriter.writeDocs(moduleNode);
         }
-        outputModuleDirectives(TITLE_EXPORTS, TITLE_PACKAGE, moduleNode.getExports());
-        outputModuleDirectives(TITLE_REQUIRES, TITLE_MODULE, moduleNode.getRequires());
-        outputModuleDirectives(TITLE_OPENS, TITLE_PACKAGE, moduleNode.getOpens());
-        outputModuleDirectives(TITLE_USES, TITLE_PACKAGE, moduleNode.getUses());
-        outputModuleProvidesDirectives(moduleNode.getProvides());
-        writer.flush();
-        writer.close();
-        String moduleDir = Configuration.getOutputDirectory() + "/" + moduleNode.getName();
-        PackageWriter packageWriter = new PackageWriter(moduleDir);
-        packageWriter.writeDocs(moduleNode);
         if (!moduleNode.getConstantValues().isEmpty()) {
             outputConstantValues(moduleNode);
         }

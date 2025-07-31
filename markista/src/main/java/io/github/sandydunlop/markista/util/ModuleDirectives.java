@@ -18,17 +18,27 @@ import javax.lang.model.element.TypeElement;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
-public class ModuleDirectiveGenerator {
+/// A utility class for creating [DirectiveNode] objects which encapsulate 
+/// the information provided by [Directive](javax.lang.model.element.ModuleElement.Directive) objects scanned by the [ApiScanner](io.github.sandydunlop.markista.doclet.ApiScanner).
+public class ModuleDirectives {
     private static DocletEnvironment environment;
 
-    private ModuleDirectiveGenerator() {
+    private ModuleDirectives() {
         // Utility class, no instantiation
     }
 
+    /// Sets the doclet environment where it can get access to 
+    /// an [Elements][javax.lang.model.util.Elements] implementation
+    /// to retrieve information about scanned elements.
+    /// @param env The doclet environment
     public static void setEnvironment(DocletEnvironment env) {
         environment = env;
     }
 
+    /// Creates a [DirectiveNode] to encapsulate the information provided
+    /// by a module directive element.
+    /// @param directive a scanned module directive.
+    /// @return A DirectiveNode representing the scanned directive element.
     public static DirectiveNode createFrom(Directive directive) {
         switch(directive.getKind()) {
             case DirectiveKind.REQUIRES:
@@ -46,6 +56,9 @@ public class ModuleDirectiveGenerator {
         }
     }
 
+    /// Creates a DirectiveNode representing a [requires](javax.lang.model.element.ModuleElement.RequiresDirective) directive.
+    /// @param directive a scanned [RequiresDirective](javax.lang.model.element.ModuleElement.RequiresDirective) element.
+    /// @return A DirectiveNode representing the scanned directive element.
     public static DirectiveNode createRequiresDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.REQUIRES;
         RequiresDirective requires = (RequiresDirective) directive;
@@ -56,6 +69,9 @@ public class ModuleDirectiveGenerator {
         return new DirectiveNode(kind, name, transitive);
     }
 
+    /// Creates a DirectiveNode representing an [exports](javax.lang.model.element.ExportsDirective) directive.
+    /// @param directive a scanned [ExportsDirective](javax.lang.model.element.ExportsDirective) element.
+    /// @return A DirectiveNode representing the scanned directive element.
     public static DirectiveNode createExportsDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.EXPORTS;
         ExportsDirective exports = (ExportsDirective) directive;
@@ -71,6 +87,9 @@ public class ModuleDirectiveGenerator {
         return directiveNode; 
     }
 
+    /// Creates a DirectiveNode representing an [opens](javax.lang.model.element.OpensDirective) directive.
+    /// @param directive a scanned [OpensDirective](javax.lang.model.element.OpensDirective) element.
+    /// @return A DirectiveNode representing the scanned directive element.
     public static DirectiveNode createOpensDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.OPENS;
         OpensDirective opens = (OpensDirective) directive;
@@ -86,6 +105,9 @@ public class ModuleDirectiveGenerator {
         return directiveNode; 
     }
 
+    /// Creates a DirectiveNode representing a [uses](javax.lang.model.element.UsesDirective) directive.
+    /// @param directive a scanned [UsesDirective](javax.lang.model.element.UsesDirective) element.
+    /// @return A DirectiveNode representing the scanned directive element.
     public static DirectiveNode createUsesDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.USES;
         UsesDirective uses = (UsesDirective) directive;
@@ -93,6 +115,9 @@ public class ModuleDirectiveGenerator {
         return new DirectiveNode(kind, name);
     }
 
+    /// Creates a DirectiveNode representing a [provides](javax.lang.model.element.ProvidesDirective) directive.
+    /// @param directive a scanned [ProvidesDirective](javax.lang.model.element.ProvidesDirective) element.
+    /// @return A DirectiveNode representing the scanned directive element.
     public static DirectiveNode createProvidesDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.PROVIDES;
         ProvidesDirective provides = (ProvidesDirective) directive;

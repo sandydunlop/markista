@@ -12,10 +12,11 @@ import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.PackageOwner;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Configuration;
-import io.github.sandydunlop.markista.util.ModuleDirectiveGenerator;
+import io.github.sandydunlop.markista.util.ModuleDirectives;
 import io.github.sandydunlop.markista.util.TypeUtils;
 
 import java.io.Serializable;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -40,7 +41,10 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     private DocletEnvironment environment;
     private ModuleNode unnamedModule;
     private ModuleNode currentModule;
+    private HashSet<String> includedNames;
 
+    /// Initializes the ApiScanner with access to the doclet environment.
+    /// The doclet environment provides tools for processing API elements, types, and documentation.
     public ApiScanner(DocletEnvironment environment) {
         this.environment = environment;
         api = new Api();
@@ -48,11 +52,54 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         currentModule = api.getUnnamedModuleNode();
     }
 
+    /// The starting point for a scan of the API structure. This method sets up
+    /// the environment and begins the scan of the API.
     public Api scan(Set<? extends Element> elements) {
+        if (Configuration.getVerbose()) {
+            listElements(elements);
+        }
+        processIncludedElements(elements);
         TypeUtils.init(api, environment);
         scan(elements, 0);
         TypeUtils.addConstantFieldValuesReference(currentModule);
         return api;
+    }
+
+    private void listElements(Set<? extends Element> elements) {
+        for (Element element : elements) {
+            if (element instanceof ModuleElement moduleElement) {
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
+                       "[MODULE] %s", moduleElement.getQualifiedName()));
+            } else if (element instanceof PackageElement packageElement) {
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
+                        "[PACKAGE] %s", packageElement.getQualifiedName()));
+            } else if (element instanceof TypeElement typeElement) {
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
+                        "[TYPE] %s", typeElement.getQualifiedName()));
+            }
+        }
+    }
+
+    private void processIncludedElements(Set<? extends Element> elements) {
+        includedNames = new HashSet<>();
+        for (Element element : elements) {
+            if (element instanceof PackageElement packageElement) {
+                includedNames.add(packageElement.getQualifiedName().toString());
+            } else if (element instanceof TypeElement typeElement) {
+                includedNames.add(typeElement.getQualifiedName().toString());
+            }
+        }
+    }
+
+    private boolean isIncludedElement(String qualifiedName) {
+        return includedNames.contains(qualifiedName);
+    }
+
+    private boolean isIncludedElement(Element e) {
+        if (e.getEnclosingElement() instanceof TypeElement typeElement) {
+            return isIncludedElement(typeElement.getQualifiedName().toString());
+        }
+        return false;
     }
 
     @Override
@@ -66,7 +113,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (e.getQualifiedName().toString().isEmpty()) {
             mod = unnamedModule;
             if (Configuration.getVerbose()) {
-                Configuration.getReporter().print(Diagnostic.Kind.NOTE, "UNNAMED MODULE");
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, "<MODULE> UNNAMED");
             }
         } else {
             mod = api.getModuleNode(e.getQualifiedName().toString());
@@ -74,12 +121,13 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (mod == null) {
             mod = new ModuleNode(e.getQualifiedName().toString());
             if (Configuration.getVerbose()) {
-                Configuration.getReporter().print(Diagnostic.Kind.NOTE, "MODULE: " + mod.getName());
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
+                        "<MODULE> %s", mod.getName()));
             }
             TypeUtils.setDocumentation(mod, e);
             List<? extends Directive>  directives = e.getDirectives();
             for (Directive directive : directives) {
-                DirectiveNode moduleDirective = ModuleDirectiveGenerator.createFrom(directive);
+                DirectiveNode moduleDirective = ModuleDirectives.createFrom(directive);
                 mod.addDirective(moduleDirective);
             }
             api.addModule(mod);
@@ -90,21 +138,24 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
 
     @Override
     public Void visitPackage(PackageElement ee, Integer depth) {
-        PackageNode pkg = api.getPackageNode(ee.getQualifiedName().toString());
-        if (pkg == null) {
-            pkg = new PackageNode(ee.getQualifiedName().toString());
+        if (isIncludedElement(ee.getQualifiedName().toString())) {
             if (Configuration.getVerbose()) {
-                Configuration.getReporter().print(Diagnostic.Kind.NOTE, "  PACKAGE: " + pkg.getName());
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
+                        "<PACKAGE> %s", ee.getQualifiedName()));
             }
-            pkg.setModule(currentModule);
-            currentModule.addPackage(pkg);
-            TypeUtils.setDocumentation(pkg, ee);
-            api.addPackage(pkg);
-            Element enclosing = ee.getEnclosingElement();
-            if (enclosing.getKind() == ElementKind.PACKAGE) {
-                PackageOwner owner = api.getPackageNode(ee.getQualifiedName().toString());
-                if (owner != null) {
-                    owner.getPackages().add(pkg);
+            PackageNode pkg = api.getPackageNode(ee.getQualifiedName().toString());
+            if (pkg == null) {
+                pkg = new PackageNode(ee.getQualifiedName().toString());
+                pkg.setModule(currentModule);
+                currentModule.addPackage(pkg);
+                TypeUtils.setDocumentation(pkg, ee);
+                api.addPackage(pkg);
+                Element enclosing = ee.getEnclosingElement();
+                if (enclosing.getKind() == ElementKind.PACKAGE) {
+                    PackageOwner owner = api.getPackageNode(ee.getQualifiedName().toString());
+                    if (owner != null) {
+                        owner.getPackages().add(pkg);
+                    }
                 }
             }
         }
@@ -113,16 +164,22 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
 
     @Override
     public Void visitType(TypeElement e, Integer depth) { 
-        if (TypeUtils.isIncludedInApi(e)){
-            TypeNode typeNode = TypeUtils.nodeFromElement(e);
-            TypeUtils.setDocumentation(typeNode, e);
+        if (isIncludedElement(e.getQualifiedName().toString())) {
+            if (Configuration.getVerbose()) {
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
+                        "<TYPE> %s", e.getQualifiedName()));
+            }
+            if (TypeUtils.isIncludedInApi(e)){
+                TypeNode typeNode = TypeUtils.nodeFromElement(e);
+                TypeUtils.setDocumentation(typeNode, e);
+            }
         }
         return super.visitType(e, depth);
     }
 
     @Override
     public Void visitExecutable(ExecutableElement ee, Integer depth) {
-        if (TypeUtils.isIncludedInApi(ee)){
+        if (isIncludedElement(ee) && TypeUtils.isIncludedInApi(ee)){
             MethodNode methodNode = TypeUtils.nodeFromElement(ee);
             if (methodNode != null) {
                 DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
@@ -145,7 +202,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
 
     @Override
     public Void visitVariable(VariableElement ve, Integer depth) {
-        if (TypeUtils.isIncludedInApi(ve) && ve.getKind() == ElementKind.FIELD) {
+        if (isIncludedElement(ve) && TypeUtils.isIncludedInApi(ve) && ve.getKind() == ElementKind.FIELD) {
             FieldNode fieldNode = TypeUtils.nodeFromElement(ve);
             if (fieldNode != null ) {
                 fieldNode.setConstantValue((Serializable) ve.getConstantValue());

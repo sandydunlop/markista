@@ -23,8 +23,6 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.lang.model.type.TypeMirror;
-
 /// A class that outputs API documentation as Markdown.
 public class PackageWriter {
     private static final String TEXT_CLASS = "Class";
@@ -109,8 +107,8 @@ public class PackageWriter {
         outputEnclosingClass(typeNode);
         writer.write("\n----\n\n");
 
-        if (!typeNode.getBody().isEmpty()) {
-            writer.write(Markdown.formatText(typeNode.getBody()));
+        if (!typeNode.getFullBody().isEmpty()) {
+            writer.write(Markdown.formatText(typeNode.getFullBody()));
             writer.write("\n\n");
         }
 
@@ -343,11 +341,11 @@ public class PackageWriter {
         if (!method.getThrownTypes().isEmpty()) {
             writer.write("**Throws:**\n\n");
             int count = 0;
-            for (TypeMirror typeMirror : method.getThrownTypes()) {
+            for (String thrownType : method.getThrownTypes()) {
                 if (count++ > 0) {
                     writer.write(", ");
                 }
-                String qualifiedNAme = typeMirror.toString();
+                String qualifiedNAme = thrownType;
 
                 writer.write(Markdown.mdAutoLink(qualifiedNAme, true) + "\n");
             }

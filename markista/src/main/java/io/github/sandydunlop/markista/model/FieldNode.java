@@ -2,7 +2,7 @@ package io.github.sandydunlop.markista.model;
 
 import java.io.Serializable;
 
-/// A class to hold infomation about fields within a class, interface, or enum.
+/// A class to hold information about fields within a class, interface, or enum.
 public class FieldNode extends ParamNode {
     private Serializable constantValue = null;
 
