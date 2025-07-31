@@ -106,7 +106,7 @@ class PackageWriterTests {
         api.addClass(nodeClass);
         api.addEnum(enumNode);
         String moduleDir = Configuration.getOutputDirectory() + "/" + moduleNode.getName();
-		LinkResolver.setApi(api);
+		LinkResolver.init(api);
 		LinkResolver.setFlattenedDirectories(null);
 		LinkResolver.setCurrentModuleName("markista");
         LinkResolver.setCurrentPackageName("");

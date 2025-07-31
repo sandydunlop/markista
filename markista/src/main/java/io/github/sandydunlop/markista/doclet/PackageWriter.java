@@ -281,6 +281,7 @@ public class PackageWriter {
                 }
                 writer.write("\n");
             }
+            writer.write("\n---\n\n");
         }
     }
 
@@ -314,6 +315,7 @@ public class PackageWriter {
             }
 
             outputReferences(node);
+            writer.write("\n---\n\n");
         }
     }
 

@@ -33,10 +33,6 @@ java {
     }
 }
 
-tasks.withType(JavaCompile) {
-    options.annotationProcessorPath = configurations.annotationProcessor
-}
-
 test {
 	useJUnitPlatform()
 	testLogging {
@@ -47,6 +43,10 @@ test {
 
 jacocoTestReport {
     dependsOn test // tests are required to run before generating the report
+    reports {
+        xml.required = true
+        html.required = true 
+    }
 }
 
 jacoco {
@@ -59,13 +59,6 @@ sonar {
     property "sonar.organization", "sandydunlop"
     property "sonar.host.url", "https://sonarcloud.io"
   }
-}
-
-jacocoTestReport {
-    reports {
-        xml.required = true
-        html.required = true 
-    }
 }
 
 def user = ["whoami"].execute().text.trim()

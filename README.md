@@ -52,7 +52,6 @@ javadoc {
 }
 ```
 
-
 ## Command Line
 
 Markista can be used from the command line with the `javadoc` command as follows:

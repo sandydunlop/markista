@@ -72,7 +72,7 @@ public class FileUtils {
 
     /// Creates a filesystem path based on the specified output directory
     /// and the fully qualified name of a package. Each section of the package
-    /// name becomes a directory unless [setFlattenedDirectories] has been
+    /// name becomes a directory unless [setFlattenedDirectories][FileUtils#setFlattenedDirectories] has been
     /// called, in which case only the directories which will contain
     /// documentation for types will be created.
     /// @param outputDirectory output path specified by the `-d` command line parameter

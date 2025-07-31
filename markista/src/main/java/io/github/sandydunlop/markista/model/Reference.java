@@ -67,6 +67,7 @@ public class Reference {
     
     public enum Kind {
         NONE,
+        UNKNOWN,
         URL,
         PAGE,
         MODULE,
@@ -78,6 +79,7 @@ public class Reference {
 
     public enum Scope {
         NONE,
+        UNKNOWN,
         LOCAL,
         NATIVE,
         FOREIGN

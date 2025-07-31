@@ -72,6 +72,10 @@ public class TypeUtils {
         String qualifiedName = element.getQualifiedName().toString();
         TypeNode typeNode = api.getTypeNode(qualifiedName);
         if (typeNode == null) {
+            if (Configuration.getVerbose()) {
+                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
+                        "[   TYPE] %s", qualifiedName));
+            }
             PackageElement packageElement = getEnclosingPackageElement(element);
             String simpleName = element.getSimpleName().toString();
             if (packageElement == null) {

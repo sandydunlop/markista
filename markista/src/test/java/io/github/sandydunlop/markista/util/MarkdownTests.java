@@ -19,6 +19,7 @@ import javax.tools.Diagnostic.Kind;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -69,7 +70,7 @@ class MarkdownTests {
     @BeforeAll
     static void initAll() {
 		Configuration.setReporter(reporter);
-        LinkResolver.addNativeModule("java.base", JAVA_24_URL + "java.base", ".html");
+        LinkResolver.addNativeModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
     }
 
     @BeforeEach
@@ -106,7 +107,7 @@ class MarkdownTests {
         markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
         model.addClass(markdownDoclet);
 
-        LinkResolver.setApi(api);
+        LinkResolver.init(api);
 		LinkResolver.setFlattenedDirectories(null);
 		LinkResolver.setCurrentModuleName("markista");
         LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.doclet");
@@ -246,6 +247,13 @@ class MarkdownTests {
     void link_generics_qualified() {
         String markdown = Markdown.linkGenerics("java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>");
         assertEquals("[Function](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html), [Optional](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html)&gt;&gt;", markdown);
+    }
+
+    @Disabled
+    @Test
+    void link_nativeMethod() {
+        String markdown = Markdown.mdAutoLink("jdk.javadoc.doclet.Doclet.Option#process(String,List)");
+        assertEquals("[process](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk.javadoc.doclet.Doclet.Option.html#process(String,List))", markdown);
     }
 
     @Test

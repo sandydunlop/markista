@@ -15,6 +15,7 @@ import jdk.javadoc.doclet.Reporter;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @ExtendWith(MockitoExtension.class)
 class LinkResolverTests {
+    private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
 	private Api api;
     private ModuleNode module;
     private PackageNode model;
@@ -54,7 +56,7 @@ class LinkResolverTests {
 	@BeforeAll
     static void initAll() {
 		Configuration.setReporter(reporter);
-        LinkResolver.addNativeModule("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
+        LinkResolver.addNativeModuleUrl("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
     }
 
     @BeforeEach
@@ -91,10 +93,27 @@ class LinkResolverTests {
         markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
         model.addClass(markdownDoclet);
 
-		LinkResolver.setApi(api);
+		// Configuration.setCreateExternalLinks(false);
+		LinkResolver.init(api);
 		LinkResolver.setFlattenedDirectories(null);
 		LinkResolver.setCurrentModuleName("markista");
         LinkResolver.setCurrentPackageName("");
+	}
+
+	// @Disabled
+	@Test
+	void addNativeModuleUrl() {
+		// Configuration.setCreateExternalLinks(false);
+		LinkResolver.init(api);
+		LinkResolver.setFlattenedDirectories(null);
+
+		String moduleName = "jdk.javadoc";
+        LinkResolver.addNativeModuleUrl(moduleName, JAVA_24_URL + moduleName, ".html");
+		Reference link = LinkResolver.resolveNativePackageOrType("jdk.javadoc.doclet", "Doclet");
+		assertEquals(Reference.Scope.NATIVE, link.getScope());
+		assertEquals(Reference.Kind.URL, link.getKind());
+		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.html", link.getUri());
+
 	}
 
 	@Test
