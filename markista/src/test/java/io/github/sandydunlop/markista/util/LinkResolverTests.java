@@ -15,7 +15,6 @@ import jdk.javadoc.doclet.Reporter;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -56,7 +55,6 @@ class LinkResolverTests {
 	@BeforeAll
     static void initAll() {
 		Configuration.setReporter(reporter);
-        LinkResolver.addNativeModuleUrl("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
     }
 
     @BeforeEach
@@ -93,17 +91,15 @@ class LinkResolverTests {
         markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
         model.addClass(markdownDoclet);
 
-		// Configuration.setCreateExternalLinks(false);
 		LinkResolver.init(api);
+        LinkResolver.addNativeModuleUrl("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
 		LinkResolver.setFlattenedDirectories(null);
 		LinkResolver.setCurrentModuleName("markista");
         LinkResolver.setCurrentPackageName("");
 	}
 
-	// @Disabled
 	@Test
 	void addNativeModuleUrl() {
-		// Configuration.setCreateExternalLinks(false);
 		LinkResolver.init(api);
 		LinkResolver.setFlattenedDirectories(null);
 
@@ -113,8 +109,14 @@ class LinkResolverTests {
 		assertEquals(Reference.Scope.NATIVE, link.getScope());
 		assertEquals(Reference.Kind.URL, link.getKind());
 		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.html", link.getUri());
-
 	}
+
+    @Test
+    void qualifyType() {
+        String[] qualified = LinkResolver.qualifyType("Node");
+        String toPackageName = qualified[0];
+        assertEquals("io.github.sandydunlop.markista.model", toPackageName);
+    }
 
 	@Test
 	void relativize_fromNoLevel() {

@@ -2,10 +2,13 @@ package io.github.sandydunlop.markista.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 import com.sun.source.util.DocTreePath;
@@ -44,6 +47,20 @@ class FileUtilsTests {
         }
     };
     
+    boolean fileExists(String file) {
+        return Files.exists(Paths.get(file));
+    }
+
+    boolean deleteDirectory(File directoryToBeDeleted) {
+        File[] allContents = directoryToBeDeleted.listFiles();
+        if (allContents != null) {
+            for (File file : allContents) {
+                deleteDirectory(file);
+            }
+        }
+        return directoryToBeDeleted.delete();
+    }
+
     @BeforeAll
     static void initAll() {
 		Configuration.setReporter(reporter);
@@ -157,6 +174,8 @@ class FileUtilsTests {
         files.setFlattenedDirectories(module);
         Writer writer = files.createFile("MarkdownDoclet", "io.github.sandydunlop.markista.doclet");
         assertNotNull(writer);
+        assertTrue(fileExists("build/md-docs/sandydunlop/markista/doclet/MarkdownDoclet.md"));
+        deleteDirectory(new File("build/md-docs/sandydunlop"));
     }
 
     @Test
@@ -176,6 +195,8 @@ class FileUtilsTests {
         files.setFlattenedDirectories(module);
         Writer writer = files.createModuleFile("io.github", "test.md");
         assertNotNull(writer);
+        assertTrue(fileExists("build/md-docs/io.github/test.md"));
+        deleteDirectory(new File("build/md-docs/io.github"));
     }
 
     @Test

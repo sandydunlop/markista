@@ -13,6 +13,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.TypeNode;
 
 
 /// This class woks calculates the paths for Markdown documents 
@@ -40,9 +41,6 @@ public class LinkResolver {
         nativeModuleNames = new HashMap<>();
         nativePackageNames = new HashMap<>();
         suffix = new HashMap<>();
-        // if (Configuration.getCreateExternalLinks()) {
-        //     addNativeModules();
-        // }
     }
 
     public static void setFlattenedDirectories(String sd) {
@@ -62,7 +60,6 @@ public class LinkResolver {
         if (module.isPresent()) {
             nativeModuleNames.put(moduleName, baseUrl);
             for (String packageName : module.get().getPackages()) {
-                System.out.println("PKG: " + packageName);
                 nativePackageNames.put(packageName, baseUrl);
                 suffix.put(packageName, s);
             }
@@ -169,10 +166,10 @@ public class LinkResolver {
 
     /// Gets the canonical package name and class name of a class
     /// that is part of the API being documented.
-    /// @param The name of a class
+    /// @param name The name of a class
     /// @return An array containing the canonical name of the 
     ///         class's package, and the class name.
-    private static String[] qualifyType(String name) {
+    public static String[] qualifyType(String name) {
         String toPackageName = getPackageName(name);
         String toClassName = getClassName(name);
         if (toPackageName.isEmpty()) {
@@ -197,38 +194,36 @@ public class LinkResolver {
     ///         is a native Java type, otherwise `Reference.Scope.NONE`.
     public static Reference resolveNativePackageOrType(String toPackageName, String toClassName) {
         Reference link = new Reference();
-        // int dot = 0;
-        // do {
-        //     dot = toPackageName.indexOf(".", dot + 1);
-        //     if (dot != -1) {
-        //         String id = toPackageName.substring(0, dot);
-                String baseUrl = nativePackageNames.get(toPackageName);
-                if (baseUrl != null) {
-                    link.setName(toPackageName);
-                    link.setScope(Reference.Scope.NATIVE);
-                    link.setKind(Reference.Kind.URL);
-                    String uri = baseUrl + "/" + toPackageName.replace(".", "/");
-                    if (!toClassName.isEmpty()) {
-                        if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
-                        uri = uri + "/" + toClassName;
-                        link.setName(toClassName);
-                    }
-                    uri += suffix.get(toPackageName);
-                    link.setUri(uri);
-                    // return link;
-                }else{
-                    for (String key : nativePackageNames.keySet()) {
-                        System.out.println("package: " + key);
-                    }
-                }
-        //     }
-        // } while(dot != -1);
+        String baseUrl = nativePackageNames.get(toPackageName);
+        if (baseUrl != null) {
+            link.setName(toPackageName);
+            link.setScope(Reference.Scope.NATIVE);
+            link.setKind(Reference.Kind.URL);
+            String uri = baseUrl + "/" + toPackageName.replace(".", "/");
+            if (!toClassName.isEmpty()) {
+                if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
+                uri = uri + "/" + toClassName;
+                link.setName(toClassName);
+            }
+            uri += suffix.get(toPackageName);
+            link.setUri(uri);
+        }
         return link;
     }
 
     public static Reference resolveLocalPackageOrType(String from, String toPackageName, String toClassName) {
-        String fromPackageName = getPackageName(from);
         Reference link = new Reference();
+        String fromPackageName = getPackageName(from);
+        if (getPackageName(toPackageName) == null) {
+            return link;
+        }
+        if (!toClassName.isEmpty()) {
+            String qualifiedClassName = toPackageName + "." + toClassName;
+            TypeNode typeNode = api.getTypeNode(qualifiedClassName);
+            if (typeNode == null) {
+                return link;
+            }
+        }
         PackageNode packageNode = api.getPackageNode(toPackageName);
         if (packageNode == null) return link;
         link.setScope(Reference.Scope.LOCAL);
@@ -254,12 +249,19 @@ public class LinkResolver {
 
     /// Gets a `Reference` for a package with `name` being the canonical
     /// name of the module.
+    /// 
     /// For packages defined in the API being documented, this will have `scope`
     /// `Reference.Scope.LOCAL` and `kind` `Reference.Kind.MODULE`, with `uri`
     /// being the relative path between the _from_ package and the _target_ package.
+    /// 
     /// For native Java modules, this will have `scope` `Reference.Scope.NATIVE`
     /// and `kind` `Reference.Kind.URL`, with its `uri` being set to the URL 
     /// of the Oracle Javadoc for the package.
+    /// @param from The package that's currently being documented
+    /// @param target The name of the module tha is being linked to
+    /// @return A [`Reference`][Reference] object containing the link. If the link cannot
+    ///         be resolved, a `Reference` with `kind` set to `Reference.Kind.NONE`
+    ///         is returned.
     public static Reference resolveModule(String from, String target) {
         String apiRoot = relativize(from, "");
         ModuleNode moduleNode = getModule(target);

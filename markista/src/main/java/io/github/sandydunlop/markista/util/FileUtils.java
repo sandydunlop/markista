@@ -14,6 +14,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 
 public class FileUtils {
+    private static final String DEFAULT_OUTPUT_DIRECTORY = "build/md-docs";
     private String outputDirectory;
     private String flattenedDirectories = null;
 
@@ -109,6 +110,7 @@ public class FileUtils {
     }
 
     public Writer createFile(String className, String packageName) throws IOException{
+        if (outputDirectory == null) outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
         File containingDir = buildContainingDirPath(outputDirectory, packageName);
         if (!containingDir.exists()) containingDir.mkdirs();
         if (className == null) className = "index";
@@ -119,6 +121,7 @@ public class FileUtils {
     }
 
     public Writer createModuleFile(String moduleName, String fileName) throws IOException{
+        if (outputDirectory == null) outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
         File containingDir = new File(outputDirectory + pathSeparator() + moduleName);
         if (!containingDir.exists()) containingDir.mkdirs();
         File moduleFile = new File(containingDir, fileName);

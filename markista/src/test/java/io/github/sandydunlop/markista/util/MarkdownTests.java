@@ -19,7 +19,6 @@ import javax.tools.Diagnostic.Kind;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -59,18 +58,9 @@ class MarkdownTests {
         }
     };
     
-    static List<Object[]> typeReferenceProvider() {
-        return List.of(
-            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.model.Node", null, "Node" },
-            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
-            new Object[] { Reference.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
-        );
-    }
-
     @BeforeAll
     static void initAll() {
 		Configuration.setReporter(reporter);
-        LinkResolver.addNativeModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
     }
 
     @BeforeEach
@@ -108,6 +98,7 @@ class MarkdownTests {
         model.addClass(markdownDoclet);
 
         LinkResolver.init(api);
+        LinkResolver.addNativeModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
 		LinkResolver.setFlattenedDirectories(null);
 		LinkResolver.setCurrentModuleName("markista");
         LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.doclet");
@@ -157,12 +148,31 @@ class MarkdownTests {
     void formatReference_PACKAGE_unqualified() {
         Reference ref = new Reference(Reference.Kind.PACKAGE, "model", null);
         String markdown = Markdown.formatReference(ref);
-        assertEquals("[model](../model/index.md)", markdown);
+        assertEquals("[io.github.sandydunlop.markista.model](../model/index.md)", markdown);
+    }
+
+    static List<Object[]> typeReferenceProvider() {
+        return List.of(
+            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.Node", null, "" },
+            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
+            new Object[] { Reference.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
+        );
     }
 
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
     void formatReference_TYPE_variants(Reference.Kind kind, String name, String url, String expected) {
+        Reference ref = new Reference(kind, name, url);
+        String markdown = Markdown.formatReference(ref);
+        assertEquals(expected, markdown);
+    }
+
+    @Test
+    void formatReference_TYPE_variants() {
+        Reference.Kind kind = Reference.Kind.TYPE;
+        String name = "io.github.sandydunlop.Node";
+        String url = "";
+        String expected = "";
         Reference ref = new Reference(kind, name, url);
         String markdown = Markdown.formatReference(ref);
         assertEquals(expected, markdown);
@@ -238,9 +248,9 @@ class MarkdownTests {
 
 	@Test
 	void link_qualifiedWithAnchor() {
-        LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
-        String markdown = Markdown.mdAutoLink("io.github.sandydunlop.markista.util.Markdown#mdAutoLink", false);
-        assertEquals("[mdautolink](../util/Markdown.md#mdautolink)", markdown);
+        LinkResolver.setCurrentPackageName("io.github.sandydunlop.markista.model");
+        String markdown = Markdown.mdAutoLink("io.github.sandydunlop.markista.util.LinkResolver#resolve", false);
+        assertEquals("[LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
     }
 
     @Test
@@ -249,11 +259,18 @@ class MarkdownTests {
         assertEquals("[Function](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html), [Optional](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html)&gt;&gt;", markdown);
     }
 
-    @Disabled
     @Test
     void link_nativeMethod() {
+        LinkResolver.addNativeModules();
         String markdown = Markdown.mdAutoLink("jdk.javadoc.doclet.Doclet.Option#process(String,List)");
-        assertEquals("[process](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk.javadoc.doclet.Doclet.Option.html#process(String,List))", markdown);
+        assertEquals("[Doclet.Option.process](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process)", markdown);
+    }
+
+    @Test
+    void link_localMethod() {
+        LinkResolver.addNativeModules();
+        String markdown = Markdown.mdAutoLink("Node#sort()");
+        assertEquals("[Node.sort](../model/Node#sort)", markdown);
     }
 
     @Test
@@ -277,7 +294,7 @@ class MarkdownTests {
     @Test
     void resolveLinks_unqualifiedLocalClass_withAnchor() {
         String markdown = Markdown.resolveLinks("one [Node](Node#anchor) two");
-        assertEquals("one [Node](../model/Node.md#anchor) two", markdown);
+        assertEquals("one [Node.anchor](../model/Node.md#anchor) two", markdown);
     }
 
     @Test
@@ -295,7 +312,7 @@ class MarkdownTests {
     @Test
     void resolveLinks_qualifiedNativeClass_withAnchor() {
         String markdown = Markdown.resolveLinks("one [String](java.lang.String#anchor) two");
-        assertEquals("one [String](" + JAVA_24_URL + "java.base/java/lang/String.html#anchor) two", markdown);
+        assertEquals("one [String.anchor](" + JAVA_24_URL + "java.base/java/lang/String.html#anchor) two", markdown);
     }
 
 	@Test

@@ -73,6 +73,7 @@ public class Reference {
         MODULE,
         PACKAGE,
         TYPE,
+        METHOD,
         PRIMITIVE,
         VOID
     }
