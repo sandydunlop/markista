@@ -1,2 +1,2 @@
-/// The classes used to store structure and docuemntation information in the API tree.
+/// The types used to store structure and documentation information of the API.
 package io.github.sandydunlop.markista.model;

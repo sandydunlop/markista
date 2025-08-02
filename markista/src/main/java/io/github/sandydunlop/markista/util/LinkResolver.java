@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.List;
 
-import javax.tools.Diagnostic;
-
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
@@ -16,16 +14,14 @@ import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
 
 
-/// This class woks calculates the paths for Markdown documents 
+/// `LinkResolver` calculates the paths for Markdown documents 
 /// to link between different packages and to URLs of external
 /// packages and their contents.
 public class LinkResolver {
     private static final String DOT_HTML = ".html";
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
     private static final List<String> primitives = Arrays.asList("boolean","byte","char","short","int","long","float","double");
-    private static String currentModuleName = "";
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
-    private static String currentPackageName = "";
     private static HashMap<String,String> nativeModuleNames = new HashMap<>();
     private static HashMap<String,String> nativePackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
@@ -45,14 +41,6 @@ public class LinkResolver {
 
     public static void setFlattenedDirectories(String sd) {
         flattenedDirectories = sd;
-    }
-
-    public static void setCurrentPackageName(String name) {
-        currentPackageName = name;
-    }
-
-    public static void setCurrentModuleName(String name) {
-        currentModuleName = name;
     }
 
     public static void addNativeModuleUrl(String moduleName, String baseUrl, String s) {
@@ -96,7 +84,7 @@ public class LinkResolver {
     }
 
     public static Reference resolve(String to) {
-        return resolve(currentPackageName, to);
+        return resolve(Context.getPackageName(), to);
     }
 
     public static Reference resolve(String from, String to) {
@@ -115,7 +103,7 @@ public class LinkResolver {
         String toPackageName = qualified[0];
         String toClassName = qualified[1];
         if (toPackageName.isEmpty()) {
-            Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Reference not found: " + original);
+            Context.reportWarning("Reference not found: " + original);
             link.setKind(Reference.Kind.NONE);
             return link;
         }
@@ -196,14 +184,15 @@ public class LinkResolver {
         Reference link = new Reference();
         String baseUrl = nativePackageNames.get(toPackageName);
         if (baseUrl != null) {
-            link.setName(toPackageName);
+            link.setDisplayName(toPackageName);
             link.setScope(Reference.Scope.NATIVE);
             link.setKind(Reference.Kind.URL);
             String uri = baseUrl + "/" + toPackageName.replace(".", "/");
             if (!toClassName.isEmpty()) {
                 if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
                 uri = uri + "/" + toClassName;
-                link.setName(toClassName);
+                link.setDisplayName(toPackageName + "." + toClassName);
+                link.setClassName(toPackageName + "." + toClassName);
             }
             uri += suffix.get(toPackageName);
             link.setUri(uri);
@@ -221,26 +210,26 @@ public class LinkResolver {
             String qualifiedClassName = toPackageName + "." + toClassName;
             TypeNode typeNode = api.getTypeNode(qualifiedClassName);
             if (typeNode == null) {
+                Context.reportError("Unable to resolve type: " + qualifiedClassName);
                 return link;
             }
         }
         PackageNode packageNode = api.getPackageNode(toPackageName);
         if (packageNode == null) return link;
+        link.setDisplayName(toPackageName);
         link.setScope(Reference.Scope.LOCAL);
         link.setKind(Reference.Kind.MODULE);
-        link.setName(toPackageName);
         link.setUri(relativizeWithModules(fromPackageName, toPackageName));
-
         if (!toClassName.isEmpty()) {
+            link.setDisplayName(toPackageName + "." + toClassName);
+            link.setClassName(toPackageName + "." + toClassName);
             addClassToReference(toClassName, link);
         }
-
         return link;
     }
 
     private static void addClassToReference(String className, Reference link) {
         if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
-        link.setName(className);
         link.setUri(link.getUri() + className);
         if (link.getKind() != Reference.Kind.URL) {
             link.setKind(Reference.Kind.TYPE);
@@ -328,18 +317,18 @@ public class LinkResolver {
     }
 
     public static String relativize(String to) {
-        return relativize(currentPackageName, to);
+        return relativize(Context.getPackageName(), to);
     }
 
     public static String relativizeWithModules(String from, String to) {
         PackageNode toPackage = api.getPackageNode(to);
         if (toPackage == null) {
-            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Error resolving package for: " + to);
+            Context.reportError("Error resolving package for: " + to);
             return null;
         }
         String fromModuleName = "";
         String toModuleName = "";
-        ModuleNode fromModule = api.getModuleNode(currentModuleName);
+        ModuleNode fromModule = api.getModuleNode(Context.getModuleName());
         ModuleNode toModule = toPackage.getModule();
         if (fromModule != null) {
             fromModuleName = fromModule.getName();
@@ -375,6 +364,9 @@ public class LinkResolver {
 
     private static String flattenDirectory(String path) {
         if (flattenedDirectories != null && !flattenedDirectories.isEmpty() && path.startsWith(flattenedDirectories)) {
+            if (path.length() <= flattenedDirectories.length()) {
+                return "";
+            }
             return path.substring(flattenedDirectories.length() + 1);
         }
         return path;

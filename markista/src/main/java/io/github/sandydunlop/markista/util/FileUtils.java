@@ -8,8 +8,6 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.util.List;
 
-import javax.tools.Diagnostic;
-
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 
@@ -21,8 +19,11 @@ public class FileUtils {
     /// This constructor initializes `FileUtils` for use with the specified module.
     /// The output directory is specified here since a new `FileUtils` instance
     /// is created for each module and package.
-    public FileUtils(ModuleNode moduleNode, String outputDir) {
+    public FileUtils(String outputDir) {
         outputDirectory = outputDir;
+    }
+
+    public void setModule(ModuleNode moduleNode) {
         if (Configuration.getFlattenDirectories() && moduleNode != null) {
             setFlattenedDirectories(moduleNode);
         }
@@ -91,7 +92,7 @@ public class FileUtils {
             if (dirName.length() < flattenedDirectories.length()) {
                 // This was happening when mock classes ended up mixed in
                 // with what we're trying to document here
-                Configuration.getReporter().print(Diagnostic.Kind.WARNING, String.format(
+                Context.reportWarning(String.format(
                         "Unexpected path '%s' for package '%s'",
                         dirName, packageName));
             } else {

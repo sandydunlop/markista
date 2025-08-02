@@ -61,7 +61,7 @@ class ModuleDirectivesTests {
     
     @BeforeAll
     static void initAll() {
-		Configuration.setReporter(reporter);
+		Context.setReporter(reporter);
     }
 
     @BeforeEach

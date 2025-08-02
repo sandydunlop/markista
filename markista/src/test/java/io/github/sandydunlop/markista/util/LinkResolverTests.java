@@ -54,7 +54,7 @@ class LinkResolverTests {
 
 	@BeforeAll
     static void initAll() {
-		Configuration.setReporter(reporter);
+		Context.setReporter(reporter);
     }
 
     @BeforeEach
@@ -94,8 +94,8 @@ class LinkResolverTests {
 		LinkResolver.init(api);
         LinkResolver.addNativeModuleUrl("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
 		LinkResolver.setFlattenedDirectories(null);
-		LinkResolver.setCurrentModuleName("markista");
-        LinkResolver.setCurrentPackageName("");
+		Context.setModuleName("markista");
+        Context.setPackageName("");
 	}
 
 	@Test
@@ -197,6 +197,7 @@ class LinkResolverTests {
 
 	@Test
 	void resolve_undefinedType() {
+		// This will show a warning in the test output
 		Reference link = LinkResolver.resolve("Coso");
 		assertEquals("", link.getUri());
 		assertEquals(Reference.Kind.NONE, link.getKind());

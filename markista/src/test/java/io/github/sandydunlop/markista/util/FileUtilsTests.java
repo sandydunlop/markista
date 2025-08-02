@@ -63,13 +63,14 @@ class FileUtilsTests {
 
     @BeforeAll
     static void initAll() {
-		Configuration.setReporter(reporter);
+		Context.setReporter(reporter);
     }
 
     @BeforeEach
     void init() {
         module = new ModuleNode("markista");
-        files = new FileUtils(module, "/tmp/doc");
+        files = new FileUtils("/tmp/doc");
+        files.setModule(module);
     }
 
     @Test
@@ -159,7 +160,8 @@ class FileUtilsTests {
 
     @Test
     void createFile_withOutputNoSet() throws IOException {
-        files = new FileUtils(module, null);
+        files = new FileUtils(null);
+        files.setModule(module);
         Configuration.setFlattenDirectories(true);
 		PackageNode sandydunlop = new PackageNode("io.github.sandydunlop");
 		PackageNode github = new PackageNode("io.github");
@@ -180,7 +182,8 @@ class FileUtilsTests {
 
     @Test
     void createModuleFile() throws IOException {
-        files = new FileUtils(module, null);
+        files = new FileUtils(null);
+        files.setModule(module);
         Configuration.setFlattenDirectories(true);
 		PackageNode sandydunlop = new PackageNode("io.github.sandydunlop");
 		PackageNode github = new PackageNode("io.github");

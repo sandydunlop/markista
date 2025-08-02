@@ -1,9 +1,6 @@
 package io.github.sandydunlop.markista.util;
 
-import jdk.javadoc.doclet.Reporter;
-
 public class Configuration {
-    private static Reporter reporter;
     private static String outputDirectory = null;
     private static boolean documentPrivateMembers = false;
     private static boolean createExternalLinks = false;
@@ -12,14 +9,6 @@ public class Configuration {
 
     private Configuration() {
         // Hide the public constructor
-    }
-
-    public static void setReporter(Reporter r) {
-        reporter = r;
-    }
-
-    public static Reporter getReporter() {
-        return reporter;
     }
 
     public static void setOutputDirectory(String path) {

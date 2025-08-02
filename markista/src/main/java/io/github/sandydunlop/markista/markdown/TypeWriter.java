@@ -1,21 +1,20 @@
-package io.github.sandydunlop.markista.doclet;
+package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Deprecation;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageMember;
-import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.util.Context;
+import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
@@ -23,80 +22,35 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
-/// A class that outputs API documentation as Markdown.
-public class PackageWriter {
+/// A class that outputs API type documentation as Markdown.
+public class TypeWriter {
     private static final String TEXT_CLASS = "Class";
     private static final String TEXT_DESCRIPTION = "Description";
     private static final String TEXT_MODIFIER_AND_TYPE = "Modifier and Type";
     private static final String BR = "<br/>";
     private static final String NBSP = "&nbsp;";
 
-    private String outputDirectory;
     private Writer writer = null;
     private FileUtils fileUtils;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public PackageWriter(String outputDirectory) {
-        this.outputDirectory = outputDirectory;
+    public TypeWriter(FileUtils fileUtils) {
+        this.fileUtils = fileUtils;
     }
 
-    /// Output the documentation files for the specified API
-    /// @param moduleNode  The module containing the packages to output the documentation for
-    public void writeDocs(ModuleNode moduleNode) throws IOException {
-        fileUtils = new FileUtils(moduleNode, outputDirectory);
-        for (PackageMember node : moduleNode.getPackages()) {
-            if (node instanceof PackageNode packageNode) {
-                outputPackageDoc(packageNode);
-            }
-        }
-    }
-
-    private void outputPackageDoc(PackageNode packageNode) throws IOException {
-        LinkResolver.setCurrentPackageName(packageNode.getName()); // Used for generating link URLs
-        writer = fileUtils.createFile(null, packageNode.getName());    
-        writer.write("# Package " + packageNode.getName() + "\n");
-        writer.write("\n\n" + Markdown.formatText(packageNode.getFullBody()) + "\n\n");
-        outputPackageMembers("Packages", packageNode.getPackages());
-        outputPackageMembers("Classes", packageNode.getClasses());
-        outputPackageMembers("Interfaces", packageNode.getInterfaces());
-        outputPackageMembers("Enum Classes", packageNode.getEnums());
-        outputPackageMembers("Annotation Classes", packageNode.getAnnotations());
-        writer.flush();
-        writer.close();
-        for (PackageMember member : packageNode.getClasses()) {
-            outputTypeDoc((TypeNode)member);
-        }
-        for (PackageMember member : packageNode.getInterfaces()) {
-            outputTypeDoc((TypeNode)member);
-        }
-        for (PackageMember member : packageNode.getEnums()) {
-            outputTypeDoc((TypeNode)member);
-        }
-        for (PackageMember member : packageNode.getAnnotations()) {
-            outputTypeDoc((TypeNode)member);
-        }
-    }
-
-    private void outputPackageMembers(String title, List<PackageMember> members) throws IOException {
-        if (members.isEmpty()) return;
-        String memberKind = TEXT_CLASS;
-        if (members.get(0) instanceof PackageNode) {
-            memberKind = "Package";
-        }
-        writer.write("=== \"" + title + "\"\n\n");
-        MarkdownTable table = new MarkdownTable()
-                .addColumn(memberKind)
-                .addColumn(TEXT_DESCRIPTION);
-        for (PackageMember member : members) {
-            table.addRow(Markdown.mdDocumentLink(member.getName()), Utils.inOneLine(Markdown.formatText(member.getDescription())));
-        }
-        table.render(writer, 4);
-    }
-
-    private void outputTypeDoc(TypeNode typeNode) throws IOException {
+    /// Tells the [LinkResolver] what class is about to be documented then 
+    /// calls the appropriate method do begin the documentation process.
+    /// @throws java.io.IOException
+    public void writeDoc(TypeNode typeNode) throws IOException {
+        Context.setTypeName(typeNode.getQualifiedName());
         outputTypeDoc(typeNode, typeNode.getKind().toString());
+        Context.setTypeName("");
     }
 
+    /// Writes a Markdown file for the Javadoc of a type
+    /// @param typeNode the type
+    /// @param typeKind The name of the kind of the type eg. "Class", or "Enum"
+    /// @throws java.io.IOException
     private void outputTypeDoc(TypeNode typeNode, String typeKind) throws IOException {
         writer = fileUtils.createFile(typeNode.getSimpleName(), typeNode.getPackageName());    
         writer.write("Package [" + typeNode.getPackageName() + "](index.md)\n\n");
@@ -149,51 +103,63 @@ public class PackageWriter {
         writer.flush();
         writer.close();
         for (PackageMember node : typeNode.getClasses()) {
-            outputTypeDoc((TypeNode)node);
+            writeDoc((TypeNode)node);
         }
         for (PackageMember node : typeNode.getInterfaces()) {
-            outputTypeDoc((TypeNode)node);
+            writeDoc((TypeNode)node);
         }
         for (PackageMember node : typeNode.getEnums()) {
-            outputTypeDoc((TypeNode)node);
+            writeDoc((TypeNode)node);
         }
         for (PackageMember node : typeNode.getAnnotations()) {
-            outputTypeDoc((TypeNode)node);
+            writeDoc((TypeNode)node);
         }
     }
 
-    private void outputSupertypes(TypeNode typeDoc) throws IOException {
+    /// Outputs the hierarchy of supertypes of a class
+    /// @param typeNode the class
+    /// @throws java.io.IOException
+    private void outputSupertypes(TypeNode typeNode) throws IOException {
         int indentation = 0;
-        for (String st : typeDoc.getSupertypes()) {
+        for (String st : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
             writer.write(Markdown.mdAutoLink(st, false) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
-        writer.write(typeDoc.getQualifiedName() + BR + "\n");
+        writer.write(typeNode.getQualifiedName() + BR + "\n");
         writer.write(BR + "\n");
     }
 
-    private void outputImplementedInterfaces(TypeNode typeDoc) throws IOException {
-        if (!typeDoc.getImplementedInterfaces().isEmpty()) {
+    /// Outputs details of any interfaces that this class implements
+    /// @param typeNode a TypeNode representing a class, interface, enum, or annotation
+    /// @throws java.io.IOException
+    private void outputImplementedInterfaces(TypeNode typeNode) throws IOException {
+        if (!typeNode.getImplementedInterfaces().isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");
             writer.write(NBSP.repeat(4));
-            for (int i=0; i<typeDoc.getImplementedInterfaces().size(); i++) {
+            for (int i=0; i<typeNode.getImplementedInterfaces().size(); i++) {
                 if (i > 0) writer.write(", ");
-                writer.write(Markdown.mdAutoLink(typeDoc.getImplementedInterfaces().get(i)));
+                writer.write(Markdown.mdAutoLink(typeNode.getImplementedInterfaces().get(i)));
             }
             writer.write("\n\n");
         }
     }
 
-    private void outputEnclosingClass(TypeNode typeDoc) throws IOException {
-        if (typeDoc.getOwner() instanceof ClassNode) {
+    /// Outputs details of the class that encloses this one
+    /// @enclosingClass a TypeNode representing the enclosing class
+    /// @throws java.io.IOException
+    private void outputEnclosingClass(TypeNode enclosingClass) throws IOException {
+        if (enclosingClass.getOwner() instanceof ClassNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
-            writer.write(Markdown.mdAutoLink(typeDoc.getOwner().getName()) + "\n\n");
+            writer.write(Markdown.mdAutoLink(enclosingClass.getOwner().getName()) + "\n\n");
         }
     }
 
+    /// Outputs a summary of nested classes within this one as Markdown
+    /// @param nestedClasses a list of the nested classes
+    /// @throws java.io.IOException
     private void outputNestedClassSummary(List<PackageMember> nestedClasses) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
@@ -208,6 +174,9 @@ public class PackageWriter {
         table.render(writer);
     }
 
+    /// Outputs as summary of an enum's constants as Markdown
+    /// @param enumNode the enum
+    /// @throws java.io.IOException
     private void outputEnumConstantsSummary(EnumNode enumNode) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn("Enum Constant")
@@ -219,6 +188,9 @@ public class PackageWriter {
         table.render(writer);
     }
 
+    /// Outputs a summary of this class's fields as Markdown
+    /// @param fields A list of fields belonging to this class
+    /// @throws java.io.IOException
     private void outputFieldSummary(List<FieldNode> fields) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
@@ -232,6 +204,9 @@ public class PackageWriter {
         table.render(writer);
     }
 
+    /// Outputs a the summary of this class's constructors as Markdown
+    /// @param methods A list of the constructor methods
+    /// @throws java.io.IOException
     private void outputConstructorSummary(List<MethodNode> methods) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn("Constructor")
@@ -245,6 +220,7 @@ public class PackageWriter {
 
     /// Writes the markdown for a class's method summary table
     /// @param methods The list of methods to include in the summary table
+    /// @throws java.io.IOException
     private void outputMethodSummary(List<MethodNode> methods) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
@@ -259,6 +235,9 @@ public class PackageWriter {
         table.render(writer);
     }
 
+    /// Outputs enum constant details as Markdown
+    /// @param constants a list of enum constants
+    /// @throws java.io.IOException
     private void outputEnumConstantDetails(List<FieldNode> constants, EnumNode enumNode) throws IOException {
         for (FieldNode constant : constants) {
             writer.write("### " + constant.getSimpleName() + "\n\n");
@@ -290,12 +269,15 @@ public class PackageWriter {
     /// @see <a href="http://example.com"/>
     /// @see java.util.List
     /// @since 0.1.0
+    /// @throws java.io.IOException
     private void outputDetails(List<Node> nodes) throws IOException {
         for (Node node : nodes) {
             if (node instanceof MethodNode method) {
+                Context.setMethodName(method.getSimpleName());
                 writer.write("### " + method.getSimpleName() + "\n\n");
                 writer.write(Markdown.fullSignature(method) + "\n\n");
             } else if (node instanceof FieldNode field) {
+                Context.setFieldName(field.getSimpleName());
                 writer.write("### " + field.getSimpleName() + "\n\n");
             }
             writer.write(Markdown.formatText(node.getFullBody()) + "\n\n");
@@ -316,9 +298,14 @@ public class PackageWriter {
 
             outputReferences(node);
             writer.write("\n---\n\n");
+            Context.setFieldName("");
+            Context.setMethodName("");
         }
     }
 
+    /// Outputs references for a type member
+    /// @param The type
+    /// @throws java.io.IOException
     private void outputReferences(Node node) throws IOException {
         if (!node.getReferences().isEmpty()) {
             writer.write("**See Also:**\n\n");
@@ -330,6 +317,9 @@ public class PackageWriter {
         }
     }
 
+    /// Outputs the Javadoc of a method as Markdown
+    /// @param method the method
+    /// @throws java.io.IOException
     private void outputMethodDetails(MethodNode method) throws IOException {
         if (!method.getParams().isEmpty()) {
             outputMethodParams(method);
@@ -365,6 +355,9 @@ public class PackageWriter {
         }        
     }
 
+    /// Outputs the parameters of a method as Markdown
+    /// @param the method
+    /// @throws java.io.IOException
     private void outputMethodParams(MethodNode method) throws IOException {
         boolean showParameters = false;
         for (ParamNode param : method.getParams()) {
@@ -381,10 +374,14 @@ public class PackageWriter {
         }
     }
 
+    /// Outputs the deprecation status of this type as Markdown
+    /// @param status The deprecation status
+    /// @param test A textual description of the deprecation status
+    /// @throws java.io.IOException
     private void outputDeprecation(Deprecation status, Text text) throws IOException {
         writer.write("\n\n");
         writer.write("!!! note \"Deprecation\"\n");
-        if (text.isEmpty()) {
+        if (Utils.isNullOrEmpty(text)) {
             if (status == Deprecation.FOR_REMOVAL) {
                 writer.write("    This has been marked for removal.\n");
             } else {

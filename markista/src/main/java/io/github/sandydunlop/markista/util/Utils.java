@@ -1,5 +1,7 @@
 package io.github.sandydunlop.markista.util;
 
+import io.github.sandydunlop.markista.model.Text;
+
 /// A set of utility methods for changing between qualified and unqualified names.
 public class Utils {
 
@@ -105,9 +107,16 @@ public class Utils {
 
     /// Checks if a string is null or empty
     /// @param str The string
-    /// @return True if the string either null or empty
+    /// @return True if the string is either null or empty
     public static boolean isNullOrEmpty(String str) {
         return str == null || str.isEmpty();
+    }
+
+    /// Checks if a Text object is null or empty
+    /// @param text The Text object
+    /// @return True if the Text object is either null or empty
+    public static boolean isNullOrEmpty(Text text) {
+        return text == null || text.isEmpty();
     }
 
     /// Removes new line characters from a string, replacing them with spaces

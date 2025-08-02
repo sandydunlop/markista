@@ -9,9 +9,6 @@ import java.io.File;
 
 import com.sun.source.util.DocTreePath;
 
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.util.FileUtils;
 import jdk.javadoc.doclet.Reporter;
 
@@ -27,11 +24,6 @@ import org.mockito.Mock;
 
 class MarkdownDocletTests {
     static final String BASE_DOC_PATH = "/tmp/doc/";
-    Api api;
-    FileUtils files;
-    ModuleNode moduleNode;
-    PackageNode packageNode;
-    PackageWriter packageWriter;
 
     @Mock static Reporter reporter = new Reporter() {
         @Override
@@ -72,7 +64,7 @@ class MarkdownDocletTests {
 
     @BeforeEach
     void init() {
-        files = new FileUtils(moduleNode, BASE_DOC_PATH);
+        // Nothing to do here for now
     }
 
     boolean fileExists(String file) {

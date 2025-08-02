@@ -2,8 +2,13 @@ package io.github.sandydunlop.markista.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
@@ -12,15 +17,20 @@ import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import com.sun.source.doctree.StartElementTree;
 
+import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.OverriddenMethodNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
@@ -44,10 +54,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 
 class TypeUtilsTests {
+     private Api dummyApi;
+    private PackageNode dummyPackage;
+
     private Api api;
     private PackageNode packageNode;
     private ModuleNode unnamedModule = new ModuleNode("");
@@ -65,6 +79,8 @@ class TypeUtilsTests {
     private Name name;
     private Name qualifiedName;
     private PackageElement packageElement;
+
+    DocletEnvironment environment;
 
     @Mock static Reporter reporter = new Reporter() {
         @Override
@@ -85,11 +101,15 @@ class TypeUtilsTests {
     
     @BeforeAll
     static void initAll() {
-		Configuration.setReporter(reporter);
+		Context.setReporter(reporter);
     }
 
     @BeforeEach
     void init() {
+        dummyApi = new Api();
+        dummyPackage = new PackageNode("com.example");
+
+        environment = mock(DocletEnvironment.class);
         elementUtils = mock(Elements.class);
         typeUtils = mock(Types.class);
         treeUtils = mock(DocTrees.class);
@@ -294,7 +314,7 @@ class TypeUtilsTests {
         assertEquals(Reference.Kind.URL, refs.get(0).getKind());
         assertEquals("http://example.com", refs.get(0).getUri());
         assertEquals(Reference.Kind.TYPE, refs.get(1).getKind());
-        assertEquals("Node", refs.get(1).getName());
+        assertEquals("Node", refs.get(1).getDisplayName());
     }
 
     @Test
@@ -510,5 +530,117 @@ class TypeUtilsTests {
         assertEquals("berry", Markdown.formatText(classNode.getFirstSentence()));
         assertEquals("berry", Markdown.formatText(classNode.getBody()));
         assertEquals("berry", Markdown.formatText(classNode.getFullBody()));
+    }
+
+    @Test
+    void testCreateTypeNodeByKind() {
+        PackageNode pkg = new PackageNode("test.pkg");
+
+        TypeNode classNode = TypeUtils.createTypeNode("test.pkg.ClassA", "ClassA", pkg, ElementKind.CLASS);
+        assertNotNull(classNode);
+        assertTrue(classNode instanceof ClassNode);
+        assertEquals("ClassA", classNode.getSimpleName());
+
+        TypeNode interfaceNode = TypeUtils.createTypeNode("test.pkg.InterfaceA", "InterfaceA", pkg, ElementKind.INTERFACE);
+        assertNotNull(interfaceNode);
+        assertTrue(interfaceNode instanceof InterfaceNode);
+
+        TypeNode enumNode = TypeUtils.createTypeNode("test.pkg.EnumA", "EnumA", pkg, ElementKind.ENUM);
+        assertNotNull(enumNode);
+        assertTrue(enumNode instanceof EnumNode);
+
+        TypeNode annoNode = TypeUtils.createTypeNode("test.pkg.AnnotationA", "AnnotationA", pkg, ElementKind.ANNOTATION_TYPE);
+        assertNotNull(annoNode);
+        assertTrue(annoNode instanceof AnnotationNode);
+
+        TypeNode nullNode = TypeUtils.createTypeNode("test.pkg.UnknownA", "UnknownA", pkg, ElementKind.METHOD);
+        assertNull(nullNode);
+    }
+
+    @Test
+    void testGetUrl() {
+        String html = "<a href=\"http://example.com\">link</a>";
+        String url = TypeUtils.getUrl(html);
+        assertEquals("http://example.com", url);
+
+        url = TypeUtils.getUrl("noQuotes");
+        assertNull(url);
+
+        url = TypeUtils.getUrl(null);
+        assertNull(url);
+    }
+
+    @Test
+    void testSetModifiers() {
+        Node node = mock(Node.class);
+        Set<javax.lang.model.element.Modifier> mods = new HashSet<>();
+        mods.add(javax.lang.model.element.Modifier.PUBLIC);
+        mods.add(javax.lang.model.element.Modifier.STATIC);
+
+        TypeUtils.setModifiers(node, mods);
+
+        // verify addModifier called with corresponding enum values
+        verify(node, times(mods.size())).addModifier(any());
+    }
+
+    @Test
+    void testCreateText_and_createTextSegment() {
+        List<com.sun.source.doctree.DocTree> docTreeList = new ArrayList<>();
+
+        com.sun.source.doctree.DocTree textTree = mock(com.sun.source.doctree.DocTree.class);
+        when(textTree.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.TEXT);
+        when(textTree.toString()).thenReturn("simple text");
+
+        docTreeList.add(textTree);
+
+        Text text = TypeUtils.createText(docTreeList);
+        assertNotNull(text);
+        assertTrue(text.getSegments().stream().anyMatch(s -> s.getText().contains("simple text")));
+
+        Text.Segment segment = TypeUtils.createTextSegment(textTree);
+        assertEquals(SegmentKind.TEXT, segment.getKind());
+        assertEquals("simple text", segment.getText());
+    }
+
+    @Test
+    void createTypeNode_ReturnsClassNode_WhenElementKindIsClass() {
+        TypeUtils.init(dummyApi, null);  // Passing null DocletEnvironment for tests that don't need it
+        TypeNode node = TypeUtils.createTypeNode("com.example.MyClass", "MyClass", dummyPackage, ElementKind.CLASS);
+        assertNotNull(node);
+        assertEquals("MyClass", node.getSimpleName());
+        assertEquals("com.example.MyClass", node.getQualifiedName());
+        // Asserting instance type, depending on your implementation ClassNode extends TypeNode
+        assertEquals("com.example.MyClass", node.getQualifiedName());
+    }
+
+    @Test
+    void createTypeNode_ReturnsInterfaceNode_WhenElementKindIsInterface() {
+        TypeUtils.init(dummyApi, null);  // Passing null DocletEnvironment for tests that don't need it
+        TypeNode node = TypeUtils.createTypeNode("com.example.MyInterface", "MyInterface", dummyPackage, ElementKind.INTERFACE);
+        assertNotNull(node);
+        assertEquals("MyInterface", node.getSimpleName());
+    }
+
+    @Test
+    void createTypeNode_ReturnsNull_WhenElementKindIsUnknown() {
+        TypeUtils.init(dummyApi, null);  // Passing null DocletEnvironment for tests that don't need it
+        TypeNode node = TypeUtils.createTypeNode("com.example.Unknown", "Unknown", dummyPackage, ElementKind.MODULE);
+        assertNull(node);
+    }
+
+    @Test
+    void getUrl_ReturnsUrl_WhenInputContainsHref() {
+        TypeUtils.init(dummyApi, null);  // Passing null DocletEnvironment for tests that don't need it
+        String href = "http://example.com";
+        String input = "<a href=\"" + href + "\">link</a>";
+        String result = TypeUtils.getUrl(input);
+        assertEquals(href, result);
+    }
+
+    @Test
+    void getUrl_ReturnsNull_WhenInputIsNullOrMalformed() {
+        TypeUtils.init(dummyApi, null);  // Passing null DocletEnvironment for tests that don't need it
+        assertNull(TypeUtils.getUrl(null));
+        assertNull(TypeUtils.getUrl("no href here"));
     }
 }

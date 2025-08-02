@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.doclet;
+package io.github.sandydunlop.markista.markdown;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -23,7 +23,7 @@ public class MarkdownTable {
     }
 
     /// Adds a row of data to the table
-    /// @param valueStrings  one or more strings which represnet the data for this row
+    /// @param valueStrings  one or more strings which represent the data for this row
     /// @return              The table
     public MarkdownTable addRow(String...valueStrings) {
         rows.add(valueStrings);

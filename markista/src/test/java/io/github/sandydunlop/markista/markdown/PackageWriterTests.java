@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.doclet;
+package io.github.sandydunlop.markista.markdown;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,6 +19,7 @@ import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Configuration;
+import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import jdk.javadoc.doclet.Reporter;
@@ -58,13 +59,14 @@ class PackageWriterTests {
     
     @BeforeAll
     static void initAll() {
-		Configuration.setReporter(reporter);
+		Context.setReporter(reporter);
         Configuration.setOutputDirectory("/tmp/doc");
     }
 
     @BeforeEach
     void init() {
-        files = new FileUtils(moduleNode, "/tmp/doc");
+        files = new FileUtils("/tmp/doc");
+        files.setModule(moduleNode);
 
         moduleNode = new ModuleNode("markista");
         packageNode = new PackageNode("io.github.sandydunlop.markista");
@@ -109,9 +111,9 @@ class PackageWriterTests {
         String moduleDir = Configuration.getOutputDirectory() + "/" + moduleNode.getName();
 		LinkResolver.init(api);
 		LinkResolver.setFlattenedDirectories(null);
-		LinkResolver.setCurrentModuleName("markista");
-        LinkResolver.setCurrentPackageName("");
-        packageWriter = new PackageWriter(moduleDir);
+		Context.setModuleName("markista");
+        Context.setPackageName("");
+        packageWriter = new PackageWriter(new FileUtils(moduleDir));
     }
 
     @Disabled("This fails on Github but not locally")

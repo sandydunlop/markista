@@ -49,7 +49,6 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import javax.tools.Diagnostic;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -73,19 +72,18 @@ public class TypeUtils {
         TypeNode typeNode = api.getTypeNode(qualifiedName);
         if (typeNode == null) {
             if (Configuration.getVerbose()) {
-                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
-                        "[   TYPE] %s", qualifiedName));
+                Context.reportInfo(String.format("[   TYPE] %s", qualifiedName));
             }
             PackageElement packageElement = getEnclosingPackageElement(element);
             String simpleName = element.getSimpleName().toString();
             if (packageElement == null) {
-                Configuration.getReporter().print(Diagnostic.Kind.ERROR, "No package for " + qualifiedName);
+                Context.reportError("No package for " + qualifiedName);
                 return null;
             }
             PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
             typeNode = createTypeNode(qualifiedName, simpleName, packageNode, element.getKind());
             if (typeNode == null) {
-                Configuration.getReporter().print(Diagnostic.Kind.ERROR, "Unsupported type kind: " + element.getKind());
+                Context.reportError("Unsupported type kind: " + element.getKind());
                 return null;
             }
             if (typeNode instanceof EnumNode enumNode) {
@@ -124,7 +122,7 @@ public class TypeUtils {
         String simpleName = Utils.simplifyNames(qualifiedTypeName);
         PackageElement packageElement = getEnclosingPackageElement(element);
         if (packageElement == null) {
-            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "No package for " + qualifiedTypeName);
+            Context.reportError("No package for " + qualifiedTypeName);
             return null;
         }
         PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
@@ -136,7 +134,7 @@ public class TypeUtils {
         TypeNode ownerType = api.getTypeNode(ownerElement);
         if (ownerType == null) {
             // This has happened in testing only
-            Configuration.getReporter().print(Diagnostic.Kind.ERROR, String.format(
+            Context.reportError(String.format(
                     "Unable to determine owner of method '%s' in package '%s'",
                     methodNode.getSimpleName(), packageNode.getName()));
             return null;
@@ -167,7 +165,7 @@ public class TypeUtils {
     public static FieldNode nodeFromElement(VariableElement element) {
         TypeElement classElement = getEnclosingTypeElement(element);
         if (classElement == null) {
-            Configuration.getReporter().print(Diagnostic.Kind.ERROR, "No enclosing type for " + element.getSimpleName().toString());
+            Context.reportError("No enclosing type for " + element.getSimpleName().toString());
             return null;
         }
         TypeNode typeNode = api.getTypeNode(classElement);
@@ -370,7 +368,7 @@ public class TypeUtils {
                 }
             }
         } catch (SecurityException | ClassNotFoundException _) {
-            Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Failed to read information for " + qualifiedTypeName + "." + method.getSimpleName());
+            Context.reportWarning("Failed to read information for " + qualifiedTypeName + "." + method.getSimpleName());
         }
         return null; // No overridden method found
     }
@@ -468,14 +466,14 @@ public class TypeUtils {
                     } else if (docRef.getKind() == Kind.REFERENCE) {
                         Reference ref = new Reference();
                         ref.setKind(Reference.Kind.TYPE);
-                        ref.setName(docRef.toString());
+                        ref.setDisplayName(docRef.toString());
                         refs.add(ref);
                     } else {
-                        Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Unhandled reference type: " + docRef.getKind().toString());
+                        Context.reportWarning("Unhandled reference type: " + docRef.getKind().toString());
                     }
                 }
             } else if (tagTree instanceof ErroneousTree) {
-                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
+                Context.reportWarning("Erroneous tag: " + tagTree.toString());
             }
         }
         return refs;
@@ -487,7 +485,7 @@ public class TypeUtils {
             if (tagTree instanceof SinceTree sinceTree) {
                 return createText(sinceTree.getBody());
             } else if (tagTree instanceof ErroneousTree) {
-                Configuration.getReporter().print(Diagnostic.Kind.WARNING, "Erroneous tag: " + tagTree.toString());
+                Context.reportWarning("Erroneous tag: " + tagTree.toString());
             }
         }
         return Text.empty();

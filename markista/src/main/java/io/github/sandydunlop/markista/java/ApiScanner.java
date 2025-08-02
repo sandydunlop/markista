@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.doclet;
+package io.github.sandydunlop.markista.java;
 
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.ReturnTree;
@@ -12,6 +12,7 @@ import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.PackageOwner;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Configuration;
+import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.ModuleDirectives;
 import io.github.sandydunlop.markista.util.TypeUtils;
 
@@ -31,7 +32,6 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
-import javax.tools.Diagnostic;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -95,7 +95,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (e.getQualifiedName().toString().isEmpty()) {
             mod = unnamedModule;
             if (Configuration.getVerbose()) {
-                Configuration.getReporter().print(Diagnostic.Kind.NOTE, "[ MODULE] UNNAMED");
+                Context.reportInfo("[ MODULE] UNNAMED");
             }
         } else {
             mod = api.getModuleNode(e.getQualifiedName().toString());
@@ -103,8 +103,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (mod == null) {
             mod = new ModuleNode(e.getQualifiedName().toString());
             if (Configuration.getVerbose()) {
-                Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
-                        "[ MODULE] %s", mod.getName()));
+                Context.reportInfo(String.format("[ MODULE] %s", mod.getName()));
             }
             TypeUtils.setDocumentation(mod, e);
             List<? extends Directive>  directives = e.getDirectives();
@@ -125,8 +124,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             if (pkg == null) {
                 pkg = new PackageNode(ee.getQualifiedName().toString());
                 if (Configuration.getVerbose()) {
-                    Configuration.getReporter().print(Diagnostic.Kind.NOTE, String.format(
-                            "[PACKAGE] %s", pkg.getName()));
+                    Context.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
                 pkg.setModule(currentModule);
                 currentModule.addPackage(pkg);

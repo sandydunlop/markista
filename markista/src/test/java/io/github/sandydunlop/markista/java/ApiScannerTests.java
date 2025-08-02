@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.doclet;
+package io.github.sandydunlop.markista.java;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -6,10 +6,12 @@ import java.util.List;
 
 import com.sun.source.util.DocTreePath;
 
+import io.github.sandydunlop.markista.markdown.PackageWriter;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.util.Configuration;
+import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.FileUtils;
 import jdk.javadoc.doclet.Reporter;
 
@@ -47,13 +49,14 @@ class ApiScannerTests {
     
     @BeforeAll
     static void initAll() {
-		Configuration.setReporter(reporter);
+		Context.setReporter(reporter);
         Configuration.setOutputDirectory("/tmp/doc");
     }
 
     @BeforeEach
     void init() {
-        files = new FileUtils(moduleNode, "/tmp/doc");
+        files = new FileUtils("/tmp/doc");
+        files.setModule(moduleNode);
     }
 
     @Test

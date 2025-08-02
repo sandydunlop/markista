@@ -1,7 +1,11 @@
 package io.github.sandydunlop.markista.doclet;
  
+import io.github.sandydunlop.markista.java.ApiScanner;
+import io.github.sandydunlop.markista.markdown.ModuleWriter;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.util.Configuration;
+import io.github.sandydunlop.markista.util.Context;
+import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.ModuleDirectives;
 
@@ -12,7 +16,6 @@ import java.util.Locale;
 import java.util.Set;
 
 import javax.lang.model.SourceVersion;
-import javax.tools.Diagnostic;
 import javax.tools.DocumentationTool;
 import javax.tools.ToolProvider;
 
@@ -56,7 +59,7 @@ public class MarkdownDoclet implements Doclet {
 
     /// A base class for declaring options.
     /// Subtypes for specific options should implement
-    /// the [process][jdk.javadoc.doclet.Doclet.Option#process(String,List)] method
+    /// the [process][jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)] method
     /// to handle instances of the option found on the
     /// command line.
     public abstract class Option implements Doclet.Option {
@@ -200,7 +203,7 @@ public class MarkdownDoclet implements Doclet {
     /// @param reporter The reporter used for messages
     @Override
     public void init(Locale locale, Reporter reporter) {
-        Configuration.setReporter(reporter);
+        Context.setReporter(reporter);
     }
 
     @Override
@@ -218,6 +221,7 @@ public class MarkdownDoclet implements Doclet {
         return SourceVersion.latest();
     }
  
+    /// The `run` method is called by the Javadoc tool to begin running the doclet.
     /// @param environment Represents the operating environment of a single invocation of the doclet. 
     /// @return  true if completed without errors, false if errors occurred.
     @Override
@@ -231,12 +235,11 @@ public class MarkdownDoclet implements Doclet {
             LinkResolver.addNativeModules();
         }
 
-        ModuleWriter writer = new ModuleWriter();
+        ModuleWriter writer = new ModuleWriter(new FileUtils(Configuration.getOutputDirectory()));
         try{
             writer.writeDocs(api);
         } catch (IOException ex) {
-            Configuration.getReporter().print(Diagnostic.Kind.ERROR, ex.getMessage());
-            Configuration.getReporter().print(Diagnostic.Kind.ERROR, Arrays.toString(ex.getStackTrace()));
+            Context.reportError(ex.getMessage() + "\n" + Arrays.toString(ex.getStackTrace()));
             return FAILED;
         }
         return OK;
