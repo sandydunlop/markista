@@ -19,7 +19,8 @@ import javax.lang.model.element.TypeElement;
 import jdk.javadoc.doclet.DocletEnvironment;
 
 /// A utility class for creating [DirectiveNode] objects which encapsulate 
-/// the information provided by [Directive](javax.lang.model.element.ModuleElement.Directive) objects scanned by the [ApiScanner](io.github.sandydunlop.markista.doclet.ApiScanner).
+/// the information provided by [Directive](javax.lang.model.element.ModuleElement.Directive) 
+/// objects scanned by the [ApiScanner][io.github.sandydunlop.markista.util.ApiScanner].
 public class ModuleDirectives {
     private static DocletEnvironment environment;
 

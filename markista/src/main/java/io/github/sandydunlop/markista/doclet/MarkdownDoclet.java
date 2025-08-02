@@ -1,8 +1,8 @@
 package io.github.sandydunlop.markista.doclet;
  
-import io.github.sandydunlop.markista.java.ApiScanner;
 import io.github.sandydunlop.markista.markdown.ModuleWriter;
 import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.util.ApiScanner;
 import io.github.sandydunlop.markista.util.Configuration;
 import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.FileUtils;

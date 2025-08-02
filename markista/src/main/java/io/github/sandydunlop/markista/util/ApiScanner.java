@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.java;
+package io.github.sandydunlop.markista.util;
 
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.ReturnTree;
@@ -11,10 +11,6 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.PackageOwner;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.util.Configuration;
-import io.github.sandydunlop.markista.util.Context;
-import io.github.sandydunlop.markista.util.ModuleDirectives;
-import io.github.sandydunlop.markista.util.TypeUtils;
 
 import java.io.Serializable;
 import java.util.HashSet;
