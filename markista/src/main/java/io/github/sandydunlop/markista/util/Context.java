@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.nio.file.Path;
 
 import javax.tools.Diagnostic;
 
@@ -78,6 +77,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     public void setApi(Api api) {
         this.api = api;
         this.flattenedDirectories = api.commonBase();
+        LinkResolver.setFlattenedDirectories(flattenedDirectories);
     }
 
     /// Returns the Api model associated with this context.

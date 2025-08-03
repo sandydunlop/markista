@@ -53,7 +53,7 @@ public class MarkdownDoclet implements Doclet {
 
             "-sourcepath", "markista/src/main/java/",
             "-subpackages", "io.github.sandydunlop.markista",
-            // "-tabs",
+            "-tabs",
 
             // "--module-source-path", "/Users/sandy/git/cu/dev/markista/*/src/main/java",
             // "--module", "markista",
