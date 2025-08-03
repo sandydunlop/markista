@@ -3,6 +3,7 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/// Contains information about a method being documented
 public class MethodNode extends Node {
     /// Description of the method's return value.
     private Text returnDescription = Text.empty();

@@ -118,4 +118,30 @@ public class Api extends AbstractTypeOwner {
             node.sort();
         }
     }
+
+    /// Computes the longest common base package prefix shared by all packages in this API.
+    /// 
+    /// This method iterates through the list of packages and determines the common package name prefix,
+    /// truncated at the nearest dot ('.') boundary. If no common base exists, returns an empty string.
+    /// 
+    /// @return The longest common base package name shared by all packages, or an empty string if none.
+    public String commonBase() {
+        if (packages.isEmpty()) return "";
+        int lastDot = 0;
+        String base = packages.get(0).getName();
+        for (PackageNode pkg : packages) {
+            String pkgName = pkg.getName();
+            for (int j=0; j<Math.min(base.length(), pkgName.length()); j++) {
+                if (base.charAt(j) != pkgName.charAt(j)) {
+                    base = base.substring(0, Math.max(0,lastDot));
+                    break;
+                }
+                if (j == pkgName.length() - 1) {
+                    base = base.substring(0, Math.max(0,j + 1));
+                }
+                if (base.charAt(j) == '.') lastDot = j;
+            }
+        }
+        return base;
+    }
 }

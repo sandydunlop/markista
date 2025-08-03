@@ -228,10 +228,19 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
 
     /// Enumeration representing kinds of types: None, Class, Interface, Enum, Annotation.
     public enum Kind {
+        /// No type has been set
         NONE ("None"),
+
+        /// A class, including abstract class and exception class
         CLASS ("Class"),
+
+        /// An interface
         INTERFACE ("Interface"),
+
+        /// An enum
         ENUM ("Enum"),
+
+        /// An annotation
         ANNOTATION ("Annotation");
 
         /// The display name for the kind.

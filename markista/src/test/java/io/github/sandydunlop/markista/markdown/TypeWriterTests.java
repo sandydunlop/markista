@@ -1,33 +1,45 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.model.*;
-import io.github.sandydunlop.markista.util.FileUtils;
+import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.LinkResolver;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class TypeWriterTests {
-
-    FileUtils fileUtils;
     Writer writer;
-    TypeWriter typeWriter;
+
+    // Mockito will now call the new constructor with this mock
+    @InjectMocks
+    private TypeWriter typeWriter;
+
+    @Mock
+    private Context contextMock;
+
+    @BeforeAll
+    static void initAll() {
+        // Nothing to see here
+    }
 
     @BeforeEach
     void setup() throws IOException {
-        fileUtils = mock(FileUtils.class);
         // Mock Writer to capture written content
         writer = new StringWriter();
-        when(fileUtils.createFile(anyString(), anyString())).thenReturn(writer);
-        typeWriter = new TypeWriter(fileUtils);
+        when(contextMock.createFile()).thenReturn(writer);
     }
 
     @Test
@@ -56,17 +68,11 @@ class TypeWriterTests {
 
         assertTrue(content.contains("# Class MyClass"));
         assertTrue(content.contains("Package [com.example](index.md)"));
-
-        // After writing, typeName should be reset to empty string
-        assertEquals("", io.github.sandydunlop.markista.util.Context.getTypeName());
     }
 
     @Test
     void outputFieldSummary_WritesMarkdownTableForFields() throws IOException {
-        PackageNode pkg = new PackageNode("io.github.sandydunlop.markista.model");
-        TypeNode typeNode = new TypeNode("io.github.sandydunlop.markista.model.Node", "Node", pkg);
         Api api = mock(Api.class);
-        when(api.getTypeNode("com.example.MyEnum")).thenReturn(typeNode);
         LinkResolver.init(api);
         LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
 
@@ -93,11 +99,6 @@ class TypeWriterTests {
         fields.add(field1);
         fields.add(field2);
 
-        // Use a real StringWriter to verify result
-        Writer fieldWriter = new StringWriter();
-        when(fileUtils.createFile(anyString(), anyString())).thenReturn(fieldWriter);
-
-        TypeWriter writerInstance = new TypeWriter(fileUtils);
         // invoke the private outputFieldSummary via reflection or use a public method that calls it.
         // Since outputFieldSummary is private, test via writeDoc for a TypeNode with fields
 
@@ -118,9 +119,9 @@ class TypeWriterTests {
         when(type.getAnnotations()).thenReturn(new ArrayList<>());
         when(type.getOwner()).thenReturn(null);
 
-        writerInstance.writeDoc(type);
+        typeWriter.writeDoc(type);
 
-        String output = fieldWriter.toString();
+        String output = writer.toString();
 
         // The output should contain "Field Summary" heading and the modifiers, field names
         assertTrue(output.contains("## Field Summary"));
@@ -175,13 +176,9 @@ class TypeWriterTests {
         when(enumNode.getAnnotations()).thenReturn(new ArrayList<>());
         when(enumNode.getOwner()).thenReturn(null);
 
-        Writer enumWriter = new StringWriter();
-        when(fileUtils.createFile(anyString(), anyString())).thenReturn(enumWriter);
+        typeWriter.writeDoc(enumNode);
 
-        TypeWriter typewriter = new TypeWriter(fileUtils);
-        typewriter.writeDoc(enumNode);
-
-        String output = enumWriter.toString();
+        String output = writer.toString();
 
         assertTrue(output.contains("##Enum Constants"));
         assertTrue(output.contains("CONST_ONE"));
@@ -209,16 +206,11 @@ class TypeWriterTests {
 
         Reference ref = mock(Reference.class);
         when(constant.getReferences()).thenReturn(List.of(ref));
-        when(ref.toString()).thenReturn("ReferenceX");
 
         List<FieldNode> constants = new ArrayList<>();
         constants.add(constant);
         when(enumNode.getConstants()).thenReturn(constants);
 
-        StringWriter enumConstWriter = new StringWriter();
-        when(fileUtils.createFile(anyString(), anyString())).thenReturn(enumConstWriter);
-
-        TypeWriter tw = new TypeWriter(fileUtils);
         // Calling outputEnumConstantDetails is private; access via writeDoc on an enum with constants
         when(enumNode.getSimpleName()).thenReturn("MyEnum");
         when(enumNode.getKind()).thenReturn(TypeNode.Kind.ENUM);
@@ -234,9 +226,9 @@ class TypeWriterTests {
         when(enumNode.getAnnotations()).thenReturn(new ArrayList<>());
         when(enumNode.getOwner()).thenReturn(null);
 
-        tw.writeDoc(enumNode);
+        typeWriter.writeDoc(enumNode);
 
-        String output = enumConstWriter.toString();
+        String output = writer.toString();
 
         assertTrue(output.contains("### CONST"));
         assertTrue(output.contains("Full body text for const"));

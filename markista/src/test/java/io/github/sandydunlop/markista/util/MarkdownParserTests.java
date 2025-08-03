@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MarkdownParserTests {
+    private static Context ctx;
     @Mock static Reporter reporter = new Reporter() {
         @Override
         public void print(Kind kind, String message) {
@@ -32,9 +33,10 @@ class MarkdownParserTests {
         }
     };
     
-    @BeforeAll
+	@BeforeAll
     static void initAll() {
-		Context.setReporter(reporter);
+		ctx =  Context.getInstance();
+		ctx.setReporter(reporter);
     }
 
     @BeforeEach

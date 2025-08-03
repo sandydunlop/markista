@@ -3,13 +3,13 @@ package io.github.sandydunlop.markista.doclet;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.io.File;
 
 import com.sun.source.util.DocTreePath;
 
-import io.github.sandydunlop.markista.util.FileUtils;
 import jdk.javadoc.doclet.Reporter;
 
 import javax.lang.model.element.Element;
@@ -72,7 +72,7 @@ class MarkdownDocletTests {
     }
 
     boolean docFileExists(String file) {
-        return Files.exists(Paths.get(FileUtils.joinPaths(BASE_DOC_PATH, file)));
+        return Files.exists(Paths.get(Path.of(BASE_DOC_PATH, file).toString()));
     }
 
     @Test

@@ -32,6 +32,7 @@ import java.util.List;
 @ExtendWith(MockitoExtension.class)
 class MarkdownTests {
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
+    private static Context ctx;
 	private Api api;
     private ModuleNode module;
     private PackageNode model;
@@ -58,9 +59,10 @@ class MarkdownTests {
         }
     };
     
-    @BeforeAll
+	@BeforeAll
     static void initAll() {
-		Context.setReporter(reporter);
+		ctx = Context.getInstance();
+		ctx.setReporter(reporter);
     }
 
     @BeforeEach
@@ -100,8 +102,8 @@ class MarkdownTests {
         LinkResolver.init(api);
         LinkResolver.addNativeModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
 		LinkResolver.setFlattenedDirectories(null);
-		Context.setModuleName("markista");
-        Context.setPackageName("io.github.sandydunlop.markista.doclet");
+		 ctx.setModuleName("markista");
+         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }
 
     @Test
@@ -255,14 +257,14 @@ class MarkdownTests {
 
 	@Test
 	void link_qualifiedWithAnchor_simplified() {
-        Context.setPackageName("io.github.sandydunlop.markista.model");
+         ctx.setPackageName("io.github.sandydunlop.markista.model");
         String markdown = Markdown.mdAutoLink("io.github.sandydunlop.markista.util.LinkResolver#resolve", true);
         assertEquals("[LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
     }
 
 	@Test
 	void link_qualifiedWithAnchor() {
-        Context.setPackageName("io.github.sandydunlop.markista.model");
+         ctx.setPackageName("io.github.sandydunlop.markista.model");
         String markdown = Markdown.mdAutoLink("io.github.sandydunlop.markista.util.LinkResolver#resolve", false);
         assertEquals("[io.github.sandydunlop.markista.util.LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
     }
@@ -289,8 +291,8 @@ class MarkdownTests {
 
     @Test
     void link_localMethod_sameClass() {
-        Context.setPackageName("io.github.sandydunlop.markista.doclet");
-        Context.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
+         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
+         ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
         LinkResolver.addNativeModules();
         String markdown = Markdown.mdAutoLink("MarkdownDoclet#main()");
         assertEquals("[main](#main)", markdown);
@@ -298,8 +300,8 @@ class MarkdownTests {
 
     @Test
     void link_localMethod_sameClass_noClassName() {
-        Context.setPackageName("io.github.sandydunlop.markista.doclet");
-        Context.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
+         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
+         ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
         LinkResolver.addNativeModules();
         String markdown = Markdown.mdAutoLink("#main()");
         assertEquals("[main()](#main)", markdown);

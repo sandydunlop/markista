@@ -59,7 +59,8 @@ import static org.mockito.Mockito.*;
 
 
 class TypeUtilsTests {
-     private Api dummyApi;
+    private static Context ctx;
+    private Api dummyApi;
     private PackageNode dummyPackage;
 
     private Api api;
@@ -99,9 +100,10 @@ class TypeUtilsTests {
         }
     };
     
-    @BeforeAll
+	@BeforeAll
     static void initAll() {
-		Context.setReporter(reporter);
+		ctx =  Context.getInstance();
+		ctx.setReporter(reporter);
     }
 
     @BeforeEach

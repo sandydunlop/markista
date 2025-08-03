@@ -20,7 +20,6 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Configuration;
 import io.github.sandydunlop.markista.util.Context;
-import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import jdk.javadoc.doclet.Reporter;
 
@@ -31,14 +30,25 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 class PackageWriterTests {
+    private static Context ctx;
     Api api;
-    FileUtils files;
     ModuleNode moduleNode;
     PackageNode packageNode;
     PackageWriter packageWriter;
+
+    // Mockito will now call the new constructor with this mock
+    @InjectMocks
+    private ModuleWriter moduleWriter;
+
+    @Mock
+    private Context contextMock;
 
     @Mock static Reporter reporter = new Reporter() {
         @Override
@@ -57,16 +67,16 @@ class PackageWriterTests {
         }
     };
     
-    @BeforeAll
+	@BeforeAll
     static void initAll() {
-		Context.setReporter(reporter);
+		ctx =  Context.getInstance();
+		ctx.setReporter(reporter);
         Configuration.setOutputDirectory("/tmp/doc");
     }
 
     @BeforeEach
     void init() {
-        files = new FileUtils("/tmp/doc");
-        files.setModule(moduleNode);
+        ctx.setModuleName(moduleNode.getName());
 
         moduleNode = new ModuleNode("markista");
         packageNode = new PackageNode("io.github.sandydunlop.markista");
@@ -108,12 +118,11 @@ class PackageWriterTests {
         api.addPackage(modelPackage);
         api.addClass(nodeClass);
         api.addEnum(enumNode);
-        String moduleDir = Configuration.getOutputDirectory() + "/" + moduleNode.getName();
 		LinkResolver.init(api);
 		LinkResolver.setFlattenedDirectories(null);
-		Context.setModuleName("markista");
-        Context.setPackageName("");
-        packageWriter = new PackageWriter(new FileUtils(moduleDir));
+		ctx.setModuleName("markista");
+        ctx.setPackageName("");
+        packageWriter = new PackageWriter();
     }
 
     @Disabled("This fails on Github but not locally")

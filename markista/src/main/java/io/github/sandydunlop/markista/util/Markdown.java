@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.util;
 
+import java.nio.file.Path;
 import java.util.List;
 
 import io.github.sandydunlop.markista.model.MethodNode;
@@ -12,6 +13,11 @@ import io.github.sandydunlop.markista.util.MarkdownParser.SegmentKind;
 /// Markdown links to point to the correct file, directory, or web page.
 public class Markdown {
     private static final String FORMAT_SIMPLE_LINK = "[%s](%s)";
+
+    /// The Context singleton instance providing access to the current documentation generation context,
+    /// including configuration, current module/package/type names, and reporting utilities.
+    private static Context ctx = Context.getInstance();
+
     private Markdown() {
         // This hides the public constructor
     }
@@ -54,7 +60,7 @@ public class Markdown {
             return mdDocumentLink(ref.getUri());
         } else if (ref.getKind() == Reference.Kind.PAGE) {
             String relativePath = LinkResolver.relativize("");
-            return mdDocumentLink(ref.getDisplayName(), FileUtils.joinPaths(relativePath, ref.getUri()));
+            return mdDocumentLink(ref.getDisplayName(), Path.of(relativePath, ref.getUri()).toString());
         } else if (ref.getKind() == Reference.Kind.PACKAGE || ref.getKind() == Reference.Kind.TYPE) {
             return mdAutoLink(ref.getDisplayName());
         }
@@ -90,7 +96,7 @@ public class Markdown {
                 case Text.SegmentKind.START:
                     break;
                 default:
-                    Context.reportWarning("Unhandled javadoc tag:\n  " + segment.getKind().toString() + "\n  " + segment.toString());
+                    ctx.reportWarning("Unhandled javadoc tag:\n  " + segment.getKind().toString() + "\n  " + segment.toString());
             }
         }
         return sb.toString();
@@ -163,7 +169,7 @@ public class Markdown {
     /// Create a markdown link, automatically deciding what kind of link to make.
     /// @param identifier a package, type, or method identifier
     /// @param displayName If non-null, `displayName` will be the text displayed in the generated markdown.
-    /// @param simplify if true, the fully simplified version of the identifier is shown
+    /// @param simplify if true, the simplified version of the identifier is shown
     /// @return markdown text for a link to a document for the specified identifier or an anchor link
     public static String mdAutoLink(String identifier, String displayName, boolean simplify) {
         boolean isLocalMethod = false;
@@ -195,6 +201,9 @@ public class Markdown {
             post = name.substring(pos);
             name = name.substring(0, pos);
         }
+        if (name.indexOf("(") > -1) {
+            name = name.substring(0, name.indexOf("("));
+        }
         Reference link = LinkResolver.resolve(name);
         link.setAnchor(anchor);
         if (!anchor.isEmpty() && link.getKind() != Reference.Kind.URL) {
@@ -218,7 +227,7 @@ public class Markdown {
             displayName = link.getDisplayName();
             if (isLocalMethod) {
                 String methodName = link.getAnchor().substring(1);
-                String ctn = Context.getTypeName();
+                String ctn = ctx.getTypeName();
                 if (!link.getClassName().equals(ctn)) {
                     displayName = link.getClassName() + "." + methodName;
                 } else {
@@ -266,7 +275,7 @@ public class Markdown {
     public static String mdRefLinkMethod(Reference link) {
         link.setAnchor(link.getAnchor().toLowerCase());
         String displayName = link.getDisplayName();
-        String ctn = Context.getTypeName();
+        String ctn = ctx.getTypeName();
         if (!link.getClassName().equals(ctn)) {
             return String.format("[%s](%s.md%s)", displayName, link.getUri(), link.getAnchor());
         } else {
@@ -295,6 +304,7 @@ public class Markdown {
     /// Creates markdown formatted text with links to types from a string.
     /// containing one or more types separated by commas.
     /// @param typesString A string containing a comma-separated list of type names
+    /// @param simplify if true, the simplified version of the identifier is shown
     /// @return a list of links to types formatted as Markdown
     public static String splitAndLink(String typesString, boolean simplify) {
         StringBuilder r = new StringBuilder();
@@ -333,7 +343,9 @@ public class Markdown {
         return "[" + phrase + "](#" + mdAnchor(Utils.removeParentheses(phrase)) + ")";
     }
 
-    /// 
+    /// Creates a Markdown link to another Markdown document
+    /// @param docName The filename of the document being linked to
+    /// @return The Markdown formatted link
     public static String mdDocumentLink(String docName) {
         return mdDocumentLink(docName, docName);
     }

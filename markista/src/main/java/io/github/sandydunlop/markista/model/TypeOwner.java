@@ -2,6 +2,7 @@ package io.github.sandydunlop.markista.model;
 
 import java.util.List;
 
+/// A TypeOwner is a [Node] that can be set as the *owner* of another type.
 public interface TypeOwner {
     /// Adds a type node to this owner.
     /// @param typeNode the TypeNode to add

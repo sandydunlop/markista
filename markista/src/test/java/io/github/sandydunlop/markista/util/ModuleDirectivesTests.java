@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ModuleDirectivesTests {
+    private static Context ctx;
     private Elements elementUtils;
     private ModuleElement aModuleElement;
     private DocletEnvironment docletEnv;
@@ -59,9 +60,10 @@ class ModuleDirectivesTests {
         }
     };
     
-    @BeforeAll
+	@BeforeAll
     static void initAll() {
-		Context.setReporter(reporter);
+		ctx =  Context.getInstance();
+		ctx.setReporter(reporter);
     }
 
     @BeforeEach

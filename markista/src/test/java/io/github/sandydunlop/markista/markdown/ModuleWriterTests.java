@@ -2,10 +2,10 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.model.*;
 import io.github.sandydunlop.markista.util.Context;
-import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import jdk.javadoc.doclet.Reporter;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,11 +23,11 @@ import javax.tools.Diagnostic.Kind;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ModuleWriterTests {
+    private static Context ctx;
     Api api;
     ModuleNode moduleNode;
     PackageNode pkg;
@@ -36,9 +36,8 @@ class ModuleWriterTests {
     @InjectMocks
     private ModuleWriter moduleWriter;
 
-    // This mock will be passed to the ModuleWriter constructor
     @Mock
-    private FileUtils fileUtilsMock;
+    private Context contextMock;
 
     // This is the writer we will use to capture output
     private StringWriter stringWriter;
@@ -60,6 +59,12 @@ class ModuleWriterTests {
         }
     };
 
+	@BeforeAll
+    static void initAll() {
+		ctx =  Context.getInstance();
+		ctx.setReporter(reporter);
+    }
+
     @BeforeEach
     void setup() throws IOException {
         api = new Api();
@@ -71,14 +76,14 @@ class ModuleWriterTests {
         moduleNode.addPackage(pkg);
         api.addPackage(pkg); // Package needs to be in API for LinkResolver to work
 
-        Context.setModuleName("");
-        Context.setReporter(reporter);
+        ctx.setModuleName("");
+        ctx.setReporter(reporter);
         LinkResolver.init(api);
 
         stringWriter = new StringWriter();
 
         // Stub the behavior of fileUtilsMock to return a StringWriter
-        when(fileUtilsMock.createModuleFile(anyString(), anyString())).thenReturn(stringWriter);
+        when(contextMock.createModuleFile(anyString())).thenReturn(stringWriter);
     }
 
     @Test
@@ -152,7 +157,7 @@ class ModuleWriterTests {
 
         moduleNode.addConstantValue(fieldNode);
 
-        when(fileUtilsMock.createModuleFile(anyString(), eq("constant-values.md"))).thenReturn(stringWriter);
+        when(contextMock.createModuleFile("constant-values.md")).thenReturn(stringWriter);
 
         moduleWriter.writeDocs(api);
 

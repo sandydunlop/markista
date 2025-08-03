@@ -12,7 +12,6 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.util.Configuration;
 import io.github.sandydunlop.markista.util.Context;
-import io.github.sandydunlop.markista.util.FileUtils;
 import jdk.javadoc.doclet.Reporter;
 
 import javax.lang.model.element.Element;
@@ -24,8 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 class ApiScannerTests {
+    private static Context ctx;
     Api api;
-    FileUtils files;
     ModuleNode moduleNode;
     PackageNode packageNode;
     PackageWriter packageWriter;
@@ -49,14 +48,14 @@ class ApiScannerTests {
     
     @BeforeAll
     static void initAll() {
-		Context.setReporter(reporter);
+        ctx = Context.getInstance();
+		ctx.setReporter(reporter);
         Configuration.setOutputDirectory("/tmp/doc");
     }
 
     @BeforeEach
     void init() {
-        files = new FileUtils("/tmp/doc");
-        files.setModule(moduleNode);
+        // Nothing to see here
     }
 
     @Test

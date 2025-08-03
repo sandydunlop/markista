@@ -5,7 +5,6 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.util.ApiScanner;
 import io.github.sandydunlop.markista.util.Configuration;
 import io.github.sandydunlop.markista.util.Context;
-import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.ModuleDirectives;
 
@@ -25,7 +24,14 @@ import jdk.javadoc.doclet.Reporter;
 
 /// A doclet that renders javadoc comments as Markdown
 public class MarkdownDoclet implements Doclet {
+    /// The Context singleton instance providing access to the current documentation generation context,
+    /// including configuration, current module/package/type names, and reporting utilities.
+    private Context ctx;
+
+    /// Indicates success
     public static final boolean OK = true;
+
+    /// Indicates failure
     private static final boolean FAILED = false; 
 
     /// The default constructor, does nothing.
@@ -47,6 +53,7 @@ public class MarkdownDoclet implements Doclet {
 
             "-sourcepath", "markista/src/main/java/",
             "-subpackages", "io.github.sandydunlop.markista",
+            // "-tabs",
 
             // "--module-source-path", "/Users/sandy/git/cu/dev/markista/*/src/main/java",
             // "--module", "markista",
@@ -176,6 +183,15 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
+            new Option("-tabs", false,
+                    "Show summary tables in content tabs", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    Configuration.setUseContentTabs(true);
+                    return OK;
+                }
+            },
             new Option("-verbose", false,
                     "Output informational messages", null) {
                 @Override
@@ -203,7 +219,8 @@ public class MarkdownDoclet implements Doclet {
     /// @param reporter The reporter used for messages
     @Override
     public void init(Locale locale, Reporter reporter) {
-        Context.setReporter(reporter);
+        ctx = Context.getInstance();
+        ctx.setReporter(reporter);
     }
 
     @Override
@@ -230,16 +247,20 @@ public class MarkdownDoclet implements Doclet {
         ApiScanner scanner = new ApiScanner(environment);
         Api api = scanner.scan(environment.getIncludedElements());
         api.sort();
+        ctx.setOutputDirectory(Configuration.getOutputDirectory());
+        ctx.setApi(api);
         LinkResolver.init(api);
         if (Configuration.getCreateExternalLinks()) {
             LinkResolver.addNativeModules();
         }
-
-        ModuleWriter writer = new ModuleWriter(new FileUtils(Configuration.getOutputDirectory()));
+        
+        /// The Writer used to output the generated markdown content for the current document.
+        /// It handles writing text to the appropriate output file or stream.
+        ModuleWriter writer = new ModuleWriter();
         try{
             writer.writeDocs(api);
         } catch (IOException ex) {
-            Context.reportError(ex.getMessage() + "\n" + Arrays.toString(ex.getStackTrace()));
+            ctx.reportError(ex.getMessage() + "\n" + Arrays.toString(ex.getStackTrace()));
             return FAILED;
         }
         return OK;

@@ -8,7 +8,14 @@ import java.util.stream.Collectors;
 /// An abstract class with a set of methods useful to other subclasses of [Node]
 /// that can be owners of types.
 public abstract class AbstractTypeOwner extends Node implements TypeOwner {
+
+    /// A list of types owned by this type owner
     protected List<TypeNode> types = new ArrayList<>();
+
+    /// Default constructor
+    protected AbstractTypeOwner() {
+        // Only here for the comments
+    }
 
     /// Adds a type to the list of types *owned* by this instance.
     /// @param typeNode the type to add

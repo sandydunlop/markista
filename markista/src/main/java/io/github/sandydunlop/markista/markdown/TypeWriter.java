@@ -12,7 +12,6 @@ import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Context;
-import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Utils;
@@ -28,31 +27,36 @@ public class TypeWriter {
     private static final String TEXT_DESCRIPTION = "Description";
     private static final String TEXT_MODIFIER_AND_TYPE = "Modifier and Type";
     private static final String BR = "<br/>";
-    private static final String NBSP = "&nbsp;";
+    private static final String NBSP = Character.toString(0x00A0);
 
+    /// The Context singleton instance providing access to the current documentation generation context,
+    /// including configuration, current module/package/type names, and reporting utilities.
+    private Context ctx;
+
+    /// The Writer used to output the generated markdown content for the current document.
+    /// It handles writing text to the appropriate output file or stream.
     private Writer writer = null;
-    private FileUtils fileUtils;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public TypeWriter(FileUtils fileUtils) {
-        this.fileUtils = fileUtils;
+    public TypeWriter() {
+        ctx = Context.getInstance();
     }
 
     /// Tells the [LinkResolver] what class is about to be documented then 
     /// calls the appropriate method do begin the documentation process.
-    /// @throws java.io.IOException
+    /// @param typeNode The type to be documented
+    /// @throws java.io.IOException if there is a problem writing to the output file
     public void writeDoc(TypeNode typeNode) throws IOException {
-        Context.setTypeName(typeNode.getQualifiedName());
         outputTypeDoc(typeNode, typeNode.getKind().toString());
-        Context.setTypeName("");
     }
 
     /// Writes a Markdown file for the Javadoc of a type
     /// @param typeNode the type
     /// @param typeKind The name of the kind of the type eg. "Class", or "Enum"
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputTypeDoc(TypeNode typeNode, String typeKind) throws IOException {
-        writer = fileUtils.createFile(typeNode.getSimpleName(), typeNode.getPackageName());    
+        ctx.setTypeName(typeNode.getQualifiedName());
+        writer = ctx.createFile();    
         writer.write("Package [" + typeNode.getPackageName() + "](index.md)\n\n");
         writer.write("# " + typeKind + " " + typeNode.getSimpleName() + "\n");
         
@@ -114,11 +118,12 @@ public class TypeWriter {
         for (PackageMember node : typeNode.getAnnotations()) {
             writeDoc((TypeNode)node);
         }
+        ctx.setTypeName("");
     }
 
     /// Outputs the hierarchy of supertypes of a class
     /// @param typeNode the class
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputSupertypes(TypeNode typeNode) throws IOException {
         int indentation = 0;
         for (String st : typeNode.getSupertypes()) {
@@ -133,7 +138,7 @@ public class TypeWriter {
 
     /// Outputs details of any interfaces that this class implements
     /// @param typeNode a TypeNode representing a class, interface, enum, or annotation
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputImplementedInterfaces(TypeNode typeNode) throws IOException {
         if (!typeNode.getImplementedInterfaces().isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");
@@ -148,7 +153,7 @@ public class TypeWriter {
 
     /// Outputs details of the class that encloses this one
     /// @enclosingClass a TypeNode representing the enclosing class
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputEnclosingClass(TypeNode enclosingClass) throws IOException {
         if (enclosingClass.getOwner() instanceof ClassNode) {
             writer.write("Enclosing Class:<br/>\n");
@@ -159,7 +164,7 @@ public class TypeWriter {
 
     /// Outputs a summary of nested classes within this one as Markdown
     /// @param nestedClasses a list of the nested classes
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputNestedClassSummary(List<PackageMember> nestedClasses) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
@@ -169,28 +174,28 @@ public class TypeWriter {
             if (!(member instanceof TypeNode nestedClassNode)) continue;
             table.addRow(nestedClassNode.getModifiersString(),
                         Markdown.mdDocumentLink(nestedClassNode.getSimpleName()), 
-                        Markdown.formatText(nestedClassNode.getFirstSentence()));
+                        Utils.inOneLine(Markdown.formatText(nestedClassNode.getFirstSentence())));
         }
         table.render(writer);
     }
 
     /// Outputs as summary of an enum's constants as Markdown
     /// @param enumNode the enum
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputEnumConstantsSummary(EnumNode enumNode) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn("Enum Constant")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode constantNode : enumNode.getConstants()) {
             String link = Markdown.mdAnchorLink(constantNode.getSimpleName());
-            table.addRow(link, Markdown.formatText(constantNode.getFirstSentence()));
+            table.addRow(link, Utils.inOneLine(Markdown.formatText(constantNode.getFirstSentence())));
         }
         table.render(writer);
     }
 
     /// Outputs a summary of this class's fields as Markdown
     /// @param fields A list of fields belonging to this class
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputFieldSummary(List<FieldNode> fields) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
@@ -199,28 +204,28 @@ public class TypeWriter {
         for (FieldNode fieldNode : fields) {
             String link = Markdown.mdAutoLink(fieldNode.getType().getQualifiedName(), true);
             table.addRow(fieldNode.getModifiersString() + link, 
-                        Markdown.mdAnchorLink(fieldNode.getSimpleName()), Markdown.formatText(fieldNode.getFirstSentence()));
+                        Markdown.mdAnchorLink(fieldNode.getSimpleName()), Utils.inOneLine(Markdown.formatText(fieldNode.getFirstSentence())));
         }
         table.render(writer);
     }
 
     /// Outputs a the summary of this class's constructors as Markdown
     /// @param methods A list of the constructor methods
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputConstructorSummary(List<MethodNode> methods) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn("Constructor")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
             table.addRow(methodNode.getSimpleName() + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
-                        Markdown.formatText(methodNode.getFirstSentence()));
+                        Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
         }
         table.render(writer);
     }
 
     /// Writes the markdown for a class's method summary table
     /// @param methods The list of methods to include in the summary table
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputMethodSummary(List<MethodNode> methods) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
@@ -237,7 +242,7 @@ public class TypeWriter {
 
     /// Outputs enum constant details as Markdown
     /// @param constants a list of enum constants
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputEnumConstantDetails(List<FieldNode> constants, EnumNode enumNode) throws IOException {
         for (FieldNode constant : constants) {
             writer.write("### " + constant.getSimpleName() + "\n\n");
@@ -269,15 +274,15 @@ public class TypeWriter {
     /// @see <a href="http://example.com"/>
     /// @see java.util.List
     /// @since 0.1.0
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputDetails(List<Node> nodes) throws IOException {
         for (Node node : nodes) {
             if (node instanceof MethodNode method) {
-                Context.setMethodName(method.getSimpleName());
+                ctx.setMethodName(method.getSimpleName());
                 writer.write("### " + method.getSimpleName() + "\n\n");
                 writer.write(Markdown.fullSignature(method) + "\n\n");
             } else if (node instanceof FieldNode field) {
-                Context.setFieldName(field.getSimpleName());
+                ctx.setFieldName(field.getSimpleName());
                 writer.write("### " + field.getSimpleName() + "\n\n");
             }
             writer.write(Markdown.formatText(node.getFullBody()) + "\n\n");
@@ -298,14 +303,14 @@ public class TypeWriter {
 
             outputReferences(node);
             writer.write("\n---\n\n");
-            Context.setFieldName("");
-            Context.setMethodName("");
+            ctx.setFieldName("");
+            ctx.setMethodName("");
         }
     }
 
     /// Outputs references for a type member
     /// @param The type
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputReferences(Node node) throws IOException {
         if (!node.getReferences().isEmpty()) {
             writer.write("**See Also:**\n\n");
@@ -319,7 +324,7 @@ public class TypeWriter {
 
     /// Outputs the Javadoc of a method as Markdown
     /// @param method the method
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputMethodDetails(MethodNode method) throws IOException {
         if (!method.getParams().isEmpty()) {
             outputMethodParams(method);
@@ -357,7 +362,7 @@ public class TypeWriter {
 
     /// Outputs the parameters of a method as Markdown
     /// @param the method
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputMethodParams(MethodNode method) throws IOException {
         boolean showParameters = false;
         for (ParamNode param : method.getParams()) {
@@ -377,7 +382,7 @@ public class TypeWriter {
     /// Outputs the deprecation status of this type as Markdown
     /// @param status The deprecation status
     /// @param test A textual description of the deprecation status
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputDeprecation(Deprecation status, Text text) throws IOException {
         writer.write("\n\n");
         writer.write("!!! note \"Deprecation\"\n");

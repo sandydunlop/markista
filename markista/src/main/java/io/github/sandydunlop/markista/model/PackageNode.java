@@ -3,6 +3,7 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/// Represents a Java package
 public class PackageNode extends AbstractTypeOwner implements PackageMember, PackageOwner {
     private ModuleNode module;
     private List<PackageMember> packages = new ArrayList<>();

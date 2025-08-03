@@ -16,12 +16,13 @@ public class DirectiveNode {
     /// Indicates whether this directive is transitive.
     private boolean transitive;
 
-    /// List of implementation names associated with this directive.
+    /// List of package names associated with this directive.
     private List<String> packages = new ArrayList<>();
 
-    /// The interface name associated with this directive, if any.
+    /// List of implementation names associated with this directive.
     private List<String> implementations = new ArrayList<>();
 
+    /// The interface name associated with this directive, if any.
     private String interfaceName = "";
 
     /// Constructs a DirectiveNode with the specified kind, name and transitive flag.
@@ -50,13 +51,13 @@ public class DirectiveNode {
     }
 
     /// Returns the name associated with this directive.
-    /// @return the directive name.    
+    /// @return the directive name.
     public String getName() {
         return name;
     }
 
     /// Indicates if this directive is transitive.
-    /// @return true if transitive; false otherwise.    
+    /// @return true if transitive; false otherwise.
     public boolean isTransitive() {
         return transitive;
     }
@@ -99,11 +100,22 @@ public class DirectiveNode {
 
     /// Enum representing the various kinds of directives possible in a module declaration.
     public enum Kind {
+        /// No directive or unspecified type.
         NONE,
+
+        /// The 'requires' directive indicates dependencies on other modules.
         REQUIRES,
+
+        /// The 'exports' directive specifies packages exported to other modules.
         EXPORTS,
+
+        /// The 'opens' directive makes packages accessible at runtime via reflection.
         OPENS,
+
+        /// The 'uses' directive declares a service used by the module.
         USES,
+
+        /// The 'provides' directive declares the implementation(s) of a service.
         PROVIDES
     }
 }

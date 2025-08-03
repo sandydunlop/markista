@@ -7,18 +7,45 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/// The base class for all types of nodes in the API model.
 public class Node {
+    /// The simple form of the node's name
     protected String simpleName = "";
+
+    /// The canonical form of the node's name
     protected String qualifiedName = "";
+
+    /// A [PackageNode] representing the package the node belongs to
     protected PackageNode packageNode = null;
+
+    /// A list of the modifiers a node has
     private Set<Modifier> modifiers = new HashSet<>();
+
+    /// The deprecation status of the node
     private Deprecation deprecation = Deprecation.NONE;
+
+    /// Text describing the deprecation state of the node
     private Text deprecationText = Text.empty();
+
+    /// Text showing when this node was added to the API
     private Text since = Text.empty();
+
+    /// The first sentence of the Javadoc for this node
     protected Text firstSentence = Text.empty();
+
+    /// The body text of the Javadoc for this node
     private Text body = Text.empty();
+
+    /// The full text of the Javadoc for this node
     private Text fullBody = Text.empty();
+
+    /// A list of references specified in this node's Javadoc
     private List<Reference> references = new ArrayList<>();
+
+    /// The default constructor
+    protected Node() {
+        // Only here for the Javadoc
+    }
 
     /// Adds a modifier to the set of modifiers.
     /// @param mod The modifier to add.

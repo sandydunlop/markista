@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.model;
 
+/// Represents a method from another type that is overridden by a method in the type being documented.
 public class OverriddenMethodNode {
     /// Fully qualified name of the class that declares the overridden method. 
     private String qualifiedClassName = "";

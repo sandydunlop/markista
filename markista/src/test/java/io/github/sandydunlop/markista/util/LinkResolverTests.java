@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @ExtendWith(MockitoExtension.class)
 class LinkResolverTests {
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
+	private static Context ctx;
 	private Api api;
     private ModuleNode module;
     private PackageNode model;
@@ -54,7 +55,8 @@ class LinkResolverTests {
 
 	@BeforeAll
     static void initAll() {
-		Context.setReporter(reporter);
+		ctx =  Context.getInstance();
+		ctx.setReporter(reporter);
     }
 
     @BeforeEach
@@ -94,8 +96,8 @@ class LinkResolverTests {
 		LinkResolver.init(api);
         LinkResolver.addNativeModuleUrl("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
 		LinkResolver.setFlattenedDirectories(null);
-		Context.setModuleName("markista");
-        Context.setPackageName("");
+		ctx.setModuleName("markista");
+        ctx.setPackageName("");
 	}
 
 	@Test

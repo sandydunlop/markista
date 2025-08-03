@@ -6,9 +6,7 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.util.Configuration;
 import io.github.sandydunlop.markista.util.Context;
-import io.github.sandydunlop.markista.util.FileUtils;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Utils;
 
@@ -35,19 +33,26 @@ public class ModuleWriter {
     private static final String TITLE_USES = "Uses";
     private static final String TITLE_VALUE = "Value";
 
-    private FileUtils fileUtils;
+    /// The Context singleton instance providing access to the current documentation generation context,
+    /// including configuration, current module/package/type names, and reporting utilities.
+    private Context ctx;
+
+    /// The Writer used to output the generated markdown content for the current document.
+    /// It handles writing text to the appropriate output file or stream.
     private Writer writer;
+
+    /// The Api model representing the entire documented API structure,
+    /// including modules, packages, types, and members used for cross-referencing and navigation.
     private Api api;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public ModuleWriter(FileUtils fileUtils) {
-        this.fileUtils = fileUtils;
-        // Nothing to do here
+    public ModuleWriter() {
+        this.ctx = Context.getInstance();
     }
 
     /// Output the documentation files for the specified API
     /// @param  api The API to output the documentation for
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     public void writeDocs(Api api) throws IOException {
         this.api = api;
         for (ModuleNode moduleNode : api.getModules()) {
@@ -60,13 +65,12 @@ public class ModuleWriter {
     /// For each module, the documentation for each [package][PackageNode] it contains
     /// are then written.
     /// @param moduleNode The module to write documentation for
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputModuleDoc(ModuleNode moduleNode) throws IOException {
-        Context.setModuleName(moduleNode.getName());
-        fileUtils.setModule(moduleNode);
-
+        ctx.setModuleName(moduleNode.getName());
         if (!moduleNode.getPackages().isEmpty()) {
-            writer = fileUtils.createModuleFile(moduleNode.getName(), "index.md");
+            ctx.setModuleName(moduleNode.getName());
+            writer = ctx.createModuleFile("index.md");
             if (moduleNode.getName().isEmpty()) {
                 writer.write("# " + TITLE_API + "\n");
             } else {
@@ -90,8 +94,7 @@ public class ModuleWriter {
             outputModuleProvidesDirectives(moduleNode.getProvides());
             writer.flush();
             writer.close();
-            String moduleDir = Configuration.getOutputDirectory() + "/" + moduleNode.getName();
-            PackageWriter packageWriter = new PackageWriter(new FileUtils(moduleDir));
+            PackageWriter packageWriter = new PackageWriter();
             packageWriter.writeDocs(moduleNode);
         }
         if (!moduleNode.getConstantValues().isEmpty()) {
@@ -103,7 +106,7 @@ public class ModuleWriter {
     /// @param title The title to be used in this section of the markdown page.
     /// @param kind  The kind of directive being described
     /// @param directives The list of directives belonging to the module.
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputModuleDirectives(String title, String kind, List<DirectiveNode> directives) throws IOException {
         if (directives.isEmpty()) return;
         writer.write("=== \"" + title + "\"\n\n");
@@ -118,7 +121,7 @@ public class ModuleWriter {
 
     /// Outputs the `provides` directives declared in a module's `module-info.java` file.
     /// @param directives The list of `provides` directives belonging to the module.
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputModuleProvidesDirectives(List<DirectiveNode> directives) throws IOException {
         if (directives.isEmpty()) return;
         writer.write("\n=== \"" + TITLE_PROVIDES + "\"\n\n");
@@ -152,9 +155,9 @@ public class ModuleWriter {
 
     /// Output the *Constant Field Values* page.
     /// @param moduleNode The API tree node representing a module.
-    /// @throws java.io.IOException
+    /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputConstantValues(ModuleNode moduleNode) throws IOException {
-        writer = fileUtils.createModuleFile(moduleNode.getName(), "constant-values.md");    
+        writer = ctx.createModuleFile("constant-values.md");    
         if (!moduleNode.getConstantValues().isEmpty()) {
             writer.write("# " + TITLE_CONSTANT_FIELD_VALUES + "\n");
             MarkdownTable table = new MarkdownTable()

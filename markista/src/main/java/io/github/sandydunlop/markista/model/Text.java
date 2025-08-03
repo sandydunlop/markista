@@ -3,6 +3,8 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/// Represents a block of text. Text stores the text as a list of segments which
+/// can be of kind text, markdown, link, or code for easy retrieval and manipulation.
 public class Text {
     /// List of text segments composing this Text instance.
     private List<Segment> segments = new ArrayList<>();
@@ -145,12 +147,25 @@ public class Text {
 
     /// Enum class that defines different kinds of segments for Text.
     public enum SegmentKind {
+        /// Empty segment
         NONE,
+
+        /// Markdown formatted text
         MARKDOWN,
+
+        /// Plain test
         TEXT,
+
+        /// A link
         LINK,
+
+        /// Source code
         CODE,
+
+        /// Marks the start of a subsection
         START,
+
+        /// Marks the end of a subsection
         END;
     }
 }

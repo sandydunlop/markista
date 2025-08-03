@@ -76,6 +76,9 @@ javadoc -docletpath libs/markista-0.1.8.jar -doclet io.github.sandydunlop.markis
 `-flatten`
 :  Don't create directories that contain no classes
 
+`-tabs`
+:  Display summary tables in content tabs
+
 `-verbose`
 :  Display progress information
 

@@ -33,6 +33,7 @@ import jdk.javadoc.doclet.DocletEnvironment;
 
 /// A class that scans code and generates an API tree representing code and Javadoc comments.
 public class ApiScanner extends ElementScanner9<Void, Integer> {
+    private Context ctx;
     private Api api;
     private DocletEnvironment environment;
     private ModuleNode unnamedModule;
@@ -41,15 +42,19 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
 
     /// Initializes the ApiScanner with access to the doclet environment.
     /// The doclet environment provides tools for processing API elements, types, and documentation.
+    /// @param environment Represents the operating environment of a single invocation of the doclet. 
     public ApiScanner(DocletEnvironment environment) {
         this.environment = environment;
         api = new Api();
         unnamedModule = api.getUnnamedModuleNode();
         currentModule = api.getUnnamedModuleNode();
+        ctx = Context.getInstance();
     }
 
     /// The starting point for a scan of the API structure. This method sets up
     /// the environment and begins the scan of the API.
+    /// @param elements a list of language model elements
+    /// @return An [Api] object representing the entire model of the API that's being documented
     public Api scan(Set<? extends Element> elements) {
         processIncludedElements(elements);
         TypeUtils.init(api, environment);
@@ -91,7 +96,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (e.getQualifiedName().toString().isEmpty()) {
             mod = unnamedModule;
             if (Configuration.getVerbose()) {
-                Context.reportInfo("[ MODULE] UNNAMED");
+                ctx.reportInfo("[ MODULE] UNNAMED");
             }
         } else {
             mod = api.getModuleNode(e.getQualifiedName().toString());
@@ -99,7 +104,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (mod == null) {
             mod = new ModuleNode(e.getQualifiedName().toString());
             if (Configuration.getVerbose()) {
-                Context.reportInfo(String.format("[ MODULE] %s", mod.getName()));
+                ctx.reportInfo(String.format("[ MODULE] %s", mod.getName()));
             }
             TypeUtils.setDocumentation(mod, e);
             List<? extends Directive>  directives = e.getDirectives();
@@ -120,7 +125,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             if (pkg == null) {
                 pkg = new PackageNode(ee.getQualifiedName().toString());
                 if (Configuration.getVerbose()) {
-                    Context.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
+                    ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
                 pkg.setModule(currentModule);
                 currentModule.addPackage(pkg);

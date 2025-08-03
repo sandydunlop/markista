@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.model;
 
+/// `Reference` encapsulates links to web pages, markdown pages, modules, packages, types, and methods.
 public class Reference {
     private Kind kind = Kind.NONE;
     private Scope scope = Scope.NONE;
@@ -114,24 +115,52 @@ public class Reference {
 
     /// Enum representing different kinds/types of references.
     public enum Kind {
+        /// Kind hasn't been set
         NONE,
+
+        /// Kind isn't known
         UNKNOWN,
+
+        /// A link to a webpage
         URL,
+
+        /// A link to a Markdown page
         PAGE,
+
+        /// A link to a Java module
         MODULE,
+
+        /// A link to a Java package
         PACKAGE,
+
+        /// A link to a Java type
         TYPE,
+
+        /// A link to a JAva method
         METHOD,
+
+        /// A Java primitive type
         PRIMITIVE,
+
+        /// A link to Void
         VOID
     }
 
     /// Enum representing the scope of references.
     public enum Scope {
+        /// Scope hasn't been set
         NONE,
+
+        /// Scope isn't known
         UNKNOWN,
+
+        /// Within the project's code
         LOCAL,
+
+        /// Java built-in APIs
         NATIVE,
+
+        /// Within an external project
         FOREIGN
     }
 }
