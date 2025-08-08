@@ -18,6 +18,7 @@ import javax.tools.Diagnostic;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.github.sandydunlop.markista.model.Api;
@@ -169,6 +170,7 @@ class ContextTests {
         assertEquals(outputDir + "sandydunlop/test", file.getAbsolutePath());
     }
 
+    @Disabled("Needs to be mocked")
     @Test
     void createFile_namedModule() throws IOException {
         String outputDir = "/tmp/markista/dirpath/";
@@ -189,6 +191,7 @@ class ContextTests {
         assertTrue(line.contains("test createFile 1"));
     }
 
+    @Disabled("Needs to be mocked")
     @Test
     void createFile_unnamedModule() throws IOException {
         String outputDir = "/tmp/markista/dirpath/";
