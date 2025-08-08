@@ -67,7 +67,7 @@ class ModuleWriterTests {
 
     @BeforeEach
     void setup() throws IOException {
-        api = new Api();
+        api = new Api("Test API");
         moduleNode = new ModuleNode("mod");
         api.addModule(moduleNode);
 
@@ -78,12 +78,12 @@ class ModuleWriterTests {
 
         ctx.setModuleName("");
         ctx.setReporter(reporter);
-        LinkResolver.init(api);
+        LinkResolver.init(api, ctx);
 
         stringWriter = new StringWriter();
 
         // Stub the behavior of fileUtilsMock to return a StringWriter
-        when(contextMock.createModuleFile(anyString())).thenReturn(stringWriter);
+        when(contextMock.createFileInModule(anyString())).thenReturn(stringWriter);
     }
 
     @Test
@@ -107,6 +107,25 @@ class ModuleWriterTests {
     }
 
     @Test
+    void writeDocs_WritesModuleDocsForUnnamedModule() throws IOException {
+        // Setup modules in API
+        api = new Api("Test API");
+        ModuleNode unnamedModule = new ModuleNode("");
+        api.addModule(unnamedModule);
+
+        // Add a package to namedModule (required for index.md generation)
+        PackageNode pkg1 = new PackageNode("com.example.package");
+        unnamedModule.addPackage(pkg1);
+        api.addPackage(pkg1); // Package needs to be in API for LinkResolver to work
+
+        moduleWriter.writeDocs(api);
+
+        // Check output to contain module title
+        String output = stringWriter.toString();
+        assertTrue(output.contains("# Test API") || output.contains("# API"));
+    }
+
+    @Test
     void outputModuleDirectives_WritesTableForDirectiveNodes() throws IOException {
         DirectiveNode exportsDirective = mock(DirectiveNode.class);
         when(exportsDirective.getName()).thenReturn("com.example.package");
@@ -122,18 +141,18 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleProvidesDirectives_WritesTableForProvides() throws IOException {
-        InterfaceNode interface0 = new InterfaceNode("com.example.package.Interface", "Interface", pkg);
-        InterfaceNode interface1 = new InterfaceNode("com.example.package.Impl1", "Impl1", pkg);
-        InterfaceNode interface2 = new InterfaceNode("com.example.package.Impl2", "Impl2", pkg);
+        InterfaceTypeNode interface0 = new InterfaceTypeNode("com.example.package.Interface", "Interface", pkg);
+        InterfaceTypeNode interface1 = new InterfaceTypeNode("com.example.package.Impl1", "Impl1", pkg);
+        InterfaceTypeNode interface2 = new InterfaceTypeNode("com.example.package.Impl2", "Impl2", pkg);
         api.addInterface(interface0);
         api.addInterface(interface1);
         api.addInterface(interface2);
 
         DirectiveNode providesDirective = mock(DirectiveNode.class);
-        when(providesDirective.getInterface()).thenReturn("com.example.package.Interface");
         List<String> implementations = List.of("com.example.package.Impl1", "com.example.package.Impl2");
         when(providesDirective.getImplementations()).thenReturn(implementations);
         when(providesDirective.getKind()).thenReturn(DirectiveNode.Kind.PROVIDES);
+        when(providesDirective.getName()).thenReturn("com.example.package.Interface");
         moduleNode.addDirective(providesDirective);
 
         moduleWriter.writeDocs(api);
@@ -157,7 +176,7 @@ class ModuleWriterTests {
 
         moduleNode.addConstantValue(fieldNode);
 
-        when(contextMock.createModuleFile("constant-values.md")).thenReturn(stringWriter);
+        when(contextMock.createFileInModule("constant-values.md")).thenReturn(stringWriter);
 
         moduleWriter.writeDocs(api);
 

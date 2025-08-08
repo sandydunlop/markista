@@ -16,7 +16,7 @@ public class Markdown {
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
-    private static Context ctx = Context.getInstance();
+    private static final Context ctx = Context.getInstance();
 
     private Markdown() {
         // This hides the public constructor
@@ -27,7 +27,7 @@ public class Markdown {
     /// @return Markdown formatted text representing the method's signature
     public static String fullSignature(MethodNode method ) {
         String sig = method.getModifiersString();
-        sig += mdAutoLink(method.getReturnType().getQualifiedName(), true) + " ";
+        sig += link(Reference.to(method.getReturnType().getQualifiedName()), true) + " ";
         sig += method.getSimpleName() + "(" + formatParams(method.getParams()) + ")";
         return sig;
     }
@@ -40,7 +40,7 @@ public class Markdown {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(", ");
-            String typeName = mdAutoLink(param.getType().getQualifiedName(), true);
+            String typeName = link(Reference.to(param.getType().getQualifiedName()), true);
             sb.append(typeName);
             sb.append(param.getType().getArrayBrackets());
             sb.append(" ");
@@ -53,16 +53,17 @@ public class Markdown {
     /// @param ref a `Reference` object specifying a link
     /// @return Markdown formatted text containing a link
     public static String formatReference(Reference ref) {
-        if (ref.getDisplayName() == null || ref.getDisplayName().isEmpty()) {
-            ref.setDisplayName(ref.getUri());
+        if (ref.getKind() == Reference.Kind.PACKAGE || ref.getKind() == Reference.Kind.TYPE) {
+            return link(ref);
+        }
+        if (ref.getLabel() == null || ref.getLabel().isEmpty()) {
+            ref.setLabel(ref.getTarget());
         }
         if (ref.getKind() == Reference.Kind.URL) {
             return mdDocumentLink(ref.getUri());
         } else if (ref.getKind() == Reference.Kind.PAGE) {
             String relativePath = LinkResolver.relativize("");
-            return mdDocumentLink(ref.getDisplayName(), Path.of(relativePath, ref.getUri()).toString());
-        } else if (ref.getKind() == Reference.Kind.PACKAGE || ref.getKind() == Reference.Kind.TYPE) {
-            return mdAutoLink(ref.getDisplayName());
+            return mdDocumentLink(ref.getLabel(), Path.of(relativePath, ref.getUri()).toString());
         }
         return "";
     }
@@ -80,7 +81,7 @@ public class Markdown {
         for (Text.Segment segment : parsedSegments) {
             switch (segment.getKind()) {
                 case Text.SegmentKind.TEXT, Text.SegmentKind.END:
-                    sb.append(segment.toString());
+                    sb.append(segment);
                     break;
                 case Text.SegmentKind.MARKDOWN:
                     sb.append(resolveMarkdownLinks(segment.toString()));
@@ -96,7 +97,7 @@ public class Markdown {
                 case Text.SegmentKind.START:
                     break;
                 default:
-                    ctx.reportWarning("Unhandled javadoc tag:\n  " + segment.getKind().toString() + "\n  " + segment.toString());
+                    ctx.reportWarning("Unhandled javadoc tag:\n  " + segment.getKind().toString() + "\n  " + segment);
             }
         }
         return sb.toString();
@@ -113,7 +114,9 @@ public class Markdown {
             if (segment.getKind() == MarkdownParser.SegmentKind.BRACKETS_TAG) {
                 MarkdownParser.Segment next = segment.getNext();
                 if (next.getKind() == SegmentKind.BRACKETS_TAG || next.getKind() == SegmentKind.PARENS_TAG) {
-                    String link = mdAutoLink(next.getText(), segment.getText(), false);
+                    Reference ref = Reference.to(next.getText());
+                    ref.setLabel(segment.getText());
+                    String link = link(ref, false);
                     if (link.isEmpty()) {
                         sb.append(next.getText());
                     } else {
@@ -121,7 +124,7 @@ public class Markdown {
                     }
                     segment = next;
                 } else {
-                    sb.append(mdAutoLink(segment.getText()));
+                    sb.append(link(Reference.to(segment.getText())));
                 }
             } else if (segment.getKind() == SegmentKind.TEXT) {
                 sb.append(segment.getText());
@@ -135,112 +138,115 @@ public class Markdown {
     /// @param segment A text segment
     /// @return Markdown formatted text with a resolved link
     public static String formatLink(Text.Segment segment) {
-        if (segment.getLink().indexOf("://") > -1) {
+        if (segment.getLink().contains("://")) {
             Reference ref = new Reference();
             ref.setKind(Reference.Kind.URL);
-            ref.setDisplayName(segment.getText());
+            ref.setLabel(segment.getText());
             ref.setUri(segment.getLink());
             return mdRefLink(ref);
         }
         if (segment.getText().isBlank()) {
-            return mdAutoLink(segment.getLink());
+            return link(Reference.to(segment.getLink()));
         } else {
-            Reference ref = LinkResolver.resolve(segment.getLink());
-            ref.setDisplayName(segment.getText());
+            Reference ref = LinkResolver.resolve(Reference.to(segment.getLink()));
+            ref.setLabel(segment.getText());
             return mdRefLink(ref);
         }
     }
 
     /// Create a markdown link, automatically deciding what kind of link to make.
-    /// @param identifier a package, type, or method identifier
-    /// @return markdown text for a link to a document for the specified identifier or an anchor link
-    public static String mdAutoLink(String identifier) {
-        return mdAutoLink(identifier, true);
+    /// @param link a Reference object describing the link
+    /// @return markdown formatted link
+    public static String link(Reference link) {
+        return link(link, false);
     }
 
     /// Create a markdown link, automatically deciding what kind of link to make.
-    /// @param identifier a package, type, or method identifier
-    /// @param simplify if true, the fully simplified version of the identifier is shown
-    /// @return markdown text for a link to a document for the specified identifier or an anchor link
-    public static String mdAutoLink(String identifier, boolean simplify) {
-        return mdAutoLink(identifier, null, simplify);
-    }
-
-    /// Create a markdown link, automatically deciding what kind of link to make.
-    /// @param identifier a package, type, or method identifier
-    /// @param displayName If non-null, `displayName` will be the text displayed in the generated markdown.
-    /// @param simplify if true, the simplified version of the identifier is shown
-    /// @return markdown text for a link to a document for the specified identifier or an anchor link
-    public static String mdAutoLink(String identifier, String displayName, boolean simplify) {
-        boolean isLocalMethod = false;
-        String name = identifier;
+    /// @param reference a Reference object describing the link
+    /// @param simplify If true, simplified names will be used in the link label
+    /// @return markdown formatted link
+    public static String link(Reference reference, boolean simplify) {
+        String targetName = reference.getTarget();
+        if (targetName == null || targetName.isEmpty()) {
+            ctx.reportWarning("No link target supplied");
+            return reference.getLabel();
+        }
         String pre = "";
         String post = "";
         String anchor = "";
-        int pos = name.indexOf('#');
+        boolean isLocalMethod = false;
+        String displayName = reference.getLabel();
+        int pos = targetName.indexOf('#');
         if (pos == 0) {
-            return mdAnchorLink(name);
+            return mdAnchorLink(targetName);
         }
         if (pos > 0) {
-            anchor = name.substring(pos);
-            name = name.substring(0, pos);
+            anchor = targetName.substring(pos);
+            targetName = targetName.substring(0, pos);
         }
-        if (name == null) {
-            return identifier;
-        } else if (name.indexOf('<') > -1) {
-            return escape(linkGenerics(name, simplify));
-        } else if (name.indexOf(',') > -1) {
-            return splitAndLink(name, simplify);
-        } else if (name.lastIndexOf(' ') > 0) {
-            int p = name.lastIndexOf(' ');
-            pre = name.substring(0, p) + " ";
-            name = name.substring(p + 1);
+        if (targetName.indexOf('<') > -1) {
+            return escape(linkGenerics(targetName, simplify));
+        } else if (targetName.indexOf(',') > -1) {
+            return splitAndLink(targetName, simplify);
+        } else if (targetName.lastIndexOf(' ') > 0) {
+            int p = targetName.lastIndexOf(' ');
+            pre = targetName.substring(0, p) + " ";
+            targetName = targetName.substring(p + 1);
         }
-        pos = name.indexOf('[');
+        pos = targetName.indexOf('[');
         if (pos > 0) {
-            post = name.substring(pos);
-            name = name.substring(0, pos);
+            post = targetName.substring(pos);
+            targetName = targetName.substring(0, pos);
         }
-        if (name.indexOf("(") > -1) {
-            name = name.substring(0, name.indexOf("("));
+        if (targetName.contains("(")) {
+            targetName = targetName.substring(0, targetName.indexOf("("));
         }
-        Reference link = LinkResolver.resolve(name);
-        link.setAnchor(anchor);
-        if (!anchor.isEmpty() && link.getKind() != Reference.Kind.URL) {
+        reference.setTarget(targetName);
+        reference.setAnchor(anchor);
+        if (reference.getLabel() == null || reference.getLabel().isEmpty()) {
+            reference.setLabel(reference.getTarget());
+        }
+        LinkResolver.resolve(reference);
+        if (simplify) {
+            reference.setLabel(Utils.simplifyNames(reference.getLabel()));
+        }
+        if (!anchor.isEmpty() && reference.getKind() != Reference.Kind.URL) {
             isLocalMethod = true;
             // Issue: https://github.com/sandydunlop/markista/issues/1
             // Workaround:
             // Remove the parentheses from after method names in anchor 
             // links to Markdown pages for now. Anchors in the Markdown
             // are currently headings without parameters.
-            link.setAnchor(Utils.removeParentheses(link.getAnchor()));
+            reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
         }
-        setDisplayName(link, displayName, isLocalMethod, simplify);
-        if (isLocalMethod) {
-            link.setKind(Reference.Kind.METHOD);
-        }
-        return pre + mdRefLink(link) + post;
+        setDisplayName(reference, displayName, isLocalMethod, simplify);
+        return pre + mdRefLink(reference) + post;
     }
 
     private static void setDisplayName(Reference link, String displayName, boolean isLocalMethod, boolean simplify) {
-        if (displayName == null) {
-            displayName = link.getDisplayName();
-            if (isLocalMethod) {
-                String methodName = link.getAnchor().substring(1);
-                String ctn = ctx.getTypeName();
-                if (!link.getClassName().equals(ctn)) {
-                    displayName = link.getClassName() + "." + methodName;
-                } else {
-                    displayName = methodName;
-                }
-            }
-        } else {
-            link.setDisplayName(displayName);
+        if (link.getLabel() == null) {
+             link.setLabel(link.getTarget());
         }
-        if (simplify) {
-            link.setDisplayName(escape(Utils.simplifyNames(displayName)));
+        if (isLocalMethod) {
+            link.setKind(Reference.Kind.METHOD);
+            String methodName = link.getAnchor().substring(1);
+            if (!link.getClassName().equals(ctx.getTypeName())) {
+                link.setLabel(link.getLabel() + "." + methodName);
+            } else {
+                link.setLabel(methodName);
+            }
+        }
+        if (displayName != null && !displayName.isEmpty()) {
+            link.setLabel(displayName.replace("#","."));
         } else {
-            link.setDisplayName(escape(displayName));
+            if (simplify || (!ctx.getPackageName().isEmpty() && 
+                    link.getScope() == Reference.Scope.LOCAL && 
+                    (link.getKind() == Reference.Kind.TYPE || 
+                    link.getKind() == Reference.Kind.METHOD))) {
+                link.setLabel(escape(Utils.simplifyNames(link.getLabel())));
+            } else {
+                link.setLabel(escape(link.getLabel()));
+            }
         }
     }
 
@@ -252,20 +258,20 @@ public class Markdown {
         if (link.getKind() == Reference.Kind.METHOD) {
             return mdRefLinkMethod(link);
         } else if (link.getKind() == Reference.Kind.TYPE) {
-            return String.format("[%s](%s.md%s)", link.getDisplayName(), link.getUri(), mdAnchor(link.getAnchor()));
+            return String.format("[%s](%s.md%s)", link.getLabel(), link.getUri(), mdAnchor(link.getAnchor()));
         } else if (link.getKind() == Reference.Kind.PACKAGE) {
-            return String.format("[%s](%s/index.md%s)", link.getDisplayName(), link.getUri(), mdAnchor(link.getAnchor()));
+            return String.format("[%s](%s/index.md%s)", link.getLabel(), link.getUri(), mdAnchor(link.getAnchor()));
         } else if (link.getKind() == Reference.Kind.MODULE) {
-            return String.format("[%s](%s/index.md)", link.getDisplayName(), link.getUri());
+            return String.format("[%s](%s/index.md)", link.getLabel(), link.getUri());
         } else if (link.getKind() == Reference.Kind.URL) {
-            String displayName = link.getDisplayName();
+            String displayName = link.getLabel();
             if (!link.getAnchor().isEmpty() && link.getAnchor().length() > 1) {
                 String anchorName = link.getAnchor().substring(1);
                 displayName += "." + anchorName;
             }
             return String.format("[%s](%s%s)", displayName, link.getUri(), link.getAnchor());
         }
-        return link.getDisplayName();
+        return link.getLabel();
     }
 
     /// Creates a markdown formatted link from a [Reference] object.
@@ -274,7 +280,7 @@ public class Markdown {
     /// @return a markdown formatted link
     public static String mdRefLinkMethod(Reference link) {
         link.setAnchor(link.getAnchor().toLowerCase());
-        String displayName = link.getDisplayName();
+        String displayName = link.getLabel();
         String ctn = ctx.getTypeName();
         if (!link.getClassName().equals(ctn)) {
             return String.format("[%s](%s.md%s)", displayName, link.getUri(), link.getAnchor());
@@ -296,7 +302,7 @@ public class Markdown {
         String before = str.substring(0, openingChevron);
         String mid = str.substring(openingChevron + 1, closingChevron);
         String after = str.substring(closingChevron + 1);
-        before = mdAutoLink(before, simplify);
+        before = link(Reference.to(before), simplify);
         mid = splitAndLink(mid, simplify);
         return before + "&lt;" + mid + "&gt;" + after;
     }
@@ -314,7 +320,7 @@ public class Markdown {
             if (!r.isEmpty()) {
                 r.append(", ");
             }
-            r.append(mdAutoLink(typeName, simplify));
+            r.append(link(Reference.to(typeName), simplify));
         }
         return r.toString();
     }

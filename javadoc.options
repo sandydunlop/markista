@@ -1,0 +1,8 @@
+"-d", "markista/build/md-docs", 
+"-private", 
+"-link",
+"--flatten-packages",
+"-sourcepath", "markista/src/main/java/",
+"-subpackages", "io.github.sandydunlop.markista",
+"-tabs",
+"-verbose"

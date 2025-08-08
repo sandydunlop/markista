@@ -47,7 +47,7 @@ public enum Modifier {
 
     /// Constructs a Modifier enum constant with the specified string value.
     /// @param s The string representation of the modifier.
-    private Modifier(String s) {
+    Modifier(String s) {
         name = s;
     }
 

@@ -76,7 +76,7 @@ class MarkdownDocletTests {
     }
 
     @Test
-    void run1_flatten() {
+    void run1_flattenPackages() {
         String testOutputDir = BASE_DOC_PATH + "run1";
         deleteDirectory(testOutputDir);
         DocumentationTool systemDocumentationTool = ToolProvider.getSystemDocumentationTool();
@@ -85,8 +85,8 @@ class MarkdownDocletTests {
             "-docletpath", "build/classes/java/main",
             "-d", testOutputDir,
             "-private",
-            "-external",
-            "-flatten",
+            "-link",
+            "--flatten-packages",
             "-sourcepath", "src/main/java/",
             "-subpackages", "io.github.sandydunlop.markista",
         };
@@ -109,7 +109,7 @@ class MarkdownDocletTests {
             "-docletpath", "build/classes/java/main", 
             "-d", testOutputDir, 
             "-private", 
-            "-external",
+            "-link",
             "-sourcepath", "src/main/java/",
             "-subpackages", "io.github.sandydunlop.markista",
         };

@@ -7,8 +7,14 @@ import java.util.List;
 /// Represents a type in the API model, including its kind (class, interface, enum, annotation),
 /// supertypes, implemented interfaces, constructors, methods, fields, ownership, and relevant metadata.
 public class TypeNode extends AbstractTypeOwner implements PackageMember {
+    /// The canonical form of the type's name
+    protected String qualifiedName;
+
     /// The owner of this type, usually another type or module.
     private TypeOwner owner = null;
+
+    /// List of annotations applied to this type.
+    private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
 
     /// List of qualified names of interfaces implemented by this type.
     private List<String> implementedInterfaces = new ArrayList<>();
@@ -20,16 +26,19 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
     private String arrayBrackets = "";
 
     /// List of constructor methods belonging to this type.
-    private List<MethodNode> constructors = new ArrayList<>();
+    private final List<MethodNode> constructors = new ArrayList<>();
 
     /// List of methods belonging to this type.
-    private List<MethodNode> methods = new ArrayList<>();
+    private final List<MethodNode> methods = new ArrayList<>();
 
     /// List of fields belonging to this type.
-    private List<FieldNode> fields = new ArrayList<>();
+    private final List<FieldNode> fields = new ArrayList<>();
 
     /// The kind of this type (e.g., class, interface, enum, annotation).
     protected Kind kind = Kind.NONE;
+
+    /// Has the `@Documented` annotation applied
+    private boolean hasDocumentedAnnotation = false;
 
 
     /// Constructs a TypeNode with the specified qualified name, simple name, and package.
@@ -52,6 +61,18 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
     /// @return string representing array dimension brackets.
     public String getArrayBrackets() {
         return arrayBrackets;
+    }
+
+    /// Adds an applied annotation to this type
+    /// @param annotation the annotation
+    public void addAppliedAnnotation(AppliedAnnotationNode annotation) {
+        appliedAnnotations.add(annotation);
+    }
+
+    /// Returns the list of annotations applied to this type.
+    /// @return list of applied annotations
+    public List<AppliedAnnotationNode> getAppliedAnnotations() {
+        return appliedAnnotations;
     }
 
     /// Sets the list of implemented interfaces by qualified names.
@@ -115,10 +136,10 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
     }
 
     /// Returns the package name for this type.
-    /// @return fully qualified package name, or null if no package node.
+    /// @return qualified package name, or null if no package node.
     public String getPackageName() {
         if (packageNode == null) return null;
-        return packageNode.qualifiedName;
+        return packageNode.getName();
     }
 
     /// Returns the package node this type belongs to.
@@ -175,6 +196,19 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
         return fields;
     }
 
+    /// Sets a flag indicating if this type as having a `@Documented` meta-annotation
+    /// @param b If true, this type is marked as having a `@Documented` meta-annotation.
+    /// If false, it is marked as not having the met-annotation.
+    public void setHasDocumentedAnnotation(boolean b) {
+        this.hasDocumentedAnnotation = b;
+    }
+
+    /// Does this type have a `@Documented` meta-annotation?
+    /// @return True if it has a `@Documented` meta-annotation
+    public boolean hasDocumentedAnnotation() {
+        return hasDocumentedAnnotation;
+    }
+
     /// Retrieves a field by its simple name.
     /// @param fieldName the simple name of the field.
     /// @return the FieldNode if found, otherwise null.
@@ -225,6 +259,20 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
         return firstSentence;
     }
 
+    /// Returns a string representation of modifiers.
+    /// The modifiers are sorted according to a predefined order.
+    /// @return A string containing sorted modifiers separated by spaces.
+    @Override
+    public String getModifiersString() {
+        StringBuilder mods = new StringBuilder();
+        List<Modifier> modifierList = ModifierSorter.sortModifiers(getModifiers());
+        for (Modifier mod : modifierList) {
+            if (kind != Kind.ANNOTATION || mod != Modifier.ABSTRACT) {
+                mods.append(mod.toString()).append(" ");
+            }
+        }
+        return mods.toString();
+    }
 
     /// Enumeration representing kinds of types: None, Class, Interface, Enum, Annotation.
     public enum Kind {
@@ -241,13 +289,13 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
         ENUM ("Enum"),
 
         /// An annotation
-        ANNOTATION ("Annotation");
+        ANNOTATION ("Annotation Type");
 
         /// The display name for the kind.
         private final String name;
 
         /// Constructor assigning the display name.
-        private Kind(String s) {
+        Kind(String s) {
             name = s;
         }
 

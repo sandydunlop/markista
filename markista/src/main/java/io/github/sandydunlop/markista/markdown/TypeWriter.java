@@ -1,8 +1,10 @@
 package io.github.sandydunlop.markista.markdown;
 
-import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.AnnotationElement;
+import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.Deprecation;
-import io.github.sandydunlop.markista.model.EnumNode;
+import io.github.sandydunlop.markista.model.EnumTypeNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.Node;
@@ -31,6 +33,8 @@ public class TypeWriter {
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
+    /// > **Warning**<br/>
+    /// Do not make this `final`. It will break tests with mocked [Context].
     private Context ctx;
 
     /// The Writer used to output the generated markdown content for the current document.
@@ -56,7 +60,7 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputTypeDoc(TypeNode typeNode, String typeKind) throws IOException {
         ctx.setTypeName(typeNode.getQualifiedName());
-        writer = ctx.createFile();    
+        writer = ctx.createFileInPackage();    
         writer.write("Package [" + typeNode.getPackageName() + "](index.md)\n\n");
         writer.write("# " + typeKind + " " + typeNode.getSimpleName() + "\n");
         
@@ -64,6 +68,8 @@ public class TypeWriter {
         outputImplementedInterfaces(typeNode);
         outputEnclosingClass(typeNode);
         writer.write("\n----\n\n");
+
+        outputDeclaration(typeNode);
 
         if (!typeNode.getFullBody().isEmpty()) {
             writer.write(Markdown.formatText(typeNode.getFullBody()));
@@ -75,7 +81,7 @@ public class TypeWriter {
             outputNestedClassSummary(typeNode.getClasses());
         }
 
-        if (typeNode instanceof EnumNode enumNode && !enumNode.getConstants().isEmpty()) {
+        if (typeNode instanceof EnumTypeNode enumNode && !enumNode.getConstants().isEmpty()) {
             writer.write("\n##Enum Constants\n\n");
             outputEnumConstantsSummary(enumNode);
         }
@@ -92,7 +98,7 @@ public class TypeWriter {
             writer.write("\n## Method Summary\n\n");
             outputMethodSummary(typeNode.getMethods());
         }
-        if (typeNode instanceof EnumNode enumNode && !enumNode.getConstants().isEmpty()) {
+        if (typeNode instanceof EnumTypeNode enumNode && !enumNode.getConstants().isEmpty()) {
             writer.write("\n## Enum Constant Details\n\n");
             outputEnumConstantDetails(enumNode.getConstants(), enumNode);
         }
@@ -128,7 +134,7 @@ public class TypeWriter {
         int indentation = 0;
         for (String st : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(Markdown.mdAutoLink(st, false) + BR + "\n");
+            writer.write(Markdown.link(Reference.to(st), false) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -145,23 +151,62 @@ public class TypeWriter {
             writer.write(NBSP.repeat(4));
             for (int i=0; i<typeNode.getImplementedInterfaces().size(); i++) {
                 if (i > 0) writer.write(", ");
-                writer.write(Markdown.mdAutoLink(typeNode.getImplementedInterfaces().get(i)));
+                writer.write(Markdown.link(Reference.to(typeNode.getImplementedInterfaces().get(i))));
             }
             writer.write("\n\n");
         }
     }
 
     /// Outputs details of the class that encloses this one
-    /// @enclosingClass a TypeNode representing the enclosing class
+    /// @param enclosingClass a TypeNode representing the enclosing class
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputEnclosingClass(TypeNode enclosingClass) throws IOException {
-        if (enclosingClass.getOwner() instanceof ClassNode) {
+        if (enclosingClass.getOwner() instanceof ClassTypeNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
-            writer.write(Markdown.mdAutoLink(enclosingClass.getOwner().getName()) + "\n\n");
+            writer.write(Markdown.link(Reference.to(enclosingClass.getOwner().getName())) + "\n\n");
         }
     }
 
+
+    /// Outputs the type declaration
+    /// @param typeNode the type being documented
+    private void outputDeclaration(TypeNode typeNode) throws IOException {
+        writer.write("<span style=\"font-family: monospace;\">");
+        String typeString = typeNode.getKind().toString();
+        if (typeNode.getKind() == TypeNode.Kind.ANNOTATION) { 
+            typeString = "@interface";
+        }
+        for (AppliedAnnotationNode annotation : typeNode.getAppliedAnnotations()) {
+            if (typeNode.getKind() == TypeNode.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
+                writer.write("@" + annotation.getType().getSimpleName());
+                if (!annotation.getElements().isEmpty()) {
+                    writer.write("(");
+                    writer.write(createAnnotationString(annotation));
+                    writer.write(")");
+                }
+                writer.write(BR + "\n");
+            }
+        }
+        writer.write(typeNode.getModifiersString() + typeString + " __" + typeNode.getSimpleName() + "__");
+        writer.write("</span>\n\n");
+    }
+
+    /// Creates a string of the elements within an annotation
+    /// @param annotation the annotation
+    /// @return The string
+    private String createAnnotationString(AppliedAnnotationNode annotation) {
+        StringBuilder sb = new StringBuilder();
+        for (AnnotationElement element : annotation.getElements()) {
+            if (!sb.isEmpty()) sb.append(", ");
+            if (annotation.getElements().size() > 1) {
+                sb.append(element.getSimpleName());
+                sb.append(" ");
+            }
+            sb.append(element.getValue());
+        }
+        return sb.toString();
+    }
     /// Outputs a summary of nested classes within this one as Markdown
     /// @param nestedClasses a list of the nested classes
     /// @throws java.io.IOException if there is a problem writing to the output file
@@ -182,7 +227,7 @@ public class TypeWriter {
     /// Outputs as summary of an enum's constants as Markdown
     /// @param enumNode the enum
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputEnumConstantsSummary(EnumNode enumNode) throws IOException {
+    private void outputEnumConstantsSummary(EnumTypeNode enumNode) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn("Enum Constant")
                 .addColumn(TEXT_DESCRIPTION);
@@ -202,7 +247,7 @@ public class TypeWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = Markdown.mdAutoLink(fieldNode.getType().getQualifiedName(), true);
+            String link = Markdown.link(Reference.to(fieldNode.getType().getQualifiedName()), true);
             table.addRow(fieldNode.getModifiersString() + link, 
                         Markdown.mdAnchorLink(fieldNode.getSimpleName()), Utils.inOneLine(Markdown.formatText(fieldNode.getFirstSentence())));
         }
@@ -233,7 +278,7 @@ public class TypeWriter {
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
             table.addRow(methodNode.getModifiersString() + 
-                        Markdown.mdAutoLink(methodNode.getReturnType().getQualifiedName(), true), 
+                        Markdown.link(Reference.to(methodNode.getReturnType().getQualifiedName()), true), 
                         Markdown.mdAnchorLink(methodNode.getSimpleName()) + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
                         Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
         }
@@ -243,10 +288,10 @@ public class TypeWriter {
     /// Outputs enum constant details as Markdown
     /// @param constants a list of enum constants
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputEnumConstantDetails(List<FieldNode> constants, EnumNode enumNode) throws IOException {
+    private void outputEnumConstantDetails(List<FieldNode> constants, EnumTypeNode enumNode) throws IOException {
         for (FieldNode constant : constants) {
             writer.write("### " + constant.getSimpleName() + "\n\n");
-            writer.write("public static final " + Markdown.mdAutoLink(enumNode.getQualifiedName(), true));
+            writer.write("public static final " + Markdown.link(Reference.to(enumNode.getQualifiedName()), true));
             writer.write(" " + constant.fullSignature() + "\n\n");
             writer.write(Markdown.formatText(constant.getFullBody()) + "\n\n");
 
@@ -309,7 +354,7 @@ public class TypeWriter {
     }
 
     /// Outputs references for a type member
-    /// @param The type
+    /// @param node The type
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputReferences(Node node) throws IOException {
         if (!node.getReferences().isEmpty()) {
@@ -342,38 +387,36 @@ public class TypeWriter {
                 if (count++ > 0) {
                     writer.write(", ");
                 }
-                String qualifiedNAme = thrownType;
-
-                writer.write(Markdown.mdAutoLink(qualifiedNAme, true) + "\n");
+                writer.write(Markdown.link(Reference.to(thrownType), true) + "\n");
             }
             writer.write("\n");
         }
         if (!method.getSpecifiedBy().isEmpty()) {
             writer.write("**Specified By:**\n\n");
-            writer.write(Markdown.mdAutoLink(method.getSpecifiedBy(), false));
+            writer.write(Markdown.link(Reference.to(method.getSpecifiedBy()), false));
             writer.write("\n\n");
         }
         if (method.getOverriddenMethod() != null && !method.getOverriddenMethod().getClassName().isEmpty() && !method.getOverriddenMethod().getMethodName().isEmpty()) {
             writer.write("**Overrides:**\n\n");
-            writer.write(Markdown.mdAutoLink(method.getOverriddenMethod().getClassName() + "#" + method.getOverriddenMethod().getMethodName()) + " from " + Markdown.mdAutoLink(method.getOverriddenMethod().getClassName()));
+            writer.write(Markdown.link(Reference.to(method.getOverriddenMethod().getClassName() + "#" + method.getOverriddenMethod().getMethodName())) + " from " + Markdown.link(Reference.to(method.getOverriddenMethod().getClassName())));
             writer.write("\n\n");
         }        
     }
 
     /// Outputs the parameters of a method as Markdown
-    /// @param the method
+    /// @param method the method
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputMethodParams(MethodNode method) throws IOException {
         boolean showParameters = false;
         for (ParamNode param : method.getParams()) {
-            if (!param.getBody().isEmpty()) showParameters = true; 
+            if (!param.getFullBody().isEmpty()) showParameters = true; 
         }
         if (showParameters) {
             writer.write("**Parameters:**\n\n");
             for (ParamNode param : method.getParams()) {
-                if (!param.getBody().isEmpty()) {
+                if (!param.getFullBody().isEmpty()) {
                     writer.write("`" +param.getSimpleName() + "` - " + 
-                            Utils.inOneLine(Markdown.formatText(param.getBody())) +"\n\n");
+                            Markdown.formatText(param.getFullBody()) +"\n\n");
                 }
             }
         }
@@ -381,7 +424,7 @@ public class TypeWriter {
 
     /// Outputs the deprecation status of this type as Markdown
     /// @param status The deprecation status
-    /// @param test A textual description of the deprecation status
+    /// @param text A textual description of the deprecation status
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputDeprecation(Deprecation status, Text text) throws IOException {
         writer.write("\n\n");

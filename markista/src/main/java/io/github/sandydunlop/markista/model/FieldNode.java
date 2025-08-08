@@ -4,6 +4,9 @@ import java.io.Serializable;
 
 /// A class to hold information about fields within a class, interface, or enum.
 public class FieldNode extends ParamNode { 
+    /// The canonical form of the node's name
+    protected String qualifiedName = "";
+
     /// The constant value assigned to this field, if any. 
     private Serializable constantValue = null;
 
@@ -12,6 +15,19 @@ public class FieldNode extends ParamNode {
     /// @param name The simple name of the field.
     public FieldNode(TypeNode type, String name) {
         super(type, name);
+    }
+
+
+    /// Sets the qualified name of this parameter.
+    /// @param name The qualified name to set.
+    public void setQualifiedName(String name) {
+        qualifiedName = name;
+    }
+
+    /// Returns the qualified name of this parameter.
+    /// @return The qualified name.
+    public String getQualifiedName() {
+        return qualifiedName;
     }
 
     /// Returns the constant value of this field.

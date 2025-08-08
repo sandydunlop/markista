@@ -12,16 +12,16 @@ public class MethodNode extends Node {
     private String specifiedBy = "";
 
     /// The return type of this method.
-    private TypeNode returnType = null;
+    private final TypeNode returnType;
 
     /// Information about the method that this method overrides, if any.
     private OverriddenMethodNode overrides = null;
 
     /// List of parameters for this method.
-    private List<ParamNode> params = new ArrayList<>();
+    private final List<ParamNode> params = new ArrayList<>();
 
     /// List of exception types that this method declares it can throw.
-    private List<String> thrownTypes = new ArrayList<>();
+    private final List<String> thrownTypes = new ArrayList<>();
 
     /// The type (class/interface) that owns this method.
     private TypeNode owner = null;

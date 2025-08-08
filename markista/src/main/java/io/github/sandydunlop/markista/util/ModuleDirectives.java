@@ -41,20 +41,13 @@ public class ModuleDirectives {
     /// @param directive a scanned module directive.
     /// @return A DirectiveNode representing the scanned directive element.
     public static DirectiveNode createFrom(Directive directive) {
-        switch(directive.getKind()) {
-            case DirectiveKind.REQUIRES:
-                return createRequiresDirective(directive);
-            case DirectiveKind.EXPORTS:
-                return createExportsDirective(directive);
-            case DirectiveKind.OPENS:
-                return createOpensDirective(directive);
-            case DirectiveKind.USES:
-                return createUsesDirective(directive);
-            case DirectiveKind.PROVIDES:
-                return createProvidesDirective(directive);
-            default:
-                return null;
-        }
+        return switch (directive.getKind()) {
+            case DirectiveKind.REQUIRES -> createRequiresDirective(directive);
+            case DirectiveKind.EXPORTS -> createExportsDirective(directive);
+            case DirectiveKind.OPENS -> createOpensDirective(directive);
+            case DirectiveKind.USES -> createUsesDirective(directive);
+            case DirectiveKind.PROVIDES -> createProvidesDirective(directive);
+        };
     }
 
     /// Creates a DirectiveNode representing a [requires](javax.lang.model.element.ModuleElement.RequiresDirective) directive.

@@ -1,7 +1,6 @@
 package io.github.sandydunlop.markista.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,30 +57,30 @@ public abstract class AbstractTypeOwner extends Node implements TypeOwner {
 
     /// Adds a class to the list of classes *owned* by this instance.
     /// @param node the class to add
-    public void addClass(ClassNode node) {
+    public void addClass(ClassTypeNode node) {
         types.add(node);
     }
 
     /// Adds a interface to the list of interfaces *owned* by this instance.
     /// @param node the interface to add
-    public void addInterface(InterfaceNode node) {
+    public void addInterface(InterfaceTypeNode node) {
         types.add(node);
     }
 
     /// Adds a enum to the list of enums *owned* by this instance.
     /// @param node the enum to add
-    public void addEnum(EnumNode node) {
+    public void addEnum(EnumTypeNode node) {
         types.add(node);
     }
 
     /// Adds a annotation to the list of annotations *owned* by this instance.
     /// @param node the annotation to add
-    public void addAnnotation(AnnotationNode node) {
+    public void addAnnotation(AnnotationTypeNode node) {
         types.add(node);
     }
 
     /// Sorts the nodes owned by this instance into alphabetical order.
     public void sort() {
-        Collections.sort(types, (o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
+        types.sort((o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
     }
 }

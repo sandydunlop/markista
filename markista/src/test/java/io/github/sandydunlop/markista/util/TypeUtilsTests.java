@@ -3,11 +3,15 @@ package io.github.sandydunlop.markista.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.sun.source.doctree.DocCommentTree;
@@ -17,12 +21,12 @@ import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import com.sun.source.doctree.StartElementTree;
 
-import io.github.sandydunlop.markista.model.AnnotationNode;
+import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassNode;
-import io.github.sandydunlop.markista.model.EnumNode;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.EnumTypeNode;
 import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.InterfaceNode;
+import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
@@ -35,14 +39,19 @@ import io.github.sandydunlop.markista.model.TypeNode;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
 
+import javax.lang.model.AnnotatedConstruct;
+import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
@@ -51,10 +60,15 @@ import javax.tools.Diagnostic.Kind;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.mockito.Answers;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 
@@ -82,6 +96,13 @@ class TypeUtilsTests {
     private PackageElement packageElement;
 
     DocletEnvironment environment;
+      
+    DocletEnvironment mockEnvironment;
+    Api mockApi;
+    Context mockContext;
+    Name simpleName2;
+    Name qualifiedName2;
+    Name packageName2;
 
     @Mock static Reporter reporter = new Reporter() {
         @Override
@@ -108,7 +129,7 @@ class TypeUtilsTests {
 
     @BeforeEach
     void init() {
-        dummyApi = new Api();
+        dummyApi = new Api("Test API");
         dummyPackage = new PackageNode("com.example");
 
         environment = mock(DocletEnvironment.class);
@@ -158,7 +179,7 @@ class TypeUtilsTests {
         when(docCommentTree.getBody()).thenAnswer(_ -> dtList);
         when(docCommentTree.getFullBody()).thenAnswer(_ -> dtList);
 
-        api = new Api();
+        api = new Api("Test API");
         TypeUtils.init(api, docletEnv);
 
         packageNode = new PackageNode("io.github.sandydunlop.markista.model");
@@ -167,7 +188,7 @@ class TypeUtilsTests {
 
     @Test
     void addConstantFieldValuesReference() {
-        ClassNode classNode2 = new ClassNode("io.github.sandydunlop.markista.model.TypeNode", "Node", packageNode);
+        ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "Node", packageNode);
         classNode2.getSupertypes().add("io.github.sandydunlop.markista.model.Node");
         api.addType(classNode2);
         TypeNode typeNode = new TypeNode("int","int", packageNode);
@@ -194,14 +215,14 @@ class TypeUtilsTests {
         when(methodElement2.getSimpleName()).thenReturn(methodName2);
         when(methodElement2.getEnclosingElement()).thenReturn(typeElement);
 
-        ClassNode classNode1 = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode1 = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
         api.addType(classNode1);
         TypeNode returnType1 = new TypeNode("int","int", null);
         MethodNode methodNode1 = new MethodNode(returnType1, "length");
         methodNode1.setOwner(classNode1);
         classNode1.addMethod(methodNode1);
 
-        ClassNode classNode2 = new ClassNode("io.github.sandydunlop.markista.model.TypeNode", "Node", packageNode);
+        ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "Node", packageNode);
         classNode2.getSupertypes().add("io.github.sandydunlop.markista.model.Node");
         api.addType(classNode2);
         TypeNode returnType2 = new TypeNode("int","int", null);
@@ -228,7 +249,7 @@ class TypeUtilsTests {
         when(methodElement.getSimpleName()).thenReturn(methodName);
         when(methodElement.getEnclosingElement()).thenReturn(typeElement);
 
-        ClassNode classNode = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
         classNode.getSupertypes().add("java.lang.String");
         api.addType(classNode);
 
@@ -258,6 +279,36 @@ class TypeUtilsTests {
 
         when(typeElement.getEnclosedElements()).thenAnswer(_ -> parameters);
         when(elementUtils.getTypeElement("io.github.sandydunlop.markista.model.Node")).thenAnswer(_ -> typeElement);
+
+        TypeNode tn = TypeUtils.getFieldType("io.github.sandydunlop.markista.model.Node", "param1");
+        assertNotNull(tn);
+        assertEquals("int", tn.getSimpleName());
+    }
+
+    @Test
+    void getFieldType_array() {
+        TypeMirror tm = mock(TypeMirror.class);
+        when(tm.toString()).thenAnswer(_ -> "int[]");
+        when(tm.getKind()).thenAnswer(_ -> TypeKind.ARRAY);
+
+        ArrayType at = mock(ArrayType.class);
+        when(at.toString()).thenAnswer(_ -> "int[]");
+        when(at.getKind()).thenAnswer(_ -> TypeKind.ARRAY);
+        when(at.toString()).thenAnswer(_ -> "int");
+        when (at.getComponentType()).thenReturn((TypeMirror)at);
+
+        Name param1name = mock(Name.class);
+        when(param1name.toString()).thenReturn("param1");
+        VariableElement param1 = mock(VariableElement.class);
+        when(param1.asType()).thenAnswer(_ -> tm);
+        when(param1.getSimpleName()).thenAnswer(_ -> param1name);
+        when(param1.getKind()).thenAnswer(_ -> ElementKind.FIELD);
+        List<? extends Element>  parameters = List.of(param1);
+
+        when(typeElement.getEnclosedElements()).thenAnswer(_ -> parameters);
+        when(elementUtils.getTypeElement("io.github.sandydunlop.markista.model.Node")).thenAnswer(_ -> typeElement);
+
+        when (typeUtils.getArrayType(any())).thenReturn(at);
 
         TypeNode tn = TypeUtils.getFieldType("io.github.sandydunlop.markista.model.Node", "param1");
         assertNotNull(tn);
@@ -316,7 +367,7 @@ class TypeUtilsTests {
         assertEquals(Reference.Kind.URL, refs.get(0).getKind());
         assertEquals("http://example.com", refs.get(0).getUri());
         assertEquals(Reference.Kind.TYPE, refs.get(1).getKind());
-        assertEquals("Node", refs.get(1).getDisplayName());
+        assertEquals("Node", refs.get(1).getTarget());
     }
 
     @Test
@@ -402,7 +453,7 @@ class TypeUtilsTests {
 
     @Test
     void nodeFromElement_ExecutableElement() {
-        ClassNode classNode = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
         api.addType(classNode);
 
         Name methodName = mock(Name.class);
@@ -421,7 +472,7 @@ class TypeUtilsTests {
 
     @Test
     void nodeFromElement_VariableElement() {
-        ClassNode classNode = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
         api.addType(classNode);
 
         Name variableName = mock(Name.class);
@@ -526,7 +577,7 @@ class TypeUtilsTests {
 
     @Test
     void setDocumentation() {
-        ClassNode classNode = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
         api.addType(classNode);
         TypeUtils.setDocumentation(classNode, typeElement);
         assertEquals("berry", Markdown.formatText(classNode.getFirstSentence()));
@@ -540,20 +591,20 @@ class TypeUtilsTests {
 
         TypeNode classNode = TypeUtils.createTypeNode("test.pkg.ClassA", "ClassA", pkg, ElementKind.CLASS);
         assertNotNull(classNode);
-        assertTrue(classNode instanceof ClassNode);
+        assertTrue(classNode instanceof ClassTypeNode);
         assertEquals("ClassA", classNode.getSimpleName());
 
         TypeNode interfaceNode = TypeUtils.createTypeNode("test.pkg.InterfaceA", "InterfaceA", pkg, ElementKind.INTERFACE);
         assertNotNull(interfaceNode);
-        assertTrue(interfaceNode instanceof InterfaceNode);
+        assertTrue(interfaceNode instanceof InterfaceTypeNode);
 
         TypeNode enumNode = TypeUtils.createTypeNode("test.pkg.EnumA", "EnumA", pkg, ElementKind.ENUM);
         assertNotNull(enumNode);
-        assertTrue(enumNode instanceof EnumNode);
+        assertTrue(enumNode instanceof EnumTypeNode);
 
         TypeNode annoNode = TypeUtils.createTypeNode("test.pkg.AnnotationA", "AnnotationA", pkg, ElementKind.ANNOTATION_TYPE);
         assertNotNull(annoNode);
-        assertTrue(annoNode instanceof AnnotationNode);
+        assertTrue(annoNode instanceof AnnotationTypeNode);
 
         TypeNode nullNode = TypeUtils.createTypeNode("test.pkg.UnknownA", "UnknownA", pkg, ElementKind.METHOD);
         assertNull(nullNode);
@@ -644,5 +695,241 @@ class TypeUtilsTests {
         TypeUtils.init(dummyApi, null);  // Passing null DocletEnvironment for tests that don't need it
         assertNull(TypeUtils.getUrl(null));
         assertNull(TypeUtils.getUrl("no href here"));
+    }
+
+    void setup2() {
+        mockApi = mock(Api.class);
+        mockEnvironment = mock(DocletEnvironment.class);
+        DocTrees dct = mock(DocTrees.class);
+        when(mockEnvironment.getDocTrees()).thenReturn(dct);
+
+        simpleName2 = mock(Name.class);
+        when(simpleName2.toString()).thenReturn("Foo");
+        qualifiedName2 = mock(Name.class);
+        when(qualifiedName2.toString()).thenReturn("com.example.Foo");
+        packageName2 = mock(Name.class);
+        when(packageName2.toString()).thenReturn("com.example");
+
+        TypeUtils.init(mockApi, mockEnvironment);
+    }
+
+    @Test
+    void nodeFromElement_ReturnsExistingTypeNode() {
+        setup2();
+        typeElement = mock(TypeElement.class);
+        when(typeElement.getQualifiedName()).thenReturn(qualifiedName2);
+
+        TypeNode existingNode = mock(TypeNode.class);
+        when(mockApi.getTypeNode("com.example.Foo")).thenReturn(existingNode);
+
+        TypeNode result = TypeUtils.nodeFromElement(typeElement);
+
+        assertSame(existingNode, result);
+    }
+
+    @Disabled("WIP")
+    @Test
+    void nodeFromElement_CreatesTypeNodeForClass() {
+        setup2();
+        typeElement = mock(TypeElement.class);
+
+
+        when(typeElement.getQualifiedName()).thenReturn(qualifiedName2);
+        when(typeElement.getSimpleName()).thenReturn(simpleName2);
+        when(typeElement.getKind()).thenReturn(ElementKind.CLASS);
+        packageElement = mock(PackageElement.class);
+        when(packageElement.getQualifiedName()).thenReturn(packageName2);
+
+        when(TypeUtils.getEnclosingPackageElement(typeElement)).thenReturn(packageElement);
+
+        packageNode = mock(PackageNode.class);
+        when(mockApi.getPackageNode("com.example")).thenReturn(packageNode);
+
+        when(mockApi.getTypeNode("com.example.Foo")).thenReturn(null);
+
+        try (MockedStatic<TypeUtils> utilsStatic = Mockito.mockStatic(TypeUtils.class, Answers.CALLS_REAL_METHODS)) {
+            // We bypass call to createTypeNode, and control create behavior for testing
+            utilsStatic.when(() -> TypeUtils.createTypeNode("com.example.Foo", "Foo", packageNode, ElementKind.CLASS))
+                       .thenCallRealMethod();
+
+
+            // To avoid eg. infinite recursion in environment etc, we stub methods invoked
+            utilsStatic.when(() -> TypeUtils.setTypeOwnership(any(), eq(typeElement))).thenCallRealMethod();
+                    
+            utilsStatic.when(() -> TypeUtils.setModifiers(any(), any())).thenCallRealMethod();
+            utilsStatic.when(() -> TypeUtils.collectAllSupertypes(any(), any())).thenCallRealMethod();
+            utilsStatic.when(() -> TypeUtils.findImplementedInterfaces(eq(typeElement), any())).thenCallRealMethod();
+
+            // Run the actual call under test
+            TypeNode typeNode = TypeUtils.nodeFromElement(typeElement);
+
+            assertNotNull(typeNode);
+            assertEquals("com.example.Foo", typeNode.getQualifiedName());
+            verify(mockApi).addType(typeNode);
+        }
+    }
+
+    @Test
+    void setEnumConstants_AddsEnumConstants() {
+        setup2();
+        EnumTypeNode enumNode = new EnumTypeNode("com.example.Color", "Color", null);
+        typeElement = mock(TypeElement.class);
+        Element enumConstant = mock(Element.class);
+        when(enumConstant.getKind()).thenReturn(ElementKind.ENUM_CONSTANT);
+
+        when(simpleName2.toString()).thenReturn("RED");
+        when(enumConstant.getSimpleName()).thenReturn(simpleName2);
+        when(typeElement.getEnclosedElements()).thenAnswer(_ ->List.of(enumConstant));
+
+        TypeUtils.setEnumConstants(enumNode, typeElement);
+
+        assertEquals(1, enumNode.getConstants().size());
+        assertEquals("RED", enumNode.getConstants().get(0).getSimpleName());
+    }
+
+    @Disabled("WIP")
+    @Test
+    void nodeFromElement_MethodNode_CreatesMethodNodeWithParams() {
+        setup2();
+        ExecutableElement methodElement = mock(ExecutableElement.class);
+        TypeMirror returnType = mock(TypeMirror.class);
+        when(returnType.getKind()).thenReturn(TypeKind.DECLARED);
+        when(returnType.toString()).thenReturn("java.lang.String");
+        when(methodElement.getReturnType()).thenReturn(returnType);
+        when(methodElement.getSimpleName()).thenReturn(simpleName2);
+        when(methodElement.getKind()).thenReturn(ElementKind.METHOD);
+        PackageElement pkg = mock(PackageElement.class);
+        when(pkg.getQualifiedName()).thenReturn(qualifiedName2);
+        when(TypeUtils.getEnclosingPackageElement(methodElement)).thenReturn(pkg);
+
+        PackageNode packageNode2 = mock(PackageNode.class);
+        when(mockApi.getPackageNode("com.example")).thenReturn(packageNode2);
+
+        TypeElement ownerElement = mock(TypeElement.class);
+        when(TypeUtils.getEnclosingTypeElement(methodElement)).thenReturn(ownerElement);
+        TypeNode ownerType = mock(TypeNode.class);
+        when(mockApi.getTypeNode(ownerElement.getQualifiedName().toString())).thenReturn(ownerType);
+
+        when(ownerType.getMethod(any())).thenReturn(null);
+
+        when(methodElement.getParameters()).thenReturn(Collections.emptyList());
+        when(methodElement.getModifiers()).thenReturn(Set.of(Modifier.PUBLIC));
+        when(methodElement.getThrownTypes()).thenReturn(Collections.emptyList());
+        when(methodElement.getAnnotationMirrors()).thenReturn(Collections.emptyList());
+
+        try (MockedStatic<TypeUtils> utilsStatic = Mockito.mockStatic(TypeUtils.class, Answers.CALLS_REAL_METHODS)) {
+            utilsStatic.when(() -> TypeUtils.setMethodParams(any(), eq(methodElement))).thenCallRealMethod();
+            utilsStatic.when(() -> TypeUtils.setModifiers(any(), any())).thenCallRealMethod();
+            utilsStatic.when(() -> TypeUtils.setThrownTypes(any(), any())).thenCallRealMethod();
+            utilsStatic.when(() -> TypeUtils.setMethodAnnotations(any(), eq(methodElement))).thenCallRealMethod();
+            utilsStatic.when(() -> TypeUtils.setSpecifiedBy(any(), eq(methodElement))).thenCallRealMethod();
+
+            MethodNode methodNode = TypeUtils.nodeFromElement(methodElement);
+            assertNotNull(methodNode);
+            assertEquals("methodName", methodNode.getSimpleName());
+            verify(ownerType).getMethods();
+        }
+    }
+
+    @Disabled("WIP")
+    @Test
+    void nodeFromElement_FieldNode_CreatesFieldNode() {
+        setup2();
+        VariableElement fieldElement = mock(VariableElement.class);
+
+        TypeElement classElement = mock(TypeElement.class);
+        when(TypeUtils.getEnclosingTypeElement(fieldElement)).thenReturn(classElement);
+        when(classElement.getQualifiedName()).thenReturn(qualifiedName2);
+        TypeNode typeNode = spy(new ClassTypeNode("com.example.Foo", "Foo", null));
+
+        when(mockApi.getTypeNode("com.example.Foo")).thenReturn(typeNode);
+
+        Name fieldName = mock(Name.class);
+        when(fieldName.toString()).thenReturn("fieldName");
+        when(fieldElement.getSimpleName()).thenReturn(fieldName);
+
+        FieldNode existingField = null;
+        doReturn(existingField).when(typeNode).getField("fieldName");
+
+        FieldNode resultNode = TypeUtils.nodeFromElement(fieldElement);
+
+        assertNotNull(resultNode);
+        assertEquals("fieldName", resultNode.getSimpleName());
+    }
+
+    @Test
+    void createTextSegment_ProducesExpectedSegment() {
+        setup2();
+        // Prepare a DocTree mock for TEXT kind
+        com.sun.source.doctree.TextTree textTree = mock(com.sun.source.doctree.TextTree.class);
+        when(textTree.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.TEXT);
+        when(textTree.toString()).thenReturn("some text");
+
+        var segment = TypeUtils.createTextSegment(textTree);
+        assertEquals(io.github.sandydunlop.markista.model.Text.SegmentKind.TEXT, segment.getKind());
+        assertEquals("some text", segment.getText());
+    }
+
+    @Test
+    void setDocumentation_SetsTextsIfDocCommentPresent() {
+        setup2();
+        Element element = mock(Element.class);
+        docCommentTree = mock(DocCommentTree.class);
+        when(mockEnvironment.getDocTrees().getDocCommentTree(element)).thenReturn(docCommentTree);
+
+        // Define lists with exact type: List<? extends DocTree>
+        List<? extends DocTree> firstSentence = List.of();
+        List<? extends DocTree> body = List.of();
+        List<? extends DocTree> fullBody = List.of();
+
+        when(docCommentTree.getFirstSentence()).thenAnswer(_ -> firstSentence);
+        when(docCommentTree.getBody()).thenAnswer(_ -> body);
+        when(docCommentTree.getFullBody()).thenAnswer(_ -> fullBody);
+
+        var node = new io.github.sandydunlop.markista.model.ClassTypeNode("com.example.Foo", "Foo", null);
+
+        try (var utilsStatic = org.mockito.Mockito.mockStatic(TypeUtils.class, org.mockito.Answers.CALLS_REAL_METHODS)) {
+            utilsStatic.when(() -> TypeUtils.createText(firstSentence))
+                       .thenReturn(io.github.sandydunlop.markista.model.Text.empty());
+            utilsStatic.when(() -> TypeUtils.createText(body))
+                       .thenReturn(io.github.sandydunlop.markista.model.Text.empty());
+            utilsStatic.when(() -> TypeUtils.createText(fullBody))
+                       .thenReturn(io.github.sandydunlop.markista.model.Text.empty());
+
+            TypeUtils.setDocumentation(node, element);
+
+            assertNotNull(node.getFirstSentence());
+            assertNotNull(node.getBody());
+            assertNotNull(node.getFullBody());
+        }
+    }
+
+    @Test
+    void setAppliedAnnotations() {
+        setup2();
+        TypeNode typeNode = new TypeNode("com.example.Foo", "Foo", packageNode);
+
+
+        AnnotationMirror am = mock(AnnotationMirror.class);
+        List<? extends AnnotationMirror> annotationMirrors = List.of(am);
+        TypeElement ac = mock(TypeElement.class);
+        // AnnotatedConstruct ac = mock(AnnotatedConstruct.class);
+        when (ac.getAnnotationMirrors()).thenAnswer(_ -> annotationMirrors);
+        
+        DeclaredType declaredType = mock(DeclaredType.class);
+        when (am.getAnnotationType()).thenAnswer(_ -> declaredType);
+
+        Map<? extends ExecutableElement, ? extends AnnotationValue> values = new HashMap<>();
+        when (am.getElementValues()).thenAnswer(_ -> values);
+
+        TypeElement declaredElement = mock(TypeElement.class);
+        Name declaredName = mock(Name.class);
+        when (declaredName.toString()).thenReturn("NewAnnotation");
+        when (declaredElement.getQualifiedName()).thenAnswer(_ -> declaredName);
+        when (declaredElement.getSimpleName()).thenAnswer(_ -> declaredName);
+        when (declaredType.asElement()).thenReturn(declaredElement);
+        
+        TypeUtils.setAppliedAnnotations(typeNode, ac);
+        assertEquals(1, typeNode.getAppliedAnnotations().size());
     }
 }

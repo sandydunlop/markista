@@ -5,13 +5,14 @@ import java.util.List;
 
 /// Represents a Java package
 public class PackageNode extends AbstractTypeOwner implements PackageMember, PackageOwner {
+    private final String name;
     private ModuleNode module;
-    private List<PackageMember> packages = new ArrayList<>();
+    private final List<PackageMember> packages = new ArrayList<>();
 
     /// Constructs a PackageNode with the specified qualified package name.
-    /// @param packageName The qualified name of the package.
-    public PackageNode(String packageName) {
-        this.qualifiedName = packageName;
+    /// @param name The qualified name of the package.
+    public PackageNode(String name) {
+        this.name = name;
     }
 
     /// Sets the module for this package.
@@ -40,11 +41,11 @@ public class PackageNode extends AbstractTypeOwner implements PackageMember, Pac
         packages.add(packageNode);
     }
 
-    /// Returns the name (qualified name) of this package.
-    /// @return The qualified package name.
+    /// Returns the name (canonical name) of this package.
+    /// @return The package name.
     @Override
     public String getName() {
-        return qualifiedName;
+        return name;
     }
 
     /// Returns the description text for this package, typically the first sentence.

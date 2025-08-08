@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.util;
 import com.sun.source.util.DocTreePath;
 
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
@@ -39,8 +39,8 @@ class MarkdownTests {
     private PackageNode doclet;
 	private PackageNode markista;
 	private PackageNode util;
-    private ClassNode node;
-    private ClassNode markdownDoclet;
+    private ClassTypeNode node;
+    private ClassTypeNode markdownDoclet;
 
     @Mock static Reporter reporter = new Reporter() {
         @Override
@@ -67,7 +67,7 @@ class MarkdownTests {
 
     @BeforeEach
     void init() {
-		api = new Api();
+		api = new Api("Test API");
         api.addPackage(new PackageNode("io.github.sandydunlop"));
         markista = new PackageNode("io.github.sandydunlop.markista");
 		util = new PackageNode("io.github.sandydunlop.markista.util");
@@ -77,9 +77,9 @@ class MarkdownTests {
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-		api.addClass(new ClassNode("io.github.sandydunlop.markista.util.LinkResolver","LinkResolver", util));
-		api.addClass(new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet));
-		api.addClass(new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", doclet));
+		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver","LinkResolver", util));
+		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet));
+		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", doclet));
 
         module = new ModuleNode("markista");
 		api.addModule(module);
@@ -92,29 +92,31 @@ class MarkdownTests {
 		doclet.setModule(module);
 		model.setModule(module);
 
-        node = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", model);
+        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", model);
         model.addClass(node);
         api.addClass(node);
 
-        markdownDoclet = new ClassNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
+        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
         model.addClass(markdownDoclet);
 
-        LinkResolver.init(api);
+        LinkResolver.init(api, ctx);
         LinkResolver.addNativeModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
 		LinkResolver.setFlattenedDirectories(null);
-		 ctx.setModuleName("markista");
-         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
+		ctx.setModuleName("markista");
+        ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }
 
     @Test
 	void autoLink_array() {
-        String markdown = Markdown.mdAutoLink("java.lang.String[]", true);
+        Reference link = Reference.to("java.lang.String[]");
+        String markdown = Markdown.link(link, true);
         assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
     }
 
     @Test
 	void autoLink_listOfArrays() {
-        String markdown = Markdown.mdAutoLink("java.util.List<java.lang.String[]>", true);
+        Reference link = Reference.to("java.util.List<java.lang.String[]>");
+        String markdown = Markdown.link(link, true);
         assertEquals("[List](" + JAVA_24_URL + "java.base/java/util/List.html)&lt;[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]&gt;", markdown);
     }
 
@@ -148,21 +150,21 @@ class MarkdownTests {
 
     @Test
     void formatReference_PACKAGE_qualified() {
-        Reference ref = new Reference(Reference.Kind.PACKAGE, "io.github.sandydunlop.markista.model", null);
+        Reference ref = Reference.to("io.github.sandydunlop.markista.model").withKind(Reference.Kind.PACKAGE);
         String markdown = Markdown.formatReference(ref);
         assertEquals("[io.github.sandydunlop.markista.model](../model/index.md)", markdown);
     }
 
     @Test
     void formatReference_PACKAGE_unqualified() {
-        Reference ref = new Reference(Reference.Kind.PACKAGE, "model", null);
+        Reference ref = Reference.to("model").withKind(Reference.Kind.PACKAGE);
         String markdown = Markdown.formatReference(ref);
         assertEquals("[io.github.sandydunlop.markista.model](../model/index.md)", markdown);
     }
 
     static List<Object[]> typeReferenceProvider() {
         return List.of(
-            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.Node", null, "" },
+            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.Node", null, "io.github.sandydunlop.Node" },
             new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
             new Object[] { Reference.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
         );
@@ -171,7 +173,7 @@ class MarkdownTests {
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
     void formatReference_TYPE_variants(Reference.Kind kind, String name, String url, String expected) {
-        Reference ref = new Reference(kind, name, url);
+        Reference ref = Reference.to(name).withKind(kind);
         String markdown = Markdown.formatReference(ref);
         assertEquals(expected, markdown);
     }
@@ -181,7 +183,7 @@ class MarkdownTests {
         Reference.Kind kind = Reference.Kind.TYPE;
         String name = "io.github.sandydunlop.Node";
         String url = "";
-        String expected = "";
+        String expected = "io.github.sandydunlop.Node";
         Reference ref = new Reference(kind, name, url);
         String markdown = Markdown.formatReference(ref);
         assertEquals(expected, markdown);
@@ -196,7 +198,7 @@ class MarkdownTests {
 
     @Test
     void formatReference_PAGE_withoutTitle() {
-        Reference ref = new Reference(Reference.Kind.PAGE, "", "page");
+        Reference ref = new Reference(Reference.Kind.PAGE, "page", "page");
         String markdown = Markdown.formatReference(ref);
         assertEquals("[page](../../../../../page.md)", markdown);
     }
@@ -255,20 +257,6 @@ class MarkdownTests {
         assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
     }
 
-	@Test
-	void link_qualifiedWithAnchor_simplified() {
-         ctx.setPackageName("io.github.sandydunlop.markista.model");
-        String markdown = Markdown.mdAutoLink("io.github.sandydunlop.markista.util.LinkResolver#resolve", true);
-        assertEquals("[LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
-    }
-
-	@Test
-	void link_qualifiedWithAnchor() {
-         ctx.setPackageName("io.github.sandydunlop.markista.model");
-        String markdown = Markdown.mdAutoLink("io.github.sandydunlop.markista.util.LinkResolver#resolve", false);
-        assertEquals("[io.github.sandydunlop.markista.util.LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
-    }
-
     @Test
     void link_generics_qualified() {
         String markdown = Markdown.linkGenerics("java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>", true);
@@ -278,33 +266,49 @@ class MarkdownTests {
     @Test
     void link_nativeMethod() {
         LinkResolver.addNativeModules();
-        String markdown = Markdown.mdAutoLink("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)");
-        assertEquals("[Doclet.Option.process(java.lang.String,java.util.List)](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
+        String markdown = Markdown.link(Reference.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
+        assertEquals("[jdk.javadoc.doclet.Doclet.Option.process(java.lang.String,java.util.List)](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
     }
 
     @Test
     void link_localMethod() {
         LinkResolver.addNativeModules();
-        String markdown = Markdown.mdAutoLink("Node#sort()");
+        String markdown = Markdown.link(Reference.to("Node#sort()"));
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
     }
 
     @Test
     void link_localMethod_sameClass() {
-         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
-         ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
+        ctx.setPackageName("io.github.sandydunlop.markista.doclet");
+        ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
         LinkResolver.addNativeModules();
-        String markdown = Markdown.mdAutoLink("MarkdownDoclet#main()");
+        String markdown = Markdown.link(Reference.to("MarkdownDoclet#main()"));
         assertEquals("[main](#main)", markdown);
     }
 
     @Test
     void link_localMethod_sameClass_noClassName() {
-         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
-         ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
+        ctx.setPackageName("io.github.sandydunlop.markista.doclet");
+        ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
         LinkResolver.addNativeModules();
-        String markdown = Markdown.mdAutoLink("#main()");
+        String markdown = Markdown.link(Reference.to("#main()"));
         assertEquals("[main()](#main)", markdown);
+    }
+
+	@Test
+	void link_qualifiedWithAnchor_simplified() {
+         ctx.setPackageName("io.github.sandydunlop.markista.model");
+        Reference link = Reference.to("io.github.sandydunlop.markista.util.LinkResolver#resolve");
+        String markdown = Markdown.link(link, true);
+        assertEquals("[LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
+    }
+
+	@Test
+	void link_qualifiedWithAnchor() {
+         ctx.setPackageName("io.github.sandydunlop.markista.model");
+        Reference link = Reference.to("io.github.sandydunlop.markista.util.LinkResolver#resolve");
+        String markdown = Markdown.link(link, false);
+        assertEquals("[LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
     }
 
     @Test
@@ -353,6 +357,26 @@ class MarkdownTests {
 	void resolveMarkdownLinks() {
         String markdown = Markdown.resolveMarkdownLinks("one [link resolving][LinkResolver] two");
         assertEquals("one [link resolving](../util/LinkResolver.md) two", markdown);
+    }
+
+    @Test
+    void resolveMarkdownLinks_class_samePackage_labelGiven() {
+        ClassTypeNode typeNodeNode = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "TypeNode", model);
+        model.addClass(typeNodeNode);
+        api.addClass(typeNodeNode);
+
+        String markdown = Markdown.resolveMarkdownLinks("[type][io.github.sandydunlop.markista.model.TypeNode]");
+        assertEquals("[type](../model/TypeNode.md)", markdown);
+    }
+
+    @Test
+    void resolveMarkdownLinks_class_samePackage_noLabelGiven() {
+        ClassTypeNode typeNodeNode = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "TypeNode", model);
+        model.addClass(typeNodeNode);
+        api.addClass(typeNodeNode);
+
+        String markdown = Markdown.resolveMarkdownLinks("[io.github.sandydunlop.markista.model.TypeNode]");
+        assertEquals("[TypeNode](../model/TypeNode.md)", markdown);
     }
 
 	@Test

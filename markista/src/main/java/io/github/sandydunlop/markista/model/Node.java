@@ -12,14 +12,11 @@ public class Node {
     /// The simple form of the node's name
     protected String simpleName = "";
 
-    /// The canonical form of the node's name
-    protected String qualifiedName = "";
-
     /// A [PackageNode] representing the package the node belongs to
     protected PackageNode packageNode = null;
 
     /// A list of the modifiers a node has
-    private Set<Modifier> modifiers = new HashSet<>();
+    private final Set<Modifier> modifiers = new HashSet<>();
 
     /// The deprecation status of the node
     private Deprecation deprecation = Deprecation.NONE;
@@ -34,10 +31,10 @@ public class Node {
     protected Text firstSentence = Text.empty();
 
     /// The body text of the Javadoc for this node
-    private Text body = Text.empty();
+    private final Text body = Text.empty();
 
     /// The full text of the Javadoc for this node
-    private Text fullBody = Text.empty();
+    private final Text fullBody = Text.empty();
 
     /// A list of references specified in this node's Javadoc
     private List<Reference> references = new ArrayList<>();
@@ -143,16 +140,14 @@ public class Node {
         return references;
     }
 
-    /// Returns a string representation of modifiers, excluding 'public'.
+    /// Returns a string representation of modifiers.
     /// The modifiers are sorted according to a predefined order.
     /// @return A string containing sorted modifiers separated by spaces.
     public String getModifiersString() {
         StringBuilder mods = new StringBuilder();
         List<Modifier> modifierList = ModifierSorter.sortModifiers(modifiers);
         for (Modifier mod : modifierList) {
-            if (mod != Modifier.PUBLIC) {
-                mods.append(mod.toString()).append(" ");
-            }
+            mods.append(mod.toString()).append(" ");
         }
         return mods.toString();
     }

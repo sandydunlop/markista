@@ -8,19 +8,19 @@ import java.util.List;
 /// implementations, and related interface information.
 public class DirectiveNode {
     /// The kind of this directive (e.g. REQUIRES, EXPORTS).
-    private Kind kind;
+    private final Kind kind;
 
     /// The name associated with this directive.
-    private String name;
+    private final String name;
 
     /// Indicates whether this directive is transitive.
     private boolean transitive;
 
     /// List of package names associated with this directive.
-    private List<String> packages = new ArrayList<>();
+    private final List<String> packages = new ArrayList<>();
 
     /// List of implementation names associated with this directive.
-    private List<String> implementations = new ArrayList<>();
+    private final List<String> implementations = new ArrayList<>();
 
     /// The interface name associated with this directive, if any.
     private String interfaceName = "";

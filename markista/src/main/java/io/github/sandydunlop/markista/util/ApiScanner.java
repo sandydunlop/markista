@@ -33,10 +33,10 @@ import jdk.javadoc.doclet.DocletEnvironment;
 
 /// A class that scans code and generates an API tree representing code and Javadoc comments.
 public class ApiScanner extends ElementScanner9<Void, Integer> {
-    private Context ctx;
-    private Api api;
-    private DocletEnvironment environment;
-    private ModuleNode unnamedModule;
+    private final Context ctx;
+    Api api;
+    private final DocletEnvironment environment;
+    private final ModuleNode unnamedModule;
     private ModuleNode currentModule;
     private HashSet<String> includedNames;
 
@@ -45,7 +45,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// @param environment Represents the operating environment of a single invocation of the doclet. 
     public ApiScanner(DocletEnvironment environment) {
         this.environment = environment;
-        api = new Api();
+        api = new Api(Configuration.getDocTitle());
         unnamedModule = api.getUnnamedModuleNode();
         currentModule = api.getUnnamedModuleNode();
         ctx = Context.getInstance();
@@ -60,6 +60,8 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         TypeUtils.init(api, environment);
         scan(elements, 0);
         TypeUtils.addConstantFieldValuesReference(currentModule);
+        TypeUtils.markCustomAnnotations();
+        api.sort();
         return api;
     }
 
@@ -199,5 +201,4 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     public Void visitRecordComponent(RecordComponentElement e, Integer depth) {
         return visitUnknown(e, depth);
     }
-
 }

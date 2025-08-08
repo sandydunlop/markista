@@ -13,9 +13,32 @@
         "Supertypes"
     ],
     "java.test.config": [
-		{
-			"name": "t",
-			"modulePaths": ["${workspaceFolder}/bin/main", "${workspaceFolder}/module/"],
-		}
-	],
+    {
+      "name": "MyTestConfig",
+      "modulePaths": [
+        "${workspaceFolder}/bin/main",
+        "${workspaceFolder}/module/"
+      ],
+      "coverageReport": {
+        "enabled": true,
+        "reportPath": "**/build/reports/jacoco/test/jacocoTestReport.xml",
+        "sourcePaths": [
+          "${workspaceFolder}/src/main/java"
+        ]
+      }
+    }
+  ],
+  "coverage-gutters.coverageFileNames": [
+      
+      "markista/build/reports/jacoco/test/jacocoTestReport.xml",
+      "lcov.info",
+      "cov.xml",
+      "coverage.xml",
+      "cobertura.xml",
+      "jacoco.xml",
+      "coverage.cobertura.xml",
+  ],
+  "testing.alwaysRevealTestOnStateChange": true,
+  "testing.coverageToolbarEnabled": true,
+  "markiscodecoverage.enableDecorations": true,
 }

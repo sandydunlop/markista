@@ -6,20 +6,21 @@ import java.util.List;
 /// Represents a module node that contains directives, packages, and constant values. 
 /// Implements the PackageOwner interface to manage contained packages. 
 public class ModuleNode extends Node implements PackageOwner{
-    private List<DirectiveNode> directives = new ArrayList<>();
-    private List<PackageMember> packages = new ArrayList<>();
-    private List<FieldNode> constantValues = new ArrayList<>();
+    private final String name;
+    private final List<DirectiveNode> directives = new ArrayList<>();
+    private final List<PackageMember> packages = new ArrayList<>();
+    private final List<FieldNode> constantValues = new ArrayList<>();
 
     /// Constructs a ModuleNode with the given module name.
-    /// @param moduleName The qualified name of the module.
-    public ModuleNode(String moduleName) {
-        this.qualifiedName = moduleName;
+    /// @param name The name of the module.
+    public ModuleNode(String name) {
+        this.name = name;
     }
 
     /// Returns the name (qualified name) of this module.
     /// @return The module name.
     public String getName() {
-        return qualifiedName;
+        return name;
     }
 
     /// Returns the list of packages contained in this module.

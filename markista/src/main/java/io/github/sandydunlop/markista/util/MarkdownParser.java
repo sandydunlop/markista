@@ -5,7 +5,7 @@ import java.util.List;
 
 /// Parses a Markdown string into a sequence of segments representing text and special markup such as brackets and parentheses.
 /// 
-/// This parser is designed to tokenize the Markdown content by identifying textual parts and segments enclosed in brackets [] and parentheses ().
+/// This parser is designed to tokenize the Markdown content by identifying textual parts and segments enclosed in brackets `[]` and parentheses `()`.
 /// It also handles inline code spans denoted by backticks (`) to avoid parsing markup inside code.
 /// 
 /// The parsed segments can be iterated in sequence starting from the firstSegment() method.
@@ -22,7 +22,7 @@ public class MarkdownParser {
     int closeBracket = -1;
     int closeParenthesis = -1;
     private String markdown = "";
-    private List<Segment> segments = new ArrayList<>();
+    private final List<Segment> segments = new ArrayList<>();
     private Segment prev = null;
 
     /// Creates a new MarkdownParser and immediately parses the provided Markdown string.
@@ -153,7 +153,7 @@ public class MarkdownParser {
     /// @return The first Segment or an END Segment if none exist.
     public Segment firstSegment() {
         if (!segments.isEmpty()) {
-            return segments.get(0);
+            return segments.getFirst();
         }
         return new Segment(SegmentKind.END);
     }
@@ -162,7 +162,7 @@ public class MarkdownParser {
     /// A segment has a kind and associated text content, and links to the next segment in sequence.
     public class Segment {
         Segment next = null;
-        SegmentKind kind = SegmentKind.NONE;
+        SegmentKind kind;
         String text = "";
 
         /// Creates a Segment with the specified kind.

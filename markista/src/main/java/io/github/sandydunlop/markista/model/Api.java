@@ -2,37 +2,32 @@ package io.github.sandydunlop.markista.model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collections;
-
-import javax.lang.model.element.TypeElement;
 
 /// Represents the API being documented, encapsulating its modules and packages.
 /// Provides methods to add and retrieve modules, packages, and types, as well as sorting them.
 public class Api extends AbstractTypeOwner {
     /// List of modules included in the API.
-    private List<ModuleNode> modules = new ArrayList<>();
+    private final List<ModuleNode> modules = new ArrayList<>();
 
     /// List of packages included in the API.
-    private List<PackageNode> packages = new ArrayList<>();
+    private final List<PackageNode> packages = new ArrayList<>();
     
     /// Represents the unnamed module in the API.
-    private ModuleNode unnamedModule = new ModuleNode("");
+    private final ModuleNode unnamedModule = new ModuleNode("");
 
-    /// Constructs an empty Api instance.
-    public Api() {
-        // Nothing to see here
+    /// List of annotations applied to this type.
+    private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
+
+    /// Constructs an empty Api instance with the given name.
+    /// @param name The name of the API
+    public Api(String name) {
+        simpleName = name;
     }
 
     /// Returns the name of the API.
     /// @return The name of the API
     public String getName() {
         return simpleName;
-    }
-
-    /// Sets the name of the API.
-    /// @param name The name of the API
-    public void setName(String name) {
-        simpleName = name;
     }
 
     /// Adds a module to the API.
@@ -52,7 +47,7 @@ public class Api extends AbstractTypeOwner {
     /// @return the matching ModuleNode if found, or null otherwise.
     public ModuleNode getModuleNode(String qualifiedName) {
         for (ModuleNode moduleNode : modules) {
-            if (moduleNode.qualifiedName.equals(qualifiedName)){
+            if (moduleNode.getName().equals(qualifiedName)){
                 return moduleNode;
             }
         }
@@ -77,12 +72,24 @@ public class Api extends AbstractTypeOwner {
         return packages;
     }
 
+    /// Adds an applied annotation to this type
+    /// @param annotation the annotation
+    public void addAppliedAnnotation(AppliedAnnotationNode annotation) {
+        appliedAnnotations.add(annotation);
+    }
+
+    /// Returns the list of annotations applied to this type.
+    /// @return list of applied annotations
+    public List<AppliedAnnotationNode> getAppliedAnnotations() {
+        return appliedAnnotations;
+    }
+
     /// Retrieves a package matching the specified qualified name.
     /// @param qualifiedName the fully qualified name of the package.
     /// @return the matching PackageNode if found, or null otherwise.
     public PackageNode getPackageNode(String qualifiedName) {
         for (PackageNode packageDoc : packages) {
-            if (packageDoc.qualifiedName.equals(qualifiedName)){
+            if (packageDoc.getName().equals(qualifiedName)){
                 return packageDoc;
             }
         }
@@ -102,18 +109,10 @@ public class Api extends AbstractTypeOwner {
         return null;
     }
 
-    /// Retrieves a TypeNode based on a TypeElement.
-    /// @param type the TypeElement to match.
-    /// @return the matching TypeNode if found, or null if type is null or no match found.
-    public TypeNode getTypeNode(TypeElement type) {
-        if (type == null) return null;
-        return getTypeNode(type.getQualifiedName().toString());
-    }
-
     /// Sorts the packages in descending order by qualified name and sorts all child types recursively.
     @Override
     public void sort() {
-        Collections.sort(packages, (o1, o2) -> o2.qualifiedName.compareTo(o1.qualifiedName) );
+        packages.sort((o1, o2) -> o2.getName().compareTo(o1.getName()));
         for (TypeNode node : getTypes()) {
             node.sort();
         }
@@ -128,18 +127,18 @@ public class Api extends AbstractTypeOwner {
     public String commonBase() {
         if (packages.isEmpty()) return "";
         int lastDot = 0;
-        String base = packages.get(0).getName();
+        String base = packages.getFirst().getName();
         for (PackageNode pkg : packages) {
             String pkgName = pkg.getName();
             for (int j=0; j<Math.min(base.length(), pkgName.length()); j++) {
                 if (base.charAt(j) != pkgName.charAt(j)) {
-                    base = base.substring(0, Math.max(0,lastDot));
+                    base = base.substring(0, lastDot);
                     break;
                 }
                 if (j == pkgName.length() - 1) {
-                    base = base.substring(0, Math.max(0,j + 1));
+                    base = base.substring(0, lastDot);
                 }
-                if (base.charAt(j) == '.') lastDot = j;
+                if (j < base.length() && base.charAt(j) == '.') lastDot = j;
             }
         }
         return base;

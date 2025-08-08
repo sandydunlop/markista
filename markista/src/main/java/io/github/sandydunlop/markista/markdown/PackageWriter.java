@@ -20,7 +20,7 @@ public class PackageWriter {
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
-    private Context ctx = Context.getInstance();
+    private final Context ctx = Context.getInstance();
 
     /// The Writer used to output the generated markdown content for the current document.
     /// It handles writing text to the appropriate output file or stream.
@@ -47,14 +47,14 @@ public class PackageWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputPackageDoc(PackageNode packageNode) throws IOException {
         ctx.setPackageName(packageNode.getName());
-        writer = ctx.createFile();    
+        writer = ctx.createFileInPackage();    
         writer.write("# Package " + packageNode.getName() + "\n");
         writer.write("\n\n" + Markdown.formatText(packageNode.getFullBody()) + "\n\n");
         outputPackageMembers("Packages", packageNode.getPackages());
         outputPackageMembers("Classes", packageNode.getClasses());
         outputPackageMembers("Interfaces", packageNode.getInterfaces());
         outputPackageMembers("Enum Classes", packageNode.getEnums());
-        outputPackageMembers("Annotation Classes", packageNode.getAnnotations());
+        outputPackageMembers("Annotation Types", packageNode.getAnnotations());
         writer.flush();
         writer.close();
         TypeWriter typeWriter = new TypeWriter();
@@ -80,7 +80,7 @@ public class PackageWriter {
     private void outputPackageMembers(String title, List<PackageMember> members) throws IOException {
         if (members.isEmpty()) return;
         String memberKind = TEXT_CLASS;
-        if (members.get(0) instanceof PackageNode) {
+        if (members.getFirst() instanceof PackageNode) {
             memberKind = "Package";
         }
         MarkdownTable table = new MarkdownTable()

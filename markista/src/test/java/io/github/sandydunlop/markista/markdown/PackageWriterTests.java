@@ -10,8 +10,8 @@ import java.io.IOException;
 import com.sun.source.util.DocTreePath;
 
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassNode;
-import io.github.sandydunlop.markista.model.EnumNode;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.EnumTypeNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
@@ -93,14 +93,14 @@ class PackageWriterTests {
         methodNode.setFirstSentence(body);
 
 
-        ClassNode nodeClass = new ClassNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode nodeClass = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
         nodeClass.setBody(body);
         nodeClass.setFullBody(body);
         nodeClass.setFirstSentence(body);
         nodeClass.addMethod(methodNode);
 
 
-        EnumNode enumNode = new EnumNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", packageNode);
+        EnumTypeNode enumNode = new EnumTypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", packageNode);
         TypeNode fieldType = new TypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", packageNode);
         FieldNode constant1 = new FieldNode(fieldType, "field1");
         constant1.setConstantValue("1");
@@ -112,13 +112,13 @@ class PackageWriterTests {
         moduleNode.addPackage(packageNode);
         moduleNode.addPackage(modelPackage);
 
-        api = new Api();
+        api = new Api("Test API");
         api.addModule(moduleNode);
         api.addPackage(packageNode);
         api.addPackage(modelPackage);
         api.addClass(nodeClass);
         api.addEnum(enumNode);
-		LinkResolver.init(api);
+		LinkResolver.init(api, ctx);
 		LinkResolver.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("");

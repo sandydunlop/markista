@@ -64,8 +64,6 @@ public class Utils {
                 i = qualifiedStart + (i - simpleStart);
                 simpleStart = -1;
                 qualifiedStart = -1;
-            } else if (simpleStart > -1 && isValidSimpleNameChar(c)) {
-                // skip
             } else if (qualifiedStart == -1 && isValidQualifiedNameChar(c) && !isValidSimpleNameChar(prev)) {
                 qualifiedStart = i;
             } else if (qualifiedStart > -1 && simpleStart == -1 && Character.isUpperCase(c)) {

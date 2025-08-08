@@ -91,7 +91,7 @@ public class MarkdownTable {
     /// A class to represent the name and width of a column within a table.
     public class Column {
         String name;
-        int width = 0;
+        int width;
 
         /// Constructs a new `Column` object with the specified name.
         /// @param name The name (heading) of the column.

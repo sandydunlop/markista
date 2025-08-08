@@ -21,6 +21,5 @@ gradle-app.setting
 *.log
 .DS_Store
 .vscode/tasks.json
-.vscode/launch.json
 /io
 /markista/null

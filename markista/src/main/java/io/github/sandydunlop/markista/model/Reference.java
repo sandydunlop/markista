@@ -2,12 +2,17 @@ package io.github.sandydunlop.markista.model;
 
 /// `Reference` encapsulates links to web pages, markdown pages, modules, packages, types, and methods.
 public class Reference {
-    private Kind kind = Kind.NONE;
-    private Scope scope = Scope.NONE;
-    private String displayName = "";
+    private Kind kind = Kind.UNKNOWN;
+    private Scope scope = Scope.UNKNOWN;
+    private String label = "";
     private String className = "";
     private String uri = "";
     private String anchor = "";
+    private boolean resolved = false;
+
+    /// The package the link is coming from. Empty string means there is no package. Null means it hasn't been set yet.
+    private String origin = null; 
+    private String target = "";
 
     /// Default constructor creates an empty reference with kind and scope set to NONE.
     public Reference() {
@@ -38,7 +43,41 @@ public class Reference {
         this.scope = scope;
         this.kind = kind;
         this.uri = uri;
-        this.displayName = name;
+        this.label = name;
+    }
+
+    /// Sets the target of the reference.
+    /// @param target The target to set.
+    /// @return the reference with target set
+    public static Reference to(String target) {
+        Reference ref = new Reference();
+        ref.setScope(Scope.UNKNOWN);
+        ref.setTarget(target);
+        return ref;
+    }
+
+    /// Sets the origin package of the reference.
+    /// @param origin The origin package to set.
+    /// @return the reference with origin set
+    public Reference from(String origin) {
+        this.origin = origin;
+        return this;
+    }
+
+    /// Sets the display name of the reference.
+    /// @param label The display name to set.
+    /// @return the reference with label set
+    public Reference withLabel(String label) {
+        this.label = label;
+        return this;
+    }
+
+    /// Sets the kind/type of the reference.
+    /// @param kind The kind to set.
+    /// @return the label with kind set
+    public Reference withKind(Kind kind) {
+        this.kind = kind;
+        return this;
     }
 
     /// Sets the kind/type of the reference.
@@ -66,15 +105,15 @@ public class Reference {
     }
 
     /// Sets the display name of the reference.
-    /// @param name The display name to set.
-    public void setDisplayName(String name) {
-        this.displayName = name;
+    /// @param label The display name to set.
+    public void setLabel(String label) {
+        this.label = label;
     }
 
     /// Returns the display name of the reference.
     /// @return The display name.
-    public String getDisplayName() {
-        return displayName;
+    public String getLabel() {
+        return label;
     }
 
     /// Sets the class name associated with the reference.
@@ -113,13 +152,49 @@ public class Reference {
         return anchor;
     }
 
+    /// Sets the origin of this reference. This is the location that is being linked from.
+    /// @param origin The origin being linked from.
+    public void setOrigin(String origin) {
+        this.origin = origin;
+    }
+
+    /// Gets the origin of this reference. This is the location that is being linked from.
+    /// @return the origin
+    public String getOrigin() {
+        return origin;
+    }
+
+    /// Sets the target of this reference. This is the location that is being linked to.
+    /// @param target The target being linked to.
+    public void setTarget(String target) {
+        this.target = target;
+    }
+
+    /// Gets the target of this reference. This is the location that is being linked from.
+    /// @return the target
+    public String getTarget() {
+        return target;
+    }
+
+    /// Sets the resolved state of this reference.
+    /// @param b Wether this reference is resolved or not.
+    public void setResolved(boolean b) {
+        resolved = b;
+    }
+
+    /// Gets the resolved status of this reference.
+    /// @return True if this reference has been resolved. False otherwise.
+    public boolean isResolved() {
+        return resolved;
+    }
+
     /// Enum representing different kinds/types of references.
     public enum Kind {
-        /// Kind hasn't been set
-        NONE,
-
-        /// Kind isn't known
+        /// Kind hasn't been set. Will possibly be resolved.
         UNKNOWN,
+
+        /// The reference is not recognized and won't be resolved
+        UNSUPPORTED,
 
         /// A link to a webpage
         URL,
@@ -148,14 +223,14 @@ public class Reference {
 
     /// Enum representing the scope of references.
     public enum Scope {
-        /// Scope hasn't been set
-        NONE,
-
         /// Scope isn't known
         UNKNOWN,
 
-        /// Within the project's code
+        /// Within the module being documented
         LOCAL,
+
+        /// Not in the module being documented, but we have the Javadoc locally
+        SIBLING,
 
         /// Java built-in APIs
         NATIVE,

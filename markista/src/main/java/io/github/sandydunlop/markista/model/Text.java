@@ -166,6 +166,6 @@ public class Text {
         START,
 
         /// Marks the end of a subsection
-        END;
+        END
     }
 }

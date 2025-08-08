@@ -9,6 +9,9 @@ import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.ModuleDirectives;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -34,32 +37,60 @@ public class MarkdownDoclet implements Doclet {
     /// Indicates failure
     private static final boolean FAILED = false; 
 
+    static String[] docletArgs = null;
+    static List<String> javadocArgs = new ArrayList<>();
+
     /// The default constructor, does nothing.
     public MarkdownDoclet() {
         // Nothing to see here
+    }
+
+    /// Reads a javadoc.options file containing command line arguments for Javadoc.
+    /// @param optionsPath the path of the file to be read
+    public static void readJavadocOptions(String optionsPath) {
+        try{
+            byte[] bytes = Files.readAllBytes(Paths.get(optionsPath));
+            String content = new String(bytes);
+            String[] parts = content.split(",");
+            for (String part : parts) {
+                part = part.strip();
+                if (part.length() > 2) {
+                    javadocArgs.add(part.substring(1, part.length() - 1));
+                }
+            }
+        } catch (IOException _) {
+            System.err.println("Unable to load options file: " + optionsPath); //NOSONAR - There is no other way to do this
+        }
     }
 
     /// The starting point of Markista if it is being used
     /// without the Javadoc command. This is useful for debugging.
     /// @param args this parameter is ignored.
     public static void main(String[] args) {
-        String[] docletArgs = new String[]{
-            "-doclet", MarkdownDoclet.class.getName(),
-            "-docletpath", "build/classes/java/main", 
-            "-d", "markista/build/md-docs", 
-            "-private", 
-            "-external",
-            "-flatten",
-
-            "-sourcepath", "markista/src/main/java/",
-            "-subpackages", "io.github.sandydunlop.markista",
-            "-tabs",
-
-            // "--module-source-path", "/Users/sandy/git/cu/dev/markista/*/src/main/java",
-            // "--module", "markista",
-
-            "-verbose"
-        };
+        if (args != null && args.length > 1 && args[0].equals("-options")) {
+            readJavadocOptions(args[1]);
+        }
+        if (!javadocArgs.isEmpty()) {
+            javadocArgs.addFirst("build/classes/java/main");
+            javadocArgs.addFirst("-docletpath");
+            javadocArgs.addFirst(MarkdownDoclet.class.getName());
+            javadocArgs.addFirst("-doclet");
+            docletArgs = javadocArgs.toArray(new String[0]);
+        } else {
+            docletArgs = new String[]{
+                "-doclet", MarkdownDoclet.class.getName(),
+                "-docletpath", "build/classes/java/main", 
+                "-d", "markista/build/md-docs", 
+                "-private", 
+                "-link",
+                "-doctitle", "Markista API",
+                "--flatten-packages",
+                "-sourcepath", "markista/src/main/java/",
+                "-subpackages", "io.github.sandydunlop.markista",
+                "-tabs",
+                "-verbose"
+            };
+        }
         DocumentationTool docTool = ToolProvider.getSystemDocumentationTool();
         docTool.run(System.in, System.out, System.err, docletArgs); //NOSONAR
     }
@@ -118,7 +149,7 @@ public class MarkdownDoclet implements Doclet {
                 public boolean process(String option,
                                        List<String> arguments) {
                     if (arguments != null && !arguments.isEmpty()) {
-                        Configuration.setOutputDirectory(arguments.get(0));
+                        Configuration.setOutputDirectory(arguments.getFirst());
                     }
                     return OK;
                 }
@@ -129,12 +160,30 @@ public class MarkdownDoclet implements Doclet {
                 public boolean process(String option,
                                        List<String> arguments) {
                     if (arguments != null && !arguments.isEmpty()) {
-                        // Do nothing
+                        Configuration.setDocTitle(arguments.getFirst());
                     }
                     return OK;
                 }
             },
-            new Option("-external", false,
+            new Option("--flatten-modules", false,
+                    "prevents individual directories for modules being created", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    Configuration.setFlattenModules(true);
+                    return OK;
+                }
+            },
+            new Option("--flatten-packages", false,
+                    "prevents directories for empty packages being created", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    Configuration.setFlattenPackages(true);
+                    return OK;
+                }
+            },
+            new Option("-link", false,
                     "create external links", null) {
                 @Override
                 public boolean process(String option,
@@ -143,12 +192,25 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
-            new Option("-flatten", false,
-                    "prevents directories for empty packages being created", null) {
+            new Option("--link-modules", true,
+                    "Specifies a list of modules with javadoc that can be linked to.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
-                    Configuration.setFlattenDirectories(true);
+                    if (arguments != null && !arguments.isEmpty()) {
+                        Configuration.setLinkExternal(arguments.getFirst());
+                    }
+                    return OK;
+                }
+            },
+            new Option("--module-path", true,
+                    "Specifies where to find application modules.", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    if (arguments != null && !arguments.isEmpty()) {
+                        Configuration.setModulePaths(arguments.getFirst());
+                    }
                     return OK;
                 }
             },
@@ -157,9 +219,6 @@ public class MarkdownDoclet implements Doclet {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
-                    if (arguments != null && !arguments.isEmpty()) {
-                        // Do nothing
-                    }
                     return OK;
                 }
             },
@@ -177,9 +236,6 @@ public class MarkdownDoclet implements Doclet {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
-                    if (arguments != null && !arguments.isEmpty()) {
-                        // Do nothing
-                    }
                     return OK;
                 }
             },
@@ -206,9 +262,6 @@ public class MarkdownDoclet implements Doclet {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
-                    if (arguments != null && !arguments.isEmpty()) {
-                        // Do nothing
-                    }
                     return OK;
                 }
             }
@@ -246,16 +299,15 @@ public class MarkdownDoclet implements Doclet {
         ModuleDirectives.setEnvironment(environment);
         ApiScanner scanner = new ApiScanner(environment);
         Api api = scanner.scan(environment.getIncludedElements());
-        api.sort();
         ctx.setOutputDirectory(Configuration.getOutputDirectory());
         ctx.setApi(api);
-        LinkResolver.init(api);
+        LinkResolver.init(api, ctx);
         if (Configuration.getCreateExternalLinks()) {
             LinkResolver.addNativeModules();
         }
-        
-        /// The Writer used to output the generated markdown content for the current document.
-        /// It handles writing text to the appropriate output file or stream.
+
+        // The Writer used to output the generated markdown content for the current document.
+        // It handles writing text to the appropriate output file or stream.
         ModuleWriter writer = new ModuleWriter();
         try{
             writer.writeDocs(api);

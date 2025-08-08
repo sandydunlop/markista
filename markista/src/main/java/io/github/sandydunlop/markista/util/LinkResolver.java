@@ -1,18 +1,37 @@
 package io.github.sandydunlop.markista.util;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.module.ModuleDescriptor;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.stream.Stream;
 import java.util.List;
+import java.util.Map;
 
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.Reference.Kind;
+import io.github.sandydunlop.markista.model.Reference.Scope;
 
 /// `LinkResolver` calculates the paths for Markdown documents
 /// to link between different packages and to URLs of external
@@ -30,9 +49,10 @@ import io.github.sandydunlop.markista.model.TypeNode;
 /// The class supports relative path calculation for Markdown output.
 /// It also manages native Java documentation URLs for modules and packages.
 public class LinkResolver {
+    private static final String DOT_CLASS = ".class";
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
-    private static Context ctx;
+    static Context ctx;
     private static final String DOT_HTML = ".html";
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
     private static final List<String> primitives = Arrays.asList("boolean","byte","char","short","int","long","float","double");
@@ -40,6 +60,11 @@ public class LinkResolver {
     private static HashMap<String,String> nativeModuleNames = new HashMap<>();
     private static HashMap<String,String> nativePackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
+
+    static List<String> siblingModules = new ArrayList<>();
+    static Map<String, String> classToModule = new HashMap<>();
+    static String siblingModuleName = "";
+    static Set<String> siblingClassNames;
 
     /// The Api model representing the entire documented API structure,
     /// including modules, packages, types, and members used for cross-referencing and navigation.
@@ -54,12 +79,14 @@ public class LinkResolver {
 
     /// Initializes the LinkResolver for the API being documented.
     /// @param a The API being documented.
-    public static void init(Api a) {
+    /// @param c Context for all documentation operations
+    public static void init(Api a, Context c) {
         api = a;
         nativeModuleNames = new HashMap<>();
         nativePackageNames = new HashMap<>();
         suffix = new HashMap<>();
-        ctx = Context.getInstance();
+        ctx = c;
+        configureSiblingModules();
     }
 
     /// Sets the string used to adjust flattened directories in relative path calculations.
@@ -92,9 +119,8 @@ public class LinkResolver {
         }
         int dot;
         for (dot = 0; dot < id.length() && !Character.isUpperCase(id.charAt(dot)); dot++);
-        String packageName = id;
         if (dot > 0 && dot < id.length()) {
-            return packageName.substring(0, dot - 1);
+            return id.substring(0, dot - 1);
         }
         return id;
     }
@@ -111,90 +137,86 @@ public class LinkResolver {
         for (dot = 0; dot < id.length() && !Character.isUpperCase(id.charAt(dot)); dot++) {
             // Looking for class name
         }
-        String className = id;
         if (dot > 0 && dot < id.length()) {
-            return className.substring(dot);
+            return id.substring(dot);
         }
         return "";
     }
 
-    /// Resolves a reference from the current package context to a target type or package.
-    /// @param to The identifier to resolve.
-    /// @return A Reference object representing the resolved link or special kind.
-    public static Reference resolve(String to) {
-        return resolve(ctx.getPackageName(), to);
-    }
-
-    /// Resolves a reference from a specific source package to a target identifier.
-    /// Tries multiple strategies: unsupported, primitive/void, native, local, module.
-    /// @param from The package name the reference originates from.
-    /// @param to The target identifier to resolve.
-    /// @return A Reference object representing the resolved link or special kind.
-    public static Reference resolve(String from, String to) {
-        String original = to;
-        if (to == null || to.isEmpty()) return new Reference();
-        Reference link = resolveUnsupported(to);
-        if (link.getKind() != Reference.Kind.NONE) {
-            return link;
+    /// Resolves a link reference. The supplied `link` parameter must specify the
+    /// target of the link: a class, a module, etc. If the link can be resolved, 
+    /// the details of the type of link are set in the `link` object before it is
+    /// returned. 
+    /// @param link A [Reference] object specifying the target of the link
+    /// @return The `link` with its `uri` field set, or its `kind` field set to `UNKNOWN`
+    /// if the link was not able to be resolved.
+    public static Reference resolve(Reference link) {
+        link.setResolved(false);
+        if (link.getOrigin() == null) {
+            link.setOrigin(ctx.getPackageName());
         }
-        link = resolvePrimitiveOrVoid(to);
-        if (link.getKind() != Reference.Kind.NONE) {
+
+        if (link.getTarget() == null || link.getTarget().isEmpty()) {
             return link;
         }
 
-        String[] qualified = qualifyType(to);
-        String toPackageName = qualified[0];
-        String toClassName = qualified[1];
-        if (toPackageName.isEmpty()) {
-            ctx.reportWarning("Reference not found: " + original);
-            link.setKind(Reference.Kind.NONE);
+        resolveUnsupported(link);
+        if (link.getKind() == Reference.Kind.UNSUPPORTED) {
             return link;
         }
 
-        link = resolveNativePackageOrType(toPackageName, toClassName);
-        if (link.getKind() != Reference.Kind.NONE) {
-            return link;
+        if (link.getTarget().endsWith("/")) {
+            link.setKind(Reference.Kind.MODULE);
         }
 
-        link = resolveLocalPackageOrType(from, toPackageName, toClassName);
-        if (link.getKind() != Reference.Kind.NONE) {
-            return link;
-        }
+        if (resolvePrimitiveOrVoid(link)) return link;
+        if (resolveNativePackageOrType(link)) return link;
+        if (resolveLocalPackageOrType(link)) return link;
+        if (resolveLocalModule(link)) return link;
+        if (resolveSiblingModule(link)) return link;
+        if (resolveSiblingType(link)) return link;
 
-        link = resolveModule(from, to);
-        if (link.getKind() != Reference.Kind.NONE) {
-            return link;
+        if (!link.isResolved()) {
+            link.setKind(Reference.Kind.UNKNOWN);
         }
-
         return link;
     }
 
     /// Checks if the target is unsupported by the `LinkResolver`.
-    /// @param target The target to be resolved.
+    /// @param link The target to be resolved.
     /// @return A `Reference` with `Reference.Kind.UNKNOWN` if unsupported, else `Reference.Kind.NONE`.
-    private static Reference resolveUnsupported(String target) {
-        if (target.equals("?") || target.indexOf("<") > -1) {
-            return new Reference(Reference.Scope.UNKNOWN, Reference.Kind.UNKNOWN, target);
+    static Reference resolveUnsupported(Reference link) {
+        if (link.getTarget().equals("?") || link.getTarget().contains("<")) {
+            link.setScope(Scope.UNKNOWN);
+            link.setKind(Kind.UNSUPPORTED);
         }
-        return new Reference();
+        return link;
     }
 
     /// Checks if the target is a primitive type or void.
-    /// @param target The target to be resolved.
-    /// @return A Reference with appropriate kind if primitive or void, else none.
-    private static Reference resolvePrimitiveOrVoid(String target) {
-        if ("void".equals(target) || "Void".equals(target)){
-            return new Reference(Reference.Scope.NATIVE, Reference.Kind.VOID, target);
+    /// @param link The target to be resolved.
+    /// @return True if the reference resolved to primitive or void, else false.
+    static boolean resolvePrimitiveOrVoid(Reference link) {
+        if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.PRIMITIVE || link.getKind() == Kind.VOID) {
+            if ("void".equals(link.getTarget()) || "Void".equals(link.getTarget())){
+                link.setScope(Scope.NATIVE);
+                link.setKind(Kind.VOID);
+                link.setResolved(true);
+                return true;
+            }
+            if (primitives.contains(link.getTarget())){
+                link.setScope(Scope.NATIVE);
+                link.setKind(Kind.PRIMITIVE);
+                link.setResolved(true);
+                return true;
+            }
         }
-        if (primitives.contains(target)){
-            return new Reference(Reference.Scope.NATIVE, Reference.Kind.PRIMITIVE, target);
-        }
-        return new Reference();
+        return false;
     }
 
     /// Returns canonical package and class names for a given type name, ensuring both parts are qualified.
     /// @param name The type name to qualify.
-    /// @return A String array: [packageName, className].
+    /// @return A String array: {packageName, className}.
     public static String[] qualifyType(String name) {
         String toPackageName = getPackageName(name);
         String toClassName = getClassName(name);
@@ -212,66 +234,99 @@ public class LinkResolver {
     }
 
     /// Resolves a native Java package or type to an external documentation URL.
-    /// @param toPackageName The package name.
-    /// @param toClassName The class name within the package.
-    /// @return A Reference with scope NATIVE and kind URL if native, else none.
-    public static Reference resolveNativePackageOrType(String toPackageName, String toClassName) {
-        Reference link = new Reference();
+    /// @param link The link to be resolved
+    /// @return True if the reference resolved to a native package or type.
+    static boolean resolveNativePackageOrType(Reference link) {
+        if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.PACKAGE || link.getKind() == Kind.TYPE) {
+            String[] qualified = qualifyType(link.getTarget());
+            String toPackageName = qualified[0];
+            String toClassName = qualified[1];
+            if (toPackageName.isEmpty()) {
+                return false;
+            } else {
+                return resolveNativePackageTypeInternal(link, toPackageName, toClassName);
+            }
+        }
+        return false;
+    }
+
+    private static boolean resolveNativePackageTypeInternal(Reference link, String toPackageName, String toClassName) {
         String baseUrl = nativePackageNames.get(toPackageName);
         if (baseUrl != null) {
-            link.setDisplayName(toPackageName);
             link.setScope(Reference.Scope.NATIVE);
             link.setKind(Reference.Kind.URL);
             String uri = baseUrl + "/" + toPackageName.replace(".", "/");
             if (!toClassName.isEmpty()) {
                 if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
                 uri = uri + "/" + toClassName;
-                link.setDisplayName(toPackageName + "." + toClassName);
+                if (link.getLabel() == null || link.getLabel().isEmpty()) {
+                    link.setLabel(toPackageName + "." + toClassName);
+                }
                 link.setClassName(toPackageName + "." + toClassName);
+            } else {
+                link.setLabel(toPackageName);
             }
             uri += suffix.get(toPackageName);
             link.setUri(uri);
+            link.setResolved(true);
+            return true;
         }
-        return link;
+        return false;
     }
 
     /// Resolves a local package or type within the documented API to a relative link.
-    /// @param from The originating package name.
-    /// @param toPackageName The target package name.
-    /// @param toClassName The target class name.
-    /// @return A Reference with scope LOCAL and kind MODULE or TYPE, or none if unresolved.
-    public static Reference resolveLocalPackageOrType(String from, String toPackageName, String toClassName) {
-        Reference link = new Reference();
-        String fromPackageName = getPackageName(from);
-        if (getPackageName(toPackageName) == null) {
-            return link;
+    /// @param link the link to resolve
+    /// @return True if the reference resolved to a local package or type.
+    static boolean resolveLocalPackageOrType(Reference link) {
+        if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.PACKAGE || link.getKind() == Kind.TYPE) {
+            String[] qualified = qualifyType(link.getTarget());
+            String toPackageName = qualified[0];
+            String toClassName = qualified[1];
+            if (toPackageName.isEmpty()) {
+                return false;
+            } else {
+                return resolveLocalPackageTypeInternal(link, toPackageName, toClassName);
+            }
         }
+        return false;
+    }
+
+    private static boolean resolveLocalPackageTypeInternal(Reference link, String toPackageName, String toClassName) {
+        String fromPackageName = getPackageName(link.getOrigin());
+        if (getPackageName(toPackageName).isEmpty()) {
+            return false;
+        }
+
         if (!toClassName.isEmpty()) {
             String qualifiedClassName = toPackageName + "." + toClassName;
             TypeNode typeNode = api.getTypeNode(qualifiedClassName);
             if (typeNode == null) {
-                ctx.reportError("Unable to resolve type: " + qualifiedClassName);
-                return link;
+                return false;
             }
         }
+        
         PackageNode packageNode = api.getPackageNode(toPackageName);
-        if (packageNode == null) return link;
-        link.setDisplayName(toPackageName);
+        if (packageNode == null) return false;
         link.setScope(Reference.Scope.LOCAL);
-        link.setKind(Reference.Kind.MODULE);
+        link.setKind(Reference.Kind.PACKAGE);
+        link.setResolved(true);
         link.setUri(relativizeWithModules(fromPackageName, toPackageName));
         if (!toClassName.isEmpty()) {
-            link.setDisplayName(toPackageName + "." + toClassName);
+            if (link.getLabel() == null || link.getLabel().isEmpty()) {
+                link.setLabel(toPackageName + "." + toClassName);
+            }
             link.setClassName(toPackageName + "." + toClassName);
             addClassToReference(toClassName, link);
+        } else {
+            link.setLabel(toPackageName);
         }
-        return link;
+        return true;
     }
 
     /// Appends the class name to the URI on the Reference and sets kind TYPE if not URL.
     /// @param className The class name to add.
     /// @param link The Reference object to modify.
-    private static void addClassToReference(String className, Reference link) {
+    static void addClassToReference(String className, Reference link) {
         if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
         link.setUri(link.getUri() + className);
         if (link.getKind() != Reference.Kind.URL) {
@@ -280,27 +335,76 @@ public class LinkResolver {
     }
 
     /// Resolves a module reference by name to a Reference either local or native.
-    /// @param from The package name from which the link originates.
-    /// @param target The module name to resolve.
-    /// @return A Reference with scope LOCAL or NATIVE with appropriate URI or none if unresolved.
-    public static Reference resolveModule(String from, String target) {
-        String apiRoot = relativize(from, "");
-        ModuleNode moduleNode = getModule(target);
-        Path path = Path.of(apiRoot, "..", target);
-        if (moduleNode != null) {
-            return new Reference(Reference.Scope.LOCAL, Reference.Kind.MODULE, target, path.toString());
+    /// @param link the link to be resolved
+    /// @return True if the reference resolved to a local module.
+    static boolean resolveLocalModule(Reference link) {
+        if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.MODULE) {
+            String target = link.getTarget();
+            if (target.endsWith("/")) {
+                target = target.substring(0, target.length() - 1);
+            }
+            String apiRoot = relativize(link.getOrigin(), "");
+            ModuleNode moduleNode = getModule(target);
+            Path path = Path.of(apiRoot, "..", link.getTarget());
+            if (moduleNode != null) {
+                link.setScope(Scope.LOCAL);
+                link.setKind(Kind.MODULE);
+                link.setUri(path.toString());
+                link.setResolved(true);
+                return true;
+            }
+            String baseUrl = nativeModuleNames.get(target);
+            if (baseUrl != null) {
+                link.setScope(Scope.NATIVE);
+                link.setKind(Kind.URL);
+                link.setUri(baseUrl + "/module-summary.html");
+                link.setResolved(true);
+                return true;
+            }
         }
-        String baseUrl = nativeModuleNames.get(target);
-        if (baseUrl != null) {
-            return new Reference(Reference.Scope.NATIVE, Reference.Kind.URL, path.toString(), baseUrl + "/module-summary.html");
+        return false;
+    }
+
+    /// Attempts to resolve the link as a sibling module relative to the current context.
+    /// @param link The Reference object to resolve.
+    /// @return True if the reference resolved to a sibling module.
+    static boolean resolveSiblingModule(Reference link) {
+        if ((link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.MODULE) && 
+                siblingModules.contains(link.getTarget())) {
+            String toRoot = relativize(link.getOrigin(), "");
+            Path path = Path.of(toRoot, "..", link.getTarget());
+            link.setUri(path.toString());
+            link.setScope(Scope.SIBLING);
+            link.setKind(Kind.MODULE);
+            link.setResolved(true);
+            return true;
         }
-        return new Reference();
+        return false;
+    }
+
+    /// Attempts to resolve the link as a sibling type relative to the current context.
+    /// @param link The Reference object to resolve.
+    /// @return True if the reference resolved to a sibling type.
+    static boolean resolveSiblingType(Reference link) {
+        if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.TYPE) {
+            String moduleName = classToModule.get(link.getTarget());
+            if (moduleName != null) {
+                String qualifiedClassName = link.getTarget();
+                String path = relativizeWithSiblingModule(link.getOrigin(), qualifiedClassName, moduleName);
+                link.setUri(path);
+                link.setScope(Scope.SIBLING);
+                link.setKind(Kind.TYPE);
+                link.setResolved(true);
+                return true;
+            }
+        }
+        return false;
     }
 
     /// Returns the ModuleNode for the named module in the current API.
     /// @param moduleName The module's name.
     /// @return The ModuleNode if found, else null.
-    public static ModuleNode getModule(String moduleName) {
+    static ModuleNode getModule(String moduleName) {
         for (ModuleNode moduleNode : api.getModules()) {
             if (moduleNode.getName().equals(moduleName)) {
                 return moduleNode;
@@ -312,7 +416,7 @@ public class LinkResolver {
     /// Checks if a package name is qualified (contains a dot).
     /// @param name The package name to check.
     /// @return True if the name is qualified, false otherwise.
-    public static boolean isPackageQualified(String name) {
+    static boolean isPackageQualified(String name) {
         return name.indexOf('.') > -1;
     }
 
@@ -321,7 +425,7 @@ public class LinkResolver {
     /// @return The fully qualified class name or empty string if not found.
     public static String qualifyClass(String simpleName) {
         for (PackageMember member : api.getClasses()) {
-            if (member instanceof ClassNode classNode && classNode.getSimpleName().equals(simpleName)) {
+            if (member instanceof ClassTypeNode classNode && classNode.getSimpleName().equals(simpleName)) {
                 return classNode.getQualifiedName();
             }
         }
@@ -353,7 +457,7 @@ public class LinkResolver {
     /// @param from The package name for the source.
     /// @param to The package name for the target.
     /// @return The relative path string.
-    public static String relativizeWithModules(String from, String to) {
+    static String relativizeWithModules(String from, String to) {
         PackageNode toPackage = api.getPackageNode(to);
         if (toPackage == null) {
             ctx.reportError("Error resolving package for: " + to);
@@ -377,13 +481,24 @@ public class LinkResolver {
         }
     }
 
+    /// Computes a relative path from the current package context, considering sibling modules.
+    /// @param from The source package name.
+    /// @param to The target package name.
+    /// @return The relative path string including sibling module base if applicable.
+    static String relativizeWithSiblingModule(String from, String to, String toModule) {
+        String toRoot = relativize(from, "");
+        String toTarget = relativize("", to);
+        Path path = Path.of(toRoot, "..", toModule, toTarget);
+        return path.toString();
+    }
+
     /// Produces a relative path string from one package to another by splitting and comparing components.
     /// Supports flattened directories if set.
     /// @param from The source package name.
     /// @param to The target package name.
     /// @return The relative path string.
     public static String relativize(String from, String to) {
-        if (from == null || to == null) return null;
+        if (from == null || to == null) return "";
         from = flattenDirectory(from);
         to = flattenDirectory(to);
         String[] fromParts = from.split("\\.");
@@ -400,7 +515,7 @@ public class LinkResolver {
     /// Removes prefix directories from a path if flattenedDirectories is set and matches.
     /// @param path The package name or path to flatten.
     /// @return The adjusted path or original if no flattening applies.
-    private static String flattenDirectory(String path) {
+    static String flattenDirectory(String path) {
         if (flattenedDirectories != null && !flattenedDirectories.isEmpty() && path.startsWith(flattenedDirectories)) {
             if (path.length() <= flattenedDirectories.length()) {
                 return "";
@@ -414,7 +529,7 @@ public class LinkResolver {
     /// @param fromParts Array of strings for source path.
     /// @param toParts Array of strings for target path.
     /// @return The number of common leading segments.
-    private static int findCommonIndex(String[] fromParts, String[] toParts) {
+    static int findCommonIndex(String[] fromParts, String[] toParts) {
         if (fromParts.length == 0 || toParts.length == 0) {
             return 0;
         }
@@ -426,10 +541,10 @@ public class LinkResolver {
         return i;
     }
 
-    /// Appends parent directory segments (..) to the relative path string builder.
+    /// Appends parent directory segments `..` to the relative path string builder.
     /// @param rel The StringBuilder accumulating the path.
     /// @param count The number of parent directory segments to append.
-    private static void appendParentDirs(StringBuilder rel, int count) {
+    static void appendParentDirs(StringBuilder rel, int count) {
         for (int i = 0; i < count; i++) {
             if (!rel.isEmpty()) rel.append("/");
             rel.append("..");
@@ -440,7 +555,7 @@ public class LinkResolver {
     /// @param rel The StringBuilder accumulating the path.
     /// @param toParts Array of target path segments.
     /// @param start The start index for appending segments.
-    private static void appendTargetDirs(StringBuilder rel, String[] toParts, int start) {
+    static void appendTargetDirs(StringBuilder rel, String[] toParts, int start) {
         for (int i = start; i < toParts.length; i++) {
             if (toParts[i].isEmpty()) continue;
             if (!rel.isEmpty()) rel.append("/");
@@ -448,15 +563,117 @@ public class LinkResolver {
         }
     }
 
+    /// Configures the known sibling modules for link resolution, typically loading their info.
+    /// This method updates internal structures to recognize sibling modules for proper linking.
+    static void configureSiblingModules() {
+        classToModule = new HashMap<>();
+        for (String modulePathString : Configuration.getModulePaths()) {
+            File file = Paths.get(modulePathString).toFile();
+            siblingModuleName = "";
+            siblingClassNames = new java.util.HashSet<>();
+            if (file.isDirectory()) {
+                processDirectory(file);
+            } else if (file.toString().toLowerCase().endsWith(".jar")) {
+                try (JarFile jarFile = new JarFile(file)) {
+                    processJarFile(jarFile);
+                } catch (IOException _) {
+                    ctx.reportError("Error reading JAR file: " + file);
+                }
+            } 
+            siblingModules.add(siblingModuleName);
+            if (Configuration.getListExternal().contains(siblingModuleName)) {
+                for (String className : siblingClassNames) {
+                    classToModule.put(className, siblingModuleName);
+                }
+            }
+        }
+    }
+
+    static void processDirectory(File directory) {
+        try {
+            URL url = URL.of(directory.toURI(), null);
+            URL[] urls = new URL[] {url};
+            processDirectoryUrl(directory, urls);  
+        }catch(MalformedURLException _) {
+            // Nothing to do here
+        }
+    }
+
+    static void processDirectoryUrl(File directory, URL[] urls) {
+        try (URLClassLoader classLoader = new URLClassLoader(urls)) {
+            try(Stream<Path> classFiles = Files.walk(directory.toPath())) {
+                for (Path classFile : classFiles.toList()) {
+                    if (classFile.toString().endsWith(DOT_CLASS)) {
+                        processClassFile(directory, classFile.toFile(), classLoader);
+                    }
+                }
+            }
+        } catch (IOException _) {
+            ctx.reportError("Error reading classes in directory: " + directory.getAbsolutePath());
+        }
+    }
+
+    static void processClassFile(File directory, File file, URLClassLoader classLoader) throws IOException{
+        try {
+            String relativePath = directory.toURI().relativize(file.toURI()).getPath();
+            String className = relativePath.replace(File.separatorChar, '.').replace(DOT_CLASS, "");
+            if (className.equals("module-info")) {
+                InputStream is = new FileInputStream(file);
+                ModuleDescriptor descriptor = ModuleDescriptor.read(is);
+                siblingModuleName = descriptor.name();
+            } else {
+                Class<?> clazz = classLoader.loadClass(className);
+                siblingClassNames.add(clazz.getName());
+                for (Class<?> declaredClass : clazz.getDeclaredClasses()) {
+                    siblingClassNames.add(declaredClass.getName());
+                }
+            }
+        } catch (Exception _) {
+            ctx.reportError("Failed ot read class file: " + file);
+        }
+    }
+    
+    // SonarQube thinks this is extracting the JAR file.
+    // It's only reading the list of contents and extracting enough to get the module descriptor.
+    /// Processes a JAR file to extract module and package information relevant for sibling module linking.
+    /// @param jarFile The file path to the JAR file.
+    /// @throws IOException if an error occurs while processing the JAR.
+    @java.lang.SuppressWarnings("squid:S5042")
+    static void processJarFile(JarFile jarFile) throws IOException{
+        siblingModuleName = "Unnamed Module";
+        // Iterate over all entries in the JAR
+        for (Enumeration<JarEntry> entries = jarFile.entries(); entries.hasMoreElements();) {
+            JarEntry entry = entries.nextElement();
+            String entryName = entry.getName();
+
+            // Process module-info.class
+            if (entryName.equals("module-info.class")) {
+                InputStream is = jarFile.getInputStream(entry);
+                ModuleDescriptor descriptor = ModuleDescriptor.read(is);
+                siblingModuleName = descriptor.name();
+            }
+
+            // Process other class files
+            else if (entryName.endsWith(DOT_CLASS)) {
+                String className = entryName
+                    .replace("/", ".")
+                    .replace("\\", ".")
+                    .substring(0, entryName.length() - 6); // Remove DOT_CLASS
+                siblingClassNames.add(className);
+            }
+        }
+    }
+
     /// Adds a native Java module URL for linking purposes using a standard Oracle Javadoc base URL.
     /// @param moduleName The native module name (e.g., java.base).
-    private static void addNativeModule(String moduleName) {
+    static void addNativeModule(String moduleName) {
         // Tell the link resolver what web address to find docs for certain Java modules at
         LinkResolver.addNativeModuleUrl(moduleName, JAVA_24_URL + moduleName, DOT_HTML);
     }
 
     /// Adds known native modules for Java SE 24 to the resolver.
     /// This populates internal mappings for native module and package documentation URLs.
+    @SuppressWarnings("SpellCheckingInspection")
     public static void addNativeModules() {
         addNativeModule("java.base");
         addNativeModule("java.compiler");
@@ -473,6 +690,7 @@ public class LinkResolver {
         addNativeModule("java.se");
         addNativeModule("java.security.jgss");
         addNativeModule("java.security.sasl");
+        //noinspection SpellCheckingInspection
         addNativeModule("java.smartcardio");
         addNativeModule("java.sql");
         addNativeModule("java.sql.rowset");

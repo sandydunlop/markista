@@ -76,8 +76,10 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// @param api The Api instance.
     public void setApi(Api api) {
         this.api = api;
-        this.flattenedDirectories = api.commonBase();
-        LinkResolver.setFlattenedDirectories(flattenedDirectories);
+        if (Configuration.getFlattenPackages()) {
+            this.flattenedDirectories = api.commonBase();
+            LinkResolver.setFlattenedDirectories(flattenedDirectories);
+        }
     }
 
     /// Returns the Api model associated with this context.
@@ -215,7 +217,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
             sb.append("\n");
         }
         if (!sb.isEmpty()) {
-            return "\n  Location:\n" + sb.toString();
+            return "\n  Location:\n" + sb;
         } else {
             return "";
         }
@@ -225,16 +227,21 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// module, and fully qualified package name.
     /// If flattenDirectories is enabled, only directories containing documentation for types are created according to the flattenedDirectories prefix.
     /// @return The File object representing the directory.
-    public File getDirectory() {
+    public File getPackageDirectory() {
         final File rootDir;
         if (!outputDirectory.isEmpty()) {
             rootDir = new File(outputDirectory);
         } else {
             rootDir = new File(".");
         }
-        File moduleDir = new File(rootDir, moduleName);
+        File moduleDir;
+        if (Configuration.getFlattenModules()) {
+            moduleDir = rootDir;
+        } else {
+            moduleDir = new File(rootDir, moduleName);
+        }
         String dirName = packageName.replace('.', pathSeparator());
-        if (Configuration.getFlattenDirectories() && dirName.length() > 2) {
+        if (Configuration.getFlattenPackages() && dirName.length() > 2) {
             if (dirName.length() < flattenedDirectories.length()) {
                 // This was happening when mock classes ended up mixed in
                 // with what we're trying to document here
@@ -252,12 +259,17 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// Creates directories as necessary. Defaults of output directory are applied if not set.
     /// @return A Writer object for writing the file.
     /// @throws IOException If an I/O error occurs creating the directories or file.
-    public Writer createFile() throws IOException {
+    public Writer createFileInPackage() throws IOException {
+        File path = createPackageFilePath();
+        return createFileInternal(path);
+    }
+
+    File createPackageFilePath() {
         if (outputDirectory.isEmpty()) outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
-        File containingDir = getDirectory();
+        File containingDir = getPackageDirectory();
         if (!containingDir.exists()) containingDir.mkdirs();
         if (typeName.isEmpty()) typeName = "index";
-        return createFileInternal(containingDir, Utils.simplifyNames(typeName) + ".md");
+        return new File(containingDir, Utils.simplifyNames(typeName) + ".md");
     }
 
     /// Creates a Writer for writing a module-level file inside the module's directory.
@@ -265,20 +277,28 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// @param fileName The file name to create inside the module directory.
     /// @return A Writer object for writing the file.
     /// @throws IOException If an I/O error occurs creating directories or the file.
-    public Writer createModuleFile(String fileName) throws IOException {
+    public Writer createFileInModule(String fileName) throws IOException {
+        File path = createModuleFilePath(fileName);
+        return createFileInternal(path);
+    }
+
+    File createModuleFilePath(String fileName) {
         if (outputDirectory.isEmpty()) outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
-        File containingDir = new File(outputDirectory, moduleName);
+        File containingDir;
+        if (Configuration.getFlattenModules()) {
+            containingDir = new File(outputDirectory);
+        } else {
+            containingDir = new File(outputDirectory, moduleName);
+        }
         if (!containingDir.exists()) containingDir.mkdirs();
-        return createFileInternal(containingDir, fileName);
+        return new File(containingDir, fileName);
     }
 
     /// Helper method that creates a Writer for a file inside the specified directory.
-    /// @param containingDir The directory where the file is created.
-    /// @param fileName The filename of the file to create.
+    /// @param file The filename of the file to create.
     /// @return A Writer for the file.
     /// @throws IOException If an I/O error occurs opening the file.
-    private Writer createFileInternal(File containingDir, String fileName) throws IOException {
-        File file = new File(containingDir, fileName);
+    private Writer createFileInternal(File file) throws IOException {
         FileOutputStream fileOutputStream = new FileOutputStream(file);
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
         return new OutputStreamWriter(bufferedOutputStream);

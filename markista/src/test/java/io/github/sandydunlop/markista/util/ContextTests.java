@@ -48,7 +48,7 @@ class ContextTests {
 
         PackageNode pkg0 = new PackageNode("io.github.sandydunlop");
         pkg = new PackageNode("io.github.sandydunlop.test");
-        api = new Api();
+        api = new Api("Test API");
         api.addPackage(pkg0);
         api.addPackage(pkg);
         ctx.setApi(api);
@@ -159,25 +159,26 @@ class ContextTests {
     @Test
     void buildContainingDirPath() {
         String outputDir = "/tmp/markista/dirpath/";
+        Configuration.setFlattenPackages(true);
         ctx.setOutputDirectory(outputDir);
-        Configuration.setFlattenDirectories(true);
+        ctx.setApi(api);
 
         ctx.setModuleName("");
         ctx.setPackageName(pkg.getName());
-        File file = ctx.getDirectory();
-        assertEquals(outputDir + "test", file.getAbsolutePath());
+        File file = ctx.getPackageDirectory();
+        assertEquals(outputDir + "sandydunlop/test", file.getAbsolutePath());
     }
 
     @Test
     void createFile_namedModule() throws IOException {
         String outputDir = "/tmp/markista/dirpath/";
         ctx.setOutputDirectory(outputDir);
-        Configuration.setFlattenDirectories(true);
+        Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("markista");
         ctx.setPackageName(pkg.getName());
 
-        OutputStreamWriter w = (OutputStreamWriter)ctx.createFile();
+        OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInPackage();
         w.write("test createFile 1");
         w.flush();
         w.close();
@@ -192,12 +193,12 @@ class ContextTests {
     void createFile_unnamedModule() throws IOException {
         String outputDir = "/tmp/markista/dirpath/";
         ctx.setOutputDirectory(outputDir);
-        Configuration.setFlattenDirectories(true);
+        Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("");
         ctx.setPackageName(pkg.getName());
 
-        OutputStreamWriter w = (OutputStreamWriter)ctx.createFile();
+        OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInPackage();
         w.write("test createFile 1");
         w.flush();
         w.close();
@@ -212,12 +213,12 @@ class ContextTests {
     void createModuleFile_namedModule() throws IOException {
         String outputDir = "/tmp/markista/dirpath/";
         ctx.setOutputDirectory(outputDir);
-        Configuration.setFlattenDirectories(true);
+        Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("markista");
         ctx.setPackageName("");
 
-        OutputStreamWriter w = (OutputStreamWriter)ctx.createModuleFile("test.md");
+        OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInModule("test.md");
         w.write("test createFile module 1");
         w.flush();
         w.close();
@@ -232,12 +233,12 @@ class ContextTests {
     void createModuleFile_unnamedModule() throws IOException {
         String outputDir = "/tmp/markista/dirpath/";
         ctx.setOutputDirectory(outputDir);
-        Configuration.setFlattenDirectories(true);
+        Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("");
         ctx.setPackageName("");
 
-        OutputStreamWriter w = (OutputStreamWriter)ctx.createModuleFile("test.md");
+        OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInModule("test.md");
         w.write("test createFile module 2");
         w.flush();
         w.close();
@@ -246,5 +247,38 @@ class ContextTests {
         String line = reader.readLine();
         reader.close();
         assertTrue(line.contains("test createFile module 2"));
+    }
+
+    @Test
+    void createFilePath() {
+        String outputDir = "/tmp/markista/dirpath/";
+        Configuration.setFlattenPackages(true);
+        ctx.setOutputDirectory(outputDir);
+        ctx.setApi(api);
+
+        ctx.setModuleName("module");
+        ctx.setPackageName(pkg.getName()); //test
+        ctx.setTypeName("Provider"); //test
+
+        File file = ctx.createPackageFilePath();
+        assertEquals(outputDir + "module/sandydunlop/test/Provider.md", file.getAbsolutePath());
+    }
+
+    @Test
+    void createFilePath_onePackage() {
+        String outputDir = "/tmp/markista/dirpath/";
+        Configuration.setFlattenPackages(true);
+        ctx.setOutputDirectory(outputDir);
+
+        api = new Api("Test API");
+        api.addPackage(pkg);
+        ctx.setApi(api);
+        
+        ctx.setModuleName("module");
+        ctx.setPackageName(pkg.getName()); //test
+        ctx.setTypeName("Provider"); //test
+
+        File file = ctx.createPackageFilePath();
+        assertEquals(outputDir + "module/test/Provider.md", file.getAbsolutePath());
     }
 }
