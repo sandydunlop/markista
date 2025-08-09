@@ -139,7 +139,7 @@ public class ModuleWriter {
                 ctx.reportError("provides directive with no details");
             }
             Reference moduleRef = Reference.to(directive.getName()).withKind(Reference.Kind.TYPE);
-            table.addRow(Markdown.link(moduleRef, false),
+            table.addRow(Markdown.link(moduleRef, true),
                          multiLink(directive.getImplementations()));
         }
         table.render(writer, 4);
@@ -149,7 +149,7 @@ public class ModuleWriter {
     /// for the module, package, or type denoted by that list member.
     /// @param names A list of strings that represent modules, packages, or types.
     private String multiLink(List<String> names) {
-        return Markdown.link(Reference.to(String.join(",",names)), false);
+        return Markdown.link(Reference.to(String.join(",",names)), true);
     }
 
     /// Formats the first sentence of a [DirectiveNode]'s documentation so

@@ -72,7 +72,6 @@ class TypeWriterTests {
         assertTrue(content.contains("Package [com.example](index.md)"));
     }
 
-    @Disabled("Unsure why it's making link resolver come up with example.com javadoc URLs")
     @Test
     void outputFieldSummary_WritesMarkdownTableForFields() throws IOException {
         Api api = mock(Api.class);
@@ -320,10 +319,11 @@ class TypeWriterTests {
         api.addClass(typeNode);
         pkg.addClass(typeNode);
         LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules(); // Needed for String
 
         typeWriter.writeDoc(typeNode);
         String output = writer.toString();
-        assertTrue(output.contains("[eat](#eat)(String param1, String param2)"));
+        assertTrue(output.contains("[eat](#eat)([String](https"));
         assertTrue(output.contains("param2doc"));
     }
 
