@@ -68,7 +68,7 @@ public class ModuleTree extends SvgTreeWriter {
     }
 
     private void addType(TypeNode node, TreeNode current) {
-        TreeNode treeNode = new TreeNode(SVGIcon.file(), node.getSimpleName());
+        TreeNode treeNode = new TreeNode(SVGIcon.code(), node.getSimpleName());
         if (current != null) {
             current.addChild(treeNode);
             treeNode.setX(current.getX() + indent);

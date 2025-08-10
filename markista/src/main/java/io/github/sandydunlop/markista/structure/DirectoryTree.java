@@ -25,17 +25,17 @@ public class DirectoryTree extends SvgTreeWriter {
 
     public void build(TreeNode moduleRoot, List<TreeNode> moduleContents) {
         y = 0;
-        root = new TreeNode(moduleRoot.getIcon(), moduleRoot.getLabel());
+        root = new TreeNode(SVGIcon.folder(), moduleRoot.getLabel());
         contents = new ArrayList<>();
         contents.add(root);
         y += lineHeight;
         for (TreeNode node : moduleContents) {
-            if (node.getIcon().getKind() == Kind.FILE) {
+            if (node.getIcon().getKind() == Kind.CODE) {
                 if (node != moduleRoot) {
                     String packageName = node.getParent().getLabel();
                     List<String> list = new ArrayList<>(Arrays.asList(packageName.split("\\.")));
                     TreeNode branch = getBranch(root, list);
-                    TreeNode leaf = new TreeNode(node.getIcon(), node.getLabel());
+                    TreeNode leaf = new TreeNode(SVGIcon.code(), node.getLabel() + ".java");
                     leaf.setX(branch.getX() + indent);
                     leaf.setY(y);
                     leaf.setParent(branch);
@@ -58,7 +58,7 @@ public class DirectoryTree extends SvgTreeWriter {
         String branchName = components.getFirst();
         TreeNode branch = fromBranch.getChild(branchName);
         if (branch == null) {
-            branch = new TreeNode(SVGIcon.pkg(), branchName);
+            branch = new TreeNode(SVGIcon.folder(), branchName);
             fromBranch.addChild(branch);
             branch.setX(fromBranch.getX() + indent);
             branch.setY(y);

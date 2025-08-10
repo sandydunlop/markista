@@ -73,18 +73,32 @@ public class SvgTreeWriter {
         writer.write("    </g>\n");
 
         if (treeNode.getParent() != null) {
-            writeLines(treeNode);
+            writeLines1(treeNode);
         }
 
         writer.write("  </g>\n");
     }
 
-    private void writeLines(TreeNode treeNode) throws IOException {
+    private void writeLines0(TreeNode treeNode) throws IOException {
         writer.write("    <g>\n");
         writer.write(String.format("      <path d=\"M %d %d L %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #B9B5B4);\"/>\n",
                 treeNode.getParent().getX() + 7, treeNode.getY() + 6 ,treeNode.getX() - 2 , treeNode.getY() + 6));
         writer.write(String.format("      <path d=\"M %d %d L %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #B9B5B4);\"/>\n",
                 treeNode.getParent().getX() + 7, treeNode.getY() + 6 ,treeNode.getParent().getX() + 7 , treeNode.getParent().getY() + 14));
+        writer.write("    </g>\n");
+    }
+
+    private void writeLines1(TreeNode treeNode) throws IOException {
+        writer.write("    <g>\n");
+        //#726C70
+        writer.write(String.format("      <path d=\"M %d %d L %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #726C70);\"/>\n",
+                treeNode.getParent().getX() + 7, treeNode.getY(), treeNode.getParent().getX() + 7, treeNode.getParent().getY() + 14));
+
+                writer.write(String.format("      <path d=\"M %d %d Q %d %d %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #726C70);\"/>\n",
+                treeNode.getParent().getX() + 7, treeNode.getY(),  treeNode.getParent().getX() + 7,   treeNode.getY() + 6     , treeNode.getX() - 5, treeNode.getY() + 6));
+
+                writer.write(String.format("      <path d=\"M %d %d L %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #726C70);\"/>\n",
+                treeNode.getX() - 5, treeNode.getY() + 6, treeNode.getX() - 2, treeNode.getY() + 6));
         writer.write("    </g>\n");
     }
 
