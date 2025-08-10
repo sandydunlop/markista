@@ -72,7 +72,6 @@ public class ModuleWriter {
     private void outputModuleDoc(ModuleNode moduleNode) throws IOException {
         ctx.setModuleName(moduleNode.getName());
         if (!moduleNode.getPackages().isEmpty()) {
-            outputStructureSvg(moduleNode);
             ctx.setModuleName(moduleNode.getName());
             writer = ctx.createFileInModule("index.md");
             if (moduleNode.getName().isEmpty()) {
@@ -100,6 +99,7 @@ public class ModuleWriter {
             writer.close();
             PackageWriter packageWriter = new PackageWriter();
             packageWriter.writeDocs(moduleNode);
+            outputStructureSvg(moduleNode);
         }
         if (!moduleNode.getConstantValues().isEmpty()) {
             outputConstantValues(moduleNode);

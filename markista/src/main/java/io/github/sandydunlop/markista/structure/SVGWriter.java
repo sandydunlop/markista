@@ -7,7 +7,6 @@ import java.util.List;
 
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.TypeNode;
@@ -24,8 +23,8 @@ public class SVGWriter {
 
     ModuleNode module;
 
-    Entry root;
-    List<Entry> list;
+    TreeNode root;
+    List<TreeNode> list;
     int lineHeight = 18;
     int imageHeight = -1;
     int imageWidth = -1;
@@ -59,9 +58,9 @@ public class SVGWriter {
         list = new ArrayList<>();
         root = addModule(module, null);
         imageHeight = list.size() * lineHeight;
-        for (Entry entry : list) {
-            if (entry.getLabel().length() > imageWidth) {
-                imageWidth = entry.getLabel().length() ;
+        for (TreeNode treeNode : list) {
+            if (treeNode.getLabel().length() > imageWidth) {
+                imageWidth = treeNode.getLabel().length() ;
             }
         }
         imageWidth = (imageWidth + 2) * 12;
@@ -73,54 +72,54 @@ public class SVGWriter {
     //
     //
 
-    private Entry addModule(ModuleNode node, Entry current) {
-        Entry entry = new Entry(SVGIcon.module(), node.getName());
+    private TreeNode addModule(ModuleNode node, TreeNode current) {
+        TreeNode treeNode = new TreeNode(SVGIcon.module(), node.getName());
         if (current != null) {
-            current.addEntry(entry);
-            entry.setX(current.getX() + indent);
-            entry.setY(y);
-            entry.setParent(current);
+            current.addChild(treeNode);
+            treeNode.setX(current.getX() + indent);
+            treeNode.setY(y);
+            treeNode.setParent(current);
         }
         y += lineHeight;
-        list.add(entry);
+        list.add(treeNode);
         for (PackageMember pkg : node.getPackages()) {
             if (pkg instanceof PackageNode pn) {
-                addPackage(pn, entry);
+                addPackage(pn, treeNode);
             }
         }
-        return entry;
+        return treeNode;
     }
 
-    private void addPackage(PackageNode node, Entry current) {
-        Entry entry = new Entry(SVGIcon.pkg(), node.getName());
+    private void addPackage(PackageNode node, TreeNode current) {
+        TreeNode treeNode = new TreeNode(SVGIcon.pkg(), node.getName());
         if (current != null) {
-            current.addEntry(entry);
-            entry.setX(current.getX() + indent);
-            entry.setY(y);
-            entry.setParent(current);
+            current.addChild(treeNode);
+            treeNode.setX(current.getX() + indent);
+            treeNode.setY(y);
+            treeNode.setParent(current);
         }
         y += lineHeight;
-        list.add(entry);
+        list.add(treeNode);
         for (PackageMember pkg : node.getPackages()) {
             if (pkg instanceof PackageNode pn) {
-                addPackage(pn, entry);
+                addPackage(pn, treeNode);
             }
         }
         for (TypeNode type : node.getTypes()) {
-            addType(type, entry);
+            addType(type, treeNode);
         }
     }
 
-    private void addType(TypeNode node, Entry current) {
-        Entry entry = new Entry(SVGIcon.file(), node.getSimpleName());
+    private void addType(TypeNode node, TreeNode current) {
+        TreeNode treeNode = new TreeNode(SVGIcon.file(), node.getSimpleName());
         if (current != null) {
-            current.addEntry(entry);
-            entry.setX(current.getX() + indent);
-            entry.setY(y);
-            entry.setParent(current);
+            current.addChild(treeNode);
+            treeNode.setX(current.getX() + indent);
+            treeNode.setY(y);
+            treeNode.setParent(current);
         }
         y += lineHeight;
-        list.add(entry);
+        list.add(treeNode);
     }
 
     //
@@ -133,38 +132,38 @@ public class SVGWriter {
         writer = ctx.createFileInModule("structure.svg");
         writer.write(top());
 
-        for (Entry entry : list) {
-            writeEntry(entry);
+        for (TreeNode treeNode : list) {
+            writeEntry(treeNode);
         }
         writer.write(bot());
         writer.flush();
         writer.close();
     }
 
-    private void writeEntry(Entry entry) throws IOException{
-        SVGIcon icon = entry.getIcon();
-        String name = "module_" + escapeName(entry.getLabel());
+    private void writeEntry(TreeNode treeNode) throws IOException{
+        SVGIcon icon = treeNode.getIcon();
+        String name = "module_" + escapeName(treeNode.getLabel());
         writer.write("  <g data-cell-id=\"" + name + "\">\n");
         writer.write("    <g data-cell-id=\"" + name + "_icon\">\n");
-        writer.write(icon.placeAt(entry.getX(), entry.getY()));
+        writer.write(icon.placeAt(treeNode.getX(), treeNode.getY()));
         writer.write("    </g>\n");
         writer.write("    <g data-cell-id=\"" + name + "_label\">\n");
-        writer.write(String.format("      <text x=\"%d\" y=\"%d\" fill=\"light-dark(#505050, #B9B5B4)\" font-family=\"Helvetica\" font-size=\"12px\">%s</text>\n", entry.getX() + 18, entry.getY() + 10, entry.getLabel()));
+        writer.write(String.format("      <text x=\"%d\" y=\"%d\" fill=\"light-dark(#505050, #B9B5B4)\" font-family=\"Helvetica\" font-size=\"12px\">%s</text>\n", treeNode.getX() + 18, treeNode.getY() + 10, treeNode.getLabel()));
         writer.write("    </g>\n");
 
-        if (entry.getParent() != null) {
-            writeLines(entry);
+        if (treeNode.getParent() != null) {
+            writeLines(treeNode);
         }
 
         writer.write("  </g>\n");
     }
 
-    private void writeLines(Entry entry) throws IOException {
+    private void writeLines(TreeNode treeNode) throws IOException {
         writer.write("    <g>\n");
         writer.write(String.format("      <path d=\"M %d %d L %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #B9B5B4);\"/>\n",
-                entry.getParent().getX() + 7, entry.getY() + 6 ,entry.getX() - 2 , entry.getY() + 6));
+                treeNode.getParent().getX() + 7, treeNode.getY() + 6 ,treeNode.getX() - 2 , treeNode.getY() + 6));
         writer.write(String.format("      <path d=\"M %d %d L %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #B9B5B4);\"/>\n",
-                entry.getParent().getX() + 7, entry.getY() + 6 ,entry.getParent().getX() + 7 , entry.getParent().getY() + 14));
+                treeNode.getParent().getX() + 7, treeNode.getY() + 6 ,treeNode.getParent().getX() + 7 , treeNode.getParent().getY() + 14));
         writer.write("    </g>\n");
     }
 

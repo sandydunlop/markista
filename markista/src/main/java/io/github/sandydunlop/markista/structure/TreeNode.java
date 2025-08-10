@@ -1,17 +1,19 @@
 package io.github.sandydunlop.markista.structure;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Entry {
+public class TreeNode {
     SVGIcon icon;
     String label;
     int x;
     int y;
-    List<Entry> children = new ArrayList<>();
-    Entry parent;
+    List<TreeNode> children = new ArrayList<>();
+    TreeNode parent;
+    Path path;
 
-    public Entry(SVGIcon icon, String label) {
+    public TreeNode(SVGIcon icon, String label) {
         this.icon = icon;
         this.label = label;
     }
@@ -40,15 +42,23 @@ public class Entry {
         return icon;
     }
 
-    public void addEntry(Entry entry) {
+    public void addChild(TreeNode entry) {
         children.add(entry);
     }
 
-    public Entry getParent() {
+    public TreeNode getParent() {
         return parent;
     }
 
-    public void setParent(Entry parent) {
+    public void setParent(TreeNode parent) {
         this.parent = parent;
+    }
+
+    public void setPath(Path path) {
+        this.path = path;
+    }
+
+    public Path getPath() {
+        return path;
     }
 }
