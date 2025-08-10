@@ -13,9 +13,6 @@ public class Configuration {
     /// The title of the API documentation being generated
     private static String docTitle = "API";
 
-    /// The directory in which the documentation files will be generated
-    private static String outputDirectory = null;
-
     /// If true, links to types defined outside the API being documented will be generated
     private static boolean createExternalLinks = false;
 
@@ -56,18 +53,6 @@ public class Configuration {
     /// @return The title to be used
     public static String getDocTitle() {
         return docTitle;
-    }
-
-    /// Sets the directory path where the documentation files will be generated.
-    /// @param path The output directory path as a String.
-    public static void setOutputDirectory(String path) {
-        outputDirectory = path;
-    }
-
-    /// Returns the directory path where documentation files will be generated.
-    /// @return The output directory path as a String.
-    public static String getOutputDirectory() {
-        return outputDirectory;
     }
 
     /// Sets whether to generate links to external documentation for referenced types and modules.

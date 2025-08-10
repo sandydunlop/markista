@@ -71,7 +71,7 @@ class PackageWriterTests {
     static void initAll() {
 		ctx =  Context.getInstance();
 		ctx.setReporter(reporter);
-        Configuration.setOutputDirectory("/tmp/doc");
+        ctx.setOutputDirectory("/tmp/doc");
     }
 
     @BeforeEach

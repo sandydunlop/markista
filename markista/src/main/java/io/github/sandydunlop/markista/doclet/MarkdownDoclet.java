@@ -149,7 +149,7 @@ public class MarkdownDoclet implements Doclet {
                 public boolean process(String option,
                                        List<String> arguments) {
                     if (arguments != null && !arguments.isEmpty()) {
-                        Configuration.setOutputDirectory(arguments.getFirst());
+                        ctx.setOutputDirectory(arguments.getFirst());
                     }
                     return OK;
                 }
@@ -299,7 +299,6 @@ public class MarkdownDoclet implements Doclet {
         ModuleDirectives.setEnvironment(environment);
         ApiScanner scanner = new ApiScanner(environment);
         Api api = scanner.scan(environment.getIncludedElements());
-        ctx.setOutputDirectory(Configuration.getOutputDirectory());
         ctx.setApi(api);
         LinkResolver.init(api, ctx);
         if (Configuration.getCreateExternalLinks()) {

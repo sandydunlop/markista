@@ -9,7 +9,7 @@
             "type": "java",
             "name": "Javadoc",
             "request": "launch",
-            "mainClass": "io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista"
         },
 
@@ -17,7 +17,7 @@
             "type": "java",
             "name": "Javadoc - Markista",
             "request": "launch",
-            "mainClass": "io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
             "args": ["-options", "javadoc.options"]
         },
@@ -26,7 +26,7 @@
             "type": "java",
             "name": "Javadoc - Module",
             "request": "launch",
-            "mainClass": "io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
             "args": ["-options", "javadoc-mod.options"]
         },
@@ -35,7 +35,7 @@
             "type": "java",
             "name": "Javadoc - Example",
             "request": "launch",
-            "mainClass": "io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
             "args": ["-options", "javadoc-example.options"]
         },
@@ -44,7 +44,7 @@
             "type": "java",
             "name": "Javadoc - Consumer",
             "request": "launch",
-            "mainClass": "io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
             "args": ["-options", "javadoc-consumer.options"]
         },
@@ -53,7 +53,7 @@
             "type": "java",
             "name": "Javadoc - Food",
             "request": "launch",
-            "mainClass": "io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
             "args": ["-options", "javadoc-food.options"]
         },

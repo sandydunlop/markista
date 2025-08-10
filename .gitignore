@@ -27,3 +27,6 @@ javadoc-consumer.options
 javadoc-example.options
 javadoc-food.options
 javadoc-mod.options
+markista/.classpath
+markista/.project
+markista/.settings/org.eclipse.jdt.core.prefs
