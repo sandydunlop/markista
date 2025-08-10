@@ -61,4 +61,18 @@ public class TreeNode {
     public Path getPath() {
         return path;
     }
+
+    // public List<TreeNode> getChildren() {
+    //     return children;
+    // }
+
+
+    public TreeNode getChild(String name) {
+        for (TreeNode child : children) {
+            if (child.getLabel().equals(name)) {
+                return child;
+            }
+        }
+        return null;
+    }
 }

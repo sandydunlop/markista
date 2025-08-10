@@ -2,29 +2,21 @@ package io.github.sandydunlop.markista.structure;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
 import java.util.List;
 
-import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageMember;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Context;
 
-public class SVGWriter {
+public class SvgTreeWriter {
     /// The Writer used to output the generated markdown content for the current document.
     /// It handles writing text to the appropriate output file or stream.
     private Writer writer;
 
-    /// The Api model representing the entire documented API structure,
-    /// including modules, packages, types, and members used for cross-referencing and navigation.
-    Api api;
-
     ModuleNode module;
 
     TreeNode root;
-    List<TreeNode> list;
+    List<TreeNode> contents;
+
     int lineHeight = 18;
     int imageHeight = -1;
     int imageWidth = -1;
@@ -37,107 +29,36 @@ public class SVGWriter {
     /// Do not make this `final`. It will break tests with mocked [Context].
     private Context ctx;
 
-    public SVGWriter() {
+    public SvgTreeWriter() {
         this.ctx = Context.getInstance();
     }
 
-    public void setApi(Api api) {
-        this.api = api;
-    }
     public void setContext(Context context) {
         ctx = context;
     }
 
-    public void setModule(ModuleNode module) {
-        api = null;
-        this.module = module;
+    public TreeNode getRoot() {
+        return root;
     }
 
-    public void scan() {
-        y = 0;
-        list = new ArrayList<>();
-        root = addModule(module, null);
-        imageHeight = list.size() * lineHeight;
-        for (TreeNode treeNode : list) {
-            if (treeNode.getLabel().length() > imageWidth) {
-                imageWidth = treeNode.getLabel().length() ;
-            }
-        }
-        imageWidth = (imageWidth + 2) * 12;
-        imageHeight +=20;
-        System.out.println(String.format("width=%d height=%d", imageWidth, imageHeight));
+    public List<TreeNode> getContents() {
+        return contents;
     }
 
-    //
-    //
-    //
-
-    private TreeNode addModule(ModuleNode node, TreeNode current) {
-        TreeNode treeNode = new TreeNode(SVGIcon.module(), node.getName());
-        if (current != null) {
-            current.addChild(treeNode);
-            treeNode.setX(current.getX() + indent);
-            treeNode.setY(y);
-            treeNode.setParent(current);
-        }
-        y += lineHeight;
-        list.add(treeNode);
-        for (PackageMember pkg : node.getPackages()) {
-            if (pkg instanceof PackageNode pn) {
-                addPackage(pn, treeNode);
-            }
-        }
-        return treeNode;
-    }
-
-    private void addPackage(PackageNode node, TreeNode current) {
-        TreeNode treeNode = new TreeNode(SVGIcon.pkg(), node.getName());
-        if (current != null) {
-            current.addChild(treeNode);
-            treeNode.setX(current.getX() + indent);
-            treeNode.setY(y);
-            treeNode.setParent(current);
-        }
-        y += lineHeight;
-        list.add(treeNode);
-        for (PackageMember pkg : node.getPackages()) {
-            if (pkg instanceof PackageNode pn) {
-                addPackage(pn, treeNode);
-            }
-        }
-        for (TypeNode type : node.getTypes()) {
-            addType(type, treeNode);
-        }
-    }
-
-    private void addType(TypeNode node, TreeNode current) {
-        TreeNode treeNode = new TreeNode(SVGIcon.file(), node.getSimpleName());
-        if (current != null) {
-            current.addChild(treeNode);
-            treeNode.setX(current.getX() + indent);
-            treeNode.setY(y);
-            treeNode.setParent(current);
-        }
-        y += lineHeight;
-        list.add(treeNode);
-    }
-
-    //
-    //
-    //
-
-    public void write() throws IOException {
+    public void write(String fileName) throws IOException {
         ctx.setModuleName(module.getName());
-
-        writer = ctx.createFileInModule("structure.svg");
+        writer = ctx.createFileInModule(fileName);
         writer.write(top());
-
-        for (TreeNode treeNode : list) {
-            writeEntry(treeNode);
-        }
+        writeContents(contents);
         writer.write(bot());
         writer.flush();
         writer.close();
+    }
+
+    public void writeContents(List<TreeNode> contents) throws IOException {
+        for (TreeNode treeNode : contents) {
+            writeEntry(treeNode);
+        }
     }
 
     private void writeEntry(TreeNode treeNode) throws IOException{

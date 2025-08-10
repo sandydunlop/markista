@@ -25,6 +25,10 @@ public class SVGIcon {
         return new SVGIcon(Kind.FILE);
     }
 
+    public Kind getKind() {
+        return kind;
+    }
+
     public String placeAt(int x, int y) {
         StringBuilder sb = new StringBuilder();
         if (kind == Kind.MODULE) {
