@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 
-import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.structure.SvgIcon.Kind;
 import io.github.sandydunlop.markista.util.Context;
 
 public class SvgTreeWriter {
@@ -12,16 +12,10 @@ public class SvgTreeWriter {
     /// It handles writing text to the appropriate output file or stream.
     private Writer writer;
 
-    ModuleNode module;
-
     TreeNode root;
     List<TreeNode> contents;
-
-    int lineHeight = 18;
-    int imageHeight = -1;
-    int imageWidth = -1;
-    int y = 0;
-    int indent = 16;
+    AbstractTree tree;
+    TreeKind kind;
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
@@ -37,16 +31,16 @@ public class SvgTreeWriter {
         ctx = context;
     }
 
-    public TreeNode getRoot() {
-        return root;
+    public void setContents(List<TreeNode> contents) {
+        this.contents = contents;
     }
 
-    public List<TreeNode> getContents() {
-        return contents;
-    }
-
-    public void write(String fileName) throws IOException {
-        ctx.setModuleName(module.getName());
+    public void write(AbstractTree tree, TreeKind kind, String fileName) throws IOException {
+        this.tree = tree;
+        this.kind = kind;
+        this.contents = tree.getContents();
+        this.root = tree.getRoot();
+        ctx.setModuleName(tree.getModuleName());
         writer = ctx.createFileInModule(fileName);
         writer.write(top());
         writeContents(contents);
@@ -62,14 +56,28 @@ public class SvgTreeWriter {
     }
 
     private void writeEntry(TreeNode treeNode) throws IOException{
-        SVGIcon icon = treeNode.getIcon();
+        SvgIcon icon = treeNode.getIcon();
+        String label = treeNode.getLabel();
+        if (kind != TreeKind.MODULE) {
+            if (icon.getKind() == Kind.MODULE || icon.getKind() == Kind.PACKAGE) {
+                icon = SvgIcon.folder();
+            }
+            if (icon.getKind() == Kind.CODE) {
+                if (kind == TreeKind.DOCS) {
+                    icon = SvgIcon.doc();
+                    label = label + ".md";
+                } else if (kind == TreeKind.FILES) {
+                    label = label + ".java";
+                }
+            }
+        }
         String name = "module_" + escapeName(treeNode.getLabel());
         writer.write("  <g data-cell-id=\"" + name + "\">\n");
         writer.write("    <g data-cell-id=\"" + name + "_icon\">\n");
         writer.write(icon.placeAt(treeNode.getX(), treeNode.getY()));
         writer.write("    </g>\n");
         writer.write("    <g data-cell-id=\"" + name + "_label\">\n");
-        writer.write(String.format("      <text x=\"%d\" y=\"%d\" fill=\"light-dark(#505050, #B9B5B4)\" font-family=\"Helvetica\" font-size=\"12px\">%s</text>\n", treeNode.getX() + 18, treeNode.getY() + 10, treeNode.getLabel()));
+        writer.write(String.format("      <text x=\"%d\" y=\"%d\" fill=\"light-dark(#505050, #B9B5B4)\" font-family=\"Helvetica\" font-size=\"12px\">%s</text>\n", treeNode.getX() + 18, treeNode.getY() + 10, label));
         writer.write("    </g>\n");
 
         if (treeNode.getParent() != null) {
@@ -77,15 +85,6 @@ public class SvgTreeWriter {
         }
 
         writer.write("  </g>\n");
-    }
-
-    private void writeLines0(TreeNode treeNode) throws IOException {
-        writer.write("    <g>\n");
-        writer.write(String.format("      <path d=\"M %d %d L %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #B9B5B4);\"/>\n",
-                treeNode.getParent().getX() + 7, treeNode.getY() + 6 ,treeNode.getX() - 2 , treeNode.getY() + 6));
-        writer.write(String.format("      <path d=\"M %d %d L %d %d\" fill=\"none\" stroke=\"#505050\" stroke-miterlimit=\"10\" pointer-events=\"stroke\" style=\"stroke: light-dark(#505050, #B9B5B4);\"/>\n",
-                treeNode.getParent().getX() + 7, treeNode.getY() + 6 ,treeNode.getParent().getX() + 7 , treeNode.getParent().getY() + 14));
-        writer.write("    </g>\n");
     }
 
     private void writeLines1(TreeNode treeNode) throws IOException {
@@ -112,7 +111,8 @@ public class SvgTreeWriter {
                         "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n" + //
                         "<svg\n" + //
                         "\txmlns=\"http://www.w3.org/2000/svg\" style=\"background: transparent; background-color: transparent; color-scheme: light dark;\"\n" + //
-                        String.format("\txmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.1\" width=\"%dpx\" height=\"%dpx\" viewBox=\"0 0  %d %d\" content=\"\">\n", imageWidth, imageHeight, imageWidth, imageHeight) + //
+                        String.format("\txmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.1\" width=\"%dpx\" height=\"%dpx\" viewBox=\"0 0  %d %d\" content=\"\">\n",
+                                tree.getWidth(), tree.getHeight(), tree.getWidth(), tree.getHeight()) + //
                         "\t<defs/>\n" + //
                         "\t<g>\n" + //
                         "\t\t<g data-cell-id=\"0\">\n" + //

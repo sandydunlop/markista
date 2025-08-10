@@ -1,22 +1,12 @@
 package io.github.sandydunlop.markista.structure;
 
 import java.io.IOException;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Dictionary;
-import java.util.List;
 
-import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageMember;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Context;
 
 public class StructureWriter {
-
     ModuleNode module;
-
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
@@ -37,17 +27,23 @@ public class StructureWriter {
     }
 
     public void run() throws IOException {
-        ModuleTree moduleTree = new ModuleTree();
-        moduleTree.setModule(module);
-        moduleTree.setContext(ctx);
-        moduleTree.scan();
-        moduleTree.write("module.svg");
+        FlattenedTree flattenedTree = new FlattenedTree();
+        flattenedTree.setModule(module);
+        flattenedTree.scan();
+        SvgTreeWriter writer = new SvgTreeWriter();
+        writer.setContext(ctx);
+        writer.write(flattenedTree, TreeKind.MODULE, "module.svg");
 
-        DirectoryTree directoryTree = new DirectoryTree();
-        directoryTree.setModule(module);
-        directoryTree.build(moduleTree.getRoot(), moduleTree.getContents());
-        directoryTree.write("files.svg");
+        RegularTree regularTree = new RegularTree();
+        regularTree.setModule(module);
+        regularTree.build(flattenedTree.getRoot(), flattenedTree.getContents());
+        writer.setContext(ctx);
+        writer.write(regularTree, TreeKind.FILES, "files.svg");
+
+        writer.setContext(ctx);
+        writer.write(regularTree, TreeKind.DOCS, "doc-regular.svg");
+
+        writer.setContext(ctx);
+        writer.write(flattenedTree, TreeKind.DOCS, "doc-flattened.svg");
     }
-
-
 }

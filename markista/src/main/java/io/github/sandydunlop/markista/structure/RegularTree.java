@@ -4,28 +4,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.structure.SVGIcon.Kind;
+import io.github.sandydunlop.markista.structure.SvgIcon.Kind;
 
-public class DirectoryTree extends SvgTreeWriter {
-    public DirectoryTree() {
-    }
-
-    public void setModule(ModuleNode module) {
-        this.module = module;
-    }
-
-    public TreeNode getRoot() {
-        return root;
-    }
-
-    public List<TreeNode> getContents() {
-        return contents;
+public class RegularTree extends AbstractTree {
+    public RegularTree() {
+        // Nothing to see here
     }
 
     public void build(TreeNode moduleRoot, List<TreeNode> moduleContents) {
         y = 0;
-        root = new TreeNode(SVGIcon.folder(), moduleRoot.getLabel());
+        root = new TreeNode(moduleRoot.getIcon(), moduleRoot.getLabel());
         contents = new ArrayList<>();
         contents.add(root);
         y += lineHeight;
@@ -35,7 +23,7 @@ public class DirectoryTree extends SvgTreeWriter {
                     String packageName = node.getParent().getLabel();
                     List<String> list = new ArrayList<>(Arrays.asList(packageName.split("\\.")));
                     TreeNode branch = getBranch(root, list);
-                    TreeNode leaf = new TreeNode(SVGIcon.code(), node.getLabel() + ".java");
+                    TreeNode leaf = new TreeNode(node.getIcon(), node.getLabel());
                     leaf.setX(branch.getX() + indent);
                     leaf.setY(y);
                     leaf.setParent(branch);
@@ -58,7 +46,7 @@ public class DirectoryTree extends SvgTreeWriter {
         String branchName = components.getFirst();
         TreeNode branch = fromBranch.getChild(branchName);
         if (branch == null) {
-            branch = new TreeNode(SVGIcon.folder(), branchName);
+            branch = new TreeNode(SvgIcon.folder(), branchName);
             fromBranch.addChild(branch);
             branch.setX(fromBranch.getX() + indent);
             branch.setY(y);

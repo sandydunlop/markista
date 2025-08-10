@@ -1,6 +1,6 @@
 package io.github.sandydunlop.markista.structure;
 
-public class SVGIcon {
+public class SvgIcon {
     Kind kind;
 
     enum Kind {
@@ -11,28 +11,28 @@ public class SVGIcon {
         FOLDER
     }
 
-    public SVGIcon(Kind kind) {
+    public SvgIcon(Kind kind) {
         this.kind = kind;
     }
 
-    public static SVGIcon module() {
-        return new SVGIcon(Kind.MODULE);
+    public static SvgIcon module() {
+        return new SvgIcon(Kind.MODULE);
     }
 
-    public static SVGIcon pkg() {
-        return new SVGIcon(Kind.PACKAGE);
+    public static SvgIcon pkg() {
+        return new SvgIcon(Kind.PACKAGE);
     }
 
-    public static SVGIcon code() {
-        return new SVGIcon(Kind.CODE);
+    public static SvgIcon code() {
+        return new SvgIcon(Kind.CODE);
     }
 
-    public static SVGIcon folder() {
-        return new SVGIcon(Kind.FOLDER);
+    public static SvgIcon folder() {
+        return new SvgIcon(Kind.FOLDER);
     }
 
-    public static SVGIcon doc() {
-        return new SVGIcon(Kind.DOC);
+    public static SvgIcon doc() {
+        return new SvgIcon(Kind.DOC);
     }
 
     public Kind getKind() {

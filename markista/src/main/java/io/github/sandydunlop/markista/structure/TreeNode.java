@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TreeNode {
-    SVGIcon icon;
+    SvgIcon icon;
     String label;
     int x;
     int y;
@@ -13,7 +13,7 @@ public class TreeNode {
     TreeNode parent;
     Path path;
 
-    public TreeNode(SVGIcon icon, String label) {
+    public TreeNode(SvgIcon icon, String label) {
         this.icon = icon;
         this.label = label;
     }
@@ -38,7 +38,7 @@ public class TreeNode {
         return label;
     }
 
-    public SVGIcon getIcon() {
+    public SvgIcon getIcon() {
         return icon;
     }
 
