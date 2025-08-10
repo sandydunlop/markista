@@ -7,6 +7,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.structure.SVGWriter;
 import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Utils;
@@ -71,6 +72,7 @@ public class ModuleWriter {
     private void outputModuleDoc(ModuleNode moduleNode) throws IOException {
         ctx.setModuleName(moduleNode.getName());
         if (!moduleNode.getPackages().isEmpty()) {
+            outputStructureSvg(moduleNode);
             ctx.setModuleName(moduleNode.getName());
             writer = ctx.createFileInModule("index.md");
             if (moduleNode.getName().isEmpty()) {
@@ -191,5 +193,12 @@ public class ModuleWriter {
 
     private static String escape(String text) {
         return text.replace("[","\\[");
+    }
+
+    private void outputStructureSvg(ModuleNode moduleNode) throws IOException {
+        SVGWriter svgWriter = new SVGWriter();
+        svgWriter.setModule(moduleNode);
+        svgWriter.scan();
+        svgWriter.write();
     }
 }
