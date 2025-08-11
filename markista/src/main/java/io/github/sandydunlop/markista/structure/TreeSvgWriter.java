@@ -4,10 +4,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 
-import io.github.sandydunlop.markista.structure.SvgIcon.Kind;
 import io.github.sandydunlop.markista.util.Context;
 
-public class SvgTreeWriter {
+public class TreeSvgWriter {
     /// The Writer used to output the generated markdown content for the current document.
     /// It handles writing text to the appropriate output file or stream.
     private Writer writer;
@@ -15,7 +14,6 @@ public class SvgTreeWriter {
     TreeNode root;
     List<TreeNode> contents;
     AbstractTree tree;
-    TreeKind kind;
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
@@ -23,7 +21,7 @@ public class SvgTreeWriter {
     /// Do not make this `final`. It will break tests with mocked [Context].
     private Context ctx;
 
-    public SvgTreeWriter() {
+    public TreeSvgWriter() {
         this.ctx = Context.getInstance();
     }
 
@@ -35,9 +33,8 @@ public class SvgTreeWriter {
         this.contents = contents;
     }
 
-    public void write(AbstractTree tree, TreeKind kind, String fileName) throws IOException {
+    public void write(AbstractTree tree, String fileName) throws IOException {
         this.tree = tree;
-        this.kind = kind;
         this.contents = tree.getContents();
         this.root = tree.getRoot();
         ctx.setModuleName(tree.getModuleName());
@@ -56,21 +53,8 @@ public class SvgTreeWriter {
     }
 
     private void writeEntry(TreeNode treeNode) throws IOException{
-        SvgIcon icon = treeNode.getIcon();
+        Icon icon = treeNode.getIcon();
         String label = treeNode.getLabel();
-        if (kind != TreeKind.MODULE) {
-            if (icon.getKind() == Kind.MODULE || icon.getKind() == Kind.PACKAGE) {
-                icon = SvgIcon.folder();
-            }
-            if (icon.getKind() == Kind.CODE) {
-                if (kind == TreeKind.DOCS) {
-                    icon = SvgIcon.doc();
-                    label = label + ".md";
-                } else if (kind == TreeKind.FILES) {
-                    label = label + ".java";
-                }
-            }
-        }
         String name = "module_" + escapeName(treeNode.getLabel());
         writer.write("  <g data-cell-id=\"" + name + "\">\n");
         writer.write("    <g data-cell-id=\"" + name + "_icon\">\n");
@@ -111,8 +95,13 @@ public class SvgTreeWriter {
                         "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n" + //
                         "<svg\n" + //
                         "\txmlns=\"http://www.w3.org/2000/svg\" style=\"background: transparent; background-color: transparent; color-scheme: light dark;\"\n" + //
-                        String.format("\txmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.1\" width=\"%dpx\" height=\"%dpx\" viewBox=\"0 0  %d %d\" content=\"\">\n",
-                                tree.getWidth(), tree.getHeight(), tree.getWidth(), tree.getHeight()) + //
+
+                        // String.format("\txmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.1\" width=\"%dpx\" height=\"%dpx\" viewBox=\"0 0  %d %d\" content=\"\">\n",
+                        //         tree.getWidth(), tree.getHeight(), tree.getWidth(), tree.getHeight()) + //
+
+                        String.format("\txmlns:xlink=\"http://www.w3.org/1999/xlink\" version=\"1.1\" height=\"%dpx\">\n",
+                                tree.getHeight()) + //
+
                         "\t<defs/>\n" + //
                         "\t<g>\n" + //
                         "\t\t<g data-cell-id=\"0\">\n" + //

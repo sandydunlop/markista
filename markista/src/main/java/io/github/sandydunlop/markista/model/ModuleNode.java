@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.model;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +8,8 @@ import java.util.List;
 /// Implements the PackageOwner interface to manage contained packages. 
 public class ModuleNode extends Node implements PackageOwner{
     private final String name;
+    private boolean hasModuleInfo = false;
+    private Path sourcePath;
     private final List<DirectiveNode> directives = new ArrayList<>();
     private final List<PackageMember> packages = new ArrayList<>();
     private final List<FieldNode> constantValues = new ArrayList<>();
@@ -21,6 +24,22 @@ public class ModuleNode extends Node implements PackageOwner{
     /// @return The module name.
     public String getName() {
         return name;
+    }
+
+    public void setSourcePath(Path path) {
+        this.sourcePath = path;
+    }
+
+    public Path getSourcePath() {
+        return sourcePath;
+    }
+
+    public void setHasModuleInfo(boolean b) {
+        hasModuleInfo = b;
+    }
+
+    public boolean hasModuleInfo() {
+        return hasModuleInfo;
     }
 
     /// Returns the list of packages contained in this module.

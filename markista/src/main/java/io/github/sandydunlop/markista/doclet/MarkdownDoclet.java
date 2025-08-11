@@ -231,6 +231,17 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
+            new Option("--project-path", true,
+                    "The root directory of the project.", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    if (arguments != null && !arguments.isEmpty()) {
+                        Configuration.setProjectPath(arguments.getFirst());
+                    }
+                    return OK;
+                }
+            },
             new Option("-quiet", false,
                     UNUSED_OPTION_DESCRIPTION, null) {
                 @Override

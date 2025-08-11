@@ -7,8 +7,8 @@ import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.TypeNode;
 
-public class FlattenedTree extends AbstractTree {
-    public FlattenedTree() {
+public class ModuleTree extends AbstractTree {
+    public ModuleTree() {
         // Nothing to see here
     }
 
@@ -16,7 +16,6 @@ public class FlattenedTree extends AbstractTree {
         y = 0;
         contents = new ArrayList<>();
         root = addModule(module, null);
-        imageHeight = contents.size() * lineHeight;
         for (TreeNode treeNode : contents) {
             if (treeNode.getLabel().length() > imageWidth) {
                 imageWidth = treeNode.getLabel().length() ;
@@ -27,7 +26,8 @@ public class FlattenedTree extends AbstractTree {
     }
 
     private TreeNode addModule(ModuleNode node, TreeNode current) {
-        TreeNode treeNode = new TreeNode(SvgIcon.module(), node.getName());
+        String name = node.getName().isBlank() ? "unnamed module" : node.getName();
+        TreeNode treeNode = new TreeNode(NodeKind.MODULE, name);
         if (current != null) {
             current.addChild(treeNode);
             treeNode.setX(current.getX() + indent);
@@ -40,12 +40,16 @@ public class FlattenedTree extends AbstractTree {
             if (pkg instanceof PackageNode pn) {
                 addPackage(pn, treeNode);
             }
+        }
+        if (node.hasModuleInfo()) {
+            TypeNode tn = new TypeNode("", "module-info", null);
+            addType(tn, treeNode);
         }
         return treeNode;
     }
 
     private void addPackage(PackageNode node, TreeNode current) {
-        TreeNode treeNode = new TreeNode(SvgIcon.pkg(), node.getName());
+        TreeNode treeNode = new TreeNode(NodeKind.PACKAGE, node.getName());
         if (current != null) {
             current.addChild(treeNode);
             treeNode.setX(current.getX() + indent);
@@ -58,6 +62,10 @@ public class FlattenedTree extends AbstractTree {
             if (pkg instanceof PackageNode pn) {
                 addPackage(pn, treeNode);
             }
+        }
+        if (node.hasPackageInfo()) {
+            TypeNode tn = new TypeNode("", "package-info", node);
+            addType(tn, treeNode);
         }
         for (TypeNode type : node.getTypes()) {
             addType(type, treeNode);
@@ -65,7 +73,7 @@ public class FlattenedTree extends AbstractTree {
     }
 
     private void addType(TypeNode node, TreeNode current) {
-        TreeNode treeNode = new TreeNode(SvgIcon.code(), node.getSimpleName());
+        TreeNode treeNode = new TreeNode(NodeKind.CODE, node.getSimpleName());
         if (current != null) {
             current.addChild(treeNode);
             treeNode.setX(current.getX() + indent);

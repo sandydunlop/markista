@@ -7,8 +7,8 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.structure.StructureWriter;
-import io.github.sandydunlop.markista.structure.SvgTreeWriter;
+import io.github.sandydunlop.markista.structure.Structures;
+import io.github.sandydunlop.markista.structure.TreeSvgWriter;
 import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Utils;
@@ -197,7 +197,7 @@ public class ModuleWriter {
     }
 
     private void outputStructureSvg(ModuleNode moduleNode) throws IOException {
-        StructureWriter structureWriter = new StructureWriter();
+        Structures structureWriter = new Structures();
         structureWriter.setModule(moduleNode);
         structureWriter.run();
     }

@@ -38,6 +38,8 @@ public class Configuration {
     /// The list of modules that have local Javadoc that can be linked to
     private static List<String> linkExternal = new ArrayList<>();
 
+    private static String projectPath = null;
+
     /// The default constructor
     private Configuration() {
         // Hide the public constructor
@@ -151,5 +153,13 @@ public class Configuration {
     /// @return A list of the module paths
     public static List<String> getModulePaths() {
         return modulePathList;
+    }
+
+    public static void setProjectPath(String path) {
+        projectPath = path;
+    }
+
+    public static String getProjectPath() {
+        return projectPath;
     }
 }

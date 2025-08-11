@@ -5,17 +5,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TreeNode {
-    SvgIcon icon;
+    NodeKind kind;
+    Icon icon;
     String label;
     int x;
     int y;
     List<TreeNode> children = new ArrayList<>();
     TreeNode parent;
     Path path;
+    boolean visible = true;
 
-    public TreeNode(SvgIcon icon, String label) {
-        this.icon = icon;
+    public TreeNode(NodeKind kind, String label) {
+        this.kind = kind;
         this.label = label;
+        this.icon = new Icon(kind);
     }
 
     public void setX(int x) {
@@ -38,7 +41,7 @@ public class TreeNode {
         return label;
     }
 
-    public SvgIcon getIcon() {
+    public Icon getIcon() {
         return icon;
     }
 
@@ -62,10 +65,21 @@ public class TreeNode {
         return path;
     }
 
-    // public List<TreeNode> getChildren() {
-    //     return children;
-    // }
+    public void setVisible(boolean b) {
+        visible = b;
+    }
 
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setKind(NodeKind kind) {
+        this.kind = kind;
+    }
+
+    public NodeKind getKind() {
+        return kind;
+    }
 
     public TreeNode getChild(String name) {
         for (TreeNode child : children) {

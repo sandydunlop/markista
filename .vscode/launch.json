@@ -33,7 +33,34 @@
 
         {
             "type": "java",
-            "name": "Javadoc - Example",
+            "name": "Javadoc - Example - module",
+            "request": "launch",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "projectName": "markista",
+            "args": ["-options", "javadoc-example2.options"]
+        },
+
+        {
+            "type": "java",
+            "name": "Javadoc - Example - no module-info",
+            "request": "launch",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "projectName": "markista",
+            "args": ["-options", "javadoc-example3.options"]
+        },
+
+        {
+            "type": "java",
+            "name": "Javadoc - Example - no package-info",
+            "request": "launch",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "projectName": "markista",
+            "args": ["-options", "javadoc-example4.options"]
+        },
+
+        {
+            "type": "java",
+            "name": "Javadoc - Food Example",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",

@@ -2,7 +2,10 @@ package io.github.sandydunlop.markista.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
 import com.sun.source.util.DocTreePath;
@@ -19,6 +22,8 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.util.Elements;
+import javax.tools.JavaFileObject;
 import javax.tools.Diagnostic.Kind;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -79,6 +84,13 @@ class ApiScannerTests {
         DocletEnvironment mockEnvironment = mock(DocletEnvironment.class);
         Mockito.when(mockEnvironment.getDocTrees()).thenReturn(docTrees);
         TypeUtils.init(null, mockEnvironment);
+
+        JavaFileObject jfo = mock(JavaFileObject.class);
+        Mockito.when(jfo.getName()).thenReturn("module-info.java");
+        Mockito.when(jfo.toUri()).thenReturn(Path.of("").toUri());
+        Elements elementUtils = mock(Elements.class);
+        Mockito.when(elementUtils.getFileObjectOf(any())).thenReturn(jfo);
+        Mockito.when(mockEnvironment.getElementUtils()).thenReturn(elementUtils);
 
         Name packageName = mock(Name.class);
         Mockito.when(packageName.toString()).thenReturn(PACKAGE_NAME);

@@ -37,6 +37,31 @@ public abstract class AbstractTree {
     }
 
     public String getModuleName() {
+        if (module == null) {
+            return "unnamed module";
+        }
         return module.getName();
+    }
+
+    public void makeAllVisible() {
+        for (TreeNode node : contents) {
+            node.setVisible(true);
+        }
+    }
+
+    public void hideNames(String name) {
+        for (TreeNode node : contents) {
+            if (node.getLabel().contains(name)) {
+                node.setVisible(false);
+            }
+        }
+    }
+
+    public void hideKind(NodeKind kind) {
+        for (TreeNode node : contents) {
+            if (node.getKind() == kind) {
+                node.setVisible(false);
+            }
+        }
     }
 }

@@ -132,6 +132,6 @@ task website (type: Copy) {
 task copyDocs(type: Copy) {
     duplicatesStrategy = 'include'
     from 'build/md-docs'
-    into '../../../../website/docs/markista/javadoc'
+    into '../../../../website/docs/markista/Markista-Javadoc'
 }
 website.dependsOn copyDocs

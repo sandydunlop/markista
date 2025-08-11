@@ -690,7 +690,6 @@ public class LinkResolver {
         addNativeModule("java.se");
         addNativeModule("java.security.jgss");
         addNativeModule("java.security.sasl");
-        //noinspection SpellCheckingInspection
         addNativeModule("java.smartcardio");
         addNativeModule("java.sql");
         addNativeModule("java.sql.rowset");

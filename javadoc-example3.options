@@ -1,0 +1,10 @@
+"--module-path", "/Users/sandy/git/cu/dev/example.module/example.module/build/classes/java/main", 
+"-d", "markista/build/docs/docs",
+"-doctitle", "Example API",
+"-link",
+"-notimestamp",
+"-quiet",
+"-verbose",
+"-windowtitle", "Consumer API",
+"/Users/sandy/git/cu/dev/example.module/example.module/src/main/java/com/example/botany/fruit/package-info.java",
+"/Users/sandy/git/cu/dev/example.module/example.module/src/main/java/com/example/botany/fruit/Tomato.java"

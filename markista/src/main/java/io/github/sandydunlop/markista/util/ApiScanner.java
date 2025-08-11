@@ -8,11 +8,15 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.PackageOwner;
 import io.github.sandydunlop.markista.model.TypeNode;
 
+import java.io.File;
 import java.io.Serializable;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +32,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
+import javax.tools.JavaFileObject;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -61,6 +66,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         scan(elements, 0);
         TypeUtils.addConstantFieldValuesReference(currentModule);
         TypeUtils.markCustomAnnotations();
+        calculateUnnamedModuleSourcePath();
         api.sort();
         return api;
     }
@@ -87,6 +93,15 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         return false;
     }
 
+    private void calculateUnnamedModuleSourcePath() {
+        if (unnamedModule.getPackages().isEmpty()) return;
+        PackageNode pkg = (PackageNode) unnamedModule.getPackages().getFirst();
+        String separator = java.nio.file.FileSystems.getDefault().getSeparator();
+        String nameAsPath = pkg.getName().replace(".", separator);
+        String root = pkg.getSourcePath().toString().replace(nameAsPath, "");
+        unnamedModule.setSourcePath(Path.of(root));
+    }
+
     @Override
     public Void scan(Element e, Integer depth) {
         return super.scan(e, depth + 1);
@@ -108,6 +123,9 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             if (Configuration.getVerbose()) {
                 ctx.reportInfo(String.format("[ MODULE] %s", mod.getName()));
             }
+            File moduleInfo = getModuleInfoFile(e);
+            mod.setHasModuleInfo(moduleInfo != null);
+            mod.setSourcePath(moduleInfo.toPath().getParent());
             TypeUtils.setDocumentation(mod, e);
             List<? extends Directive>  directives = e.getDirectives();
             for (Directive directive : directives) {
@@ -128,6 +146,11 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 pkg = new PackageNode(ee.getQualifiedName().toString());
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
+                }
+                File pkgInfo = getPackageInfoFile(ee);
+                if (pkgInfo != null) {
+                    pkg.setHasPackageInfo(pkgInfo != null);
+                    pkg.setSourcePath(pkgInfo.toPath().getParent());
                 }
                 pkg.setModule(currentModule);
                 currentModule.addPackage(pkg);
@@ -150,6 +173,13 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (isIncludedElement(e.getQualifiedName().toString()) && TypeUtils.isIncludedInApi(e)){
             TypeNode typeNode = TypeUtils.nodeFromElement(e);
             TypeUtils.setDocumentation(typeNode, e);
+            JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(e);
+            if (jfo != null) {
+                typeNode.setSourcePath(Path.of(jfo.toUri()));
+                if (typeNode.getPackage().getSourcePath() == null) {
+                    typeNode.getPackage().setSourcePath(Path.of(jfo.toUri()).getParent());
+                }
+            }
         }
         return super.visitType(e, depth);
     }
@@ -201,4 +231,31 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     public Void visitRecordComponent(RecordComponentElement e, Integer depth) {
         return visitUnknown(e, depth);
     }
+
+    /// Retrieves the `package-info.java` file associated with the specified 
+    /// [PackageElement]. This method checks if the package element has an 
+    /// associated file and returns it as a [File] object.
+    ///
+    /// @param packageElement the [PackageElement] for which to retrieve the 
+    ///                       associated `package-info.java` file
+    /// @return a [File] object representing the `package-info.java`
+    ///         file if it exists; `null` if the file does not exist or is 
+    ///         not associated with the given package element
+    public File getPackageInfoFile(PackageElement packageElement) {
+        JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(packageElement);
+
+        if (jfo != null && jfo.getName().endsWith("package-info.java")) {
+            return new File(jfo.toUri());
+        }
+        return null;
+    }    
+
+    public File getModuleInfoFile(ModuleElement moduleElement) {
+        JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(moduleElement);
+
+        if (jfo != null && jfo.getName().endsWith("module-info.java")) {
+            return new File(jfo.toUri());
+        }
+        return null;
+    }    
 }
