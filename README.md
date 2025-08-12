@@ -8,7 +8,7 @@ Markista is a [doclet](https://docs.oracle.com/javase/8/docs/technotes/guides/ja
 
 Markista is under active development and has reached a point where it is becoming useful. There will be features that aren't completely implemented yet.
 
-As a demonstration, the Markdown Javadoc for Markista itself is [available here](https://sandydunlop.github.io/markista/javadoc/doclet/).
+As a demonstration, the Markdown Javadoc for Markista itself is [available here](https://sandydunlop.github.io/markista/javadoc/markista/).
 It was produced with the `-private` parameter which tells Markista to document private members of classes. By default only public and protected members are documented.
 
 ## Gradle
