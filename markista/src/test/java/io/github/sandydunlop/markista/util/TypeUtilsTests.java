@@ -39,7 +39,6 @@ import io.github.sandydunlop.markista.model.TypeNode;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
 
-import javax.lang.model.AnnotatedConstruct;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -913,7 +912,6 @@ class TypeUtilsTests {
         AnnotationMirror am = mock(AnnotationMirror.class);
         List<? extends AnnotationMirror> annotationMirrors = List.of(am);
         TypeElement ac = mock(TypeElement.class);
-        // AnnotatedConstruct ac = mock(AnnotatedConstruct.class);
         when (ac.getAnnotationMirrors()).thenAnswer(_ -> annotationMirrors);
         
         DeclaredType declaredType = mock(DeclaredType.class);

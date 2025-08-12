@@ -64,4 +64,23 @@ public abstract class AbstractTree {
             }
         }
     }
+
+    protected TreeNode getBranch(TreeNode fromBranch, List<String> components) {
+        String branchName = components.getFirst();
+        TreeNode branch = fromBranch.getChild(branchName);
+        if (branch == null) {
+            branch = new TreeNode(NodeKind.FOLDER, branchName);
+            fromBranch.addChild(branch);
+            branch.setX(fromBranch.getX() + indent);
+            branch.setY(y);
+            branch.setParent(fromBranch);
+            contents.add(branch);
+            y += lineHeight;
+        }
+        if (components.size() > 1) {
+            components.removeFirst();
+            return getBranch(branch, components);
+        }
+        return branch;
+    } 
 }

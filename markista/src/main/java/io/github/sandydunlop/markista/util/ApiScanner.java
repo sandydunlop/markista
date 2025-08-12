@@ -8,14 +8,12 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.PackageOwner;
 import io.github.sandydunlop.markista.model.TypeNode;
 
 import java.io.File;
 import java.io.Serializable;
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -147,11 +145,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
-                File pkgInfo = getPackageInfoFile(ee);
-                if (pkgInfo != null) {
-                    pkg.setHasPackageInfo(pkgInfo != null);
-                    pkg.setSourcePath(pkgInfo.toPath().getParent());
-                }
+                TypeUtils.setPackageSourcePath(pkg, ee);
                 pkg.setModule(currentModule);
                 currentModule.addPackage(pkg);
                 TypeUtils.setDocumentation(pkg, ee);
@@ -231,24 +225,6 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     public Void visitRecordComponent(RecordComponentElement e, Integer depth) {
         return visitUnknown(e, depth);
     }
-
-    /// Retrieves the `package-info.java` file associated with the specified 
-    /// [PackageElement]. This method checks if the package element has an 
-    /// associated file and returns it as a [File] object.
-    ///
-    /// @param packageElement the [PackageElement] for which to retrieve the 
-    ///                       associated `package-info.java` file
-    /// @return a [File] object representing the `package-info.java`
-    ///         file if it exists; `null` if the file does not exist or is 
-    ///         not associated with the given package element
-    public File getPackageInfoFile(PackageElement packageElement) {
-        JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(packageElement);
-
-        if (jfo != null && jfo.getName().endsWith("package-info.java")) {
-            return new File(jfo.toUri());
-        }
-        return null;
-    }    
 
     public File getModuleInfoFile(ModuleElement moduleElement) {
         JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(moduleElement);

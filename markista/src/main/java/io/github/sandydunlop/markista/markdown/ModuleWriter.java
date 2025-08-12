@@ -8,7 +8,6 @@ import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.structure.Structures;
-import io.github.sandydunlop.markista.structure.TreeSvgWriter;
 import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Utils;

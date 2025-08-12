@@ -35,10 +35,8 @@ import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +47,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.VariableElement;
@@ -58,11 +55,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
-import javax.lang.model.util.Elements;
-import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
-import javax.tools.StandardLocation;
-import javax.tools.ToolProvider;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -893,4 +886,30 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             return getEnclosingTypeElement(enclosing);
         }
     }
+
+    public static void setPackageSourcePath(PackageNode pkg, PackageElement ee) {
+        File pkgInfo = getPackageInfoFile(ee);
+        if (pkgInfo != null) {
+            pkg.setHasPackageInfo(pkgInfo != null);
+            pkg.setSourcePath(pkgInfo.toPath().getParent());
+        }
+    }
+
+    /// Retrieves the `package-info.java` file associated with the specified 
+    /// [PackageElement]. This method checks if the package element has an 
+    /// associated file and returns it as a [File] object.
+    ///
+    /// @param packageElement the [PackageElement] for which to retrieve the 
+    ///                       associated `package-info.java` file
+    /// @return a [File] object representing the `package-info.java`
+    ///         file if it exists; `null` if the file does not exist or is 
+    ///         not associated with the given package element
+    public static File getPackageInfoFile(PackageElement packageElement) {
+        JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(packageElement);
+
+        if (jfo != null && jfo.getName().endsWith("package-info.java")) {
+            return new File(jfo.toUri());
+        }
+        return null;
+    }    
 }
