@@ -151,7 +151,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 TypeUtils.setDocumentation(pkg, ee);
                 api.addPackage(pkg);
                 Element enclosing = ee.getEnclosingElement();
-                if (enclosing.getKind() == ElementKind.PACKAGE) {
+                if (enclosing != null && enclosing.getKind() == ElementKind.PACKAGE) {
                     PackageOwner owner = api.getPackageNode(ee.getQualifiedName().toString());
                     if (owner != null) {
                         owner.getPackages().add(pkg);

@@ -15,6 +15,13 @@ public class Text {
         return new Text();
     }
 
+    /// Creates a Text object containing the supplied string value
+    /// @param string a String to store in the Text object
+    /// @return A Text object representing the string
+    public static Text of(String string) {
+        return new Text().append(string);
+    }
+
     /// Private constructor to prevent external instantiation.
     private Text() {
         // Nothing to see here

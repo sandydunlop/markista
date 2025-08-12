@@ -369,7 +369,9 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             // Owner is a package
             typeNode.setOwner(typeNode.getPackage());
         }
-        typeNode.getOwner().addType(typeNode);
+        if (typeNode.getOwner() != null) {
+            typeNode.getOwner().addType(typeNode);
+        }
     }
 
     /// Sets annotations on the MethodNode, in particular looks for @Override annotation to set overridden methods.
