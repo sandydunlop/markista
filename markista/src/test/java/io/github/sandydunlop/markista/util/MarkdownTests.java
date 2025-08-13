@@ -109,26 +109,26 @@ class MarkdownTests {
     @Test
 	void autoLink_array() {
         Reference link = Reference.to("java.lang.String[]");
-        String markdown = Markdown.link(link, true);
+        String markdown = Markdown.link(link, false);
         assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
     }
 
     @Test
 	void autoLink_listOfArrays() {
         Reference link = Reference.to("java.util.List<java.lang.String[]>");
-        String markdown = Markdown.link(link, true);
+        String markdown = Markdown.link(link, false);
         assertEquals("[List](" + JAVA_24_URL + "java.base/java/util/List.html)&lt;[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]&gt;", markdown);
     }
 
 	@Test
 	void splitAndLink_oneArray_simplified() {
-        String markdown = Markdown.splitAndLink("java.lang.String[]", true);
+        String markdown = Markdown.splitAndLink("java.lang.String[]", false);
         assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
     }
 
 	@Test
 	void splitAndLink_oneArray() {
-        String markdown = Markdown.splitAndLink("java.lang.String[]", false);
+        String markdown = Markdown.splitAndLink("java.lang.String[]", true);
         assertEquals("[java.lang.String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
     }
 
@@ -259,21 +259,21 @@ class MarkdownTests {
 
     @Test
     void link_generics_qualified() {
-        String markdown = Markdown.linkGenerics("java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>", true);
+        String markdown = Markdown.linkGenerics("java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>", false);
         assertEquals("[Function](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html), [Optional](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html)&gt;&gt;", markdown);
     }
 
     @Test
     void link_nativeMethod() {
         LinkResolver.addNativeModules();
-        String markdown = Markdown.link(Reference.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
+        String markdown = Markdown.link(Reference.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"), true);
         assertEquals("[jdk.javadoc.doclet.Doclet.Option.process(java.lang.String,java.util.List)](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
     }
 
     @Test
     void link_localMethod() {
         LinkResolver.addNativeModules();
-        String markdown = Markdown.link(Reference.to("Node#sort()"));
+        String markdown = Markdown.link(Reference.to("Node#sort()"), false);
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
     }
 
@@ -282,7 +282,7 @@ class MarkdownTests {
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
         ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
         LinkResolver.addNativeModules();
-        String markdown = Markdown.link(Reference.to("MarkdownDoclet#main()"));
+        String markdown = Markdown.link(Reference.to("MarkdownDoclet#main()"), false);
         assertEquals("[main](#main)", markdown);
     }
 
@@ -291,7 +291,7 @@ class MarkdownTests {
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
         ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
         LinkResolver.addNativeModules();
-        String markdown = Markdown.link(Reference.to("#main()"));
+        String markdown = Markdown.link(Reference.to("#main()"), false);
         assertEquals("[main()](#main)", markdown);
     }
 
@@ -299,7 +299,7 @@ class MarkdownTests {
 	void link_qualifiedWithAnchor_simplified() {
          ctx.setPackageName("io.github.sandydunlop.markista.model");
         Reference link = Reference.to("io.github.sandydunlop.markista.util.LinkResolver#resolve");
-        String markdown = Markdown.link(link, true);
+        String markdown = Markdown.link(link, false);
         assertEquals("[LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
     }
 
@@ -307,8 +307,8 @@ class MarkdownTests {
 	void link_qualifiedWithAnchor() {
          ctx.setPackageName("io.github.sandydunlop.markista.model");
         Reference link = Reference.to("io.github.sandydunlop.markista.util.LinkResolver#resolve");
-        String markdown = Markdown.link(link, false);
-        assertEquals("[LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
+        String markdown = Markdown.link(link, true);
+        assertEquals("[io.github.sandydunlop.markista.util.LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
     }
 
     @Test
@@ -381,7 +381,7 @@ class MarkdownTests {
 
 	@Test
 	void splitAndLink_two() {
-        String markdown = Markdown.splitAndLink("java.lang.String, java.util.List", true);
+        String markdown = Markdown.splitAndLink("java.lang.String, java.util.List", false);
         assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html), [List](" + JAVA_24_URL + "java.base/java/util/List.html)", markdown);
     }
 }

@@ -1,12 +1,15 @@
 package io.github.sandydunlop.markista.model;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 /// Represents a Java package
 public class PackageNode extends AbstractTypeOwner implements PackageMember, PackageOwner {
-    private final String name;
     private ModuleNode module;
+    private Path sourcePath;
+    private final String name;
+    private boolean hasPackageInfo = false;
     private final List<PackageMember> packages = new ArrayList<>();
 
     /// Constructs a PackageNode with the specified qualified package name.
@@ -25,6 +28,14 @@ public class PackageNode extends AbstractTypeOwner implements PackageMember, Pac
     /// @return The ModuleNode instance.
     public ModuleNode getModule() {
         return module;
+    }
+
+    public void setSourcePath(Path path) {
+        this.sourcePath = path;
+    }
+
+    public Path getSourcePath() {
+        return sourcePath;
     }
 
     /// Returns the list of package members owned by this package.
@@ -53,5 +64,13 @@ public class PackageNode extends AbstractTypeOwner implements PackageMember, Pac
     @Override
     public Text getDescription() {
         return firstSentence;
+    }
+
+    public void setHasPackageInfo(boolean b) {
+        hasPackageInfo = b;
+    }
+
+    public boolean hasPackageInfo() {
+        return hasPackageInfo;
     }
 }

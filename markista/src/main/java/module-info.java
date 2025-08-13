@@ -8,4 +8,11 @@ module markista {
     requires transitive java.compiler;
 
     exports io.github.sandydunlop.markista.doclet;
+
+    // These opens are needed to allow JUnit testing
+    opens io.github.sandydunlop.markista.doclet;
+    opens io.github.sandydunlop.markista.markdown;
+    opens io.github.sandydunlop.markista.model;
+    opens io.github.sandydunlop.markista.structure;
+    opens io.github.sandydunlop.markista.util;
 }

@@ -102,7 +102,7 @@ public class Api extends AbstractTypeOwner {
     public TypeNode getTypeNode(String qualifiedName) {
         if (types == null) return null;
         for (TypeNode typeNode : types) {
-            if (typeNode.qualifiedName.equals(qualifiedName)){
+            if (typeNode.getQualifiedName().equals(qualifiedName)){
                 return typeNode;
             }
         }

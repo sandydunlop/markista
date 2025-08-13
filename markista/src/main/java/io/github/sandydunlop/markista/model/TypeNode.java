@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.model;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,6 +10,8 @@ import java.util.List;
 public class TypeNode extends AbstractTypeOwner implements PackageMember {
     /// The canonical form of the type's name
     protected String qualifiedName;
+
+    protected Path sourcePath;
 
     /// The owner of this type, usually another type or module.
     private TypeOwner owner = null;
@@ -49,6 +52,14 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
         this.qualifiedName = qualifiedName;
         this.simpleName = simpleName;
         this.packageNode = packageNode;
+    }
+
+    public void setSourcePath(Path path) {
+        this.sourcePath = path;
+    }
+
+    public Path getSourcePath() {
+        return sourcePath;
     }
 
     /// Sets the array brackets representation for this type.

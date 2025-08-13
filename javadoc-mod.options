@@ -1,8 +1,0 @@
-"-d", "markista/build/md-docs", 
-"-private", 
-"-link",
-"--flatten-packages",
-"-tabs",
-"--module-source-path", "/Users/sandy/git/cu/dev/markista/*/src/main/java",
-"--module", "markista",
-"-verbose"

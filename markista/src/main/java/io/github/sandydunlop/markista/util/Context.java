@@ -94,6 +94,10 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         this.outputDirectory = outputDirectory == null ? "" : outputDirectory;
     }
 
+    public String getOutputDirectory() {
+        return outputDirectory;
+    }
+
     /// Sets the reporter used for reporting messages and diagnostics during doc generation.
     /// @param reporter The Reporter instance.
     public void setReporter(Reporter reporter) {

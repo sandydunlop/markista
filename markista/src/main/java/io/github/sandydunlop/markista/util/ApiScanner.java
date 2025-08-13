@@ -12,7 +12,9 @@ import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.PackageOwner;
 import io.github.sandydunlop.markista.model.TypeNode;
 
+import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,6 +30,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
+import javax.tools.JavaFileObject;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -61,6 +64,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         scan(elements, 0);
         TypeUtils.addConstantFieldValuesReference(currentModule);
         TypeUtils.markCustomAnnotations();
+        calculateUnnamedModuleSourcePath();
         api.sort();
         return api;
     }
@@ -87,6 +91,15 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         return false;
     }
 
+    private void calculateUnnamedModuleSourcePath() {
+        if (unnamedModule.getPackages().isEmpty()) return;
+        PackageNode pkg = (PackageNode) unnamedModule.getPackages().getFirst();
+        String separator = java.nio.file.FileSystems.getDefault().getSeparator();
+        String nameAsPath = pkg.getName().replace(".", separator);
+        String root = pkg.getSourcePath().toString().replace(nameAsPath, "");
+        unnamedModule.setSourcePath(Path.of(root));
+    }
+
     @Override
     public Void scan(Element e, Integer depth) {
         return super.scan(e, depth + 1);
@@ -107,6 +120,11 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             mod = new ModuleNode(e.getQualifiedName().toString());
             if (Configuration.getVerbose()) {
                 ctx.reportInfo(String.format("[ MODULE] %s", mod.getName()));
+            }
+            File moduleInfo = getModuleInfoFile(e);
+            if (moduleInfo != null) {
+                mod.setHasModuleInfo(true);
+                mod.setSourcePath(moduleInfo.toPath().getParent());
             }
             TypeUtils.setDocumentation(mod, e);
             List<? extends Directive>  directives = e.getDirectives();
@@ -129,12 +147,13 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
+                TypeUtils.setPackageSourcePath(pkg, ee);
                 pkg.setModule(currentModule);
                 currentModule.addPackage(pkg);
                 TypeUtils.setDocumentation(pkg, ee);
                 api.addPackage(pkg);
                 Element enclosing = ee.getEnclosingElement();
-                if (enclosing.getKind() == ElementKind.PACKAGE) {
+                if (enclosing != null && enclosing.getKind() == ElementKind.PACKAGE) {
                     PackageOwner owner = api.getPackageNode(ee.getQualifiedName().toString());
                     if (owner != null) {
                         owner.getPackages().add(pkg);
@@ -150,6 +169,13 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (isIncludedElement(e.getQualifiedName().toString()) && TypeUtils.isIncludedInApi(e)){
             TypeNode typeNode = TypeUtils.nodeFromElement(e);
             TypeUtils.setDocumentation(typeNode, e);
+            JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(e);
+            if (jfo != null && typeNode != null) {
+                typeNode.setSourcePath(Path.of(jfo.toUri()));
+                if (typeNode.getPackage().getSourcePath() == null) {
+                    typeNode.getPackage().setSourcePath(Path.of(jfo.toUri()).getParent());
+                }
+            }
         }
         return super.visitType(e, depth);
     }
@@ -201,4 +227,13 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     public Void visitRecordComponent(RecordComponentElement e, Integer depth) {
         return visitUnknown(e, depth);
     }
+
+    public File getModuleInfoFile(ModuleElement moduleElement) {
+        JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(moduleElement);
+
+        if (jfo != null && jfo.getName().endsWith("module-info.java")) {
+            return new File(jfo.toUri());
+        }
+        return null;
+    }    
 }

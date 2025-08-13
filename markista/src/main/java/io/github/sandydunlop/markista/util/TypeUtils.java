@@ -34,6 +34,7 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +55,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
+import javax.tools.JavaFileObject;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -367,7 +369,9 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             // Owner is a package
             typeNode.setOwner(typeNode.getPackage());
         }
-        typeNode.getOwner().addType(typeNode);
+        if (typeNode.getOwner() != null) {
+            typeNode.getOwner().addType(typeNode);
+        }
     }
 
     /// Sets annotations on the MethodNode, in particular looks for @Override annotation to set overridden methods.
@@ -393,8 +397,9 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         for (String interfaceName : interfaces) {
             TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceName);
             if (interfaceElement == null) continue;
-            for (ExecutableElement interfaceMethod : ElementFilter.methodsIn(interfaceElement.getEnclosedElements())) {
-                if (interfaceMethod.getSimpleName().equals(methodElement.getSimpleName())) {
+            List<? extends Element>  enclosedElements = interfaceElement.getEnclosedElements();
+            for (ExecutableElement interfaceMethod : ElementFilter.methodsIn(enclosedElements)) {
+                if (interfaceMethod.getSimpleName().toString().equals(methodElement.getSimpleName().toString())) {
                     methodNode.setSpecifiedBy(interfaceName);
                     return;
                 }
@@ -557,7 +562,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     public static ParamTree getParamTree(DocCommentTree dcTree, VariableElement parameter) {
         if (dcTree == null) return null;
         for (DocTree tagTree : dcTree.getBlockTags()) {
-            if (tagTree instanceof ParamTree tree && tree.getName().toString().equals(parameter.getSimpleName().toString())) {
+            if (tagTree instanceof ParamTree tree && tree.getName().getName().toString().equals(parameter.getSimpleName().toString())) {
                 return tree;
             }
         }
@@ -884,4 +889,30 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             return getEnclosingTypeElement(enclosing);
         }
     }
+
+    public static void setPackageSourcePath(PackageNode pkg, PackageElement ee) {
+        File pkgInfo = getPackageInfoFile(ee);
+        if (pkgInfo != null) {
+            pkg.setHasPackageInfo(true);
+            pkg.setSourcePath(pkgInfo.toPath().getParent());
+        }
+    }
+
+    /// Retrieves the `package-info.java` file associated with the specified 
+    /// [PackageElement]. This method checks if the package element has an 
+    /// associated file and returns it as a [File] object.
+    ///
+    /// @param packageElement the [PackageElement] for which to retrieve the 
+    ///                       associated `package-info.java` file
+    /// @return a [File] object representing the `package-info.java`
+    ///         file if it exists; `null` if the file does not exist or is 
+    ///         not associated with the given package element
+    public static File getPackageInfoFile(PackageElement packageElement) {
+        JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(packageElement);
+
+        if (jfo != null && jfo.getName().endsWith("package-info.java")) {
+            return new File(jfo.toUri());
+        }
+        return null;
+    }    
 }

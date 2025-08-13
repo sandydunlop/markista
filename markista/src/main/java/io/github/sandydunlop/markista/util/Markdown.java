@@ -27,7 +27,7 @@ public class Markdown {
     /// @return Markdown formatted text representing the method's signature
     public static String fullSignature(MethodNode method ) {
         String sig = method.getModifiersString();
-        sig += link(Reference.to(method.getReturnType().getQualifiedName()), true) + " ";
+        sig += link(Reference.to(method.getReturnType().getQualifiedName()), false) + " ";
         sig += method.getSimpleName() + "(" + formatParams(method.getParams()) + ")";
         return sig;
     }
@@ -40,7 +40,7 @@ public class Markdown {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(", ");
-            String typeName = link(Reference.to(param.getType().getQualifiedName()), true);
+            String typeName = link(Reference.to(param.getType().getQualifiedName()), false);
             sb.append(typeName);
             sb.append(param.getType().getArrayBrackets());
             sb.append(" ");
@@ -163,9 +163,9 @@ public class Markdown {
 
     /// Create a markdown link, automatically deciding what kind of link to make.
     /// @param reference a Reference object describing the link
-    /// @param simplify If true, simplified names will be used in the link label
+    /// @param useQualifiedName If true, qualified names will be used in the link label
     /// @return markdown formatted link
-    public static String link(Reference reference, boolean simplify) {
+    public static String link(Reference reference, boolean useQualifiedName) {
         String targetName = reference.getTarget();
         if (targetName == null || targetName.isEmpty()) {
             ctx.reportWarning("No link target supplied");
@@ -185,9 +185,9 @@ public class Markdown {
             targetName = targetName.substring(0, pos);
         }
         if (targetName.indexOf('<') > -1) {
-            return escape(linkGenerics(targetName, simplify));
+            return escape(linkGenerics(targetName, useQualifiedName));
         } else if (targetName.indexOf(',') > -1) {
-            return splitAndLink(targetName, simplify);
+            return splitAndLink(targetName, useQualifiedName);
         } else if (targetName.lastIndexOf(' ') > 0) {
             int p = targetName.lastIndexOf(' ');
             pre = targetName.substring(0, p) + " ";
@@ -207,9 +207,6 @@ public class Markdown {
             reference.setLabel(reference.getTarget());
         }
         LinkResolver.resolve(reference);
-        if (simplify) {
-            reference.setLabel(Utils.simplifyNames(reference.getLabel()));
-        }
         if (!anchor.isEmpty() && reference.getKind() != Reference.Kind.URL) {
             isLocalMethod = true;
             // Issue: https://github.com/sandydunlop/markista/issues/1
@@ -219,11 +216,11 @@ public class Markdown {
             // are currently headings without parameters.
             reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
         }
-        setDisplayName(reference, displayName, isLocalMethod, simplify);
+        setDisplayName(reference, displayName, isLocalMethod, useQualifiedName);
         return pre + mdRefLink(reference) + post;
     }
 
-    private static void setDisplayName(Reference link, String displayName, boolean isLocalMethod, boolean simplify) {
+    private static void setDisplayName(Reference link, String displayName, boolean isLocalMethod, boolean useQualifiedName) {
         if (link.getLabel() == null) {
              link.setLabel(link.getTarget());
         }
@@ -238,16 +235,16 @@ public class Markdown {
         }
         if (displayName != null && !displayName.isEmpty()) {
             link.setLabel(displayName.replace("#","."));
-        } else {
-            if (simplify || (!ctx.getPackageName().isEmpty() && 
-                    link.getScope() == Reference.Scope.LOCAL && 
-                    (link.getKind() == Reference.Kind.TYPE || 
-                    link.getKind() == Reference.Kind.METHOD))) {
-                link.setLabel(escape(Utils.simplifyNames(link.getLabel())));
-            } else {
-                link.setLabel(escape(link.getLabel()));
-            }
+        } else if (!useQualifiedName && canBeSimplified(link)) {
+            link.setLabel(Utils.simplifyNames(link.getLabel()));
         }
+        link.setLabel(escape(link.getLabel()));
+    }
+
+    private static boolean canBeSimplified(Reference link) {
+        boolean originIsInPackage = !ctx.getPackageName().isEmpty();
+        boolean kindCanBeSimplified = link.getKind() == Reference.Kind.TYPE || link.getKind() == Reference.Kind.METHOD || link.getKind() == Reference.Kind.URL;
+        return kindCanBeSimplified && originIsInPackage;
     }
 
 
@@ -292,27 +289,27 @@ public class Markdown {
     /// Changes qualified generic type names to unqualified generic 
     /// type names and adds links to their API documentation.
     /// @param str A string containing a qualified generic name.
-    /// @param simplify If true, qualified type names will be simplified
+    /// @param useQualifiedName If true, qualified type names will be displayed
     /// @return    A string with the qualified names changed to unqualified
     ///            names and links to types added
-    public static String linkGenerics(String str, boolean simplify) {
+    public static String linkGenerics(String str, boolean useQualifiedName) {
         if (str == null || str.isEmpty()) return str;
         int openingChevron = str.indexOf("<");
         int closingChevron = str.lastIndexOf(">");
         String before = str.substring(0, openingChevron);
         String mid = str.substring(openingChevron + 1, closingChevron);
         String after = str.substring(closingChevron + 1);
-        before = link(Reference.to(before), simplify);
-        mid = splitAndLink(mid, simplify);
+        before = link(Reference.to(before), useQualifiedName);
+        mid = splitAndLink(mid, useQualifiedName);
         return before + "&lt;" + mid + "&gt;" + after;
     }
 
     /// Creates markdown formatted text with links to types from a string.
     /// containing one or more types separated by commas.
     /// @param typesString A string containing a comma-separated list of type names
-    /// @param simplify if true, the simplified version of the identifier is shown
+    /// @param useQualifiedName if true, the qualified version of the identifier is shown
     /// @return a list of links to types formatted as Markdown
-    public static String splitAndLink(String typesString, boolean simplify) {
+    public static String splitAndLink(String typesString, boolean useQualifiedName) {
         StringBuilder r = new StringBuilder();
         String[] types = typesString.split(",");
         for (String t : types) {
@@ -320,7 +317,7 @@ public class Markdown {
             if (!r.isEmpty()) {
                 r.append(", ");
             }
-            r.append(link(Reference.to(typeName), simplify));
+            r.append(link(Reference.to(typeName), useQualifiedName));
         }
         return r.toString();
     }

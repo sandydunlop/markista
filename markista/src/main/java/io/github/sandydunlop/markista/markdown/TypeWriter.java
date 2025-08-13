@@ -134,7 +134,7 @@ public class TypeWriter {
         int indentation = 0;
         for (String st : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(Markdown.link(Reference.to(st), false) + BR + "\n");
+            writer.write(Markdown.link(Reference.to(st), true) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -151,7 +151,7 @@ public class TypeWriter {
             writer.write(NBSP.repeat(4));
             for (int i=0; i<typeNode.getImplementedInterfaces().size(); i++) {
                 if (i > 0) writer.write(", ");
-                writer.write(Markdown.link(Reference.to(typeNode.getImplementedInterfaces().get(i))));
+                writer.write(Markdown.link(Reference.to(typeNode.getImplementedInterfaces().get(i)), true));
             }
             writer.write("\n\n");
         }
@@ -164,7 +164,7 @@ public class TypeWriter {
         if (enclosingClass.getOwner() instanceof ClassTypeNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
-            writer.write(Markdown.link(Reference.to(enclosingClass.getOwner().getName())) + "\n\n");
+            writer.write(Markdown.link(Reference.to(enclosingClass.getOwner().getName()), true) + "\n\n");
         }
     }
 
@@ -247,7 +247,7 @@ public class TypeWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = Markdown.link(Reference.to(fieldNode.getType().getQualifiedName()), true);
+            String link = Markdown.link(Reference.to(fieldNode.getType().getQualifiedName()), false);
             table.addRow(fieldNode.getModifiersString() + link, 
                         Markdown.mdAnchorLink(fieldNode.getSimpleName()), Utils.inOneLine(Markdown.formatText(fieldNode.getFirstSentence())));
         }
@@ -278,7 +278,7 @@ public class TypeWriter {
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
             table.addRow(methodNode.getModifiersString() + 
-                        Markdown.link(Reference.to(methodNode.getReturnType().getQualifiedName()), true), 
+                        Markdown.link(Reference.to(methodNode.getReturnType().getQualifiedName()), false), 
                         Markdown.mdAnchorLink(methodNode.getSimpleName()) + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
                         Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
         }
@@ -387,7 +387,7 @@ public class TypeWriter {
                 if (count++ > 0) {
                     writer.write(", ");
                 }
-                writer.write(Markdown.link(Reference.to(thrownType), true) + "\n");
+                writer.write(Markdown.link(Reference.to(thrownType), false) + "\n");
             }
             writer.write("\n");
         }
@@ -398,7 +398,7 @@ public class TypeWriter {
         }
         if (method.getOverriddenMethod() != null && !method.getOverriddenMethod().getClassName().isEmpty() && !method.getOverriddenMethod().getMethodName().isEmpty()) {
             writer.write("**Overrides:**\n\n");
-            writer.write(Markdown.link(Reference.to(method.getOverriddenMethod().getClassName() + "#" + method.getOverriddenMethod().getMethodName())) + " from " + Markdown.link(Reference.to(method.getOverriddenMethod().getClassName())));
+            writer.write(Markdown.link(Reference.to(method.getOverriddenMethod().getClassName() + "#" + method.getOverriddenMethod().getMethodName()), false) + " from " + Markdown.link(Reference.to(method.getOverriddenMethod().getClassName()), false));
             writer.write("\n\n");
         }        
     }

@@ -19,6 +19,7 @@ import javax.tools.ToolProvider;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -75,6 +76,7 @@ class MarkdownDocletTests {
         return Files.exists(Paths.get(Path.of(BASE_DOC_PATH, file).toString()));
     }
 
+    // @Disabled("WIP")
     @Test
     void run1_flattenPackages() {
         String testOutputDir = BASE_DOC_PATH + "run1";
@@ -94,11 +96,12 @@ class MarkdownDocletTests {
                 systemDocumentationTool.getTask(null, null, null, 
                 MarkdownDoclet.class, Arrays.asList(args), null);
         task.call();
-        assertTrue(docFileExists("run1/index.md"));
-        assertTrue(docFileExists("run1/constant-values.md"));
-        assertTrue(docFileExists("run1/doclet/index.md"));
+        assertTrue(docFileExists("run1/markista/index.md"));
+        assertTrue(docFileExists("run1/markista/constant-values.md"));
+        assertTrue(docFileExists("run1/markista/doclet/index.md"));
     }
 
+    // @Disabled("WIP")
     @Test
     void run2_noFlatten() {
         String testOutputDir = BASE_DOC_PATH + "run2";
@@ -117,8 +120,8 @@ class MarkdownDocletTests {
                 systemDocumentationTool.getTask(null, null, null, 
                 MarkdownDoclet.class, Arrays.asList(args), null);
         task.call();
-        assertTrue(docFileExists("run2/index.md"));
-        assertTrue(docFileExists("run2/constant-values.md"));
-        assertTrue(docFileExists("run2/io/github/sandydunlop/markista/doclet/index.md"));
+        assertTrue(docFileExists("run2/markista/index.md"));
+        assertTrue(docFileExists("run2/markista/constant-values.md"));
+        assertTrue(docFileExists("run2/markista/io/github/sandydunlop/markista/doclet/index.md"));
     }
 }
