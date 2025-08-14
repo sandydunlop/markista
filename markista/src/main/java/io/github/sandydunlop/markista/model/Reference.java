@@ -9,6 +9,7 @@ public class Reference {
     private String uri = "";
     private String anchor = "";
     private boolean resolved = false;
+    private boolean hasAnchor = false;
 
     /// The package the link is coming from. Empty string means there is no package. Null means it hasn't been set yet.
     private String origin = null; 
@@ -20,30 +21,13 @@ public class Reference {
 
     /// Constructs a Reference with given kind, name, and URI. Scope defaults to LOCAL.
     /// @param kind The kind of the reference.
-    /// @param name The display name for the reference.
-    /// @param uri The URI tied to the reference.
-    public Reference(Kind kind, String name, String uri) {
-        this(Scope.LOCAL, kind, name, uri);
-    }
-
-    /// Constructs a Reference with given scope, kind, and name. URI defaults to empty string.
-    /// @param scope The scope of the reference.
-    /// @param kind The kind/type of the reference.
-    /// @param name The display name of the reference.
-    public Reference(Scope scope, Kind kind, String name) {
-        this(scope, kind, name, "");
-    }
-
-    /// Constructs a Reference with full specification: scope, kind, name, and URI.
-    /// @param scope The scope of the reference.
-    /// @param kind The kind/type of the reference.
-    /// @param name The display name.
-    /// @param uri The URI associated with the reference.
-    public Reference(Scope scope, Kind kind, String name, String uri) {
-        this.scope = scope;
+    /// @param label The display name for the reference.
+    /// @param target What the refrence links to
+    public Reference(Kind kind, String label, String target) {
+        this.scope = Scope.LOCAL;
         this.kind = kind;
-        this.uri = uri;
-        this.label = name;
+        this.target = target;
+        this.label = label;
     }
 
     /// Sets the target of the reference.
@@ -69,6 +53,16 @@ public class Reference {
     /// @return the reference with label set
     public Reference withLabel(String label) {
         this.label = label;
+        return this;
+    }
+
+    public Reference withClassName(String className) {
+        this.className = className;
+        return this;
+    }
+
+    public Reference withUri(String uri) {
+        this.uri = uri;
         return this;
     }
 
@@ -177,7 +171,7 @@ public class Reference {
     }
 
     /// Sets the resolved state of this reference.
-    /// @param b Wether this reference is resolved or not.
+    /// @param b Whether this reference is resolved or not.
     public void setResolved(boolean b) {
         resolved = b;
     }
@@ -186,6 +180,22 @@ public class Reference {
     /// @return True if this reference has been resolved. False otherwise.
     public boolean isResolved() {
         return resolved;
+    }
+
+    /// Specifies if this link is to an anchor
+    /// @param b Whether this reference is to an anchor or not.
+    public void setHasAnchor(boolean b) {
+        hasAnchor = b;
+    }
+
+    /// Gets the anchor status of this reference.
+    /// @return True if this reference is to an anchor. False otherwise.
+    public boolean hasAnchor() {
+        return hasAnchor;
+    }
+
+    public String toString() {
+        return kind.toString() + " (" + target + ")";
     }
 
     /// Enum representing different kinds/types of references.

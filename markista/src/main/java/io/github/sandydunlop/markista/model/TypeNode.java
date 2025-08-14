@@ -7,23 +7,23 @@ import java.util.List;
 
 /// Represents a type in the API model, including its kind (class, interface, enum, annotation),
 /// supertypes, implemented interfaces, constructors, methods, fields, ownership, and relevant metadata.
-public class TypeNode extends AbstractTypeOwner implements PackageMember {
-    /// The canonical form of the type's name
-    protected String qualifiedName;
+public class TypeNode extends PackageOrTypeNode {
 
     protected Path sourcePath;
 
     /// The owner of this type, usually another type or module.
-    private TypeOwner owner = null;
+    private PackageOrTypeNode owner = null;
+
+    private Reference enclosingClassRef = null;
 
     /// List of annotations applied to this type.
     private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
 
     /// List of qualified names of interfaces implemented by this type.
-    private List<String> implementedInterfaces = new ArrayList<>();
+    private List<Reference> implementedInterfaces = new ArrayList<>();
 
     /// List of qualified names of this type's supertypes.
-    private List<String> supertypes = new ArrayList<>();
+    private List<Pair<Reference, Text>> supertypes = new ArrayList<>();
 
     /// String representation of array brackets if this type is an array (e.g., `[]`).
     private String arrayBrackets = "";
@@ -88,62 +88,32 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
 
     /// Sets the list of implemented interfaces by qualified names.
     /// @param implementedInterfaces list of qualified interface names.
-    public void setImplementedInterfaces(List<String> implementedInterfaces) {
+    public void setImplementedInterfaces(List<Reference> implementedInterfaces) {
         this.implementedInterfaces = implementedInterfaces;
-    }
-
-    /// Sets the list of supertypes by qualified names.
-    /// @param supertypes list of qualified supertype names.
-    public void setSupertypes(List<String> supertypes) {
-        this.supertypes = supertypes;
     }
 
     /// Returns the list of supertypes by qualified names.
     /// @return list of qualified supertype names.
-    public List<String> getSupertypes() {
+    public List<Pair<Reference, Text>> getSupertypes() {
         return supertypes;
     }
 
     /// Returns the list of implemented interfaces by qualified names.
     /// @return list of qualified interface names.
-    public List<String> getImplementedInterfaces() {
+    public List<Reference> getImplementedInterfaces() {
         return implementedInterfaces;
     }
 
     /// Sets the owner of this type.
     /// @param owner the TypeOwner that owns this type.
-    public void setOwner(TypeOwner owner) {
+    public void setOwner(PackageOrTypeNode owner) {
         this.owner = owner;
     }
 
     /// Returns the owner of this type.
     /// @return the TypeOwner that owns this type.
-    public TypeOwner getOwner() {
+    public PackageOrTypeNode getOwner() {
         return owner;
-    }
-
-    /// Sets the simple name of this type.
-    /// @param name the simple name to set.
-    public void setSimpleName(String name) {
-        simpleName = name;
-    }
-
-    /// Returns the simple name of this type.
-    /// @return the simple name.
-    public String getSimpleName() {
-        return simpleName;
-    }
-
-    /// Sets the qualified name of this type.
-    /// @param name the qualified name to set.
-    public void setQualifiedName(String name) {
-        qualifiedName = name;
-    }
-
-    /// Returns the qualified name of this type.
-    /// @return the qualified name.
-    public String getQualifiedName() {
-        return qualifiedName;
     }
 
     /// Returns the package name for this type.
@@ -220,13 +190,21 @@ public class TypeNode extends AbstractTypeOwner implements PackageMember {
         return hasDocumentedAnnotation;
     }
 
+    public void setEnclosingClassRef(Reference ref) {
+        enclosingClassRef = ref;
+    }
+
+    public Reference getEnclosingClassRef() {
+        return enclosingClassRef;
+    }
+
     /// Retrieves a field by its simple name.
     /// @param fieldName the simple name of the field.
     /// @return the FieldNode if found, otherwise null.
     public FieldNode getField(String fieldName) {
-        for (FieldNode fieldDoc : fields) {
-            if (fieldDoc.simpleName.equals(fieldName)){
-                return fieldDoc;
+        for (FieldNode fieldNode : fields) {
+            if (fieldNode.getSimpleName().equals(fieldName)){
+                return fieldNode;
             }
         }
         return null;

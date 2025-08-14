@@ -1,9 +1,10 @@
 package io.github.sandydunlop.markista.model;
 
 /// A class to hold information about method parameters.
-public class ParamNode extends Node {
+public class ParamNode extends AbstractPackageMember {
     /// The type of this parameter
     private TypeNode type;
+    private Text typeText = Text.empty();
 
     /// Constructs a ParamNode with the given type and name.
     /// @param type The TypeNode representing the parameter's type.
@@ -25,15 +26,15 @@ public class ParamNode extends Node {
         this.type = type;
     }
 
-    /// Sets the simple name of this parameter.
-    /// @param name The simple name to set.
-    public void setSimpleName(String name) {
-        simpleName = name;
+    /// Returns the type Text of this parameter.
+    /// @return The Text representing the parameter's type.
+    public Text getTypeText() {
+        return typeText;
     }
 
-    /// Returns the simple name of this parameter.
-    /// @return The simple name.
-    public String getSimpleName() {
-        return simpleName;
+    /// Sets the type Text of this parameter.
+    /// @param text The Text to set as this parameter's type Text.
+    public void setTypeText(Text text) {
+        this.typeText = text;
     }
 }

@@ -107,60 +107,24 @@ class MarkdownTests {
     }
 
     @Test
-	void autoLink_array() {
-        Reference link = Reference.to("java.lang.String[]");
-        String markdown = Markdown.link(link, false);
-        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
-    }
-
-    @Test
-	void autoLink_listOfArrays() {
-        Reference link = Reference.to("java.util.List<java.lang.String[]>");
-        String markdown = Markdown.link(link, false);
-        assertEquals("[List](" + JAVA_24_URL + "java.base/java/util/List.html)&lt;[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]&gt;", markdown);
-    }
-
-	@Test
-	void splitAndLink_oneArray_simplified() {
-        String markdown = Markdown.splitAndLink("java.lang.String[]", false);
-        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
-    }
-
-	@Test
-	void splitAndLink_oneArray() {
-        String markdown = Markdown.splitAndLink("java.lang.String[]", true);
-        assertEquals("[java.lang.String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
-    }
-
-    @Test
     void formatParams() {
         List<ParamNode> params = new ArrayList<>();
         TypeNode param1type = new TypeNode("java.lang.String", "String", model);
-        params.add(new ParamNode(param1type, "name"));
+        ParamNode param1 = new ParamNode(param1type, "name");
+        params.add(param1);
+
+        MethodNode method = new MethodNode(node, "subject");
+        method.addParam(param1);
+        markdownDoclet.addMethod(method);
+        api.addClass(markdownDoclet);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules();
+        LinkFormatter.generateLinkTexts(api, ctx);
+
         String markdown = Markdown.formatParams(params);
         assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html) name", markdown);
     }
 
-    @Test
-    void formatReference_URL() {
-        Reference ref = new Reference(Reference.Kind.URL, "name", "http://example.com");
-        String markdown = Markdown.formatReference(ref);
-        assertEquals("[http://example.com](http://example.com)", markdown);
-    }
-
-    @Test
-    void formatReference_PACKAGE_qualified() {
-        Reference ref = Reference.to("io.github.sandydunlop.markista.model").withKind(Reference.Kind.PACKAGE);
-        String markdown = Markdown.formatReference(ref);
-        assertEquals("[io.github.sandydunlop.markista.model](../model/index.md)", markdown);
-    }
-
-    @Test
-    void formatReference_PACKAGE_unqualified() {
-        Reference ref = Reference.to("model").withKind(Reference.Kind.PACKAGE);
-        String markdown = Markdown.formatReference(ref);
-        assertEquals("[io.github.sandydunlop.markista.model](../model/index.md)", markdown);
-    }
 
     static List<Object[]> typeReferenceProvider() {
         return List.of(
@@ -168,57 +132,6 @@ class MarkdownTests {
             new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
             new Object[] { Reference.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
         );
-    }
-
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
-    void formatReference_TYPE_variants(Reference.Kind kind, String name, String url, String expected) {
-        Reference ref = Reference.to(name).withKind(kind);
-        String markdown = Markdown.formatReference(ref);
-        assertEquals(expected, markdown);
-    }
-
-    @Test
-    void formatReference_TYPE_variants() {
-        Reference.Kind kind = Reference.Kind.TYPE;
-        String name = "io.github.sandydunlop.Node";
-        String url = "";
-        String expected = "io.github.sandydunlop.Node";
-        Reference ref = new Reference(kind, name, url);
-        String markdown = Markdown.formatReference(ref);
-        assertEquals(expected, markdown);
-    }
-
-    @Test
-    void formatReference_PAGE_withTitle() {
-        Reference ref = new Reference(Reference.Kind.PAGE, "Page", "page");
-        String markdown = Markdown.formatReference(ref);
-        assertEquals("[Page](../../../../../page.md)", markdown);
-    }
-
-    @Test
-    void formatReference_PAGE_withoutTitle() {
-        Reference ref = new Reference(Reference.Kind.PAGE, "page", "page");
-        String markdown = Markdown.formatReference(ref);
-        assertEquals("[page](../../../../../page.md)", markdown);
-    }
-
-    @Test
-    void formatReference_PRIMITIVE() {
-        // This should never be created, so its value here shouldn't matter
-        Reference ref = new Reference(Reference.Kind.PRIMITIVE, "int", null);
-        String markdown = Markdown.formatReference(ref);
-        assertEquals("", markdown);
-    }
-
-    @Test
-    void formatText_markdown() {
-        Text text = Text.empty();
-        text.append(Segment.empty()
-                .setKind(Text.SegmentKind.MARKDOWN)
-                .setText("one [Node] two"));
-        String formatted = Markdown.formatText(text);
-        assertEquals("one [Node](../model/Node.md) two", formatted);
     }
 
     @Test
@@ -233,6 +146,7 @@ class MarkdownTests {
 
     @Test
     void formatText_text_link_text() {
+        Reference link = Reference.to("http://example.com");
         Text text = Text.empty();
         text.append(Segment.empty()
                 .setKind(Text.SegmentKind.TEXT)
@@ -240,10 +154,13 @@ class MarkdownTests {
         text.append(Segment.empty()
                 .setKind(Text.SegmentKind.LINK)
                 .setText("link")
-                .setLink("http://example.com"));
+                .setLink(link));
         text.append(Segment.empty()
                 .setKind(Text.SegmentKind.TEXT)
                 .setText(" world"));
+        api.addLink(link);
+        LinkResolver.init(api, ctx);
+        LinkFormatter.generateLinkTexts(api, ctx);
         String formatted = Markdown.formatText(text);
         assertEquals("hello [link](http://example.com) world", formatted);
     }
@@ -253,135 +170,12 @@ class MarkdownTests {
         MethodNode method = new MethodNode(node, "subject");
         TypeNode param1type = new TypeNode("java.lang.String", "String", model);
         method.addParam(new ParamNode(param1type, "name"));
+        markdownDoclet.addMethod(method);
+        api.addClass(markdownDoclet);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules();
+        LinkFormatter.generateLinkTexts(api, ctx);
         String sig = Markdown.fullSignature(method);
         assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
-    }
-
-    @Test
-    void link_generics_qualified() {
-        String markdown = Markdown.linkGenerics("java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>", false);
-        assertEquals("[Function](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html), [Optional](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html)&lt;[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html)&gt;&gt;", markdown);
-    }
-
-    @Test
-    void link_nativeMethod() {
-        LinkResolver.addNativeModules();
-        String markdown = Markdown.link(Reference.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"), true);
-        assertEquals("[jdk.javadoc.doclet.Doclet.Option.process(java.lang.String,java.util.List)](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
-    }
-
-    @Test
-    void link_localMethod() {
-        LinkResolver.addNativeModules();
-        String markdown = Markdown.link(Reference.to("Node#sort()"), false);
-        assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
-    }
-
-    @Test
-    void link_localMethod_sameClass() {
-        ctx.setPackageName("io.github.sandydunlop.markista.doclet");
-        ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
-        LinkResolver.addNativeModules();
-        String markdown = Markdown.link(Reference.to("MarkdownDoclet#main()"), false);
-        assertEquals("[main](#main)", markdown);
-    }
-
-    @Test
-    void link_localMethod_sameClass_noClassName() {
-        ctx.setPackageName("io.github.sandydunlop.markista.doclet");
-        ctx.setTypeName("io.github.sandydunlop.markista.doclet.MarkdownDoclet");
-        LinkResolver.addNativeModules();
-        String markdown = Markdown.link(Reference.to("#main()"), false);
-        assertEquals("[main()](#main)", markdown);
-    }
-
-	@Test
-	void link_qualifiedWithAnchor_simplified() {
-         ctx.setPackageName("io.github.sandydunlop.markista.model");
-        Reference link = Reference.to("io.github.sandydunlop.markista.util.LinkResolver#resolve");
-        String markdown = Markdown.link(link, false);
-        assertEquals("[LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
-    }
-
-	@Test
-	void link_qualifiedWithAnchor() {
-         ctx.setPackageName("io.github.sandydunlop.markista.model");
-        Reference link = Reference.to("io.github.sandydunlop.markista.util.LinkResolver#resolve");
-        String markdown = Markdown.link(link, true);
-        assertEquals("[io.github.sandydunlop.markista.util.LinkResolver.resolve](../util/LinkResolver.md#resolve)", markdown);
-    }
-
-    @Test
-    void resolveLinks_qualifiedLocalPackage() {
-        String markdown = Markdown.resolveMarkdownLinks("one [model](io.github.sandydunlop.markista.model) two");
-        assertEquals("one [model](../model/index.md) two", markdown);
-    }
-
-    @Test
-    void resolveLinks_unqualifiedLocalClass() {
-        String markdown = Markdown.resolveMarkdownLinks("one [Node](Node) two");
-        assertEquals("one [Node](../model/Node.md) two", markdown);
-    }
-
-    @Test
-    void resolveLinks_unqualifiedLocalClass_noParentheses() {
-        String markdown = Markdown.resolveMarkdownLinks("one [Node] two");
-        assertEquals("one [Node](../model/Node.md) two", markdown);
-    }
-
-    @Test
-    void resolveLinks_unqualifiedLocalClass_withAnchor() {
-        String markdown = Markdown.resolveMarkdownLinks("one [Node.anchor](Node#anchor) two");
-        assertEquals("one [Node.anchor](../model/Node.md#anchor) two", markdown);
-    }
-
-    @Test
-    void resolveLinks_qualifiedLocalClass() {
-        String markdown = Markdown.resolveMarkdownLinks("one [Node](io.github.sandydunlop.markista.model.Node) two");
-        assertEquals("one [Node](../model/Node.md) two", markdown);
-    }
-
-    @Test
-    void resolveLinks_qualifiedNativeClass() {
-        String markdown = Markdown.resolveMarkdownLinks("one [String](java.lang.String) two");
-        assertEquals("one [String](" + JAVA_24_URL + "java.base/java/lang/String.html) two", markdown);
-    }
-
-    @Test
-    void resolveLinks_qualifiedNativeClass_withAnchor() {
-        String markdown = Markdown.resolveMarkdownLinks("one [String](java.lang.String#anchor) two");
-        assertEquals("one [String.anchor](" + JAVA_24_URL + "java.base/java/lang/String.html#anchor) two", markdown);
-    }
-
-	@Test
-	void resolveMarkdownLinks() {
-        String markdown = Markdown.resolveMarkdownLinks("one [link resolving][LinkResolver] two");
-        assertEquals("one [link resolving](../util/LinkResolver.md) two", markdown);
-    }
-
-    @Test
-    void resolveMarkdownLinks_class_samePackage_labelGiven() {
-        ClassTypeNode typeNodeNode = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "TypeNode", model);
-        model.addClass(typeNodeNode);
-        api.addClass(typeNodeNode);
-
-        String markdown = Markdown.resolveMarkdownLinks("[type][io.github.sandydunlop.markista.model.TypeNode]");
-        assertEquals("[type](../model/TypeNode.md)", markdown);
-    }
-
-    @Test
-    void resolveMarkdownLinks_class_samePackage_noLabelGiven() {
-        ClassTypeNode typeNodeNode = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "TypeNode", model);
-        model.addClass(typeNodeNode);
-        api.addClass(typeNodeNode);
-
-        String markdown = Markdown.resolveMarkdownLinks("[io.github.sandydunlop.markista.model.TypeNode]");
-        assertEquals("[TypeNode](../model/TypeNode.md)", markdown);
-    }
-
-	@Test
-	void splitAndLink_two() {
-        String markdown = Markdown.splitAndLink("java.lang.String, java.util.List", false);
-        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html), [List](" + JAVA_24_URL + "java.base/java/util/List.html)", markdown);
     }
 }

@@ -12,6 +12,7 @@ import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.SinceTree;
 import com.sun.source.doctree.StartElementTree;
 
+import io.github.sandydunlop.markista.model.AbstractPackageMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.Api;
@@ -26,16 +27,20 @@ import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.OverriddenMethodNode;
-import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.util.MarkdownParser.TokenKind;
+import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 
 import java.io.File;
+import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +84,7 @@ import static javax.lang.model.element.Modifier.*;
 public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it's not
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
-    private static Context ctx;
+    static Context ctx;
 
     private static DocletEnvironment environment;
 
@@ -110,6 +115,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         String qualifiedName = element.getQualifiedName().toString();
         TypeNode typeNode = api.getTypeNode(qualifiedName);
         if (typeNode == null) {
+            ctx.setTypeName(element.getQualifiedName().toString());
             if (Configuration.getVerbose()) {
                 ctx.reportInfo(String.format("[   TYPE] %s", qualifiedName));
             }
@@ -132,8 +138,16 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             setModifiers(typeNode, element.getModifiers());
             setAppliedAnnotations(typeNode, element);
             collectAllSupertypes(element.asType(), typeNode.getSupertypes());
-            typeNode.getSupertypes().addFirst("java.lang.Object");
+            typeNode.getSupertypes().addFirst(new Pair<>(Reference.to("java.lang.Object"), Text.empty()));
             findImplementedInterfaces(element, typeNode.getImplementedInterfaces());
+            TypeUtils.setDocumentation(typeNode, element);
+            JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(element);
+            if (jfo != null) {
+                typeNode.setSourcePath(Path.of(jfo.toUri()));
+                if (typeNode.getPackage().getSourcePath() == null) {
+                    typeNode.getPackage().setSourcePath(Path.of(jfo.toUri()).getParent());
+                }
+            }
             api.addType(typeNode);
         }
         return typeNode;
@@ -205,6 +219,19 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         }
         setMethodAnnotations(methodNode, element);
         setSpecifiedBy(methodNode, element);
+        DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
+        TypeUtils.setDeprecationStatus(methodNode, element, dct);
+        if (dct != null) {
+            methodNode.setFirstSentence(TypeUtils.createText(dct.getFirstSentence()));
+            methodNode.setBody(TypeUtils.createText(dct.getBody()));
+            methodNode.setFullBody(TypeUtils.createText(dct.getFullBody()));
+            ReturnTree returnTree = TypeUtils.getReturnTree(dct);
+            if (returnTree != null) {
+                methodNode.setReturnDescription(TypeUtils.createText(returnTree.getDescription()));
+            }
+            methodNode.setReferences(TypeUtils.getReferences(dct));
+            methodNode.setSince(TypeUtils.getSince(dct));
+        }
         return methodNode;
     }
 
@@ -227,6 +254,11 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                 TypeNode type = getFieldType(qualifiedClassName, simpleName);
                 fieldNode = new FieldNode(type, simpleName);
                 typeNode.getFields().add(fieldNode);
+                fieldNode.setConstantValue((Serializable) element.getConstantValue());
+                DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
+                TypeUtils.setDocumentation(fieldNode, element);
+                TypeUtils.setModifiers(fieldNode, element.getModifiers());
+                TypeUtils.setDeprecationStatus(fieldNode, element, dct);
             }
             return fieldNode;
         }
@@ -255,54 +287,101 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     public static Text createText(List<? extends DocTree> dtList) {
         Text text = Text.empty();
         for (DocTree docTree : dtList) {
-            text.append(createTextSegment(docTree));
+            text.append(docTreeToText(docTree));
         }
         return text;
     }
 
-    /// Creates a single Text.Segment from a DocTree node, setting the appropriate kind and content.
+    /// Creates a [Text] object from a DocTree node, setting the appropriate kind and content.
     /// @param docTree The DocTree node to convert.
-    /// @return A Text.Segment representing the content and kind of the provided DocTree.
-    public static Text.Segment createTextSegment(DocTree docTree) {
+    /// @return A [Text] object representing the content and kind of the provided DocTree.
+    public static Text docTreeToText(DocTree docTree) {
+        Text text = Text.empty();
         Text.Segment segment = Text.Segment.empty();
+        String origin;
         switch(docTree.getKind()) {
             case MARKDOWN:
-                segment.setKind(SegmentKind.MARKDOWN);
-                segment.setText(docTree.toString());
+                text = markdownToText(docTree.toString());
                 break;
             case TEXT:
-                segment.setKind(SegmentKind.TEXT);
-                segment.setText(docTree.toString());
+                text.append(docTree.toString());
                 break;
             case LINK:
                 segment.setKind(SegmentKind.LINK);
-                segment.setLink(getDocTreePart(docTree, 1));
+                origin = ctx.getTypeName().isEmpty() ? ctx.getPackageName() : ctx.getTypeName();
+                Reference link = Reference.to(getDocTreePart(docTree, 1)).from(origin);
+                api.addLink(link);
+                segment.setLink(link);
+                text.append(segment);
                 break;
             case LINK_PLAIN:
                 segment.setKind(SegmentKind.LINK);
-                segment.setLink(getDocTreePart(docTree, 1));
+                origin = ctx.getTypeName().isEmpty() ? ctx.getPackageName() : ctx.getTypeName();
+                link = Reference.to(getDocTreePart(docTree, 1)).from(origin);
+                segment.setLink(link);
+                text.append(segment);
+                api.addLink(link);
                 if (docTree instanceof LinkTree linkTree) {
                     segment.setText(createText(linkTree.getLabel()).toString());
+                    link.setLabel(createText(linkTree.getLabel()).toString());
                 }
                 break;
             case CODE:
                 segment.setKind(SegmentKind.CODE);
                 segment.setText(getDocTreeText(docTree, 1));
+                text.append(segment);
                 break;
             case START_ELEMENT:
-                segment.setKind(SegmentKind.START);
+                segment.setKind(SegmentKind.TEXT);
                 StartElementTree se = (StartElementTree)docTree;
                 if ("p".equals(se.getName().toString())) {
                     segment.setText("\n\n");
                 }
+                text.append(segment);
                 break;
             case END_ELEMENT:
-                segment.setKind(SegmentKind.END);
                 break;
             default:
                 break;
         }
-        return segment;
+        return text;
+    }
+
+    /// Converts Markdown text into a [Text] object
+    /// @param markdown Markdown formatted text possibly containing links
+    /// @return [Text] version of the Markdown
+    public static Text markdownToText(String markdown) {
+        Text text = Text.empty();
+        MarkdownParser parser = new MarkdownParser(markdown);
+        MarkdownParser.Token token = parser.firstToken();
+        while (token.getKind() != MarkdownParser.TokenKind.END) {
+            if (token.getKind() == MarkdownParser.TokenKind.BRACKETS_TAG) {
+                MarkdownParser.Token next = token.getNext();
+                if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
+                    Reference ref = Reference.to(next.getText());
+                    ref.setLabel(token.getText());
+                    Segment segment = Segment.empty()
+                            .setKind(SegmentKind.LINK)
+                            .setLink(ref)
+                            .setText(token.getText());
+                    text.append(segment);
+                    api.addLink(ref);
+                    token = next;
+                } else {
+                    Reference ref = Reference.to(token.getText());
+                    Segment segment = Segment.empty()
+                            .setKind(SegmentKind.LINK)
+                            .setLink(ref)
+                            .setText(token.getText());
+                    text.append(segment);
+                    api.addLink(ref);
+                }
+            } else if (token.getKind() == TokenKind.TEXT) {
+                text.append(token.getText());
+            }
+            token = token.getNext();
+        }
+        return text;
     }
 
     /// Extracts text from a DocTree to build a string from a part of its tokenized representation.
@@ -392,10 +471,10 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// @param methodNode The MethodNode to update.
     /// @param methodElement The ExecutableElement representing the method.
     public static void setSpecifiedBy(MethodNode methodNode, ExecutableElement methodElement) {
-        List<String> interfaces = methodNode.getOwner().getImplementedInterfaces();
+        List<Reference> interfaces = methodNode.getOwner().getImplementedInterfaces();
         if (interfaces == null || interfaces.isEmpty()) return;
-        for (String interfaceName : interfaces) {
-            TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceName);
+        for (Reference interfaceName : interfaces) {
+            TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceName.getClassName());
             if (interfaceElement == null) continue;
             List<? extends Element>  enclosedElements = interfaceElement.getEnclosedElements();
             for (ExecutableElement interfaceMethod : ElementFilter.methodsIn(enclosedElements)) {
@@ -415,11 +494,12 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         if (method.getOwner() == null) return null;
 
         for (int i = method.getOwner().getSupertypes().size() - 1; i >= 0; i--) {
-            String typeName = method.getOwner().getSupertypes().get(i);
-            TypeElement superclass = environment.getElementUtils().getTypeElement(typeName);
+            Pair<Reference, Text> pair = method.getOwner().getSupertypes().get(i);
+            Reference typeRef = pair.getL();
+            TypeElement superclass = environment.getElementUtils().getTypeElement(typeRef.getTarget());
             OverriddenMethodNode overridden = getOverriddenMethod(superclass, methodElement);
             if (overridden != null) return overridden;
-            overridden = getOverriddenNativeMethod(typeName, method);
+            overridden = getOverriddenNativeMethod(typeRef.getTarget(), method);
             if (overridden != null) return overridden;
         }
         return null;
@@ -475,14 +555,15 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// Adds references to constant field values from classes in the API to the provided module node.
     /// @param moduleNode The ModuleNode to which constant value references will be added.
     public static void addConstantFieldValuesReference(ModuleNode moduleNode) {
-        for (PackageMember member : api.getClasses()) {
-            if (member instanceof ClassTypeNode classNode) {
-                for (FieldNode fieldNode : classNode.getFields()) {
-                    if (fieldNode.getConstantValue() != null) {
-                        Reference ref = new Reference(Reference.Kind.PAGE, "Constant Field Values", "constant-values.md");
-                        fieldNode.getReferences().add(ref);
-                        moduleNode.addConstantValue(fieldNode);
-                    }
+        for (TypeNode classNode : api.getClasses()) {
+            for (FieldNode fieldNode : classNode.getFields()) {
+                if (fieldNode.getConstantValue() != null) {
+                    Reference ref = Reference.to("constant-values")
+                            .from(classNode.getPackageName())
+                            .withKind(Reference.Kind.PAGE)
+                            .withLabel("Constant Field Values");
+                    fieldNode.getReferences().add(ref);
+                    moduleNode.addConstantValue(fieldNode);
                 }
             }
         }
@@ -504,10 +585,15 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// Finds all interfaces implemented directly by the given TypeElement and adds their names to the result list.
     /// @param typeElement The type to examine.
     /// @param result The list to receive the qualified interface names.
-    public static void findImplementedInterfaces(TypeElement typeElement, List<String> result) {
+    public static void findImplementedInterfaces(TypeElement typeElement, List<Reference> result) {
         List<? extends TypeMirror> interfaces = typeElement.getInterfaces();
         for (TypeMirror interfaceType : interfaces) {
-            result.add(interfaceType.toString());
+            Reference reference = Reference
+                    .to(interfaceType.toString())
+                    .from(ctx.getPackageName())
+                    .withKind(Reference.Kind.TYPE)
+                    .withLabel(interfaceType.toString());
+            result.add(reference);
         }
     }
 
@@ -515,13 +601,17 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// java.lang.Object is excluded.
     /// @param t The type to examine.
     /// @param result The list to receive supertypes.
-    public static void collectAllSupertypes(TypeMirror t, List<String> result) {
+    public static void collectAllSupertypes(TypeMirror t, List<Pair<Reference, Text>> result) {
         for (TypeMirror s : environment.getTypeUtils().directSupertypes(t)) {
             if (result != null) {
                 String name = s.toString();
                 if (!"java.lang.Object".equals(name)) {
                     if (!isInterface(s)){
-                        result.addFirst(name);
+                        Reference reference = Reference.to(name)
+                                .from(ctx.getPackageName())
+                                .withKind(Reference.Kind.TYPE)
+                                .withLabel(name);
+                        result.addFirst(new Pair<>(reference, Text.empty()));
                     }
                     collectAllSupertypes(s, result);
                 }
@@ -580,16 +670,10 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                 List<? extends DocTree> see = seeTree.getReference();
                 for (DocTree docRef : see) {
                     if (docRef.getKind() == Kind.MARKDOWN) {
-                        // This is sometimes HTML, not Markdown?
-                        Reference ref = new Reference();
-                        ref.setKind(Reference.Kind.URL);
-                        ref.setUri(getUrl(docRef.toString()));
-                        refs.add(ref);
+                        // This is sometimes (always?!) HTML, not Markdown?
+                        refs.add(Reference.to(getUrl(docRef.toString())));
                     } else if (docRef.getKind() == Kind.REFERENCE) {
-                        Reference ref = new Reference();
-                        ref.setKind(Reference.Kind.TYPE);
-                        ref.setTarget(docRef.toString());
-                        refs.add(ref);
+                        refs.add(Reference.to(docRef.toString()).withKind(Reference.Kind.TYPE));
                     } else {
                         ctx.reportWarning("Unhandled reference type: " + docRef.getKind().toString());
                     }
@@ -638,7 +722,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// Adds modifiers to a model Node based on the set of language model modifiers.
     /// @param node The Node to add modifiers to.
     /// @param modifiers The set of Modifier enums from language model.
-    public static void setModifiers(Node node, Set<Modifier> modifiers) {
+    public static void setModifiers(AbstractPackageMember node, Set<Modifier> modifiers) {
         for (Modifier modifier : modifiers) {
             io.github.sandydunlop.markista.model.Modifier mod = 
                 io.github.sandydunlop.markista.model.Modifier.valueOf(modifier.name());
@@ -720,7 +804,12 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         for (TypeMirror typeMirror : thrownTypes) {
             Element element = environment.getTypeUtils().asElement(typeMirror);
             if (element instanceof TypeElement typeElement) {
-                methodNode.addThrownType(typeElement.getQualifiedName().toString());
+                String name = typeElement.getQualifiedName().toString();
+                Reference reference = Reference.to(name)
+                        .from(ctx.getPackageName())
+                        .withKind(Reference.Kind.TYPE)
+                        .withLabel(name);
+                methodNode.addThrownType(reference);
             }
         }
     }
@@ -778,7 +867,11 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// @param implementations List of TypeElements representing implementations.
     public static void setImplementations(DirectiveNode directiveNode, List<? extends TypeElement> implementations) {
         for (TypeElement e : implementations) {
-            directiveNode.addImplementation(e.getQualifiedName().toString());
+            String implName = e.getQualifiedName().toString();
+            Reference reference = Reference.to(implName)
+                    .withKind(Reference.Kind.TYPE)
+                    .withLabel(implName);
+            directiveNode.addImplementation(reference);
         }
     }
 

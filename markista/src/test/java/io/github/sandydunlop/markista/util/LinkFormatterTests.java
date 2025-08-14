@@ -1,0 +1,143 @@
+package io.github.sandydunlop.markista.util;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
+
+import javax.lang.model.element.Element;
+import javax.tools.Diagnostic.Kind;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mock;
+
+import com.sun.source.util.DocTreePath;
+
+import jdk.javadoc.doclet.Reporter;
+
+import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.model.Text.Segment;
+import io.github.sandydunlop.markista.model.Text.SegmentKind;
+
+class LinkFormatterTests {
+    private static Context ctx;
+	private Api api;
+    private ModuleNode module;
+    private PackageNode model;
+    private PackageNode doclet;
+	private PackageNode markista;
+	private PackageNode util;
+    private ClassTypeNode node;
+    private ClassTypeNode markdownDoclet;
+
+    @Mock static Reporter reporter = new Reporter() {
+        @Override
+        public void print(Kind kind, String message) {
+            System.out.println(kind + ": " + message);
+        }
+
+        @Override
+        public void print(Kind kind, DocTreePath path, String message) {
+            // Do nothing
+        }
+
+        @Override
+        public void print(Kind kind, Element element, String message) {
+            // Do nothing
+        }
+    };
+    
+    @BeforeAll
+    static void initAll() {
+		ctx = Context.getInstance();
+		ctx.setReporter(reporter);
+    }
+
+    @BeforeEach
+    void init() {
+		api = new Api("Test API");
+        api.addPackage(new PackageNode("io.github.sandydunlop"));
+        markista = new PackageNode("io.github.sandydunlop.markista");
+		util = new PackageNode("io.github.sandydunlop.markista.util");
+		doclet = new PackageNode("io.github.sandydunlop.markista.doclet");
+		model = new PackageNode("io.github.sandydunlop.markista.model");
+		api.addPackage(markista);
+		api.addPackage(util);
+		api.addPackage(doclet);
+		api.addPackage(model);
+		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver","LinkResolver", util));
+		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet));
+		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", doclet));
+
+        module = new ModuleNode("markista");
+		api.addModule(module);
+		module.addPackage(markista);
+		module.addPackage(util);
+		module.addPackage(doclet);
+		module.addPackage(model);
+		markista.setModule(module);
+		util.setModule(module);
+		doclet.setModule(module);
+		model.setModule(module);
+
+        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", model);
+        model.addClass(node);
+        api.addClass(node);
+
+        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
+        model.addClass(markdownDoclet);
+
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules();
+        LinkFormatter.generateLinkTexts(api, ctx);
+        LinkResolver.setFlattenedDirectories(null);
+		ctx.setModuleName("markista");
+        ctx.setPackageName("io.github.sandydunlop.markista.doclet");
+    }
+
+    static Segment text(String t) {
+        return Segment.empty().setKind(SegmentKind.TEXT).setText(t);
+    }
+
+    static Segment link(String t, String u) {
+        return Segment.empty().setKind(SegmentKind.LINK).setText(t).setLink(new Reference().withUri(u));
+    }
+
+    static List<Object[]> typeReferenceProvider() {
+        return List.of(
+            new Object[] { "java.lang.String[]", new Segment[] {
+                    link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"), text("[]") } },
+            new Object[] { "java.util.List<java.lang.String[]>", new Segment[] {
+                    link("List", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html"), 
+                    text("<"), link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"), 
+                    text("[]"), text(">")} },
+            new Object[] {"java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>", new Segment[] {
+                    link("Function", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html"),
+                    text("<"), link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"),
+                    text(", "), link("Optional", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html"),
+                    text("<"), link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"),
+                    text(">"), text(">")} }
+        );
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
+	void link_to_text(String target, Segment[] expected) {
+        Reference link = Reference.to(target);
+        Text text = LinkFormatter.link(link, false);
+        assertEquals(expected.length, text.getSegments().size());
+        for (int i=0; i<expected.length; i++) {
+            Segment expectedSegment = expected[i];
+            Segment actualSegment = text.getSegment(i);
+            assertEquals(expectedSegment.getText(), actualSegment.getText());
+            if (expectedSegment.getKind() == SegmentKind.LINK) {
+                assertEquals(expectedSegment.getLink().getUri(), actualSegment.getLink().getUri());
+            }
+        }
+    }
+}

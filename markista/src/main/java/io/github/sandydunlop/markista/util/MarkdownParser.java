@@ -3,15 +3,15 @@ package io.github.sandydunlop.markista.util;
 import java.util.ArrayList;
 import java.util.List;
 
-/// Parses a Markdown string into a sequence of segments representing text and special markup such as brackets and parentheses.
+/// Parses a Markdown string into a sequence of tokens representing text and special markup such as brackets and parentheses.
 /// 
-/// This parser is designed to tokenize the Markdown content by identifying textual parts and segments enclosed in brackets `[]` and parentheses `()`.
+/// This parser is designed to tokenize the Markdown content by identifying textual parts and tokens enclosed in brackets `[]` and parentheses `()`.
 /// It also handles inline code spans denoted by backticks (`) to avoid parsing markup inside code.
 /// 
-/// The parsed segments can be iterated in sequence starting from the firstSegment() method.
-/// Each segment carries its type (kind) which specifies how it should be interpreted or rendered.
+/// The parsed tokens can be iterated in sequence starting from the firstToken() method.
+/// Each token carries its type (kind) which specifies how it should be interpreted or rendered.
 /// 
-/// Segment kinds include TEXT for normal text, BRACKETS_TAG for content inside square brackets,
+/// Token kinds include TEXT for normal text, BRACKETS_TAG for content inside square brackets,
 /// PARENS_TAG for content inside parentheses following brackets (typical Markdown link syntax),
 /// and END indicating the end of the sequence.
 public class MarkdownParser {
@@ -22,8 +22,8 @@ public class MarkdownParser {
     int closeBracket = -1;
     int closeParenthesis = -1;
     private String markdown = "";
-    private final List<Segment> segments = new ArrayList<>();
-    private Segment prev = null;
+    private final List<Token> tokens = new ArrayList<>();
+    private Token prev = null;
 
     /// Creates a new MarkdownParser and immediately parses the provided Markdown string.
     /// @param md The Markdown string to parse.
@@ -70,7 +70,7 @@ public class MarkdownParser {
     }
 
     /// Handles the open bracket '[' encountered in the markdown.
-    /// Saves any preceding text segment before marking the position of the open bracket.
+    /// Saves any preceding text token before marking the position of the open bracket.
     private void handleOpenBracket() {
         saveText();
         openBracket = head;
@@ -91,14 +91,14 @@ public class MarkdownParser {
     }
 
     /// Handles the close bracket ']' encountered in the markdown.
-    /// Records the position and saves a bracket-tag segment.
+    /// Records the position and saves a bracket-tag token.
     private void handleCloseBracket() {
         closeBracket = head;
         saveBracketsTag();
     }
 
     /// Handles the close parenthesis ')' encountered.
-    /// If parentheses follow brackets, saves a parentheses-tag segment.
+    /// If parentheses follow brackets, saves a parentheses-tag token.
     /// @param parensFollowBrackets True if parentheses are following brackets (indicating a link).
     /// @return Always returns false to reset parsing state for parentheses.
     private boolean handleCloseParenthesis(boolean parensFollowBrackets) {
@@ -109,114 +109,114 @@ public class MarkdownParser {
         return false;
     }
 
-    /// Saves any text from the tail position up to the current head as a TEXT segment.
+    /// Saves any text from the tail position up to the current head as a TEXT token.
     /// Does nothing if no text is available in that range.
     private void saveText() {
-        Segment segment = new Segment(SegmentKind.TEXT);
+        Token token = new Token(TokenKind.TEXT);
         String text = markdown.substring(tail, head);
         if (text.isEmpty()) return;
-        segment.setText(text);
-        saveSegment(segment);
+        token.setText(text);
+        saveToken(token);
     }
 
-    /// Saves the content between the most recent pair of brackets as a BRACKETS_TAG segment.
+    /// Saves the content between the most recent pair of brackets as a BRACKETS_TAG token.
     private void saveBracketsTag() {
-        Segment segment = new Segment(SegmentKind.BRACKETS_TAG);
+        Token token = new Token(TokenKind.BRACKETS_TAG);
         String text = markdown.substring(openBracket + 1, closeBracket);
-        segment.setText(text);
-        saveSegment(segment);
+        token.setText(text);
+        saveToken(token);
     }
 
-    /// Saves the content between the most recent pair of parentheses as a PARENS_TAG segment.
+    /// Saves the content between the most recent pair of parentheses as a PARENS_TAG token.
     private void saveParensTag() {
         if (openParenthesis == -1 || closeParenthesis == -1) {
             return;
         }
-        Segment segment = new Segment(SegmentKind.PARENS_TAG);
+        Token token = new Token(TokenKind.PARENS_TAG);
         String text = markdown.substring(openParenthesis + 1, closeParenthesis);
-        segment.setText(text);
-        saveSegment(segment);
+        token.setText(text);
+        saveToken(token);
     }
 
-    /// Adds the specified segment to the list and links it to the previously saved segment.
-    /// @param segment The Segment to save and link.
-    private void saveSegment(Segment segment) {
-        segments.add(segment);
+    /// Adds the specified token to the list and links it to the previously saved token.
+    /// @param token The token to save and link.
+    private void saveToken(Token token) {
+        tokens.add(token);
         if (prev != null) {
-            prev.setNext(segment);
+            prev.setNext(token);
         }
-        prev = segment;
+        prev = token;
     }
 
-    /// Returns the first Segment in the parsed sequence.
-    /// If no segments exist, returns an END kind Segment.
-    /// @return The first Segment or an END Segment if none exist.
-    public Segment firstSegment() {
-        if (!segments.isEmpty()) {
-            return segments.getFirst();
+    /// Returns the first token in the parsed sequence.
+    /// If no tokens exist, returns an END kind token.
+    /// @return The first token or an END token if none exist.
+    public Token firstToken() {
+        if (!tokens.isEmpty()) {
+            return tokens.getFirst();
         }
-        return new Segment(SegmentKind.END);
+        return new Token(TokenKind.END);
     }
 
-    /// Represents a segment of the parsed Markdown input.
-    /// A segment has a kind and associated text content, and links to the next segment in sequence.
-    public class Segment {
-        Segment next = null;
-        SegmentKind kind;
+    /// Represents a token of the parsed Markdown input.
+    /// A token has a kind and associated text content, and links to the next token in sequence.
+    public class Token {
+        Token next = null;
+        TokenKind kind;
         String text = "";
 
-        /// Creates a Segment with the specified kind.
-        /// @param k The SegmentKind.
-        public Segment(SegmentKind k) {
+        /// Creates a token with the specified kind.
+        /// @param k The token kind.
+        public Token(TokenKind k) {
             kind = k;
         }
 
-        /// Sets the Segment kind.
-        /// @param k The SegmentKind to set.
-        public void setKind(SegmentKind k) {
+        /// Sets the token kind.
+        /// @param k The token kind to set.
+        public void setKind(TokenKind k) {
             kind = k;
         }
 
-        /// Returns the Segment kind.
-        /// @return The SegmentKind.
-        public SegmentKind getKind() {
+        /// Returns the token kind.
+        /// @return The token kind.
+        public TokenKind getKind() {
             return kind;
         }
 
-        /// Sets the text content of the Segment.
+        /// Sets the text content of the token.
         /// @param t The text string.
         public void setText(String t) {
             text = t;
         }
 
-        /// Returns the text content of the Segment.
+        /// Returns the text content of the token.
         /// @return The text string.
         public String getText() {
             return text;
         }
 
-        /// Sets the next Segment in the sequence.
-        /// @param segment The next Segment.
-        public void setNext(Segment segment) {
-            next = segment;
+        /// Sets the next token in the sequence.
+        /// @param token The next token.
+        public void setNext(Token token) {
+            next = token;
         }
 
-        /// Returns the next Segment, or an END Segment if none exists.
-        /// @return The next Segment or an END Segment.
-        public Segment getNext() {
+        /// Returns the next token, or an END token if none exists.
+        /// @return The next token or an END token.
+        public Token getNext() {
             if (next == null) {
-                return new Segment(SegmentKind.END);
+                return new Token(TokenKind.END);
             }
             return next;
         }
     }
 
-    /// Enum representing the kind of a Markdown segment.
-    public enum SegmentKind {
+    /// Enum representing the kind of a Markdown token.
+    public enum TokenKind {
         /// No specific kind assigned.
         NONE,
 
-        /// Plain text segment.
+        /// Plain text token.
         TEXT,
 
         /// Content inside square brackets.

@@ -4,7 +4,6 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.util.Context;
@@ -84,15 +83,19 @@ public class ModuleWriter {
                 MarkdownTable table = new MarkdownTable()
                         .addColumn(TITLE_PACKAGE)
                         .addColumn(TITLE_DESCRIPTION);
-                for (PackageMember member : moduleNode.getPackages()) {
-                    table.addRow(Markdown.link(Reference.to(member.getName())), Utils.inOneLine(Markdown.formatText(member.getDescription())));
+                for (PackageNode member : moduleNode.getPackages()) {
+                    Reference reference = Reference
+                            .to(member.getName())
+                            .withKind(Reference.Kind.PACKAGE)
+                            .withLabel(member.getName());
+                    table.addRow(Markdown.link(reference, true), Utils.inOneLine(Markdown.formatText(member.getDescription())));
                 }
                 table.render(writer);
             }
-            outputModuleDirectives(TITLE_EXPORTS, TITLE_PACKAGE, moduleNode.getExports(), Reference.Kind.PACKAGE);
-            outputModuleDirectives(TITLE_REQUIRES, TITLE_MODULE, moduleNode.getRequires(), Reference.Kind.MODULE);
-            outputModuleDirectives(TITLE_OPENS, TITLE_PACKAGE, moduleNode.getOpens(), Reference.Kind.PACKAGE);
-            outputModuleDirectives(TITLE_USES, TITLE_INTERFACE, moduleNode.getUses(), Reference.Kind.TYPE);
+            outputModuleDirectives(TITLE_EXPORTS, TITLE_PACKAGE, moduleNode.getExports());
+            outputModuleDirectives(TITLE_REQUIRES, TITLE_MODULE, moduleNode.getRequires());
+            outputModuleDirectives(TITLE_OPENS, TITLE_PACKAGE, moduleNode.getOpens());
+            outputModuleDirectives(TITLE_USES, TITLE_INTERFACE, moduleNode.getUses());
             outputModuleProvidesDirectives(moduleNode.getProvides());
             writer.flush();
             writer.close();
@@ -110,16 +113,15 @@ public class ModuleWriter {
     /// @param directives The list of directives belonging to the module.
     /// @param refKind The kind of reference used for first link from this directive
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputModuleDirectives(String title, String kind, List<DirectiveNode> directives, Reference.Kind refKind) throws IOException {
+    private void outputModuleDirectives(String title, String kind, List<DirectiveNode> directives) throws IOException {
         if (directives.isEmpty()) return;
         writer.write("=== \"" + title + "\"\n\n");
         MarkdownTable table = new MarkdownTable()
                 .addColumn(kind)
                 .addColumn(TITLE_DESCRIPTION);
         for (DirectiveNode directive : directives) {
-            Reference moduleRef = Reference.to(directive.getName()).withKind(refKind);
             String columnTwo = formatDirectivePackageDoc(directive);
-            String link = Markdown.link(moduleRef);
+            String link = Markdown.link(directive.getReference(), true);
             table.addRow(link, columnTwo);
         }
         table.render(writer, 4);
@@ -138,8 +140,8 @@ public class ModuleWriter {
             if (directive.getName() == null || directive.getName().isEmpty()) {
                 ctx.reportError("provides directive with no details");
             }
-            Reference moduleRef = Reference.to(directive.getName()).withKind(Reference.Kind.TYPE);
-            table.addRow(Markdown.link(moduleRef, true),
+            Reference reference = directive.getReference();
+            table.addRow(Markdown.link(reference, true),
                          multiLink(directive.getImplementations()));
         }
         table.render(writer, 4);
@@ -148,8 +150,19 @@ public class ModuleWriter {
     /// Turns each member of a list of strings into a link to the documentation
     /// for the module, package, or type denoted by that list member.
     /// @param names A list of strings that represent modules, packages, or types.
-    private String multiLink(List<String> names) {
-        return Markdown.link(Reference.to(String.join(",",names)), true);
+    private String multiLink(List<Reference> references) {
+        StringBuilder sb = new StringBuilder();
+        for (Reference reference : references) {
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
+            if (reference.isResolved()) {
+                sb.append(String.format("[%s](%s)", reference.getLabel(), reference.getUri()));
+            } else {
+                sb.append(reference.getLabel());
+            }
+        }
+        return sb.toString();
     }
 
     /// Formats the first sentence of a [DirectiveNode]'s documentation so
@@ -163,7 +176,7 @@ public class ModuleWriter {
         return "";
     }
 
-    /// Output the *Constant Field Values* page.
+    /// Outputs the *Constant Field Values* page.
     /// @param moduleNode The API tree node representing a module.
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputConstantValues(ModuleNode moduleNode) throws IOException {
@@ -180,7 +193,8 @@ public class ModuleWriter {
                     modifiersAndType.append(constantValue.getModifiersString());
                     modifiersAndType.append(" ");
                 }
-                modifiersAndType.append(Markdown.link(Reference.to(constantValue.getType().getQualifiedName()), true));
+                Reference reference = constantValue.getConstantValueReference();
+                modifiersAndType.append(Markdown.link(reference, true));
                 table.addRow(modifiersAndType.toString(), constantValue.getSimpleName(), escape(constantValue.getConstantValue().toString()));
             }
             table.render(writer);

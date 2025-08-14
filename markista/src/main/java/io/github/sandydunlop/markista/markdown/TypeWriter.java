@@ -8,7 +8,7 @@ import io.github.sandydunlop.markista.model.EnumTypeNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.Node;
-import io.github.sandydunlop.markista.model.PackageMember;
+import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
@@ -100,7 +100,7 @@ public class TypeWriter {
         }
         if (typeNode instanceof EnumTypeNode enumNode && !enumNode.getConstants().isEmpty()) {
             writer.write("\n## Enum Constant Details\n\n");
-            outputEnumConstantDetails(enumNode.getConstants(), enumNode);
+            outputEnumConstantDetails(enumNode.getConstants());
         }
         if (!typeNode.getFields().isEmpty()) {
             writer.write("\n## Field Details\n\n");
@@ -112,17 +112,17 @@ public class TypeWriter {
         }
         writer.flush();
         writer.close();
-        for (PackageMember node : typeNode.getClasses()) {
-            writeDoc((TypeNode)node);
+        for (TypeNode node : typeNode.getClasses()) {
+            writeDoc(node);
         }
-        for (PackageMember node : typeNode.getInterfaces()) {
-            writeDoc((TypeNode)node);
+        for (TypeNode node : typeNode.getInterfaces()) {
+            writeDoc(node);
         }
-        for (PackageMember node : typeNode.getEnums()) {
-            writeDoc((TypeNode)node);
+        for (TypeNode node : typeNode.getEnums()) {
+            writeDoc(node);
         }
-        for (PackageMember node : typeNode.getAnnotations()) {
-            writeDoc((TypeNode)node);
+        for (TypeNode node : typeNode.getAnnotations()) {
+            writeDoc(node);
         }
         ctx.setTypeName("");
     }
@@ -132,9 +132,9 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputSupertypes(TypeNode typeNode) throws IOException {
         int indentation = 0;
-        for (String st : typeNode.getSupertypes()) {
+        for (Pair<Reference,Text> pair : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(Markdown.link(Reference.to(st), true) + BR + "\n");
+            writer.write(Markdown.formatText(pair.getR()) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -151,20 +151,20 @@ public class TypeWriter {
             writer.write(NBSP.repeat(4));
             for (int i=0; i<typeNode.getImplementedInterfaces().size(); i++) {
                 if (i > 0) writer.write(", ");
-                writer.write(Markdown.link(Reference.to(typeNode.getImplementedInterfaces().get(i)), true));
+                writer.write(Markdown.link(typeNode.getImplementedInterfaces().get(i), true));
             }
             writer.write("\n\n");
         }
     }
 
     /// Outputs details of the class that encloses this one
-    /// @param enclosingClass a TypeNode representing the enclosing class
+    /// @param typeNode a TypeNode representing the enclosing class
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputEnclosingClass(TypeNode enclosingClass) throws IOException {
-        if (enclosingClass.getOwner() instanceof ClassTypeNode) {
+    private void outputEnclosingClass(TypeNode typeNode) throws IOException {
+        if (typeNode.getOwner() instanceof ClassTypeNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
-            writer.write(Markdown.link(Reference.to(enclosingClass.getOwner().getName()), true) + "\n\n");
+            writer.write(Markdown.link(typeNode.getEnclosingClassRef(), true) + "\n\n");
         }
     }
 
@@ -210,13 +210,12 @@ public class TypeWriter {
     /// Outputs a summary of nested classes within this one as Markdown
     /// @param nestedClasses a list of the nested classes
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputNestedClassSummary(List<PackageMember> nestedClasses) throws IOException {
+    private void outputNestedClassSummary(List<TypeNode> nestedClasses) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
                 .addColumn(TEXT_CLASS)
                 .addColumn(TEXT_DESCRIPTION);
-        for (PackageMember member : nestedClasses) {
-            if (!(member instanceof TypeNode nestedClassNode)) continue;
+        for (TypeNode nestedClassNode : nestedClasses) {
             table.addRow(nestedClassNode.getModifiersString(),
                         Markdown.mdDocumentLink(nestedClassNode.getSimpleName()), 
                         Utils.inOneLine(Markdown.formatText(nestedClassNode.getFirstSentence())));
@@ -247,7 +246,7 @@ public class TypeWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = Markdown.link(Reference.to(fieldNode.getType().getQualifiedName()), false);
+            String link = Markdown.formatText(fieldNode.getTypeText());
             table.addRow(fieldNode.getModifiersString() + link, 
                         Markdown.mdAnchorLink(fieldNode.getSimpleName()), Utils.inOneLine(Markdown.formatText(fieldNode.getFirstSentence())));
         }
@@ -277,8 +276,10 @@ public class TypeWriter {
                 .addColumn("Method")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
+            String link = Markdown.formatText(methodNode.getReturnTypeText());
             table.addRow(methodNode.getModifiersString() + 
-                        Markdown.link(Reference.to(methodNode.getReturnType().getQualifiedName()), false), 
+                        // Markdown.link(Reference.to(methodNode.getReturnType().getQualifiedName()), false), 
+                        link,
                         Markdown.mdAnchorLink(methodNode.getSimpleName()) + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
                         Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
         }
@@ -288,10 +289,10 @@ public class TypeWriter {
     /// Outputs enum constant details as Markdown
     /// @param constants a list of enum constants
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputEnumConstantDetails(List<FieldNode> constants, EnumTypeNode enumNode) throws IOException {
+    private void outputEnumConstantDetails(List<FieldNode> constants) throws IOException {
         for (FieldNode constant : constants) {
             writer.write("### " + constant.getSimpleName() + "\n\n");
-            writer.write("public static final " + Markdown.link(Reference.to(enumNode.getQualifiedName()), true));
+            writer.write("public static final " + constant.getSimpleName());
             writer.write(" " + constant.fullSignature() + "\n\n");
             writer.write(Markdown.formatText(constant.getFullBody()) + "\n\n");
 
@@ -306,7 +307,7 @@ public class TypeWriter {
                 writer.write("**See Also:**\n\n");
                 for (Reference ref : references) {
                     writer.write("\n");
-                    writer.write("See: " + Markdown.formatReference(ref) + "\n\n");
+                    writer.write("See: " + Markdown.link(ref, false) + "\n\n");
                 }
                 writer.write("\n");
             }
@@ -361,7 +362,7 @@ public class TypeWriter {
             writer.write("**See Also:**\n\n");
             for (Reference ref : node.getReferences()) {
                 writer.write("\n");
-                writer.write(Markdown.formatReference(ref) + "\n\n");
+                writer.write(Markdown.link(ref, false) + "\n\n");
             }
             writer.write("\n");
         }
@@ -383,22 +384,22 @@ public class TypeWriter {
         if (!method.getThrownTypes().isEmpty()) {
             writer.write("**Throws:**\n\n");
             int count = 0;
-            for (String thrownType : method.getThrownTypes()) {
+            for (Reference thrownType : method.getThrownTypes()) {
                 if (count++ > 0) {
                     writer.write(", ");
                 }
-                writer.write(Markdown.link(Reference.to(thrownType), false) + "\n");
+                writer.write(Markdown.link(thrownType, false) + "\n");
             }
             writer.write("\n");
         }
-        if (!method.getSpecifiedBy().isEmpty()) {
+        if (method.getSpecifiedBy() != null) {
             writer.write("**Specified By:**\n\n");
-            writer.write(Markdown.link(Reference.to(method.getSpecifiedBy()), false));
+            writer.write(Markdown.link(method.getSpecifiedBy(), false));
             writer.write("\n\n");
         }
         if (method.getOverriddenMethod() != null && !method.getOverriddenMethod().getClassName().isEmpty() && !method.getOverriddenMethod().getMethodName().isEmpty()) {
             writer.write("**Overrides:**\n\n");
-            writer.write(Markdown.link(Reference.to(method.getOverriddenMethod().getClassName() + "#" + method.getOverriddenMethod().getMethodName()), false) + " from " + Markdown.link(Reference.to(method.getOverriddenMethod().getClassName()), false));
+            writer.write(Markdown.formatText(method.getOverriddenMethod().getText()));
             writer.write("\n\n");
         }        
     }
@@ -429,7 +430,7 @@ public class TypeWriter {
     private void outputDeprecation(Deprecation status, Text text) throws IOException {
         writer.write("\n\n");
         writer.write("!!! note \"Deprecation\"\n");
-        if (Utils.isNullOrEmpty(text)) {
+        if (text == null || text.isEmpty()) {
             if (status == Deprecation.FOR_REMOVAL) {
                 writer.write("    This has been marked for removal.\n");
             } else {

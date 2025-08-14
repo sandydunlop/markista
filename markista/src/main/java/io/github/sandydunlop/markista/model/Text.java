@@ -22,6 +22,13 @@ public class Text {
         return new Text().append(string);
     }
 
+    /// Creates a Text object containing the supplied segment value
+    /// @param segment a Segment to store in the Text object
+    /// @return A Text object representing the segment
+    public static Text of(Segment segment) {
+        return new Text().append(segment);
+    }
+
     /// Private constructor to prevent external instantiation.
     private Text() {
         // Nothing to see here
@@ -49,6 +56,10 @@ public class Text {
         return segments;
     }
 
+    public Text.Segment getSegment(int n) {
+        return segments.get(n);
+    }
+
     /// Sets the segments of this Text to match another Text.
     /// @param text The Text source to copy from.
     public void set(Text text) {
@@ -59,7 +70,9 @@ public class Text {
     /// @param segment The segment to add.
     /// @return This Text instance for chaining.
     public Text append(Segment segment) {
-        segments.add(segment);
+        if (!segment.getText().isEmpty() || !segment.getLink().getTarget().isEmpty()) {
+            segments.add(segment);
+        }
         return this;
     }
 
@@ -67,7 +80,9 @@ public class Text {
     /// @param text text to go in the segment
     /// @return This Text instance for chaining.
     public Text append(String text) {
-        segments.add(Segment.empty().setKind(SegmentKind.TEXT).setText(text));
+        if (!text.isEmpty()) {
+            segments.add(Segment.empty().setKind(SegmentKind.TEXT).setText(text));
+        }
         return this;
     }
 
@@ -86,7 +101,7 @@ public class Text {
         /// The textual content of this segment.
         private String text = "";
         /// The associated link if the segment represents a link.
-        private String link = "";
+        private Reference link = new Reference();
 
         /// Private constructor to restrict instantiation.
         private Segment() {
@@ -118,7 +133,7 @@ public class Text {
         /// @return The text or link of this segment.
         public String toString() {
             if (text == null || text.isEmpty()) {
-                return link;
+                return link.getLabel();
             }
             return text;
         }
@@ -140,14 +155,14 @@ public class Text {
         /// Sets the link value of this segment.
         /// @param link The link to set.
         /// @return This Segment instance for chaining.
-        public Segment setLink(String link) {
+        public Segment setLink(Reference link) {
             this.link = link;
             return this;
         }
 
         /// Returns the link associated with this segment.
-        /// @return The link string.
-        public String getLink() {
+        /// @return The link reference.
+        public Reference getLink() {
             return link;
         }
     }
@@ -157,9 +172,6 @@ public class Text {
         /// Empty segment
         NONE,
 
-        /// Markdown formatted text
-        MARKDOWN,
-
         /// Plain test
         TEXT,
 
@@ -168,11 +180,5 @@ public class Text {
 
         /// Source code
         CODE,
-
-        /// Marks the start of a subsection
-        START,
-
-        /// Marks the end of a subsection
-        END
     }
 }

@@ -5,8 +5,12 @@ public class OverriddenMethodNode {
     /// Fully qualified name of the class that declares the overridden method. 
     private final String qualifiedClassName;
 
+    private Text text = Text.empty();
+
     /// Name of the overridden method.
     private final String methodName;
+
+    private Reference reference;
 
     /// Constructs an OverriddenMethodNode with specified qualified class name and method name.
     /// @param qualifiedClassName The fully qualified class name.
@@ -22,9 +26,25 @@ public class OverriddenMethodNode {
         return qualifiedClassName;
     }
 
+    public void setReference(Reference ref) {
+        reference = ref;
+    }
+
+    public Reference getReference() {
+        return reference;
+    }
+
     /// Returns the name of the overridden method.
     /// @return The method name.
     public String getMethodName() {
         return methodName;
+    }
+
+    public void setText(Text text) {
+        this.text = text;
+    }
+
+    public Text getText() {
+        return text;
     }
 }

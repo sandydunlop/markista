@@ -127,9 +127,12 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleDirectives_WritesTableForDirectiveNodes() throws IOException {
+        Reference ref = Reference.to("com.example.package")
+                .withLabel("com.example.package");
         DirectiveNode exportsDirective = mock(DirectiveNode.class);
         when(exportsDirective.getName()).thenReturn("com.example.package");
         when(exportsDirective.getKind()).thenReturn(DirectiveNode.Kind.EXPORTS);        
+        when(exportsDirective.getReference()).thenReturn(ref);        
         moduleNode.addDirective(exportsDirective);
 
         moduleWriter.writeDocs(api);
@@ -148,11 +151,22 @@ class ModuleWriterTests {
         api.addInterface(interface1);
         api.addInterface(interface2);
 
+        Reference ref = Reference.to("com.example.package.Interface");
+        ref.setKind(Reference.Kind.TYPE);
+        ref.setLabel("com.example.package.Interface");
+        ref.setUri("com/example/package/Interface.md");
         DirectiveNode providesDirective = mock(DirectiveNode.class);
-        List<String> implementations = List.of("com.example.package.Impl1", "com.example.package.Impl2");
+        List<Reference> implementations = List.of(
+                Reference.to("com.example.package.Impl1")
+                        .withLabel("com.example.package.Impl1")
+                        .withUri("com.example.package.Impl1"), 
+                Reference.to("com.example.package.Impl2")
+                        .withLabel("com.example.package.Impl2")
+                        .withUri("com.example.package.Impl2")); 
         when(providesDirective.getImplementations()).thenReturn(implementations);
         when(providesDirective.getKind()).thenReturn(DirectiveNode.Kind.PROVIDES);
         when(providesDirective.getName()).thenReturn("com.example.package.Interface");
+        when(providesDirective.getReference()).thenReturn(ref);
         moduleNode.addDirective(providesDirective);
 
         moduleWriter.writeDocs(api);
@@ -166,13 +180,12 @@ class ModuleWriterTests {
 
     @Test
     void outputConstantValues_WritesConstantFieldValuesPage() throws IOException {
+        Reference ref = Reference.to("v");
         FieldNode fieldNode = mock(FieldNode.class);
         when(fieldNode.getModifiersString()).thenReturn("public static ");
-        TypeNode typeNode = mock(TypeNode.class);
-        when(typeNode.getQualifiedName()).thenReturn("java.lang.String");
-        when(fieldNode.getType()).thenReturn(typeNode);
         when(fieldNode.getSimpleName()).thenReturn("MY_CONSTANT");
         when(fieldNode.getConstantValue()).thenReturn("42");
+        when(fieldNode.getConstantValueReference()).thenReturn(ref);
 
         moduleNode.addConstantValue(fieldNode);
 

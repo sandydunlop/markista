@@ -1,13 +1,12 @@
 package io.github.sandydunlop.markista.util;
 
-import java.nio.file.Path;
 import java.util.List;
 
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.util.MarkdownParser.SegmentKind;
+import io.github.sandydunlop.markista.util.MarkdownParser.TokenKind;
 
 /// A utility class for producing Markdown formatted text and resolving
 /// Markdown links to point to the correct file, directory, or web page.
@@ -27,7 +26,7 @@ public class Markdown {
     /// @return Markdown formatted text representing the method's signature
     public static String fullSignature(MethodNode method ) {
         String sig = method.getModifiersString();
-        sig += link(Reference.to(method.getReturnType().getQualifiedName()), false) + " ";
+        sig += formatText(method.getReturnTypeText()) + " ";
         sig += method.getSimpleName() + "(" + formatParams(method.getParams()) + ")";
         return sig;
     }
@@ -40,32 +39,13 @@ public class Markdown {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(", ");
-            String typeName = link(Reference.to(param.getType().getQualifiedName()), false);
+            String typeName = formatText(param.getTypeText());
             sb.append(typeName);
             sb.append(param.getType().getArrayBrackets());
             sb.append(" ");
             sb.append(param.getSimpleName()); 
         }
         return sb.toString();
-    }
-
-    /// Formats a link specified in a `Reference` object as markdown.
-    /// @param ref a `Reference` object specifying a link
-    /// @return Markdown formatted text containing a link
-    public static String formatReference(Reference ref) {
-        if (ref.getKind() == Reference.Kind.PACKAGE || ref.getKind() == Reference.Kind.TYPE) {
-            return link(ref);
-        }
-        if (ref.getLabel() == null || ref.getLabel().isEmpty()) {
-            ref.setLabel(ref.getTarget());
-        }
-        if (ref.getKind() == Reference.Kind.URL) {
-            return mdDocumentLink(ref.getUri());
-        } else if (ref.getKind() == Reference.Kind.PAGE) {
-            String relativePath = LinkResolver.relativize("");
-            return mdDocumentLink(ref.getLabel(), Path.of(relativePath, ref.getUri()).toString());
-        }
-        return "";
     }
 
     /// Formats text contained in a `Text` object as markdown.
@@ -80,11 +60,8 @@ public class Markdown {
         StringBuilder sb = new StringBuilder();
         for (Text.Segment segment : parsedSegments) {
             switch (segment.getKind()) {
-                case Text.SegmentKind.TEXT, Text.SegmentKind.END:
+                case Text.SegmentKind.TEXT:
                     sb.append(segment);
-                    break;
-                case Text.SegmentKind.MARKDOWN:
-                    sb.append(resolveMarkdownLinks(segment.toString()));
                     break;
                 case Text.SegmentKind.CODE:
                     sb.append("`");
@@ -94,13 +71,21 @@ public class Markdown {
                 case Text.SegmentKind.LINK:
                     sb.append(formatLink(segment));
                     break;
-                case Text.SegmentKind.START:
-                    break;
                 default:
                     ctx.reportWarning("Unhandled javadoc tag:\n  " + segment.getKind().toString() + "\n  " + segment);
             }
         }
         return sb.toString();
+    }
+
+    /// Formats links contained in a text segment as markdown.
+    /// @param segment A text segment
+    /// @return Markdown formatted text with a resolved link
+    public static String formatLink(Text.Segment segment) {
+        if (segment.getLink().getLabel().isEmpty()) {
+            segment.getLink().setLabel(segment.getText());
+        }
+        return mdRefLink(segment.getLink());
     }
 
     /// Resolves markdown formatted links to point to the correct directory and page.
@@ -109,11 +94,11 @@ public class Markdown {
     public static String resolveMarkdownLinks(String markdown) {
         StringBuilder sb = new StringBuilder();
         MarkdownParser parser = new MarkdownParser(markdown);
-        MarkdownParser.Segment segment = parser.firstSegment();
-        while (segment.getKind() != MarkdownParser.SegmentKind.END) {
-            if (segment.getKind() == MarkdownParser.SegmentKind.BRACKETS_TAG) {
-                MarkdownParser.Segment next = segment.getNext();
-                if (next.getKind() == SegmentKind.BRACKETS_TAG || next.getKind() == SegmentKind.PARENS_TAG) {
+        MarkdownParser.Token segment = parser.firstToken();
+        while (segment.getKind() != MarkdownParser.TokenKind.END) {
+            if (segment.getKind() == MarkdownParser.TokenKind.BRACKETS_TAG) {
+                MarkdownParser.Token next = segment.getNext();
+                if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
                     Reference ref = Reference.to(next.getText());
                     ref.setLabel(segment.getText());
                     String link = link(ref, false);
@@ -124,9 +109,9 @@ public class Markdown {
                     }
                     segment = next;
                 } else {
-                    sb.append(link(Reference.to(segment.getText())));
+                    sb.append(link(Reference.to(segment.getText()), false));
                 }
-            } else if (segment.getKind() == SegmentKind.TEXT) {
+            } else if (segment.getKind() == TokenKind.TEXT) {
                 sb.append(segment.getText());
             }
             segment = segment.getNext();
@@ -134,34 +119,7 @@ public class Markdown {
         return sb.toString();
     }
 
-    /// Formats links contained in a text segment as markdown.
-    /// @param segment A text segment
-    /// @return Markdown formatted text with a resolved link
-    public static String formatLink(Text.Segment segment) {
-        if (segment.getLink().contains("://")) {
-            Reference ref = new Reference();
-            ref.setKind(Reference.Kind.URL);
-            ref.setLabel(segment.getText());
-            ref.setUri(segment.getLink());
-            return mdRefLink(ref);
-        }
-        if (segment.getText().isBlank()) {
-            return link(Reference.to(segment.getLink()));
-        } else {
-            Reference ref = LinkResolver.resolve(Reference.to(segment.getLink()));
-            ref.setLabel(segment.getText());
-            return mdRefLink(ref);
-        }
-    }
-
-    /// Create a markdown link, automatically deciding what kind of link to make.
-    /// @param link a Reference object describing the link
-    /// @return markdown formatted link
-    public static String link(Reference link) {
-        return link(link, false);
-    }
-
-    /// Create a markdown link, automatically deciding what kind of link to make.
+    /// Create a markdown formatted link
     /// @param reference a Reference object describing the link
     /// @param useQualifiedName If true, qualified names will be used in the link label
     /// @return markdown formatted link
@@ -171,43 +129,9 @@ public class Markdown {
             ctx.reportWarning("No link target supplied");
             return reference.getLabel();
         }
-        String pre = "";
-        String post = "";
-        String anchor = "";
         boolean isLocalMethod = false;
         String displayName = reference.getLabel();
-        int pos = targetName.indexOf('#');
-        if (pos == 0) {
-            return mdAnchorLink(targetName);
-        }
-        if (pos > 0) {
-            anchor = targetName.substring(pos);
-            targetName = targetName.substring(0, pos);
-        }
-        if (targetName.indexOf('<') > -1) {
-            return escape(linkGenerics(targetName, useQualifiedName));
-        } else if (targetName.indexOf(',') > -1) {
-            return splitAndLink(targetName, useQualifiedName);
-        } else if (targetName.lastIndexOf(' ') > 0) {
-            int p = targetName.lastIndexOf(' ');
-            pre = targetName.substring(0, p) + " ";
-            targetName = targetName.substring(p + 1);
-        }
-        pos = targetName.indexOf('[');
-        if (pos > 0) {
-            post = targetName.substring(pos);
-            targetName = targetName.substring(0, pos);
-        }
-        if (targetName.contains("(")) {
-            targetName = targetName.substring(0, targetName.indexOf("("));
-        }
-        reference.setTarget(targetName);
-        reference.setAnchor(anchor);
-        if (reference.getLabel() == null || reference.getLabel().isEmpty()) {
-            reference.setLabel(reference.getTarget());
-        }
-        LinkResolver.resolve(reference);
-        if (!anchor.isEmpty() && reference.getKind() != Reference.Kind.URL) {
+        if (reference.hasAnchor() && reference.getKind() != Reference.Kind.URL) {
             isLocalMethod = true;
             // Issue: https://github.com/sandydunlop/markista/issues/1
             // Workaround:
@@ -217,7 +141,7 @@ public class Markdown {
             reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
         }
         setDisplayName(reference, displayName, isLocalMethod, useQualifiedName);
-        return pre + mdRefLink(reference) + post;
+        return mdRefLink(reference);
     }
 
     private static void setDisplayName(Reference link, String displayName, boolean isLocalMethod, boolean useQualifiedName) {
@@ -267,6 +191,9 @@ public class Markdown {
                 displayName += "." + anchorName;
             }
             return String.format("[%s](%s%s)", displayName, link.getUri(), link.getAnchor());
+        } else if (link.getKind() == Reference.Kind.PAGE) {
+            return String.format("[%s](%s.md)", link.getLabel(), link.getUri());
+
         }
         return link.getLabel();
     }
@@ -284,42 +211,6 @@ public class Markdown {
         } else {
             return String.format(FORMAT_SIMPLE_LINK, displayName, link.getAnchor());
         }
-    }
-
-    /// Changes qualified generic type names to unqualified generic 
-    /// type names and adds links to their API documentation.
-    /// @param str A string containing a qualified generic name.
-    /// @param useQualifiedName If true, qualified type names will be displayed
-    /// @return    A string with the qualified names changed to unqualified
-    ///            names and links to types added
-    public static String linkGenerics(String str, boolean useQualifiedName) {
-        if (str == null || str.isEmpty()) return str;
-        int openingChevron = str.indexOf("<");
-        int closingChevron = str.lastIndexOf(">");
-        String before = str.substring(0, openingChevron);
-        String mid = str.substring(openingChevron + 1, closingChevron);
-        String after = str.substring(closingChevron + 1);
-        before = link(Reference.to(before), useQualifiedName);
-        mid = splitAndLink(mid, useQualifiedName);
-        return before + "&lt;" + mid + "&gt;" + after;
-    }
-
-    /// Creates markdown formatted text with links to types from a string.
-    /// containing one or more types separated by commas.
-    /// @param typesString A string containing a comma-separated list of type names
-    /// @param useQualifiedName if true, the qualified version of the identifier is shown
-    /// @return a list of links to types formatted as Markdown
-    public static String splitAndLink(String typesString, boolean useQualifiedName) {
-        StringBuilder r = new StringBuilder();
-        String[] types = typesString.split(",");
-        for (String t : types) {
-            String typeName = t.strip();
-            if (!r.isEmpty()) {
-                r.append(", ");
-            }
-            r.append(link(Reference.to(typeName), useQualifiedName));
-        }
-        return r.toString();
     }
 
     /// Converts a string to the format required for use as a Markdown anchor.
@@ -350,20 +241,10 @@ public class Markdown {
     /// @param docName The filename of the document being linked to
     /// @return The Markdown formatted link
     public static String mdDocumentLink(String docName) {
-        return mdDocumentLink(docName, docName);
-    }
-
-    /// Creates a Markdown formatted link to another Markdown page or a web page
-    /// @param phrase the text displayed for the link in the Markdown page
-    /// @param docName the name of the Markdown page being linked to, or the 
-    ///                URL of a web page being linked to
-    /// @return Markdown formatted text containing a correctly formatted link to
-    ///         the specified Markdown page or web page.
-    public static String mdDocumentLink(String phrase, String docName) {
         if (docName.contains("://") || docName.endsWith(".md")){
-            return String.format(FORMAT_SIMPLE_LINK, phrase, docName);
+            return String.format(FORMAT_SIMPLE_LINK, docName, docName);
         }
-        return String.format("[%s](%s.md)", phrase, docName);
+        return String.format("[%s](%s.md)", docName, docName);
     }
 
     /// Escapes HTML `<` and `>` characters in a string with their corresponding

@@ -5,6 +5,7 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.util.ApiScanner;
 import io.github.sandydunlop.markista.util.Configuration;
 import io.github.sandydunlop.markista.util.Context;
+import io.github.sandydunlop.markista.util.LinkFormatter;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.ModuleDirectives;
 
@@ -315,6 +316,7 @@ public class MarkdownDoclet implements Doclet {
         if (Configuration.getCreateExternalLinks()) {
             LinkResolver.addNativeModules();
         }
+        LinkFormatter.generateLinkTexts(api, ctx);
 
         // The Writer used to output the generated markdown content for the current document.
         // It handles writing text to the appropriate output file or stream.

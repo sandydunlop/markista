@@ -1,19 +1,12 @@
 package io.github.sandydunlop.markista.util;
 
-import com.sun.source.doctree.DocCommentTree;
-import com.sun.source.doctree.ReturnTree;
-
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.PackageOwner;
-import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.PackageOwnerInterface;
 
 import java.io.File;
-import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +86,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
 
     private void calculateUnnamedModuleSourcePath() {
         if (unnamedModule.getPackages().isEmpty()) return;
-        PackageNode pkg = (PackageNode) unnamedModule.getPackages().getFirst();
+        PackageNode pkg = unnamedModule.getPackages().getFirst();
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
         String nameAsPath = pkg.getName().replace(".", separator);
         String root = pkg.getSourcePath().toString().replace(nameAsPath, "");
@@ -109,6 +102,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     public Void visitModule(ModuleElement e, Integer depth) {
         ModuleNode mod;
         if (e.getQualifiedName().toString().isEmpty()) {
+            ctx.setModuleName("");
             mod = unnamedModule;
             if (Configuration.getVerbose()) {
                 ctx.reportInfo("[ MODULE] UNNAMED");
@@ -118,6 +112,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         }
         if (mod == null) {
             mod = new ModuleNode(e.getQualifiedName().toString());
+            ctx.setModuleName(mod.getName());
             if (Configuration.getVerbose()) {
                 ctx.reportInfo(String.format("[ MODULE] %s", mod.getName()));
             }
@@ -144,6 +139,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             PackageNode pkg = api.getPackageNode(ee.getQualifiedName().toString());
             if (pkg == null) {
                 pkg = new PackageNode(ee.getQualifiedName().toString());
+                ctx.setPackageName(pkg.getName());
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
@@ -154,7 +150,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 api.addPackage(pkg);
                 Element enclosing = ee.getEnclosingElement();
                 if (enclosing != null && enclosing.getKind() == ElementKind.PACKAGE) {
-                    PackageOwner owner = api.getPackageNode(ee.getQualifiedName().toString());
+                    PackageOwnerInterface owner = api.getPackageNode(ee.getQualifiedName().toString());
                     if (owner != null) {
                         owner.getPackages().add(pkg);
                     }
@@ -167,15 +163,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     @Override
     public Void visitType(TypeElement e, Integer depth) { 
         if (isIncludedElement(e.getQualifiedName().toString()) && TypeUtils.isIncludedInApi(e)){
-            TypeNode typeNode = TypeUtils.nodeFromElement(e);
-            TypeUtils.setDocumentation(typeNode, e);
-            JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(e);
-            if (jfo != null && typeNode != null) {
-                typeNode.setSourcePath(Path.of(jfo.toUri()));
-                if (typeNode.getPackage().getSourcePath() == null) {
-                    typeNode.getPackage().setSourcePath(Path.of(jfo.toUri()).getParent());
-                }
-            }
+            TypeUtils.nodeFromElement(e);
         }
         return super.visitType(e, depth);
     }
@@ -183,22 +171,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     @Override
     public Void visitExecutable(ExecutableElement ee, Integer depth) {
         if (isIncludedElement(ee) && TypeUtils.isIncludedInApi(ee)){
-            MethodNode methodNode = TypeUtils.nodeFromElement(ee);
-            if (methodNode != null) {
-                DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
-                TypeUtils.setDeprecationStatus(methodNode, ee, dct);
-                if (dct != null) {
-                    methodNode.setFirstSentence(TypeUtils.createText(dct.getFirstSentence()));
-                    methodNode.setBody(TypeUtils.createText(dct.getBody()));
-                    methodNode.setFullBody(TypeUtils.createText(dct.getFullBody()));
-                    ReturnTree returnTree = TypeUtils.getReturnTree(dct);
-                    if (returnTree != null) {
-                        methodNode.setReturnDescription(TypeUtils.createText(returnTree.getDescription()));
-                    }
-                    methodNode.setReferences(TypeUtils.getReferences(dct));
-                    methodNode.setSince(TypeUtils.getSince(dct));
-                }
-            }
+            TypeUtils.nodeFromElement(ee);
         }
         return super.visitExecutable(ee, depth);
     }
@@ -206,14 +179,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     @Override
     public Void visitVariable(VariableElement ve, Integer depth) {
         if (isIncludedElement(ve) && TypeUtils.isIncludedInApi(ve) && ve.getKind() == ElementKind.FIELD) {
-            FieldNode fieldNode = TypeUtils.nodeFromElement(ve);
-            if (fieldNode != null ) {
-                fieldNode.setConstantValue((Serializable) ve.getConstantValue());
-                DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ve);
-                TypeUtils.setDocumentation(fieldNode, ve);
-                TypeUtils.setModifiers(fieldNode, ve.getModifiers());
-                TypeUtils.setDeprecationStatus(fieldNode, ve, dct);
-            }
+            TypeUtils.nodeFromElement(ve);
         }
         return super.visitVariable(ve, depth);
     }
@@ -235,5 +201,5 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             return new File(jfo.toUri());
         }
         return null;
-    }    
+    }
 }

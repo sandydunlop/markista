@@ -2,6 +2,7 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.model.*;
 import io.github.sandydunlop.markista.util.Context;
+import io.github.sandydunlop.markista.util.LinkFormatter;
 import io.github.sandydunlop.markista.util.LinkResolver;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -73,28 +74,17 @@ class TypeWriterTests {
 
     @Test
     void outputFieldSummary_WritesMarkdownTableForFields() throws IOException {
-        Api api = mock(Api.class);
-        LinkResolver.init(api, contextMock);
-        LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
-
-        // Prepare FieldNode mocks
-        FieldNode field1 = mock(FieldNode.class);
-        when(field1.getModifiersString()).thenReturn("public ");
         TypeNode field1Type = mock(TypeNode.class);
         when(field1Type.getQualifiedName()).thenReturn("java.lang.String");
-        when(field1.getType()).thenReturn(field1Type);
-        when(field1.getSimpleName()).thenReturn("fieldOne");
-        when(field1.getFirstSentence()).thenReturn(Text.empty().append("Field one description"));
-        when(field1.getSince()).thenReturn(Text.empty().append("since"));
 
-        FieldNode field2 = mock(FieldNode.class);
-        when(field2.getModifiersString()).thenReturn("private ");
+        FieldNode field1 = new FieldNode(field1Type, "fieldOne");
+        field1.addModifier(Modifier.PUBLIC);
+
         TypeNode field2Type = mock(TypeNode.class);
         when(field2Type.getQualifiedName()).thenReturn("int");
-        when(field2.getType()).thenReturn(field2Type);
-        when(field2.getSimpleName()).thenReturn("fieldTwo");
-        when(field2.getFirstSentence()).thenReturn(Text.empty().append("Field two description"));
-        when(field2.getSince()).thenReturn(Text.empty().append("since"));
+
+        FieldNode field2 = new FieldNode(field2Type, "fieldTwo");
+        field2.addModifier(Modifier.PRIVATE);
 
         List<FieldNode> fields = new ArrayList<>();
         fields.add(field1);
@@ -120,6 +110,14 @@ class TypeWriterTests {
         when(type.getAnnotations()).thenReturn(new ArrayList<>());
         when(type.getOwner()).thenReturn(null);
 
+        when(contextMock.getPackageName()).thenReturn("com.example");
+        Api testApi = new Api("Test API");
+        testApi.addType(type);
+        LinkResolver.init(testApi, contextMock);
+        LinkResolver.addNativeModules();
+        LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
+        LinkFormatter.generateLinkTexts(testApi, contextMock);
+
         typeWriter.writeDoc(type);
 
         String output = writer.toString();
@@ -134,10 +132,7 @@ class TypeWriterTests {
 
     @Test
     void outputEnumConstantsSummary_WritesEnumConstantsTable() throws IOException {
-        PackageNode pkg = new PackageNode("io.github.sandydunlop.markista.model");
-        TypeNode typeNode = new TypeNode("io.github.sandydunlop.markista.model.Node", "Node", pkg);
         Api api = mock(Api.class);
-        when(api.getTypeNode("com.example.MyEnum")).thenReturn(typeNode);
         LinkResolver.init(api, contextMock);
 
         EnumTypeNode enumNode = mock(EnumTypeNode.class);
@@ -147,6 +142,7 @@ class TypeWriterTests {
         when(enumNode.getKind()).thenReturn(TypeNode.Kind.ENUM);
 
         Reference ref = new Reference(Reference.Kind.URL, "example", "http://example.com");
+        ref.setTarget(ref.getUri());
         List<Reference> references = List.of(ref);
 
         FieldNode constant1 = mock(FieldNode.class);
@@ -177,6 +173,10 @@ class TypeWriterTests {
         when(enumNode.getAnnotations()).thenReturn(new ArrayList<>());
         when(enumNode.getOwner()).thenReturn(null);
 
+        LinkResolver.init(api, contextMock);
+        LinkResolver.addNativeModules();
+        LinkFormatter.generateLinkTexts(api, contextMock);
+
         typeWriter.writeDoc(enumNode);
 
         String output = writer.toString();
@@ -190,10 +190,7 @@ class TypeWriterTests {
 
     @Test
     void outputEnumConstantDetails_IncludesSinceAndReferences() throws IOException {
-        PackageNode pkg = new PackageNode("io.github.sandydunlop.markista.model");
-        TypeNode typeNode = new TypeNode("io.github.sandydunlop.markista.model.Node", "Node", pkg);
         Api api = mock(Api.class);
-        when(api.getTypeNode("com.example.MyEnum")).thenReturn(typeNode);
         LinkResolver.init(api, contextMock);
 
         EnumTypeNode enumNode = mock(EnumTypeNode.class);
@@ -205,7 +202,9 @@ class TypeWriterTests {
         when(constant.getFullBody()).thenReturn(Text.empty().append("Full body text for const"));
         when(constant.getSince()).thenReturn(Text.empty().append("Since version 1.0"));
 
-        Reference ref = mock(Reference.class);
+        Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
+                .withKind(Reference.Kind.TYPE)
+                .withLabel("See ALso");
         when(constant.getReferences()).thenReturn(List.of(ref));
 
         List<FieldNode> constants = new ArrayList<>();
@@ -226,6 +225,12 @@ class TypeWriterTests {
         when(enumNode.getEnums()).thenReturn(new ArrayList<>());
         when(enumNode.getAnnotations()).thenReturn(new ArrayList<>());
         when(enumNode.getOwner()).thenReturn(null);
+
+        Api testApi = new Api("Test API");
+        LinkResolver.init(testApi, contextMock);
+        LinkResolver.addNativeModules();
+        LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
+        LinkFormatter.generateLinkTexts(testApi, contextMock);
 
         typeWriter.writeDoc(enumNode);
 
@@ -319,6 +324,7 @@ class TypeWriterTests {
         pkg.addClass(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
+        LinkFormatter.generateLinkTexts(api, ctx);
 
         typeWriter.writeDoc(typeNode);
         String output = writer.toString();
@@ -333,9 +339,18 @@ class TypeWriterTests {
         TypeNode returnType = new AnnotationTypeNode("java.lang.String", "String", pkg);
         MethodNode methodNode = new MethodNode(returnType, "eat");
 
+        Reference thrownRef = Reference.to("scenario.food.berry.Thrown")
+                .withKind(Reference.Kind.TYPE)
+                .withLabel("scenario.food.berry.Thrown");
+        Reference specifiedByRef = Reference.to("scenario.food.berry.Specified")
+                .withKind(Reference.Kind.TYPE)
+                .withLabel("scenario.food.berry.Specified");
+        ClassTypeNode specifiedByType = new ClassTypeNode("scenario.food.berry.Specified", "Specified", pkg);
+        ClassTypeNode thrownType = new ClassTypeNode("scenario.food.berry.Thrown", "Thrown", pkg);
+        
         methodNode.setReturnDescription(Text.empty().append("returnDescription"));
-        methodNode.setSpecifiedBy("specifiedBy");
-        methodNode.addThrownType("Exception");
+        methodNode.setSpecifiedBy(specifiedByRef);
+        methodNode.addThrownType(thrownRef);
         OverriddenMethodNode overriddenMethod = new OverriddenMethodNode("scenario.food.berry.Avocado", "eat");
         methodNode.setOverriddenMethod(overriddenMethod);
 
@@ -347,13 +362,18 @@ class TypeWriterTests {
         api.addPackage(pkg);
         api.addClass(typeNode);
         pkg.addClass(typeNode);
+        api.addClass(specifiedByType);
+        api.addClass(thrownType);
         LinkResolver.init(api, ctx);
+
+        LinkResolver.addNativeModules();
+        LinkFormatter.generateLinkTexts(api, ctx);
 
         typeWriter.writeDoc(typeNode);
         String output = writer.toString();
         assertTrue(output.contains("returnDescription"));
-        assertTrue(output.contains("specifiedBy"));
-        assertTrue(output.contains("Exception"));
+        assertTrue(output.contains("Specified.md"));
+        assertTrue(output.contains("Thrown.md"));
         assertTrue(output.contains("eat"));
     }
 }

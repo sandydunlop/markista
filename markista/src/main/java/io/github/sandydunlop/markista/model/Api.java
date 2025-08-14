@@ -5,7 +5,7 @@ import java.util.List;
 
 /// Represents the API being documented, encapsulating its modules and packages.
 /// Provides methods to add and retrieve modules, packages, and types, as well as sorting them.
-public class Api extends AbstractTypeOwner {
+public class Api extends PackageOrTypeNode {
     /// List of modules included in the API.
     private final List<ModuleNode> modules = new ArrayList<>();
 
@@ -15,8 +15,11 @@ public class Api extends AbstractTypeOwner {
     /// Represents the unnamed module in the API.
     private final ModuleNode unnamedModule = new ModuleNode("");
 
-    /// List of annotations applied to this type.
+    /// List of applied annotations.
     private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
+
+    /// List of links.
+    private final List<Reference> links = new ArrayList<>();
 
     /// Constructs an empty Api instance with the given name.
     /// @param name The name of the API
@@ -72,16 +75,28 @@ public class Api extends AbstractTypeOwner {
         return packages;
     }
 
-    /// Adds an applied annotation to this type
+    /// Adds an applied annotation
     /// @param annotation the annotation
     public void addAppliedAnnotation(AppliedAnnotationNode annotation) {
         appliedAnnotations.add(annotation);
     }
 
-    /// Returns the list of annotations applied to this type.
+    /// Returns the list of applied annotations
     /// @return list of applied annotations
     public List<AppliedAnnotationNode> getAppliedAnnotations() {
         return appliedAnnotations;
+    }
+
+    /// Adds a link
+    /// @param link the link to add
+    public void addLink(Reference link) {
+        links.add(link);
+    }
+
+    /// Returns the list of link.
+    /// @return list of links
+    public List<Reference> getLinks() {
+        return links;
     }
 
     /// Retrieves a package matching the specified qualified name.

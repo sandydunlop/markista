@@ -6,12 +6,12 @@ import java.util.List;
 
 /// Represents a module node that contains directives, packages, and constant values. 
 /// Implements the PackageOwner interface to manage contained packages. 
-public class ModuleNode extends Node implements PackageOwner{
+public class ModuleNode extends Node implements PackageOwnerInterface{
     private final String name;
     private boolean hasModuleInfo = false;
     private Path sourcePath;
     private final List<DirectiveNode> directives = new ArrayList<>();
-    private final List<PackageMember> packages = new ArrayList<>();
+    private final List<PackageNode> packages = new ArrayList<>();
     private final List<FieldNode> constantValues = new ArrayList<>();
 
     /// Constructs a ModuleNode with the given module name.
@@ -45,7 +45,7 @@ public class ModuleNode extends Node implements PackageOwner{
     /// Returns the list of packages contained in this module.
     /// @return List of PackageMember objects.
     @Override
-    public List<PackageMember> getPackages() {
+    public List<PackageNode> getPackages() {
         return packages;
     }
 

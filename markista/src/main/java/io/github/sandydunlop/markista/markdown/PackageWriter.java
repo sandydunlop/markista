@@ -1,8 +1,8 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageOrTypeNode;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Configuration;
@@ -35,10 +35,8 @@ public class PackageWriter {
     /// @param moduleNode  The module containing the packages to output the documentation for
     /// @throws java.io.IOException if there is a problem writing to the output file
     public void writeDocs(ModuleNode moduleNode) throws IOException {
-        for (PackageMember node : moduleNode.getPackages()) {
-            if (node instanceof PackageNode packageNode) {
-                outputPackageDoc(packageNode);
-            }
+        for (PackageNode packageNode : moduleNode.getPackages()) {
+            outputPackageDoc(packageNode);
         }
     }
 
@@ -58,17 +56,17 @@ public class PackageWriter {
         writer.flush();
         writer.close();
         TypeWriter typeWriter = new TypeWriter();
-        for (PackageMember member : packageNode.getClasses()) {
-            typeWriter.writeDoc((TypeNode)member);
+        for (TypeNode member : packageNode.getClasses()) {
+            typeWriter.writeDoc(member);
         }
-        for (PackageMember member : packageNode.getInterfaces()) {
-            typeWriter.writeDoc((TypeNode)member);
+        for (TypeNode member : packageNode.getInterfaces()) {
+            typeWriter.writeDoc(member);
         }
-        for (PackageMember member : packageNode.getEnums()) {
-            typeWriter.writeDoc((TypeNode)member);
+        for (TypeNode member : packageNode.getEnums()) {
+            typeWriter.writeDoc(member);
         }
-        for (PackageMember member : packageNode.getAnnotations()) {
-            typeWriter.writeDoc((TypeNode)member);
+        for (TypeNode member : packageNode.getAnnotations()) {
+            typeWriter.writeDoc(member);
         }
         ctx.setPackageName("");
     }
@@ -77,7 +75,7 @@ public class PackageWriter {
     /// @param title The title of this section in the Markdown document
     /// @param members The list of members of this package
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputPackageMembers(String title, List<PackageMember> members) throws IOException {
+    private void outputPackageMembers(String title, List<? extends PackageOrTypeNode> members) throws IOException {
         if (members.isEmpty()) return;
         String memberKind = TEXT_CLASS;
         if (members.getFirst() instanceof PackageNode) {
@@ -86,8 +84,8 @@ public class PackageWriter {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(memberKind)
                 .addColumn(TEXT_DESCRIPTION);
-        for (PackageMember member : members) {
-            table.addRow(Markdown.mdDocumentLink(member.getName()), Utils.inOneLine(Markdown.formatText(member.getDescription())));
+        for (PackageOrTypeNode member : members) {
+            table.addRow(Markdown.mdDocumentLink(member.getSimpleName()), Utils.inOneLine(Markdown.formatText(member.getFirstSentence())));
         }
         if (Configuration.getUseContentTabs()) {
             writer.write("=== \"" + title + "\"\n\n");

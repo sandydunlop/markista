@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /// Contains information about a method being documented
-public class MethodNode extends Node {
+public class MethodNode extends AbstractPackageMember {
     /// Description of the method's return value.
     private Text returnDescription = Text.empty();
 
     /// Name of the interface or specification this method is specified by.
-    private String specifiedBy = "";
+    private Reference specifiedBy;
 
     /// The return type of this method.
     private final TypeNode returnType;
@@ -21,10 +21,12 @@ public class MethodNode extends Node {
     private final List<ParamNode> params = new ArrayList<>();
 
     /// List of exception types that this method declares it can throw.
-    private final List<String> thrownTypes = new ArrayList<>();
+    private final List<Reference> thrownTypes = new ArrayList<>();
 
     /// The type (class/interface) that owns this method.
     private TypeNode owner = null;
+
+    private Text returnTypeText = Text.empty();
 
     /// Constructs a MethodNode with the specified return type and method name.
     /// @param returnType the return type of the method.
@@ -66,13 +68,13 @@ public class MethodNode extends Node {
 
     /// Adds an exception type that this method declares it throws.
     /// @param name the fully qualified name of the exception type.
-    public void addThrownType(String name) {
+    public void addThrownType(Reference name) {
         thrownTypes.add(name);
     }
 
     /// Returns the list of exception types declared by this method.
     /// @return List of exception type names as Strings.
-    public List<String> getThrownTypes() {
+    public List<Reference> getThrownTypes() {
         return thrownTypes;
     }
 
@@ -90,13 +92,13 @@ public class MethodNode extends Node {
 
     /// Sets the interface or specification name this method is specified by.
     /// @param interfaceName the name of the specifying interface or specification.
-    public void setSpecifiedBy(String interfaceName) {
+    public void setSpecifiedBy(Reference interfaceName) {
         this.specifiedBy = interfaceName;
     }
 
     /// Returns the name of the interface or specification this method is specified by.
     /// @return the specifying interface or specification name.
-    public String getSpecifiedBy() {
+    public Reference getSpecifiedBy() {
         return specifiedBy;
     }
 
@@ -110,6 +112,18 @@ public class MethodNode extends Node {
     /// @return a Text object containing the return description.
     public Text getReturnDescription() {
         return returnDescription;
+    }
+
+    /// Returns the type Text of this parameter.
+    /// @return The Text representing the parameter's type.
+    public Text getReturnTypeText() {
+        return returnTypeText;
+    }
+
+    /// Sets the type Text of this parameter.
+    /// @param text The Text to set as this parameter's type Text.
+    public void setReturnTypeText(Text text) {
+        this.returnTypeText = text;
     }
 
     /// Computes and returns the method signature string, including return type, name, and parameters.
@@ -130,17 +144,5 @@ public class MethodNode extends Node {
         }
         sb.append(")");
         return sb.toString();
-    }
-
-    /// Sets the simple name of the method.
-    /// @param name the simple name to set.
-    public void setSimpleName(String name) {
-        simpleName = name;
-    }
-
-    /// Returns the simple name of the method.
-    /// @return the simple name as a String.
-    public String getSimpleName() {
-        return simpleName;
     }
 }

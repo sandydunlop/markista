@@ -26,7 +26,6 @@ import java.util.Map;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageMember;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
@@ -151,12 +150,19 @@ public class LinkResolver {
     /// @return The `link` with its `uri` field set, or its `kind` field set to `UNKNOWN`
     /// if the link was not able to be resolved.
     public static Reference resolve(Reference link) {
+        if (link == null || link.getTarget() == null || link.getTarget().isEmpty()) {
+            return link;
+        }
+
         link.setResolved(false);
-        if (link.getOrigin() == null) {
+        if (link.getOrigin() == null && ctx != null) {
             link.setOrigin(ctx.getPackageName());
         }
 
-        if (link.getTarget() == null || link.getTarget().isEmpty()) {
+        if (link.getTarget().contains("://")) {
+            link.setUri(link.getTarget());
+            link.setKind(Reference.Kind.URL);
+            link.setResolved(true);
             return link;
         }
 
@@ -221,7 +227,13 @@ public class LinkResolver {
         String toPackageName = getPackageName(name);
         String toClassName = getClassName(name);
         if (toPackageName.isEmpty()) {
-            String qualifiedTo = qualifyClass(toClassName);
+            String qualifiedTo = "";
+            for (TypeNode member : api.getClasses()) {
+                if (member instanceof ClassTypeNode classNode && classNode.getSimpleName().equals(toClassName)) {
+                    qualifiedTo = classNode.getQualifiedName();
+                    break;
+                }
+            }
             toPackageName = getPackageName(qualifiedTo);
             toClassName = getClassName(qualifiedTo);
         }
@@ -418,18 +430,6 @@ public class LinkResolver {
     /// @return True if the name is qualified, false otherwise.
     static boolean isPackageQualified(String name) {
         return name.indexOf('.') > -1;
-    }
-
-    /// Qualifies a simple class name to its fully qualified name within the API, if exists.
-    /// @param simpleName The class simple name.
-    /// @return The fully qualified class name or empty string if not found.
-    public static String qualifyClass(String simpleName) {
-        for (PackageMember member : api.getClasses()) {
-            if (member instanceof ClassTypeNode classNode && classNode.getSimpleName().equals(simpleName)) {
-                return classNode.getQualifiedName();
-            }
-        }
-        return "";
     }
 
     /// Qualifies a simple package name to its fully qualified name within the API, if exists.

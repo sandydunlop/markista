@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /// Represents a Java package
-public class PackageNode extends AbstractTypeOwner implements PackageMember, PackageOwner {
+public class PackageNode extends PackageOrTypeNode implements PackageOwnerInterface {
     private ModuleNode module;
     private Path sourcePath;
     private final String name;
     private boolean hasPackageInfo = false;
-    private final List<PackageMember> packages = new ArrayList<>();
+    private final List<PackageNode> packages = new ArrayList<>();
 
     /// Constructs a PackageNode with the specified qualified package name.
     /// @param name The qualified name of the package.
@@ -39,9 +39,9 @@ public class PackageNode extends AbstractTypeOwner implements PackageMember, Pac
     }
 
     /// Returns the list of package members owned by this package.
-    /// @return List of PackageMember objects.
+    /// @return List of PackageNode objects.
     @Override
-    public List<PackageMember> getPackages() {
+    public List<PackageNode> getPackages() {
         return packages;
     }
 
@@ -54,14 +54,12 @@ public class PackageNode extends AbstractTypeOwner implements PackageMember, Pac
 
     /// Returns the name (canonical name) of this package.
     /// @return The package name.
-    @Override
     public String getName() {
         return name;
     }
 
     /// Returns the description text for this package, typically the first sentence.
     /// @return The Text object representing the description.
-    @Override
     public Text getDescription() {
         return firstSentence;
     }

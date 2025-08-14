@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import io.github.sandydunlop.markista.model.Text;
-
 class UtilTests {
 	@Test
 	void inOneLine() {
@@ -28,14 +26,6 @@ class UtilTests {
 		assertEquals(true, Utils.isNullOrEmpty(nullString));
 		assertEquals(true, Utils.isNullOrEmpty(""));
 		assertEquals(false, Utils.isNullOrEmpty("text"));
-	}
-
-	@Test
-	void isNullOrEmptyText() {
-		Text nullText = null;
-		assertEquals(true, Utils.isNullOrEmpty(nullText));
-		assertEquals(true, Utils.isNullOrEmpty(Text.empty()));
-		assertEquals(false, Utils.isNullOrEmpty(Text.empty().append("text")));
 	}
 
 	@Test

@@ -5,5 +5,4 @@
 "--project-path", "markista",
 "-sourcepath", "markista/src/main/java/",
 "-subpackages", "io.github.sandydunlop.markista",
-"-tabs",
-"-verbose"
+"-tabs"

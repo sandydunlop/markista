@@ -47,53 +47,53 @@ class MarkdownParserTests {
 	@Test
 	void resolveMarkdownLinks() {
         MarkdownParser parser = new MarkdownParser("one [link resolving][LinkResolver] two");
-        MarkdownParser.Segment segment = parser.firstSegment();
+        MarkdownParser.Token segment = parser.firstToken();
 
-        assertEquals(MarkdownParser.SegmentKind.TEXT, segment.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, segment.getKind());
         assertEquals("one ", segment.getText());
         segment = segment.getNext();
 
-        assertEquals(MarkdownParser.SegmentKind.BRACKETS_TAG, segment.getKind());
+        assertEquals(MarkdownParser.TokenKind.BRACKETS_TAG, segment.getKind());
         assertEquals("link resolving", segment.getText());
         segment = segment.getNext();
 
-        assertEquals(MarkdownParser.SegmentKind.BRACKETS_TAG, segment.getKind());
+        assertEquals(MarkdownParser.TokenKind.BRACKETS_TAG, segment.getKind());
         assertEquals("LinkResolver", segment.getText());
         segment = segment.getNext();
 
-        assertEquals(MarkdownParser.SegmentKind.TEXT, segment.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, segment.getKind());
         assertEquals(" two", segment.getText());
         segment = segment.getNext();
 
-        assertEquals(MarkdownParser.SegmentKind.END, segment.getKind());
+        assertEquals(MarkdownParser.TokenKind.END, segment.getKind());
     }
 
 	@Test
 	void resolveMarkdownLinks_inlineCode_withBracket() {
         MarkdownParser parser = new MarkdownParser("the position of `]` within the markdown text");
-        MarkdownParser.Segment segment = parser.firstSegment();
+        MarkdownParser.Token segment = parser.firstToken();
         assertEquals("the position of `]` within the markdown text", segment.getText());
         segment = segment.getNext();
-        assertEquals(MarkdownParser.SegmentKind.END, segment.getKind());
+        assertEquals(MarkdownParser.TokenKind.END, segment.getKind());
     }
 
     @Test
     void testEmptyString() {
         MarkdownParser parser = new MarkdownParser("");
-        MarkdownParser.Segment seg = parser.firstSegment();
-        assertEquals(MarkdownParser.SegmentKind.END, seg.getKind());
+        MarkdownParser.Token seg = parser.firstToken();
+        assertEquals(MarkdownParser.TokenKind.END, seg.getKind());
     }
 
     @Test
     void testPlainText() {
         String markdown = "Just some plain text.";
         MarkdownParser parser = new MarkdownParser(markdown);
-        MarkdownParser.Segment seg = parser.firstSegment();
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        MarkdownParser.Token seg = parser.firstToken();
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals(markdown, seg.getText());
 
-        MarkdownParser.Segment next = seg.getNext();
-        assertEquals(MarkdownParser.SegmentKind.END, next.getKind());
+        MarkdownParser.Token next = seg.getNext();
+        assertEquals(MarkdownParser.TokenKind.END, next.getKind());
     }
 
     @Test
@@ -101,22 +101,22 @@ class MarkdownParserTests {
         String markdown = "Here is a [link] in text.";
         MarkdownParser parser = new MarkdownParser(markdown);
 
-        MarkdownParser.Segment seg = parser.firstSegment();
+        MarkdownParser.Token seg = parser.firstToken();
         // First segment: TEXT before [
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals("Here is a ", seg.getText());
 
         seg = seg.getNext();
         // Second segment: BRACKETS_TAG
-        assertEquals(MarkdownParser.SegmentKind.BRACKETS_TAG, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.BRACKETS_TAG, seg.getKind());
         assertEquals("link", seg.getText());
 
         seg = seg.getNext();
         // Third segment: TEXT after ]
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals(" in text.", seg.getText());
 
-        assertEquals(MarkdownParser.SegmentKind.END, seg.getNext().getKind());
+        assertEquals(MarkdownParser.TokenKind.END, seg.getNext().getKind());
     }
 
     @Test
@@ -124,22 +124,22 @@ class MarkdownParserTests {
         String markdown = "Here is [link](http://example.com)";
         MarkdownParser parser = new MarkdownParser(markdown);
 
-        MarkdownParser.Segment seg = parser.firstSegment();
+        MarkdownParser.Token seg = parser.firstToken();
         // TEXT before [
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals("Here is ", seg.getText());
 
         seg = seg.getNext();
         // BRACKETS_TAG: link
-        assertEquals(MarkdownParser.SegmentKind.BRACKETS_TAG, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.BRACKETS_TAG, seg.getKind());
         assertEquals("link", seg.getText());
 
         seg = seg.getNext();
         // PARENS_TAG: http://example.com
-        assertEquals(MarkdownParser.SegmentKind.PARENS_TAG, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.PARENS_TAG, seg.getKind());
         assertEquals("http://example.com", seg.getText());
 
-        assertEquals(MarkdownParser.SegmentKind.END, seg.getNext().getKind());
+        assertEquals(MarkdownParser.TokenKind.END, seg.getNext().getKind());
     }
 
     @Test
@@ -147,11 +147,11 @@ class MarkdownParserTests {
         String markdown = "This (text) is not a link.";
         MarkdownParser parser = new MarkdownParser(markdown);
 
-        MarkdownParser.Segment seg = parser.firstSegment();
+        MarkdownParser.Token seg = parser.firstToken();
         // The entire text including (text) should be one TEXT segment
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals(markdown, seg.getText());
-        assertEquals(MarkdownParser.SegmentKind.END, seg.getNext().getKind());
+        assertEquals(MarkdownParser.TokenKind.END, seg.getNext().getKind());
     }
 
     @Test
@@ -159,12 +159,12 @@ class MarkdownParserTests {
         String markdown = "Text with `code [notalink]` outside.";
         MarkdownParser parser = new MarkdownParser(markdown);
 
-        MarkdownParser.Segment seg = parser.firstSegment();
+        MarkdownParser.Token seg = parser.firstToken();
         // TEXT segment: "Text with `code [notalink]` outside."
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals("Text with `code [notalink]` outside.", seg.getText());
 
-        assertEquals(MarkdownParser.SegmentKind.END, seg.getNext().getKind());
+        assertEquals(MarkdownParser.TokenKind.END, seg.getNext().getKind());
     }
 
     @Test
@@ -172,35 +172,35 @@ class MarkdownParserTests {
         String markdown = "Hello [one](url1) and [two](url2)!";
         MarkdownParser parser = new MarkdownParser(markdown);
 
-        MarkdownParser.Segment seg = parser.firstSegment();
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        MarkdownParser.Token seg = parser.firstToken();
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals("Hello ", seg.getText());
 
         seg = seg.getNext();
-        assertEquals(MarkdownParser.SegmentKind.BRACKETS_TAG, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.BRACKETS_TAG, seg.getKind());
         assertEquals("one", seg.getText());
 
         seg = seg.getNext();
-        assertEquals(MarkdownParser.SegmentKind.PARENS_TAG, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.PARENS_TAG, seg.getKind());
         assertEquals("url1", seg.getText());
 
         seg = seg.getNext();
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals(" and ", seg.getText());
 
         seg = seg.getNext();
-        assertEquals(MarkdownParser.SegmentKind.BRACKETS_TAG, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.BRACKETS_TAG, seg.getKind());
         assertEquals("two", seg.getText());
 
         seg = seg.getNext();
-        assertEquals(MarkdownParser.SegmentKind.PARENS_TAG, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.PARENS_TAG, seg.getKind());
         assertEquals("url2", seg.getText());
 
         seg = seg.getNext();
-        assertEquals(MarkdownParser.SegmentKind.TEXT, seg.getKind());
+        assertEquals(MarkdownParser.TokenKind.TEXT, seg.getKind());
         assertEquals("!", seg.getText());
 
-        assertEquals(MarkdownParser.SegmentKind.END, seg.getNext().getKind());
+        assertEquals(MarkdownParser.TokenKind.END, seg.getNext().getKind());
     }
 }
 

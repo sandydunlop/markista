@@ -4,30 +4,17 @@ import java.io.Serializable;
 
 /// A class to hold information about fields within a class, interface, or enum.
 public class FieldNode extends ParamNode { 
-    /// The canonical form of the node's name
-    protected String qualifiedName = "";
 
     /// The constant value assigned to this field, if any. 
     private Serializable constantValue = null;
+
+    private Reference constantValueReference = null;
 
     /// Constructs a FieldNode with the given type and name.
     /// @param type The type of the field.
     /// @param name The simple name of the field.
     public FieldNode(TypeNode type, String name) {
         super(type, name);
-    }
-
-
-    /// Sets the qualified name of this parameter.
-    /// @param name The qualified name to set.
-    public void setQualifiedName(String name) {
-        qualifiedName = name;
-    }
-
-    /// Returns the qualified name of this parameter.
-    /// @return The qualified name.
-    public String getQualifiedName() {
-        return qualifiedName;
     }
 
     /// Returns the constant value of this field.
@@ -40,6 +27,14 @@ public class FieldNode extends ParamNode {
     /// @param constantValue The constant value to set.
     public void setConstantValue(Serializable constantValue) {
         this.constantValue = constantValue;
+    }
+
+    public void setConstantValueReference(Reference ref) {
+        constantValueReference = ref;
+    }
+
+    public Reference getConstantValueReference() {
+        return constantValueReference;
     }
 
     /// Returns the full signature of the field including modifiers and name.

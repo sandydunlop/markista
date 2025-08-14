@@ -11,37 +11,39 @@ public class DirectiveNode {
     private final Kind kind;
 
     /// The name associated with this directive.
-    private final String name;
+    private String name = "";
+
+    private Reference reference;
 
     /// Indicates whether this directive is transitive.
     private boolean transitive;
 
     /// List of package names associated with this directive.
-    private final List<String> packages = new ArrayList<>();
+    private final List<Reference> packages = new ArrayList<>();
 
     /// List of implementation names associated with this directive.
-    private final List<String> implementations = new ArrayList<>();
+    private final List<Reference> implementations = new ArrayList<>();
 
     /// The interface name associated with this directive, if any.
-    private String interfaceName = "";
+    private Reference interfaceReference;
 
     /// Constructs a DirectiveNode with the specified kind, name and transitive flag.
     /// @param kind the kind of directive.
-    /// @param name the name associated with the directive.
+    /// @param reference the name associated with the directive.
     /// @param transitive true if the directive is transitive; false otherwise.
-    public DirectiveNode(Kind kind, String name, boolean transitive) {
+    public DirectiveNode(Kind kind, Reference reference, boolean transitive) {
         this.kind = kind;
-        this.name = name;
+        this.reference = reference;
         this.transitive = transitive;
     }
 
     /// Constructs a DirectiveNode with the specified kind and name.
     /// The transitive flag is not set and defaults to false.
     /// @param kind the kind of directive.
-    /// @param name the name associated with the directive.
-    public DirectiveNode(Kind kind, String name) {
+    /// @param reference the name associated with the directive.
+    public DirectiveNode(Kind kind, Reference reference) {
         this.kind = kind;
-        this.name = name;
+        this.reference = reference;
     }
 
     /// Returns the kind of this directive.
@@ -56,46 +58,54 @@ public class DirectiveNode {
         return name;
     }
 
+    public Reference getReference() {
+        return reference;
+    }
+
     /// Indicates if this directive is transitive.
     /// @return true if transitive; false otherwise.
     public boolean isTransitive() {
         return transitive;
     }
 
-    /// Adds a package name to this directive's package list.
-    /// @param packageName the fully qualified package name to add.
-    public void addPackage(String packageName) {
-        packages.add(packageName);
+    /// Adds a package reference to this directive's package list.
+    /// @param reference A reference to thepackage to add.
+    public void addPackage(Reference reference) {
+        packages.add(reference);
     }
 
-    /// Returns the list of package names associated with this directive.
+    /// Returns the list of package references associated with this directive.
     /// @return list of package names.
-    public List<String> getPackages() {
+    public List<Reference> getPackages() {
         return packages;
     }
 
-    /// Adds the name of an implementation associated with this directive.
-    /// @param implementationName the name of the implementation to add.
-    public void addImplementation(String implementationName) {
-        implementations.add(implementationName);
+    /// Adds the reference to an implementation associated with this directive.
+    /// @param reference A reference to the implementation to add.
+    public void addImplementation(Reference reference) {
+        implementations.add(reference);
     }
 
     /// Returns the list of implementations associated with this directive.
-    /// @return list of implementation names.
-    public List<String> getImplementations() {
+    /// @return list of implementation references.
+    public List<Reference> getImplementations() {
         return implementations;
     }
 
     /// Sets the interface name related to this directive.
-    /// @param interfaceName the interface name to set.
-    public void setInterface(String interfaceName) {
-        this.interfaceName = interfaceName;
+    /// @param interfaceReference the interface name to set.
+    public void setInterface(Reference interfaceReference) {
+        this.interfaceReference = interfaceReference;
+    }
+
+    public String toString() {
+        return kind.toString();
     }
 
     /// Returns the interface name associated with this directive.
     /// @return the interface name, or an empty string if none set.
-    public String getInterface() {
-        return interfaceName;
+    public Reference getInterface() {
+        return interfaceReference;
     }
 
     /// Enum representing the various kinds of directives possible in a module declaration.

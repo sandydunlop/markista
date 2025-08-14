@@ -85,7 +85,7 @@ class PackageWriterTests {
         MethodNode methodNode = new MethodNode(returnType, "method");
         Text body = Text.empty();
         body.append(Text.Segment.empty()
-                .setKind(Text.SegmentKind.MARKDOWN)
+                .setKind(Text.SegmentKind.TEXT)
                 .setText("This is a test class [Node](Node)."));
         methodNode.setBody(body);
         methodNode.setFullBody(body);

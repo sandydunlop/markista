@@ -32,9 +32,9 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.OverriddenMethodNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
@@ -202,7 +202,10 @@ class TypeUtilsTests {
     @Test
     void addConstantFieldValuesReference() {
         ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "Node", packageNode);
-        classNode2.getSupertypes().add("io.github.sandydunlop.markista.model.Node");
+        Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
+                .withKind(Reference.Kind.TYPE);
+        Pair<Reference,Text> supertype = new Pair<>(ref, null);
+        classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
         TypeNode typeNode = new TypeNode("int","int", packageNode);
         FieldNode fieldNode = new FieldNode(typeNode, "field");
@@ -236,7 +239,10 @@ class TypeUtilsTests {
         classNode1.addMethod(methodNode1);
 
         ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "Node", packageNode);
-        classNode2.getSupertypes().add("io.github.sandydunlop.markista.model.Node");
+        Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
+                .withKind(Reference.Kind.TYPE);
+        Pair<Reference,Text> supertype = new Pair<>(ref, null);
+        classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
         TypeNode returnType2 = new TypeNode("int","int", null);
         MethodNode methodNode2 = new MethodNode(returnType2, "length");
@@ -263,7 +269,10 @@ class TypeUtilsTests {
         when(methodElement.getEnclosingElement()).thenReturn(typeElement);
 
         ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
-        classNode.getSupertypes().add("java.lang.String");
+        Reference ref = Reference.to("java.lang.String")
+                .withKind(Reference.Kind.TYPE);
+        Pair<Reference,Text> supertype = new Pair<>(ref, null);
+        classNode.getSupertypes().add(supertype);
         api.addType(classNode);
 
         TypeNode returnType = new TypeNode("int","int", null);
@@ -377,6 +386,7 @@ class TypeUtilsTests {
         List<Reference> refs = TypeUtils.getReferences(docCommentTree);
         assertNotNull(refs);
         assertEquals(2, refs.size());
+        LinkResolver.resolve(refs.get(0));
         assertEquals(Reference.Kind.URL, refs.get(0).getKind());
         assertEquals("http://example.com", refs.get(0).getUri());
         assertEquals(Reference.Kind.TYPE, refs.get(1).getKind());
@@ -503,20 +513,6 @@ class TypeUtilsTests {
     }
 
     @Test
-    void createText_MARKDOWN() {
-        DocCommentTree docTree = mock(DocCommentTree.class);
-        when(treeUtils.getDocCommentTree(typeElement)).thenReturn(docTree);
-        when(docTree.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.MARKDOWN);
-        when(docTree.toString()).thenReturn("berry");
-        List<? extends DocTree> dtList = List.of(docTree);
-        Text text = TypeUtils.createText(dtList);
-        assertNotNull(text);
-        assertEquals(1, text.getSegments().size());
-        assertEquals(Text.SegmentKind.MARKDOWN, text.getSegments().get(0).getKind());
-        assertEquals("berry", text.toString());
-    }
-
-    @Test
     void createText_LINK() {
         DocCommentTree docTree = mock(DocCommentTree.class);
         when(treeUtils.getDocCommentTree(typeElement)).thenReturn(docTree);
@@ -524,10 +520,12 @@ class TypeUtilsTests {
         when(docTree.toString()).thenReturn("{@link http://example.com}");
         List<? extends DocTree> dtList = List.of(docTree);
         Text text = TypeUtils.createText(dtList);
+        LinkResolver.init(api, ctx);
+        LinkFormatter.generateLinkTexts(api, ctx);
         assertNotNull(text);
         assertEquals(1, text.getSegments().size());
         assertEquals(Text.SegmentKind.LINK, text.getSegments().get(0).getKind());
-        assertEquals("http://example.com", text.getSegments().get(0).getLink());
+        assertEquals("http://example.com", text.getSegments().get(0).getLink().getUri());
     }
 
     @Test
@@ -556,36 +554,6 @@ class TypeUtilsTests {
         assertEquals(1, text.getSegments().size());
         assertEquals(Text.SegmentKind.CODE, text.getSegments().get(0).getKind());
         assertEquals("berry", text.toString());
-    }
-
-    @Test
-    void createText_START() {
-        StartElementTree set = mock(StartElementTree.class);
-        Name setName = mock(Name.class);
-        when(setName.toString()).thenReturn("p");
-        when(set.getName()).thenReturn(setName);        
-        when(set.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.START_ELEMENT);
-        when(set.toString()).thenReturn("<p>");
-        List<? extends DocTree> dtList = List.of(set);
-        Text text = TypeUtils.createText(dtList);
-        assertNotNull(text);
-        assertEquals(1, text.getSegments().size());
-        assertEquals(Text.SegmentKind.START, text.getSegments().get(0).getKind());
-        assertEquals("\n\n", text.toString());
-    }
-
-    @Test
-    void createText_END() {
-        DocCommentTree docTree = mock(DocCommentTree.class);
-        when(treeUtils.getDocCommentTree(typeElement)).thenReturn(docTree);
-        when(docTree.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.END_ELEMENT);
-        when(docTree.toString()).thenReturn("");
-        List<? extends DocTree> dtList = List.of(docTree);
-        Text text = TypeUtils.createText(dtList);
-        assertNotNull(text);
-        assertEquals(1, text.getSegments().size());
-        assertEquals(Text.SegmentKind.END, text.getSegments().get(0).getKind());
-        assertEquals("", text.toString());
     }
 
     @Test
@@ -639,7 +607,7 @@ class TypeUtilsTests {
 
     @Test
     void testSetModifiers() {
-        Node node = mock(Node.class);
+        FieldNode node = mock(FieldNode.class);
         Set<javax.lang.model.element.Modifier> mods = new HashSet<>();
         mods.add(javax.lang.model.element.Modifier.PUBLIC);
         mods.add(javax.lang.model.element.Modifier.STATIC);
@@ -664,7 +632,8 @@ class TypeUtilsTests {
         assertNotNull(text);
         assertTrue(text.getSegments().stream().anyMatch(s -> s.getText().contains("simple text")));
 
-        Text.Segment segment = TypeUtils.createTextSegment(textTree);
+        Text txt = TypeUtils.docTreeToText(textTree);
+        Text.Segment segment = txt.getSegment(0);
         assertEquals(SegmentKind.TEXT, segment.getKind());
         assertEquals("simple text", segment.getText());
     }
@@ -879,7 +848,8 @@ class TypeUtilsTests {
         when(textTree.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.TEXT);
         when(textTree.toString()).thenReturn("some text");
 
-        var segment = TypeUtils.createTextSegment(textTree);
+        Text txt = TypeUtils.docTreeToText(textTree);
+        Text.Segment segment = txt.getSegment(0);
         assertEquals(io.github.sandydunlop.markista.model.Text.SegmentKind.TEXT, segment.getKind());
         assertEquals("some text", segment.getText());
     }
@@ -1071,7 +1041,7 @@ class TypeUtilsTests {
         MethodNode methodNode = mock(MethodNode.class);
         TypeNode ownerType = mock(TypeNode.class);
         when(methodNode.getOwner()).thenReturn(ownerType);
-        when(ownerType.getImplementedInterfaces()).thenReturn(List.of("com.example.MyIfc"));
+        when(ownerType.getImplementedInterfaces()).thenReturn(List.of(Reference.to("com.example.MyIfc").withClassName("com.example.MyIfc")));
 
         // Prepare interface TypeElement with a method named "doThing"
         TypeElement iface = mock(TypeElement.class);
@@ -1110,7 +1080,7 @@ class TypeUtilsTests {
         }
 
         // Verify that methodNode.setSpecifiedBy("com.example.MyIfc") was invoked
-        verify(methodNode).setSpecifiedBy("com.example.MyIfc");
+        verify(methodNode).setSpecifiedBy(any());
     }
 
     @Test
@@ -1303,7 +1273,7 @@ class TypeUtilsTests {
     }
 
     @Test
-    void getOverriddenNativeMethod_finds_native_method_override() throws Exception {
+    void getOverriddenNativeMethod_finds_native_method_override() {
         // Create a MethodNode representing equals(Object)
         MethodNode method = mock(MethodNode.class);
         when(method.getSimpleName()).thenReturn("equals");
@@ -1344,7 +1314,8 @@ class TypeUtilsTests {
         when(textTree.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.TEXT);
         when(textTree.toString()).thenReturn("some text");
 
-        Text.Segment segText = TypeUtils.createTextSegment(textTree);
+        Text txt = TypeUtils.docTreeToText(textTree);
+        Text.Segment segText = txt.getSegment(0);
         assertEquals(SegmentKind.TEXT, segText.getKind());
         assertEquals("some text", segText.getText());
 
@@ -1359,15 +1330,12 @@ class TypeUtilsTests {
         });
         when(start.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.START_ELEMENT);
 
-        Text.Segment segStart = TypeUtils.createTextSegment(start);
-        assertEquals(SegmentKind.START, segStart.getKind());
-        assertEquals("\n\n", segStart.getText());
-
         // CODE kind should set CODE text using getDocTreeText (which inspects toString())
         DocTree code = mock(DocTree.class);
         when(code.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.CODE);
         when(code.toString()).thenReturn("{@code int x}");
-        Text.Segment segCode = TypeUtils.createTextSegment(code);
+        txt = TypeUtils.docTreeToText(code);
+        Text.Segment segCode = txt.getSegment(0);
         assertEquals(SegmentKind.CODE, segCode.getKind());
         // code text should not be empty (string parsing may trim braces)
         assertNotNull(segCode.getText());

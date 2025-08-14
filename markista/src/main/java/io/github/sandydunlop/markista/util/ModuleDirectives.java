@@ -1,6 +1,7 @@
 package io.github.sandydunlop.markista.util;
 
 import io.github.sandydunlop.markista.model.DirectiveNode;
+import io.github.sandydunlop.markista.model.Reference;
 
 import java.util.List;
 
@@ -60,7 +61,10 @@ public class ModuleDirectives {
         ModuleElement directiveModuleElement = environment.getElementUtils().getModuleOf(dependency);
         String name = directiveModuleElement.getQualifiedName().toString();
         boolean transitive = requires.isTransitive();
-        return new DirectiveNode(kind, name, transitive);
+        Reference reference = Reference.to(name)
+                .withKind(Reference.Kind.MODULE)
+                .withLabel(name);
+        return new DirectiveNode(kind, reference, transitive);
     }
 
     /// Creates a DirectiveNode representing an [exports](javax.lang.model.element.ExportsDirective) directive.
@@ -72,10 +76,17 @@ public class ModuleDirectives {
         PackageElement directivePackageElement = exports.getPackage();
         String name = directivePackageElement.getQualifiedName().toString();
         List<? extends ModuleElement> modules = exports.getTargetModules();
-        DirectiveNode directiveNode = new DirectiveNode(kind, name);
+        Reference ref = Reference.to(name)
+                .withKind(Reference.Kind.PACKAGE)
+                .withLabel(name);
+        DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         if (modules != null) {
             for (ModuleElement moduleElement : modules) {
-                directiveNode.addPackage(moduleElement.getQualifiedName().toString());
+                String packageName = moduleElement.getQualifiedName().toString();
+                Reference reference = Reference.to(packageName)
+                        .withKind(Reference.Kind.PACKAGE)
+                        .withLabel(packageName);
+                directiveNode.addPackage(reference);
             }
         }
         return directiveNode; 
@@ -90,10 +101,17 @@ public class ModuleDirectives {
         PackageElement directivePackageElement = opens.getPackage();
         String name = directivePackageElement.getQualifiedName().toString();
         List<? extends ModuleElement> modules = opens.getTargetModules();
-        DirectiveNode directiveNode = new DirectiveNode(kind, name);
+        Reference ref = Reference.to(name)
+                .withKind(Reference.Kind.PACKAGE)
+                .withLabel(name);
+        DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         if (modules != null) {
             for (ModuleElement moduleElement : modules) {
-                directiveNode.addPackage(moduleElement.getQualifiedName().toString());
+                String moduleName = moduleElement.getQualifiedName().toString();
+                Reference reference = Reference.to(moduleName)
+                        .withKind(Reference.Kind.PACKAGE)
+                        .withLabel(moduleName);
+                directiveNode.addPackage(reference);
             }
         }
         return directiveNode; 
@@ -106,7 +124,10 @@ public class ModuleDirectives {
         DirectiveNode.Kind kind = DirectiveNode.Kind.USES;
         UsesDirective uses = (UsesDirective) directive;
         String name = uses.getService().getQualifiedName().toString();
-        return new DirectiveNode(kind, name);
+        Reference ref = Reference.to(name)
+                .withKind(Reference.Kind.TYPE)
+                .withLabel(name);
+        return new DirectiveNode(kind, ref);
     }
 
     /// Creates a DirectiveNode representing a [provides](javax.lang.model.element.ProvidesDirective) directive.
@@ -117,9 +138,16 @@ public class ModuleDirectives {
         ProvidesDirective provides = (ProvidesDirective) directive;
         TypeElement service = provides.getService();
         String name = service.getQualifiedName().toString();
-        DirectiveNode directiveNode = new DirectiveNode(kind, name);
+        Reference ref = Reference.to(name)
+                .withKind(Reference.Kind.TYPE)
+                .withLabel(name);
+        DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         TypeUtils.setImplementations(directiveNode, provides.getImplementations());
-        directiveNode.setInterface(service.getQualifiedName().toString());
+        String interfaceName = service.getQualifiedName().toString();
+        Reference reference = Reference.to(interfaceName)
+                .withKind(Reference.Kind.PACKAGE)
+                .withLabel(interfaceName);
+        directiveNode.setInterface(reference);
         return directiveNode;
     }
 }
