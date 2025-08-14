@@ -8,14 +8,13 @@ plugins {
 }
 
 group = 'io.github.sandydunlop'
-version = '0.1.13'
+version = '0.1.14'
 
 repositories {
 	mavenCentral()
 }
 
 dependencies {
-	// implementation(localGroovy())
 	testImplementation(platform('org.junit:junit-bom:5.13.3'))
     testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
     testImplementation 'org.mockito:mockito-core:5.18.0'
