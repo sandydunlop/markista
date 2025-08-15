@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'io.github.sandydunlop'
-version = '0.1.15'
+version = '0.1.16'
 
 repositories {
 	mavenCentral()
@@ -131,6 +131,6 @@ task website (type: Copy) {
 task copyDocs(type: Copy) {
     duplicatesStrategy = 'include'
     from 'build/md-docs'
-    into '../../../../website/docs/markista/Markista-Javadoc'
+    into '../../../../website/docs/markista/javadoc'
 }
 website.dependsOn copyDocs
