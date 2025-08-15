@@ -508,6 +508,10 @@ class TypeUtilsTests {
         when(variableElement.getSimpleName()).thenReturn(variableName);
         when(elementUtils.getTypeElement(classNode.getQualifiedName())).thenReturn(typeElement);
 
+        TypeMirror tm = mock(TypeMirror.class);
+        when(tm.toString()).thenReturn("io.github.sandydunlop.markista.model.Node");
+        when(variableElement.asType()).thenReturn(tm);
+
         DocCommentTree docTree = mock(DocCommentTree.class);
         when(treeUtils.getDocCommentTree(typeElement)).thenReturn(docTree);
 
@@ -943,31 +947,15 @@ class TypeUtilsTests {
         when(annotationMirror.getAnnotationType()).thenReturn(declaredType);
         when(declaredType.asElement()).thenReturn(declaredElement);
 
-        when(declaredElement.getQualifiedName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "com.example.MyAnno".length(); }
-            @Override public char charAt(int index) { return "com.example.MyAnno".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "com.example.MyAnno".subSequence(start, end); }
-            // Make the declared annotation type be java.lang.annotation.Documented to test documented flag path
-            @Override public String toString() { return "java.lang.annotation.Documented"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
-        when(declaredElement.getSimpleName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "MyAnno".length(); }
-            @Override public char charAt(int index) { return "MyAnno".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "MyAnno".subSequence(start, end); }
-            @Override public String toString() { return "MyAnno"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock1= mockName("com.example.MyAnno");
+        when(declaredElement.getQualifiedName()).thenReturn(nameMock1);
+        Name nameMock2 = mockName("MyAnno");
+        when(declaredElement.getSimpleName()).thenReturn(nameMock2);
 
         // Provide one element-value pair for the annotation: method name "value" returning "hello"
         ExecutableElement annotationMethod = mock(ExecutableElement.class);
-        when(annotationMethod.getSimpleName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "value".length(); }
-            @Override public char charAt(int index) { return "value".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "value".subSequence(start, end); }
-            @Override public String toString() { return "value"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock3 = mockName("value");
+        when(annotationMethod.getSimpleName()).thenReturn(nameMock3);
         when(annotationMethod.asType()).thenReturn(mock(TypeMirror.class));
         when(annotationMethod.asType().toString()).thenReturn("java.lang.String");
 
@@ -991,31 +979,16 @@ class TypeUtilsTests {
         setUp2();
         // Prepare TypeElement representing class com.test.MyClass in package com.test
         TypeElement typeEl = mock(TypeElement.class);
-        when(typeEl.getQualifiedName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "com.test.MyClass".length(); }
-            @Override public char charAt(int index) { return "com.test.MyClass".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "com.test.MyClass".subSequence(start, end); }
-            @Override public String toString() { return "com.test.MyClass"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
-        when(typeEl.getSimpleName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "MyClass".length(); }
-            @Override public char charAt(int index) { return "MyClass".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "MyClass".subSequence(start, end); }
-            @Override public String toString() { return "MyClass"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock1 = mockName("com.test.MyClass");
+        when(typeEl.getQualifiedName()).thenReturn(nameMock1);
+        Name nameMock2 = mockName("MyClass");
+        when(typeEl.getSimpleName()).thenReturn(nameMock2);
         when(typeEl.getKind()).thenReturn(ElementKind.CLASS);
 
         // PackageElement enclosing
         PackageElement pkgEl = mock(PackageElement.class);
-        when(pkgEl.getQualifiedName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "com.test".length(); }
-            @Override public char charAt(int index) { return "com.test".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "com.test".subSequence(start, end); }
-            @Override public String toString() { return "io.github.sandydunlop.markista.model"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock3 = mockName("io.github.sandydunlop.markista.model");
+        when(pkgEl.getQualifiedName()).thenReturn(nameMock3);
         when(pkgEl.getKind()).thenReturn(ElementKind.PACKAGE);
         when(typeEl.getEnclosingElement()).thenReturn(pkgEl);
         TypeMirror typeMirror2 = mock(TypeMirror.class);
@@ -1036,13 +1009,8 @@ class TypeUtilsTests {
         setup2();
         // Prepare a method element with name "doThing"
         ExecutableElement methodElement = mock(ExecutableElement.class);
-        when(methodElement.getSimpleName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "doThing".length(); }
-            @Override public char charAt(int index) { return "doThing".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "doThing".subSequence(start, end); }
-            @Override public String toString() { return "doThing"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock1 = mockName("doThing");
+        when(methodElement.getSimpleName()).thenReturn(nameMock1);
 
         // Prepare method model node and owner type that implements one interface
         MethodNode methodNode = mock(MethodNode.class);
@@ -1054,24 +1022,14 @@ class TypeUtilsTests {
         // Prepare interface TypeElement with a method named "doThing"
         TypeElement iface = mock(TypeElement.class);
         ExecutableElement ifaceMethod = mock(ExecutableElement.class);
-        when(ifaceMethod.getSimpleName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "doThing".length(); }
-            @Override public char charAt(int index) { return "doThing".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "doThing".subSequence(start, end); }
-            @Override public String toString() { return "doThing"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock2 = mockName("doThing");
+        when(ifaceMethod.getSimpleName()).thenReturn(nameMock2);
         List<Element> list = List.of(ifaceMethod);
         when(iface.getEnclosedElements()).thenAnswer(_ -> list);
 
         VariableElement ve = mock(VariableElement.class);
-        when(ve.getSimpleName()).thenReturn(new Name() {
-            @Override public int length() { return "v1".length(); }
-            @Override public char charAt(int index) { return "v1".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "v1".subSequence(start, end); }
-            @Override public String toString() { return "v1"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock3 = mockName("v1");
+        when(ve.getSimpleName()).thenReturn(nameMock3);
 
         // Configure environment's ElementUtils to return our interface element for the name
         javax.lang.model.util.Elements elementUtils2 = mock(javax.lang.model.util.Elements.class);
@@ -1150,44 +1108,27 @@ class TypeUtilsTests {
         assertNotNull(none); // should be Text.empty(), not null
     }
 
+    IdentifierTree mockParam(String n) {
+        Name nameMock = mockName(n);
+        IdentifierTree idt = mock(IdentifierTree.class);
+        when(idt.getName()).thenReturn(nameMock);
+        when(idt.getKind()).thenReturn(DocTree.Kind.PARAM);
+        return idt;
+    }
+
     @Test
     void getParamTree_finds_matching_param_tag() {
         setUp2();
         com.sun.source.doctree.DocCommentTree dct = mock(com.sun.source.doctree.DocCommentTree.class);
 
         ParamTree paramTree = mock(ParamTree.class);
-        when(paramTree.getName()).thenReturn(new IdentifierTree()
-         {
-            @Override
-            public <R, D> R accept(DocTreeVisitor<R, D> visitor, D data) {
-                return null;
-            }
-            @Override
-            public Name getName() {
-                return new javax.lang.model.element.Name() {
-                    @Override public int length() { return "p".length(); }
-                    @Override public char charAt(int index) { return "p".charAt(index); }
-                    @Override public CharSequence subSequence(int start, int end) { return "p".subSequence(start, end); }
-                    @Override public String toString() { return "p"; }
-                    @Override public boolean contentEquals(CharSequence s) { return true; }
-                };
-            }
-            @Override
-            public Kind getKind() {
-                return DocTree.Kind.PARAM;
-            }
-        });
-
+        IdentifierTree idt = mockParam("p");
+        when(paramTree.getName()).thenReturn(idt);
         when(dct.getBlockTags()).thenAnswer(_ -> List.of(paramTree));
 
         VariableElement param = mock(VariableElement.class);
-        when(param.getSimpleName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "p".length(); }
-            @Override public char charAt(int index) { return "p".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "p".subSequence(start, end); }
-            @Override public String toString() { return "p"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock = mockName("p");
+        when(param.getSimpleName()).thenReturn(nameMock);
 
         ParamTree result = TypeUtils.getParamTree(dct, param);
         assertSame(paramTree, result);
@@ -1199,13 +1140,8 @@ class TypeUtilsTests {
         // Prepare ExecutableElement with one parameter
         ExecutableElement ee = mock(ExecutableElement.class);
         VariableElement ve = mock(VariableElement.class);
-        when(ve.getSimpleName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "arg".length(); }
-            @Override public char charAt(int index) { return "arg".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "arg".subSequence(start, end); }
-            @Override public String toString() { return "arg"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        Name nameMock = mockName("arg");
+        when(ve.getSimpleName()).thenReturn(nameMock);
 
         // TypeMirror for parameter
         TypeMirror typeMirror2 = mock(TypeMirror.class);
@@ -1218,28 +1154,8 @@ class TypeUtilsTests {
         // Provide doc comment tree with ParamTree for "arg"
         com.sun.source.doctree.DocCommentTree dct = mock(com.sun.source.doctree.DocCommentTree.class);
         ParamTree ptag = mock(ParamTree.class);
-        when(ptag.getName()).thenReturn(new IdentifierTree() {
-            @Override
-            public Kind getKind() {
-                return DocTree.Kind.PARAM;
-            }
-
-            @Override
-            public <R, D> R accept(DocTreeVisitor<R, D> visitor, D data) {
-                return null;
-            }
-
-            @Override
-            public Name getName() {
-                return new Name() {
-                    @Override public int length() { return "arg".length(); }
-                    @Override public char charAt(int index) { return "arg".charAt(index); }
-                    @Override public CharSequence subSequence(int start, int end) { return "arg".subSequence(start, end); }
-                    @Override public String toString() { return "arg"; }
-                    @Override public boolean contentEquals(CharSequence s) { return true; }
-                };
-            }
-        });
+        IdentifierTree idt = mockParam("arg");
+        when(ptag.getName()).thenReturn(idt);
         when(ptag.getDescription()).thenAnswer(_ -> Collections.emptyList());
         when(dct.getBlockTags()).thenAnswer(_ -> List.of((DocTree) ptag));
         when(mockEnvironment.getDocTrees().getDocCommentTree(ee)).thenReturn(dct);
@@ -1326,14 +1242,9 @@ class TypeUtilsTests {
         assertEquals("some text", segText.getText());
 
         // START_ELEMENT 'p' should map to newline text
+        Name nameMock = mockName("p");
         StartElementTree start = mock(StartElementTree.class);
-        when(start.getName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "p".length(); }
-            @Override public char charAt(int index) { return "p".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "p".subSequence(start, end); }
-            @Override public String toString() { return "p"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
+        when(start.getName()).thenReturn(nameMock);
         when(start.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.START_ELEMENT);
 
         // CODE kind should set CODE text using getDocTreeText (which inspects toString())
@@ -1347,6 +1258,12 @@ class TypeUtilsTests {
         assertNotNull(segCode.getText());
     }
 
+    Name mockName(String n) {
+        Name nameMock = mock(Name.class);
+        when(nameMock.toString()).thenReturn(n);
+        return nameMock;
+    }
+
     @Test
     void setMethodAnnotations_sets_overridden_method_when_override_annotation_present() {
         ExecutableElement methodElement = mock(ExecutableElement.class);
@@ -1357,16 +1274,10 @@ class TypeUtilsTests {
         TypeElement declaredElement = mock(TypeElement.class);
         when(overrideMirror.getAnnotationType()).thenReturn(declaredType);
         when(declaredType.asElement()).thenReturn(declaredElement);
-        when(declaredElement.getSimpleName()).thenReturn(new javax.lang.model.element.Name() {
-            @Override public int length() { return "Override".length(); }
-            @Override public char charAt(int index) { return "Override".charAt(index); }
-            @Override public CharSequence subSequence(int start, int end) { return "Override".subSequence(start, end); }
-            @Override public String toString() { return "Override"; }
-            @Override public boolean contentEquals(CharSequence s) { return true; }
-        });
 
+        Name nameMock = mockName("Override");
+        when(declaredElement.getSimpleName()).thenReturn(nameMock);        
         when(methodElement.getAnnotationMirrors()).thenAnswer(_ -> List.of(overrideMirror));
-
         MethodNode methodNode = mock(MethodNode.class);
 
         // We want the real setMethodAnnotations to run but wish to stub getOverriddenMethod to return a known value.
