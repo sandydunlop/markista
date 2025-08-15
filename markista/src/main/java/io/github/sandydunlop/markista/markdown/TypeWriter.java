@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AnnotationElement;
 import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
@@ -13,8 +14,7 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.util.Context;
-import io.github.sandydunlop.markista.util.LinkResolver;
+import io.github.sandydunlop.markista.model.TypeView;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Utils;
 
@@ -46,23 +46,14 @@ public class TypeWriter {
         ctx = Context.getInstance();
     }
 
-    /// Tells the [LinkResolver] what class is about to be documented then 
-    /// calls the appropriate method do begin the documentation process.
-    /// @param typeNode The type to be documented
-    /// @throws java.io.IOException if there is a problem writing to the output file
-    public void writeDoc(TypeNode typeNode) throws IOException {
-        outputTypeDoc(typeNode, typeNode.getKind().toString());
-    }
-
     /// Writes a Markdown file for the Javadoc of a type
     /// @param typeNode the type
-    /// @param typeKind The name of the kind of the type eg. "Class", or "Enum"
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputTypeDoc(TypeNode typeNode, String typeKind) throws IOException {
+    public void outputTypeDoc(TypeNode typeNode) throws IOException {
         ctx.setTypeName(typeNode.getQualifiedName());
         writer = ctx.createFileInPackage();    
         writer.write("Package [" + typeNode.getPackageName() + "](index.md)\n\n");
-        writer.write("# " + typeKind + " " + typeNode.getSimpleName() + "\n");
+        writer.write("# " + typeNode.getKindName() + " " + typeNode.getSimpleName() + "\n");
         
         outputSupertypes(typeNode);
         outputImplementedInterfaces(typeNode);
@@ -112,17 +103,17 @@ public class TypeWriter {
         }
         writer.flush();
         writer.close();
-        for (TypeNode node : typeNode.getClasses()) {
-            writeDoc(node);
+        for (TypeView node : typeNode.getClasses()) {
+            outputTypeDoc((TypeNode)node);
         }
-        for (TypeNode node : typeNode.getInterfaces()) {
-            writeDoc(node);
+        for (TypeView node : typeNode.getInterfaces()) {
+            outputTypeDoc((TypeNode)node);
         }
-        for (TypeNode node : typeNode.getEnums()) {
-            writeDoc(node);
+        for (TypeView node : typeNode.getEnums()) {
+            outputTypeDoc((TypeNode)node);
         }
-        for (TypeNode node : typeNode.getAnnotations()) {
-            writeDoc(node);
+        for (TypeView node : typeNode.getAnnotations()) {
+            outputTypeDoc((TypeNode)node);
         }
         ctx.setTypeName("");
     }
@@ -161,7 +152,8 @@ public class TypeWriter {
     /// @param typeNode a TypeNode representing the enclosing class
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputEnclosingClass(TypeNode typeNode) throws IOException {
-        if (typeNode.getOwner() instanceof ClassTypeNode) {
+        TypeNode ownerTypeNode = ctx.getApi().getTypeNode(typeNode.getOwner());
+        if (ownerTypeNode instanceof ClassTypeNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
             writer.write(Markdown.link(typeNode.getEnclosingClassRef(), true) + "\n\n");
@@ -179,7 +171,7 @@ public class TypeWriter {
         }
         for (AppliedAnnotationNode annotation : typeNode.getAppliedAnnotations()) {
             if (typeNode.getKind() == TypeNode.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
-                writer.write("@" + annotation.getType().getSimpleName());
+                writer.write("@" + Utils.simplifyNames(annotation.getTypeName()));
                 if (!annotation.getElements().isEmpty()) {
                     writer.write("(");
                     writer.write(createAnnotationString(annotation));
@@ -210,12 +202,12 @@ public class TypeWriter {
     /// Outputs a summary of nested classes within this one as Markdown
     /// @param nestedClasses a list of the nested classes
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputNestedClassSummary(List<TypeNode> nestedClasses) throws IOException {
+    private void outputNestedClassSummary(List<TypeView> nestedClasses) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
                 .addColumn(TEXT_CLASS)
                 .addColumn(TEXT_DESCRIPTION);
-        for (TypeNode nestedClassNode : nestedClasses) {
+        for (TypeView nestedClassNode : nestedClasses) {
             table.addRow(nestedClassNode.getModifiersString(),
                         Markdown.mdDocumentLink(nestedClassNode.getSimpleName()), 
                         Utils.inOneLine(Markdown.formatText(nestedClassNode.getFirstSentence())));

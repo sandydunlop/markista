@@ -1,7 +1,13 @@
 package io.github.sandydunlop.markista.model;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 /// Represents a method from another type that is overridden by a method in the type being documented.
-public class OverriddenMethodNode {
+public class OverriddenMethodNode implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /// Fully qualified name of the class that declares the overridden method. 
     private final String qualifiedClassName;
 

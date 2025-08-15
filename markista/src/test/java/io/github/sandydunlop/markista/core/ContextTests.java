@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.core;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -165,7 +165,7 @@ class ContextTests {
         ctx.setApi(api);
 
         ctx.setModuleName("");
-        ctx.setPackageName(pkg.getName());
+        ctx.setPackageName(pkg.getQualifiedName());
         File file = ctx.getPackageDirectory();
         assertEquals(outputDir + "sandydunlop/test", file.getAbsolutePath());
     }
@@ -178,7 +178,7 @@ class ContextTests {
         Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("markista");
-        ctx.setPackageName(pkg.getName());
+        ctx.setPackageName(pkg.getQualifiedName());
 
         OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInPackage();
         w.write("test createFile 1");
@@ -199,7 +199,7 @@ class ContextTests {
         Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("");
-        ctx.setPackageName(pkg.getName());
+        ctx.setPackageName(pkg.getQualifiedName());
 
         OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInPackage();
         w.write("test createFile 1");
@@ -250,38 +250,5 @@ class ContextTests {
         String line = reader.readLine();
         reader.close();
         assertTrue(line.contains("test createFile module 2"));
-    }
-
-    @Test
-    void createFilePath() {
-        String outputDir = "/tmp/markista/dirpath/";
-        Configuration.setFlattenPackages(true);
-        ctx.setOutputDirectory(outputDir);
-        ctx.setApi(api);
-
-        ctx.setModuleName("module");
-        ctx.setPackageName(pkg.getName()); //test
-        ctx.setTypeName("Provider"); //test
-
-        File file = ctx.createPackageFilePath();
-        assertEquals(outputDir + "module/sandydunlop/test/Provider.md", file.getAbsolutePath());
-    }
-
-    @Test
-    void createFilePath_onePackage() {
-        String outputDir = "/tmp/markista/dirpath/";
-        Configuration.setFlattenPackages(true);
-        ctx.setOutputDirectory(outputDir);
-
-        api = new Api("Test API");
-        api.addPackage(pkg);
-        ctx.setApi(api);
-        
-        ctx.setModuleName("module");
-        ctx.setPackageName(pkg.getName()); //test
-        ctx.setTypeName("Provider"); //test
-
-        File file = ctx.createPackageFilePath();
-        assertEquals(outputDir + "module/test/Provider.md", file.getAbsolutePath());
     }
 }

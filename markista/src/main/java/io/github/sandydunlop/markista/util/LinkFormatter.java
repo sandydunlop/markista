@@ -3,6 +3,7 @@ package io.github.sandydunlop.markista.util;
 import java.nio.file.Path;
 import java.util.List;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
@@ -15,9 +16,11 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeView;
 
 public class LinkFormatter {
     private static Context ctx;
+    private static Api api;
 
     private LinkFormatter() {
         // Nothing to see here
@@ -25,16 +28,17 @@ public class LinkFormatter {
 
     /// Generates [Text] objects for links to types and links in Javadoc text.
     /// This is where we decide if the label for those links shows qualified names or simplified names.
-    /// @param api The API model
+    /// @param a The API model
     /// @param context The doclet context to keep track of why package and type are being processed
-    public static void generateLinkTexts(Api api, Context context) {
+    public static void generateLinkTexts(Api a, Context context) {
+        api = a;
         ctx = context;
 
         processModules(api);
 
         // Links from types used in methods and fields
-        for (TypeNode typeNode : api.getTypes()) {
-            processTypeNode(typeNode);
+        for (TypeView typeView : api.getTypes()) {
+            processTypeNode((TypeNode) typeView);
 
         }
         processJavadocComments(api);
@@ -45,7 +49,8 @@ public class LinkFormatter {
         ctx.setTypeName(typeNode.getQualifiedName());
 
         // Types
-        if (typeNode.getOwner() instanceof TypeNode ownerTypeNode) {
+        TypeNode ownerTypeNode = api.getTypeNode(typeNode.getOwner());
+        if (ownerTypeNode != null) {
             Reference ref = Reference.to(ownerTypeNode.getQualifiedName())
                     .from(ctx.getPackageName())
                     .withKind(Reference.Kind.TYPE)
@@ -71,7 +76,7 @@ public class LinkFormatter {
 
         // Methods
         for (MethodNode method : typeNode.getMethods()) {
-            Reference returnTypeReference = Reference.to(method.getReturnType().getQualifiedName()).from(ctx.getPackageName());
+            Reference returnTypeReference = Reference.to(method.getReturnTypeName()).from(ctx.getPackageName());
             method.setReturnTypeText(link(returnTypeReference, false));
             generateLinkTextsForParams(method.getParams()
                     .stream()
@@ -103,9 +108,9 @@ public class LinkFormatter {
             ctx.setModuleName(module.getName());
             // Constant field values
             for (FieldNode constant : module.getConstantValues()) {
-                Reference ref = Reference.to(constant.getType().getQualifiedName())
+                Reference ref = Reference.to(constant.getTypeName())
                         .from("")
-                        .withLabel(constant.getType().getSimpleName());
+                        .withLabel(constant.getTypeName());
                 LinkResolver.resolve(ref);
                 constant.setConstantValueReference(ref);
             }
@@ -136,7 +141,7 @@ public class LinkFormatter {
 
     private static void generateLinkTextsForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
-            Reference reference = Reference.to(param.getType().getQualifiedName()).from(ctx.getPackageName());
+            Reference reference = Reference.to(param.getTypeName()).from(ctx.getPackageName());
             param.setTypeText(link(reference, false));
             generateLinkTextsForReferences(param);
         }

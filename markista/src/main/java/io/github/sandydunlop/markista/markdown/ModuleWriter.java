@@ -1,12 +1,12 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Utils;
 
@@ -85,9 +85,9 @@ public class ModuleWriter {
                         .addColumn(TITLE_DESCRIPTION);
                 for (PackageNode member : moduleNode.getPackages()) {
                     Reference reference = Reference
-                            .to(member.getName())
+                            .to(member.getQualifiedName())
                             .withKind(Reference.Kind.PACKAGE)
-                            .withLabel(member.getName());
+                            .withLabel(member.getQualifiedName());
                     table.addRow(Markdown.link(reference, true), Utils.inOneLine(Markdown.formatText(member.getDescription())));
                 }
                 table.render(writer);

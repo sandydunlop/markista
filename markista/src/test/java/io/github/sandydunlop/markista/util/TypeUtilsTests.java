@@ -22,6 +22,7 @@ import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import com.sun.source.doctree.StartElementTree;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
@@ -201,14 +202,14 @@ class TypeUtilsTests {
 
     @Test
     void addConstantFieldValuesReference() {
-        ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "Node", packageNode);
+        ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", 
+                "Node", packageNode.getQualifiedName());
         Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
                 .withKind(Reference.Kind.TYPE);
-        Pair<Reference,Text> supertype = new Pair<>(ref, null);
+        Pair<Reference,Text> supertype = Pair.of(ref, null);
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
-        TypeNode typeNode = new TypeNode("int","int", packageNode);
-        FieldNode fieldNode = new FieldNode(typeNode, "field");
+        FieldNode fieldNode = new FieldNode("int", "field");
         fieldNode.setConstantValue("1");
         classNode2.addField(fieldNode);
         TypeUtils.addConstantFieldValuesReference(unnamedModule);
@@ -231,22 +232,22 @@ class TypeUtilsTests {
         when(methodElement2.getSimpleName()).thenReturn(methodName2);
         when(methodElement2.getEnclosingElement()).thenReturn(typeElement);
 
-        ClassTypeNode classNode1 = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode1 = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
+                "Node", packageNode.getQualifiedName());
         api.addType(classNode1);
-        TypeNode returnType1 = new TypeNode("int","int", null);
-        MethodNode methodNode1 = new MethodNode(returnType1, "length");
-        methodNode1.setOwner(classNode1);
+        MethodNode methodNode1 = new MethodNode("int", "length");
+        methodNode1.setOwnerName(classNode1.getQualifiedName());
         classNode1.addMethod(methodNode1);
 
-        ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", "Node", packageNode);
+        ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", 
+                "Node", packageNode.getQualifiedName());
         Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
                 .withKind(Reference.Kind.TYPE);
-        Pair<Reference,Text> supertype = new Pair<>(ref, null);
+        Pair<Reference,Text> supertype = Pair.of(ref, null);
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
-        TypeNode returnType2 = new TypeNode("int","int", null);
-        MethodNode methodNode2 = new MethodNode(returnType2, "length");
-        methodNode2.setOwner(classNode2);
+        MethodNode methodNode2 = new MethodNode("int", "length");
+        methodNode2.setOwnerName(classNode2.getQualifiedName());
         classNode2.addMethod(methodNode2);
 
         when(elementUtils.getTypeElement("io.github.sandydunlop.markista.model.Node")).thenAnswer(_ -> typeElement);
@@ -268,16 +269,16 @@ class TypeUtilsTests {
         when(methodElement.getSimpleName()).thenReturn(methodName);
         when(methodElement.getEnclosingElement()).thenReturn(typeElement);
 
-        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
+                "Node", packageNode.getQualifiedName());
         Reference ref = Reference.to("java.lang.String")
                 .withKind(Reference.Kind.TYPE);
-        Pair<Reference,Text> supertype = new Pair<>(ref, null);
+        Pair<Reference,Text> supertype = Pair.of(ref, null);
         classNode.getSupertypes().add(supertype);
         api.addType(classNode);
 
-        TypeNode returnType = new TypeNode("int","int", null);
-        MethodNode methodNode = new MethodNode(returnType, "length");
-        methodNode.setOwner(classNode);
+        MethodNode methodNode = new MethodNode("int", "length");
+        methodNode.setOwnerName(classNode.getQualifiedName());
         classNode.addMethod(methodNode);
 
         OverriddenMethodNode om = TypeUtils.getOverriddenMethod(methodNode, methodElement);
@@ -476,7 +477,8 @@ class TypeUtilsTests {
 
     @Test
     void nodeFromElement_ExecutableElement() {
-        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
+                "Node", packageNode.getQualifiedName());
         api.addType(classNode);
 
         Name methodName = mock(Name.class);
@@ -495,7 +497,8 @@ class TypeUtilsTests {
 
     @Test
     void nodeFromElement_VariableElement() {
-        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node",
+                 "Node", packageNode.getQualifiedName());
         api.addType(classNode);
 
         Name variableName = mock(Name.class);
@@ -558,7 +561,8 @@ class TypeUtilsTests {
 
     @Test
     void setDocumentation() {
-        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
+                "Node", packageNode.getQualifiedName());
         api.addType(classNode);
         TypeUtils.setDocumentation(classNode, typeElement);
         String fmt = Markdown.formatText(classNode.getFirstSentence());
@@ -870,7 +874,8 @@ class TypeUtilsTests {
         when(docCommentTree.getBody()).thenAnswer(_ -> body);
         when(docCommentTree.getFullBody()).thenAnswer(_ -> fullBody);
 
-        var node = new io.github.sandydunlop.markista.model.ClassTypeNode("com.example.Foo", "Foo", null);
+        var node = new io.github.sandydunlop.markista.model.ClassTypeNode("com.example.Foo", 
+                "Foo", "");
 
         try (var utilsStatic = org.mockito.Mockito.mockStatic(TypeUtils.class, org.mockito.Answers.CALLS_REAL_METHODS)) {
             utilsStatic.when(() -> TypeUtils.createText(firstSentence))
@@ -891,7 +896,8 @@ class TypeUtilsTests {
     @Test
     void setAppliedAnnotations() {
         setup2();
-        TypeNode typeNode = new TypeNode("com.example.Foo", "Foo", packageNode);
+        TypeNode typeNode = new TypeNode("com.example.Foo", 
+                "Foo", packageNode.getQualifiedName());
 
 
         AnnotationMirror am = mock(AnnotationMirror.class);
@@ -926,7 +932,8 @@ class TypeUtilsTests {
     void setAppliedAnnotation_adds_applied_annotation_and_marks_documented() {
         setUp2();
         // Initialize TypeUtils static context
-        TypeNode targetType = new TypeNode("MyClass", "package.MyClass", packageNode);
+        TypeNode targetType = new TypeNode("MyClass", 
+            "package.MyClass", packageNode.getQualifiedName());
 
         // Build an AnnotationMirror mock representing @MyAnno(value="x")
         AnnotationMirror annotationMirror = mock(AnnotationMirror.class);
@@ -1040,9 +1047,10 @@ class TypeUtilsTests {
         // Prepare method model node and owner type that implements one interface
         MethodNode methodNode = mock(MethodNode.class);
         TypeNode ownerType = mock(TypeNode.class);
-        when(methodNode.getOwner()).thenReturn(ownerType);
+        when(methodNode.getOwnerName()).thenReturn("com.example.MyIfc");
         when(ownerType.getImplementedInterfaces()).thenReturn(List.of(Reference.to("com.example.MyIfc").withClassName("com.example.MyIfc")));
 
+        when(mockApi.getTypeNode(any())).thenReturn(ownerType);
         // Prepare interface TypeElement with a method named "doThing"
         TypeElement iface = mock(TypeElement.class);
         ExecutableElement ifaceMethod = mock(ExecutableElement.class);
@@ -1074,7 +1082,7 @@ class TypeUtilsTests {
             elemFilter.when(() -> ElementFilter.fieldsIn(any())).thenReturn(Set.of(ve));
             elemFilter.when(() -> ElementFilter.methodsIn(list)).thenReturn(List.of(ifaceMethod));
 
-            TypeUtils.init(api, mockEnvironment);
+            TypeUtils.init(mockApi, mockEnvironment);
             // Call setSpecifiedBy
             TypeUtils.setSpecifiedBy(methodNode, methodElement);
         }
@@ -1250,7 +1258,7 @@ class TypeUtilsTests {
         verify(methodDoc).addParam(captor.capture());
         ParamNode added = captor.getValue();
         assertEquals("arg", added.getSimpleName());
-        assertNotNull(added.getType()); // type constructed
+        assertNotNull(added.getTypeName()); // type constructed
         // Because we passed empty description, body is likely empty Text
         assertNotNull(added.getBody());
     }
@@ -1261,7 +1269,7 @@ class TypeUtilsTests {
         AppliedAnnotationNode applied = mock(AppliedAnnotationNode.class);
         TypeNode type = mock(TypeNode.class);
         when(type.getQualifiedName()).thenReturn("com.example.A");
-        when(applied.getType()).thenReturn(type);
+        when(applied.getTypeName()).thenReturn("com.example.A");
 
         testApi.addType(type);
         testApi.getAppliedAnnotations().add(applied);
@@ -1280,9 +1288,7 @@ class TypeUtilsTests {
 
         // Build a ParamNode list with one parameter of type java.lang.Object
         io.github.sandydunlop.markista.model.ParamNode p = mock(io.github.sandydunlop.markista.model.ParamNode.class);
-        TypeNode t = mock(TypeNode.class);
-        when(t.getQualifiedName()).thenReturn("java.lang.Object");
-        when(p.getType()).thenReturn(t);
+        when(p.getTypeName()).thenReturn("java.lang.Object");
 
         when(method.getParams()).thenReturn(List.of(p));
 

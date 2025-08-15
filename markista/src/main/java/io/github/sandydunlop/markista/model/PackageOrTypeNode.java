@@ -3,73 +3,60 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
-/// An abstract class with a set of methods useful to other subclasses of [Node]
-/// that can be owners of types.
 public abstract class PackageOrTypeNode extends AbstractPackageMember {
-    /// A list of types owned by this type owner
-    protected List<TypeNode> types = new ArrayList<>();
+    // store children by the interface type (no concrete TypeNode mention)
+    protected final List<TypeView> types = new ArrayList<>();
 
-    /// Default constructor
     protected PackageOrTypeNode() {
-        // Only here for the comments
     }
 
-    /// Adds a type to the list of types *owned* by this instance.
-    /// @param typeNode the type to add
-    public void addType(TypeNode typeNode) {
+    public void addType(TypeView typeNode) {
         types.add(typeNode);
     }
 
     /// Gets the list of types *owned* by this instance.
-    public List<TypeNode> getTypes() {
-        return types;
+    public List<TypeView> getTypes() {
+        return List.copyOf(types);
     }
 
     /// Gets the list of classes *owned* by this instance.
-    public List<TypeNode> getClasses() {
-        return types.stream().filter(item -> item.getKind() == TypeNode.Kind.CLASS).toList();
+    public List<TypeView> getClasses() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isClass())
+                out.add(t);
+        return out;
     }
 
     /// Gets the list of interfaces *owned* by this instance.
-    public List<TypeNode> getInterfaces() {
-        return types.stream().filter(item -> item.getKind() == TypeNode.Kind.INTERFACE).toList();
+    public List<TypeView> getInterfaces() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isInterface())
+                out.add(t);
+        return out;
     }
 
     /// Gets the list of enums *owned* by this instance.
-    public List<TypeNode> getEnums() {
-        return types.stream().filter(item -> item.getKind() == TypeNode.Kind.ENUM).toList();
+    public List<TypeView> getEnums() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isEnum())
+                out.add(t);
+        return out;
     }
+
     /// Gets the list of annotations *owned* by this instance.
-    public List<TypeNode> getAnnotations() {
-        return types.stream().filter(item -> item.getKind() == TypeNode.Kind.ANNOTATION).toList();
-    }
-
-    /// Adds a class to the list of classes *owned* by this instance.
-    /// @param node the class to add
-    public void addClass(ClassTypeNode node) {
-        types.add(node);
-    }
-
-    /// Adds a interface to the list of interfaces *owned* by this instance.
-    /// @param node the interface to add
-    public void addInterface(InterfaceTypeNode node) {
-        types.add(node);
-    }
-
-    /// Adds a enum to the list of enums *owned* by this instance.
-    /// @param node the enum to add
-    public void addEnum(EnumTypeNode node) {
-        types.add(node);
-    }
-
-    /// Adds a annotation to the list of annotations *owned* by this instance.
-    /// @param node the annotation to add
-    public void addAnnotation(AnnotationTypeNode node) {
-        types.add(node);
+    public List<TypeView> getAnnotations() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isAnnotation())
+                out.add(t);
+        return out;
     }
 
     /// Sorts the nodes owned by this instance into alphabetical order.
     public void sort() {
-        types.sort((o1, o2) -> o1.simpleName.compareTo(o2.simpleName));
+        types.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
     }
 }

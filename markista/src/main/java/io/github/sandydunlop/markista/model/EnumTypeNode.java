@@ -11,9 +11,9 @@ public class EnumTypeNode extends TypeNode {
     /// Sets the kind to ENUM.
     /// @param qualifiedName The qualified name of the enum.
     /// @param simpleName The simple name of the enum.
-    /// @param packageNode The [PackageNode] that contains this enum.
-    public EnumTypeNode(String qualifiedName, String simpleName, PackageNode packageNode) {
-        super(qualifiedName, simpleName, packageNode);
+    /// @param packageName The name of the package that contains this enum.
+    public EnumTypeNode(String qualifiedName, String simpleName, String packageName) {
+        super(qualifiedName, simpleName, packageName);
         kind = Kind.ENUM;
     }
 

@@ -1,11 +1,16 @@
 package io.github.sandydunlop.markista.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 /// The base class for all types of nodes in the API model.
-public class Node {
+public class Node implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /// A unique identifier
     protected UUID uuid = UUID.randomUUID();
 

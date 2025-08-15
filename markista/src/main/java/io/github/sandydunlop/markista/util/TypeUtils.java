@@ -12,6 +12,8 @@ import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.SinceTree;
 import com.sun.source.doctree.StartElementTree;
 
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractPackageMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
@@ -33,6 +35,7 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeView;
 import io.github.sandydunlop.markista.util.MarkdownParser.TokenKind;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
@@ -138,14 +141,15 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             setModifiers(typeNode, element.getModifiers());
             setAppliedAnnotations(typeNode, element);
             collectAllSupertypes(element.asType(), typeNode.getSupertypes());
-            typeNode.getSupertypes().addFirst(new Pair<>(Reference.to("java.lang.Object"), Text.empty()));
+            typeNode.getSupertypes().addFirst(Pair.of(Reference.to("java.lang.Object"), Text.empty()));
             findImplementedInterfaces(element, typeNode.getImplementedInterfaces());
             TypeUtils.setDocumentation(typeNode, element);
             JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(element);
             if (jfo != null) {
-                typeNode.setSourcePath(Path.of(jfo.toUri()));
-                if (typeNode.getPackage().getSourcePath() == null) {
-                    typeNode.getPackage().setSourcePath(Path.of(jfo.toUri()).getParent());
+                typeNode.setSourcePath(Path.of(jfo.toUri()).toString());
+                PackageNode typePackage = api.getPackageNode(typeNode.getPackageName());
+                if (typePackage != null && typePackage.getSourcePath() == null) {
+                    typePackage.setSourcePath(Path.of(jfo.toUri()).getParent().toString());
                 }
             }
             api.addType(typeNode);
@@ -180,30 +184,28 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             qualifiedTypeName = array.toString();
             arrayBrackets = "\\[]";                    
         }
-        String simpleName = Utils.simplifyNames(qualifiedTypeName);
         PackageElement packageElement = getEnclosingPackageElement(element);
         if (packageElement == null) {
             ctx.reportError("No package for " + qualifiedTypeName);
             return null;
         }
         PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
-        TypeNode returnType = new TypeNode(qualifiedTypeName, simpleName, packageNode);
-        returnType.setArrayBrackets(arrayBrackets);
-        MethodNode methodNode = new MethodNode(returnType, element.getSimpleName().toString());
+        String returnTypeName = qualifiedTypeName + arrayBrackets;
+        MethodNode methodNode = new MethodNode(returnTypeName, element.getSimpleName().toString());
 
         TypeElement ownerElement = getEnclosingTypeElement(element);
         TypeNode ownerType = api.getTypeNode(ownerElement.getQualifiedName().toString());
         if (ownerType == null) {
             ctx.reportError(String.format(
                     "Unable to determine owner of method '%s' in package '%s'",
-                    methodNode.getSimpleName(), packageNode.getName()));
+                    methodNode.getSimpleName(), packageNode.getQualifiedName()));
             return null;
         }
         setMethodParams(methodNode, element);
 
         setModifiers(methodNode, element.getModifiers());
         setThrownTypes(methodNode, element.getThrownTypes());
-        methodNode.setOwner(ownerType);
+        methodNode.setOwnerName(ownerType.getQualifiedName());
 
         if (element.getKind() == ElementKind.METHOD) {
             MethodNode existingMethodNode = ownerType.getMethod(methodNode);
@@ -251,8 +253,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             FieldNode fieldNode = typeNode.getField(simpleName);
             if (fieldNode == null) {
                 String qualifiedClassName = classElement.getQualifiedName().toString();
-                TypeNode type = getFieldType(qualifiedClassName, simpleName);
-                fieldNode = new FieldNode(type, simpleName);
+                fieldNode = new FieldNode(qualifiedClassName, simpleName);
                 typeNode.getFields().add(fieldNode);
                 fieldNode.setConstantValue((Serializable) element.getConstantValue());
                 DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
@@ -273,10 +274,12 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// @return A TypeNode instance corresponding to the kind, or null if unsupported.
     public static TypeNode createTypeNode(String qualifiedName, String simpleName, PackageNode packageNode, ElementKind elementKind) {
         return switch (elementKind) {
-            case ElementKind.CLASS -> new ClassTypeNode(qualifiedName, simpleName, packageNode);
-            case ElementKind.INTERFACE -> new InterfaceTypeNode(qualifiedName, simpleName, packageNode);
-            case ElementKind.ENUM -> new EnumTypeNode(qualifiedName, simpleName, packageNode);
-            case ElementKind.ANNOTATION_TYPE -> new AnnotationTypeNode(qualifiedName, simpleName, packageNode);
+            case ElementKind.CLASS -> new ClassTypeNode(qualifiedName, simpleName, packageNode.getQualifiedName());
+            case ElementKind.INTERFACE -> new InterfaceTypeNode(qualifiedName, simpleName, packageNode
+                    .getQualifiedName());
+            case ElementKind.ENUM -> new EnumTypeNode(qualifiedName, simpleName, packageNode.getQualifiedName());
+            case ElementKind.ANNOTATION_TYPE -> new AnnotationTypeNode(qualifiedName, simpleName, packageNode
+                    .getQualifiedName());
             default -> null;
         };
     }
@@ -442,14 +445,14 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         TypeNode ownerTypeNode = owner == null ? null : api.getTypeNode(owner.getQualifiedName().toString());
         if (ownerTypeNode != null) {
             // Owner is a type (class, interface, enum, annotation)
-            typeNode.setOwner(ownerTypeNode);
+            typeNode.setOwner(ownerTypeNode.getQualifiedName());
             typeNode.setSimpleName(ownerTypeNode.getSimpleName() + "." + typeNode.getSimpleName());
+            ownerTypeNode.addType(typeNode);
         } else {
             // Owner is a package
-            typeNode.setOwner(typeNode.getPackage());
-        }
-        if (typeNode.getOwner() != null) {
-            typeNode.getOwner().addType(typeNode);
+            PackageNode ownerPackage = api.getPackageNode(typeNode.getPackageName());
+            typeNode.setOwner(ownerPackage.getQualifiedName());
+            ownerPackage.addType(typeNode);
         }
     }
 
@@ -471,7 +474,8 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// @param methodNode The MethodNode to update.
     /// @param methodElement The ExecutableElement representing the method.
     public static void setSpecifiedBy(MethodNode methodNode, ExecutableElement methodElement) {
-        List<Reference> interfaces = methodNode.getOwner().getImplementedInterfaces();
+        TypeNode ownerTypeNode = api.getTypeNode(methodNode.getOwnerName());
+        List<Reference> interfaces = ownerTypeNode.getImplementedInterfaces();
         if (interfaces == null || interfaces.isEmpty()) return;
         for (Reference interfaceName : interfaces) {
             TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceName.getClassName());
@@ -491,10 +495,11 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// @param methodElement The ExecutableElement representing the method.
     /// @return An OverriddenMethodNode if a matching override is found, else null.
     public static OverriddenMethodNode getOverriddenMethod(MethodNode method, ExecutableElement methodElement) {
-        if (method.getOwner() == null) return null;
+        if (method.getOwnerName() == null) return null;
 
-        for (int i = method.getOwner().getSupertypes().size() - 1; i >= 0; i--) {
-            Pair<Reference, Text> pair = method.getOwner().getSupertypes().get(i);
+        TypeNode ownerTypeNode = api.getTypeNode(method.getOwnerName());
+        for (int i = ownerTypeNode.getSupertypes().size() - 1; i >= 0; i--) {
+            Pair<Reference, Text> pair = ownerTypeNode.getSupertypes().get(i);
             Reference typeRef = pair.getL();
             TypeElement superclass = environment.getElementUtils().getTypeElement(typeRef.getTarget());
             OverriddenMethodNode overridden = getOverriddenMethod(superclass, methodElement);
@@ -535,7 +540,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                     boolean parametersMatch = true;
                     Class<?>[] listMethodParamTypes = listMethod.getParameterTypes();
                     for (int i = 0; i < listMethodParamTypes.length; i++) {
-                        Class<?> clsB = Class.forName(method.getParams().get(i).getType().getQualifiedName());
+                        Class<?> clsB = Class.forName(method.getParams().get(i).getTypeName());
                         if (!listMethodParamTypes[i].isAssignableFrom(clsB)) {
                             parametersMatch = false;
                             break;
@@ -555,11 +560,11 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// Adds references to constant field values from classes in the API to the provided module node.
     /// @param moduleNode The ModuleNode to which constant value references will be added.
     public static void addConstantFieldValuesReference(ModuleNode moduleNode) {
-        for (TypeNode classNode : api.getClasses()) {
-            for (FieldNode fieldNode : classNode.getFields()) {
+        for (TypeView classNode : api.getClasses()) {
+            for (FieldNode fieldNode : ((TypeNode)classNode).getFields()) {
                 if (fieldNode.getConstantValue() != null) {
                     Reference ref = Reference.to("constant-values")
-                            .from(classNode.getPackageName())
+                            .from(((TypeNode) classNode).getPackageName())
                             .withKind(Reference.Kind.PAGE)
                             .withLabel("Constant Field Values");
                     fieldNode.getReferences().add(ref);
@@ -611,7 +616,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                                 .from(ctx.getPackageName())
                                 .withKind(Reference.Kind.TYPE)
                                 .withLabel(name);
-                        result.addFirst(new Pair<>(reference, Text.empty()));
+                        result.addFirst(Pair.of(reference, Text.empty()));
                     }
                     collectAllSupertypes(s, result);
                 }
@@ -749,11 +754,11 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         DeclaredType declaredType = annotationMirror.getAnnotationType();
         Element declaredElement = declaredType.asElement();
         if (declaredElement instanceof TypeElement declaredTypeElement) {
-            AnnotationTypeNode typeNode = new AnnotationTypeNode(declaredTypeElement.getQualifiedName().toString(), declaredTypeElement.getSimpleName().toString(), null);
-            AppliedAnnotationNode annotationNode = new AppliedAnnotationNode(typeNode);
+            AppliedAnnotationNode annotationNode = new AppliedAnnotationNode(
+                    declaredTypeElement.getQualifiedName().toString());
             node.addAppliedAnnotation(annotationNode);
             api.addAppliedAnnotation(annotationNode);
-            if (typeNode.getQualifiedName().equals("java.lang.annotation.Documented")) {
+            if (declaredTypeElement.getQualifiedName().toString().equals("java.lang.annotation.Documented")) {
                 node.setHasDocumentedAnnotation(true);
             }
             Map<? extends ExecutableElement, ? extends AnnotationValue> values = annotationMirror.getElementValues();
@@ -769,12 +774,12 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                 PackageElement pe = TypeUtils.getEnclosingPackageElement(annotationMethod);
                 String packageName = pe == null ? "" : pe.getQualifiedName().toString();
                 PackageNode pkg = new PackageNode(packageName);
-                TypeNode paramType = new TypeNode(typeString, Utils.simplifyNames(typeString), pkg);
+                TypeNode paramType = new TypeNode(typeString, Utils.simplifyNames(typeString), pkg.getQualifiedName());
 
                 String entryName = annotationMethod.getSimpleName().toString();
                 AnnotationValue value = entry.getValue();
                 Object entryValue = value.getValue();
-                AnnotationElement parameter = new AnnotationElement(paramType, entryName, entryValue.toString());
+                AnnotationElement parameter = new AnnotationElement(paramType.getQualifiedName(), entryName, entryValue.toString());
                 annotationNode.addElement(parameter);
             }
         } else {
@@ -786,8 +791,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// those that have the `@Documented` meta-annotation and marking them as such.
     public static void markCustomAnnotations() {
         for (AppliedAnnotationNode annotation : api.getAppliedAnnotations()) {
-            TypeNode type = annotation.getType();
-            TypeNode localType = api.getTypeNode(type.getQualifiedName());
+            TypeNode localType = api.getTypeNode(annotation.getTypeName());
             if (localType != null) {
                 annotation.setCustom(true);
                 if (localType.hasDocumentedAnnotation()) {
@@ -852,8 +856,11 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
         for (VariableElement parameter : ee.getParameters()) {
             String simpleName = parameter.getSimpleName().toString();
+
             TypeNode paramType = getParamType(ee, simpleName);
-            ParamNode param = new ParamNode(paramType, simpleName);
+            String paramTypeName = paramType.getQualifiedName() + paramType.getArrayBrackets();
+            ParamNode param = new ParamNode(paramTypeName, simpleName);
+            
             ParamTree paramTree = getParamTree(dct, parameter);
             if (paramTree != null) {
                 param.setBody(createText(paramTree.getDescription()));
@@ -903,7 +910,8 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         String simpleTypeName = Utils.simplifyNames(qualifiedTypeName);
         String packageName = getPackageName(qualifiedTypeName);
         PackageNode packageNode = api.getPackageNode(packageName);
-        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageNode);
+        packageName = packageNode == null ? "" : packageNode.getQualifiedName();
+        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
         type.setArrayBrackets(arrayBrackets);
 
         return type;
@@ -934,13 +942,14 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         String simpleTypeName = Utils.simplifyNames(qualifiedTypeName);
         String packageName = getPackageName(qualifiedTypeName);
         PackageNode packageNode = api.getPackageNode(packageName);
-        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageNode);
+        packageName = packageNode == null ? "" : packageNode.getQualifiedName();
+        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
         type.setArrayBrackets(arrayBrackets);
 
         return type;
     }
 
-    /// Extracts the package name from a fully qualified type name.
+    /// Extracts the package name from a qualified type name.
     /// @param qualifiedTypeName The fully qualified type name.
     /// @return The package name portion or null if input null.
     private static String getPackageName(String qualifiedTypeName) {
@@ -987,7 +996,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         File pkgInfo = getPackageInfoFile(ee);
         if (pkgInfo != null) {
             pkg.setHasPackageInfo(true);
-            pkg.setSourcePath(pkgInfo.toPath().getParent());
+            pkg.setSourcePath(pkgInfo.toPath().getParent().toString());
         }
     }
 

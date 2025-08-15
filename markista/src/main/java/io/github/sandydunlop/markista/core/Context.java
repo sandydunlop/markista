@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.core;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -63,6 +63,10 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         // No public constructor here
     }
 
+    public String getFlattenedDirectories() {
+        return flattenedDirectories;
+    }
+
     /// Returns the singleton instance of this Context.
     /// @return The Context singleton instance.
     public static Context getInstance() {
@@ -78,7 +82,6 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         this.api = api;
         if (Configuration.getFlattenPackages()) {
             this.flattenedDirectories = api.commonBase();
-            LinkResolver.setFlattenedDirectories(flattenedDirectories);
         }
     }
 
@@ -273,7 +276,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         File containingDir = getPackageDirectory();
         if (!containingDir.exists()) containingDir.mkdirs();
         if (typeName.isEmpty()) typeName = "index";
-        return new File(containingDir, Utils.simplifyNames(typeName) + ".md");
+        return new File(containingDir, typeName + ".md");
     }
 
     /// Creates a Writer for writing a module-level file inside the module's directory.

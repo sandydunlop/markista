@@ -7,9 +7,9 @@ public class ClassTypeNode extends TypeNode {
     /// Constructs a new ClassNode.
     /// @param qualifiedName The fully qualified name of the class.
     /// @param simpleName The simple name of the class.
-    /// @param packageNode The [PackageNode] this class belongs to.
-    public ClassTypeNode(String qualifiedName, String simpleName, PackageNode packageNode) {
-        super(qualifiedName, simpleName, packageNode);
+    /// @param packageName The name of the package this class belongs to.
+    public ClassTypeNode(String qualifiedName, String simpleName, String packageName) {
+        super(qualifiedName, simpleName, packageName);
         kind = TypeNode.Kind.CLASS;
     }
 }

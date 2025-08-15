@@ -1,12 +1,13 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.PackageOrTypeNode;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeView;
 import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.Configuration;
-import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
@@ -44,29 +45,29 @@ public class PackageWriter {
     /// @param packageNode the package
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputPackageDoc(PackageNode packageNode) throws IOException {
-        ctx.setPackageName(packageNode.getName());
+        ctx.setPackageName(packageNode.getQualifiedName());
         writer = ctx.createFileInPackage();    
-        writer.write("# Package " + packageNode.getName() + "\n");
+        writer.write("# Package " + packageNode.getQualifiedName() + "\n");
         writer.write("\n\n" + Markdown.formatText(packageNode.getFullBody()) + "\n\n");
-        outputPackageMembers("Packages", packageNode.getPackages());
-        outputPackageMembers("Classes", packageNode.getClasses());
-        outputPackageMembers("Interfaces", packageNode.getInterfaces());
-        outputPackageMembers("Enum Classes", packageNode.getEnums());
-        outputPackageMembers("Annotation Types", packageNode.getAnnotations());
+        outputPackageMemberPackages("Packages", packageNode.getPackages());
+        outputPackageMemberTypes("Classes", packageNode.getClasses());
+        outputPackageMemberTypes("Interfaces", packageNode.getInterfaces());
+        outputPackageMemberTypes("Enum Classes", packageNode.getEnums());
+        outputPackageMemberTypes("Annotation Types", packageNode.getAnnotations());
         writer.flush();
         writer.close();
         TypeWriter typeWriter = new TypeWriter();
-        for (TypeNode member : packageNode.getClasses()) {
-            typeWriter.writeDoc(member);
+        for (TypeView member : packageNode.getClasses()) {
+            typeWriter.outputTypeDoc((TypeNode)member);
         }
-        for (TypeNode member : packageNode.getInterfaces()) {
-            typeWriter.writeDoc(member);
+        for (TypeView member : packageNode.getInterfaces()) {
+            typeWriter.outputTypeDoc((TypeNode)member);
         }
-        for (TypeNode member : packageNode.getEnums()) {
-            typeWriter.writeDoc(member);
+        for (TypeView member : packageNode.getEnums()) {
+            typeWriter.outputTypeDoc((TypeNode)member);
         }
-        for (TypeNode member : packageNode.getAnnotations()) {
-            typeWriter.writeDoc(member);
+        for (TypeView member : packageNode.getAnnotations()) {
+            typeWriter.outputTypeDoc((TypeNode)member);
         }
         ctx.setPackageName("");
     }
@@ -75,17 +76,38 @@ public class PackageWriter {
     /// @param title The title of this section in the Markdown document
     /// @param members The list of members of this package
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputPackageMembers(String title, List<? extends PackageOrTypeNode> members) throws IOException {
+    private void outputPackageMemberPackages(String title, List<PackageNode> members) throws IOException {
         if (members.isEmpty()) return;
-        String memberKind = TEXT_CLASS;
-        if (members.getFirst() instanceof PackageNode) {
-            memberKind = "Package";
-        }
         MarkdownTable table = new MarkdownTable()
-                .addColumn(memberKind)
+                .addColumn(
+                        "Package")
                 .addColumn(TEXT_DESCRIPTION);
         for (PackageOrTypeNode member : members) {
             table.addRow(Markdown.mdDocumentLink(member.getSimpleName()), Utils.inOneLine(Markdown.formatText(member.getFirstSentence())));
+        }
+        if (Configuration.getUseContentTabs()) {
+            writer.write("=== \"" + title + "\"\n\n");
+            table.render(writer, 4);
+        } else {
+            writer.write("\n\n## " + title + "\n\n");
+            table.render(writer);
+        }
+    }
+
+    /// Writes the Javadoc for a package's members as Markdown
+    /// @param title The title of this section in the Markdown document
+    /// @param members The list of members of this package
+    /// @throws java.io.IOException if there is a problem writing to the output file
+    private void outputPackageMemberTypes(String title, List<TypeView> members) throws IOException {
+        if (members.isEmpty())
+            return;
+        MarkdownTable table = new MarkdownTable()
+                .addColumn(
+                        TEXT_CLASS)
+                .addColumn(TEXT_DESCRIPTION);
+        for (TypeView member : members) {
+            table.addRow(Markdown.mdDocumentLink(member.getSimpleName()),
+                    Utils.inOneLine(Markdown.formatText(member.getFirstSentence())));
         }
         if (Configuration.getUseContentTabs()) {
             writer.write("=== \"" + title + "\"\n\n");

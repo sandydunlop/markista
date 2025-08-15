@@ -1,11 +1,16 @@
 package io.github.sandydunlop.markista.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /// Represents a block of text. Text stores the text as a list of segments which
 /// can be of kind text, markdown, link, or code for easy retrieval and manipulation.
-public class Text {
+public class Text implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /// List of text segments composing this Text instance.
     private List<Segment> segments = new ArrayList<>();
 
@@ -95,7 +100,10 @@ public class Text {
     }
 
     /// Represents a segment of the Text with its kind, content, and optional link.
-    public static class Segment {
+    public static class Segment implements Serializable{
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         /// The kind/type of this segment.
         private SegmentKind kind = SegmentKind.NONE;
         /// The textual content of this segment.

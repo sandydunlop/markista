@@ -19,7 +19,11 @@
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
-            "args": ["-options", "javadoc.options"]
+            "args": ["-options", "javadoc.options"],
+            "modulePath": [
+                "path/to/your/service-api.jar",
+                "path/to/your/service-impl.jar"
+            ]
         },
 
         {

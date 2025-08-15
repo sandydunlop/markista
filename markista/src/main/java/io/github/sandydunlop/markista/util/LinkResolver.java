@@ -23,12 +23,15 @@ import java.util.stream.Stream;
 import java.util.List;
 import java.util.Map;
 
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeView;
 import io.github.sandydunlop.markista.model.Reference.Kind;
 import io.github.sandydunlop.markista.model.Reference.Scope;
 
@@ -228,7 +231,7 @@ public class LinkResolver {
         String toClassName = getClassName(name);
         if (toPackageName.isEmpty()) {
             String qualifiedTo = "";
-            for (TypeNode member : api.getClasses()) {
+            for (TypeView member : api.getClasses()) {
                 if (member instanceof ClassTypeNode classNode && classNode.getSimpleName().equals(toClassName)) {
                     qualifiedTo = classNode.getQualifiedName();
                     break;
@@ -437,9 +440,9 @@ public class LinkResolver {
     /// @return The fully qualified package name or empty string if not found.
     public static String qualifyPackage(String simpleName) {
         for (PackageNode node : api.getPackages()) {
-            int p = node.getName().lastIndexOf(".");
-            if (node.getName().substring(p + 1).equals(simpleName)) {
-                return node.getName();
+            int p = node.getQualifiedName().lastIndexOf(".");
+            if (node.getQualifiedName().substring(p + 1).equals(simpleName)) {
+                return node.getQualifiedName();
             }
         }
         return "";
@@ -466,7 +469,7 @@ public class LinkResolver {
         String fromModuleName = "";
         String toModuleName = "";
         ModuleNode fromModule = api.getModuleNode(ctx.getModuleName());
-        ModuleNode toModule = toPackage.getModule();
+        ModuleNode toModule = api.getModuleNode(toPackage.getModuleName());
         if (fromModule != null) {
             fromModuleName = fromModule.getName();
         }

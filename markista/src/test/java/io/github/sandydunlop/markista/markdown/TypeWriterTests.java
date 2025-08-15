@@ -1,9 +1,10 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.*;
-import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.LinkFormatter;
 import io.github.sandydunlop.markista.util.LinkResolver;
+import io.github.sandydunlop.markista.util.Markdown;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,12 +14,20 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.sun.source.util.DocTreePath;
+
 import java.io.*;
 import java.lang.annotation.ElementType;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.lang.model.element.Element;
+import javax.tools.Diagnostic.Kind;
+
+import jdk.javadoc.doclet.Reporter;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +46,23 @@ class TypeWriterTests {
         // Nothing to see here
     }
 
+    @Mock static Reporter reporter = new Reporter() {
+        @Override
+        public void print(Kind kind, String message) {
+            System.out.println(kind + ": " + message);
+        }
+
+        @Override
+        public void print(Kind kind, DocTreePath path, String message) {
+            // Do nothing
+        }
+
+        @Override
+        public void print(Kind kind, Element element, String message) {
+            // Do nothing
+        }
+    };
+    
     @BeforeEach
     void setup() throws IOException {
         // Mock Writer to capture written content
@@ -62,9 +88,17 @@ class TypeWriterTests {
         when(typeNode.getInterfaces()).thenReturn(new ArrayList<>());
         when(typeNode.getEnums()).thenReturn(new ArrayList<>());
         when(typeNode.getAnnotations()).thenReturn(new ArrayList<>());
-        when(typeNode.getOwner()).thenReturn(null);
+        when(typeNode.getOwner()).thenReturn("com.example");
+        when(typeNode.getKindName()).thenReturn("Class");
 
-        typeWriter.writeDoc(typeNode);
+        Reference enclosing = Reference.to("com.example.AClass");
+        TypeNode typeNode2 = new TypeNode("com.example.MyClass","MyClass","com.example");
+        typeNode2.setEnclosingClassRef(enclosing);
+        Api api = mock(Api.class);
+        when(api.getTypeNode(any())).thenReturn(typeNode2);
+        when (contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
 
         String content = writer.toString();
 
@@ -74,16 +108,10 @@ class TypeWriterTests {
 
     @Test
     void outputFieldSummary_WritesMarkdownTableForFields() throws IOException {
-        TypeNode field1Type = mock(TypeNode.class);
-        when(field1Type.getQualifiedName()).thenReturn("java.lang.String");
-
-        FieldNode field1 = new FieldNode(field1Type, "fieldOne");
+        FieldNode field1 = new FieldNode("java.lang.String", "fieldOne");
         field1.addModifier(Modifier.PUBLIC);
 
-        TypeNode field2Type = mock(TypeNode.class);
-        when(field2Type.getQualifiedName()).thenReturn("int");
-
-        FieldNode field2 = new FieldNode(field2Type, "fieldTwo");
+        FieldNode field2 = new FieldNode("int", "fieldTwo");
         field2.addModifier(Modifier.PRIVATE);
 
         List<FieldNode> fields = new ArrayList<>();
@@ -113,12 +141,13 @@ class TypeWriterTests {
         when(contextMock.getPackageName()).thenReturn("com.example");
         Api testApi = new Api("Test API");
         testApi.addType(type);
+        when(contextMock.getApi()).thenReturn(testApi);
         LinkResolver.init(testApi, contextMock);
         LinkResolver.addNativeModules();
         LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
         LinkFormatter.generateLinkTexts(testApi, contextMock);
 
-        typeWriter.writeDoc(type);
+        typeWriter.outputTypeDoc(type);
 
         String output = writer.toString();
 
@@ -172,12 +201,14 @@ class TypeWriterTests {
         when(enumNode.getEnums()).thenReturn(new ArrayList<>());
         when(enumNode.getAnnotations()).thenReturn(new ArrayList<>());
         when(enumNode.getOwner()).thenReturn(null);
+        when(contextMock.getApi()).thenReturn(api);
 
         LinkResolver.init(api, contextMock);
         LinkResolver.addNativeModules();
         LinkFormatter.generateLinkTexts(api, contextMock);
+        Markdown.setContext(contextMock);
 
-        typeWriter.writeDoc(enumNode);
+        typeWriter.outputTypeDoc(enumNode);
 
         String output = writer.toString();
 
@@ -227,12 +258,13 @@ class TypeWriterTests {
         when(enumNode.getOwner()).thenReturn(null);
 
         Api testApi = new Api("Test API");
+        when(contextMock.getApi()).thenReturn(testApi);
         LinkResolver.init(testApi, contextMock);
         LinkResolver.addNativeModules();
         LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
         LinkFormatter.generateLinkTexts(testApi, contextMock);
 
-        typeWriter.writeDoc(enumNode);
+        typeWriter.outputTypeDoc(enumNode);
 
         String output = writer.toString();
 
@@ -244,16 +276,17 @@ class TypeWriterTests {
     @Test
     void outputDeclaration() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.category");
-        AnnotationTypeNode typeNode = new AnnotationTypeNode("scenario.food.category.SaladIngredient", "SaladIngredient", pkg);
+        AnnotationTypeNode typeNode = new AnnotationTypeNode("scenario.food.category.SaladIngredient", "SaladIngredient", 
+                pkg.getQualifiedName());
 
-        AnnotationTypeNode appliedAnnotationType  = new AnnotationTypeNode("Target", "Target", pkg);
-        AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode(appliedAnnotationType);
+        AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode("Target");
         AnnotationElement param = new AnnotationElement(null, "value", ElementType.TYPE.toString());
         appliedAnnotation.addElement(param);
 
+        when(contextMock.getApi()).thenReturn(new Api(""));
         typeNode.addAppliedAnnotation(appliedAnnotation);
 
-        typeWriter.writeDoc(typeNode);
+        typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
         assertTrue(output.contains("@interface __SaladIngredient__"));
     }
@@ -261,16 +294,17 @@ class TypeWriterTests {
     @Test
     void outputDeprecation() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", pkg);
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
 
-        TypeNode returnType = new AnnotationTypeNode("java.lang.String", "String", pkg);
-        MethodNode methodNode = new MethodNode(returnType, "eat");
+        MethodNode methodNode = new MethodNode("java.lang.String", "eat");
 
         methodNode.setDeprecation(Deprecation.DEPRECATED);
         methodNode.setDeprecationText(Text.empty().append("This is deprecated"));
         typeNode.addMethod(methodNode);
+        when(contextMock.getApi()).thenReturn(new Api(""));
 
-        typeWriter.writeDoc(typeNode);
+        typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
         assertTrue(output.contains("This is deprecated"));
     }
@@ -278,10 +312,10 @@ class TypeWriterTests {
     @Test
     void outputDeprecation_noText() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", pkg);
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
 
-        TypeNode returnType = new AnnotationTypeNode("java.lang.String", "String", pkg);
-        MethodNode methodNode = new MethodNode(returnType, "eat");
+        MethodNode methodNode = new MethodNode("java.lang.String", "eat");
 
         methodNode.setDeprecation(Deprecation.DEPRECATED);
         typeNode.addMethod(methodNode);
@@ -290,11 +324,12 @@ class TypeWriterTests {
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
-        api.addClass(typeNode);
-        pkg.addClass(typeNode);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
 
-        typeWriter.writeDoc(typeNode);
+        typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
         assertTrue(output.contains("This has been marked as deprecated"));
     }
@@ -302,15 +337,14 @@ class TypeWriterTests {
     @Test
     void outputMethodParams() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", pkg);
-        TypeNode returnType = new AnnotationTypeNode("java.lang.String", "String", pkg);
-        MethodNode methodNode = new MethodNode(returnType, "eat");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+        MethodNode methodNode = new MethodNode("java.lang.String", "eat");
 
-        TypeNode param1type = new AnnotationTypeNode("java.lang.String", "String", pkg);
-        ParamNode param1 = new ParamNode(param1type, "param1");
+        ParamNode param1 = new ParamNode("java.lang.String", "param1");
         param1.setFullBody(Text.empty().append("param1doc"));
         methodNode.addParam(param1);
-        ParamNode param2 = new ParamNode(param1type, "param2");
+        ParamNode param2 = new ParamNode("java.lang.String", "param2");
         param2.setFullBody(Text.empty().append("param2doc"));
         methodNode.addParam(param2);
 
@@ -320,13 +354,14 @@ class TypeWriterTests {
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
-        api.addClass(typeNode);
-        pkg.addClass(typeNode);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         LinkFormatter.generateLinkTexts(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
 
-        typeWriter.writeDoc(typeNode);
+        typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
         assertTrue(output.contains("[eat](#eat)([String](https"));
         assertTrue(output.contains("param2doc"));
@@ -335,9 +370,9 @@ class TypeWriterTests {
     @Test
     void outputMethodDetails() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", pkg);
-        TypeNode returnType = new AnnotationTypeNode("java.lang.String", "String", pkg);
-        MethodNode methodNode = new MethodNode(returnType, "eat");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+        MethodNode methodNode = new MethodNode("java.lang.String", "eat");
 
         Reference thrownRef = Reference.to("scenario.food.berry.Thrown")
                 .withKind(Reference.Kind.TYPE)
@@ -345,8 +380,10 @@ class TypeWriterTests {
         Reference specifiedByRef = Reference.to("scenario.food.berry.Specified")
                 .withKind(Reference.Kind.TYPE)
                 .withLabel("scenario.food.berry.Specified");
-        ClassTypeNode specifiedByType = new ClassTypeNode("scenario.food.berry.Specified", "Specified", pkg);
-        ClassTypeNode thrownType = new ClassTypeNode("scenario.food.berry.Thrown", "Thrown", pkg);
+        ClassTypeNode specifiedByType = new ClassTypeNode("scenario.food.berry.Specified", "Specified", 
+                pkg.getQualifiedName());
+        ClassTypeNode thrownType = new ClassTypeNode("scenario.food.berry.Thrown", "Thrown", 
+                pkg.getQualifiedName());
         
         methodNode.setReturnDescription(Text.empty().append("returnDescription"));
         methodNode.setSpecifiedBy(specifiedByRef);
@@ -360,16 +397,17 @@ class TypeWriterTests {
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
-        api.addClass(typeNode);
-        pkg.addClass(typeNode);
-        api.addClass(specifiedByType);
-        api.addClass(thrownType);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        api.addType(specifiedByType);
+        api.addType(thrownType);
         LinkResolver.init(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
 
         LinkResolver.addNativeModules();
         LinkFormatter.generateLinkTexts(api, ctx);
 
-        typeWriter.writeDoc(typeNode);
+        typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
         assertTrue(output.contains("returnDescription"));
         assertTrue(output.contains("Specified.md"));

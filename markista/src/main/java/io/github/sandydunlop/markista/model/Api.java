@@ -103,9 +103,9 @@ public class Api extends PackageOrTypeNode {
     /// @param qualifiedName the fully qualified name of the package.
     /// @return the matching PackageNode if found, or null otherwise.
     public PackageNode getPackageNode(String qualifiedName) {
-        for (PackageNode packageDoc : packages) {
-            if (packageDoc.getName().equals(qualifiedName)){
-                return packageDoc;
+        for (PackageNode packageNode : packages) {
+            if (packageNode.getQualifiedName().equals(qualifiedName)){
+                return packageNode;
             }
         }
         return null;
@@ -116,19 +116,19 @@ public class Api extends PackageOrTypeNode {
     /// @return the matching TypeNode if found, or null otherwise.
     public TypeNode getTypeNode(String qualifiedName) {
         if (types == null) return null;
-        for (TypeNode typeNode : types) {
+        for (TypeView typeNode : types) {
             if (typeNode.getQualifiedName().equals(qualifiedName)){
-                return typeNode;
+                return (TypeNode)typeNode;
             }
         }
         return null;
     }
 
-    /// Sorts the packages in descending order by qualified name and sorts all child types recursively.
+    /// Sorts the types in descending order by qualified name and sorts all child types recursively.
     @Override
     public void sort() {
-        packages.sort((o1, o2) -> o2.getName().compareTo(o1.getName()));
-        for (TypeNode node : getTypes()) {
+        packages.sort((o1, o2) -> o2.getQualifiedName().compareTo(o1.getQualifiedName()));
+        for (TypeView node : getTypes()) {
             node.sort();
         }
     }
@@ -142,9 +142,9 @@ public class Api extends PackageOrTypeNode {
     public String commonBase() {
         if (packages.isEmpty()) return "";
         int lastDot = 0;
-        String base = packages.getFirst().getName();
+        String base = packages.getFirst().getQualifiedName();
         for (PackageNode pkg : packages) {
-            String pkgName = pkg.getName();
+            String pkgName = pkg.getQualifiedName();
             for (int j=0; j<Math.min(base.length(), pkgName.length()); j++) {
                 if (base.charAt(j) != pkgName.charAt(j)) {
                     base = base.substring(0, lastDot);

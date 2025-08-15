@@ -1,12 +1,17 @@
 package io.github.sandydunlop.markista.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /// Represents a directive within a module declaration, such as requires, exports, or provides.
 /// Tracks the kind of directive, its name, whether it is transitive, associated packages,
 /// implementations, and related interface information.
-public class DirectiveNode {
+public class DirectiveNode implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /// The kind of this directive (e.g. REQUIRES, EXPORTS).
     private final Kind kind;
 

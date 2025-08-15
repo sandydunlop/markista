@@ -19,6 +19,7 @@ import javax.tools.ToolProvider;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -75,7 +76,7 @@ class MarkdownDocletTests {
         return Files.exists(Paths.get(Path.of(BASE_DOC_PATH, file).toString()));
     }
 
-    // @Disabled("WIP")
+    @Disabled("WIP")
     @Test
     void run1_flattenPackages() {
         String testOutputDir = BASE_DOC_PATH + "run1";

@@ -12,7 +12,7 @@ public class MethodNode extends AbstractPackageMember {
     private Reference specifiedBy;
 
     /// The return type of this method.
-    private final TypeNode returnType;
+    private final String returnTypeName;
 
     /// Information about the method that this method overrides, if any.
     private OverriddenMethodNode overrides = null;
@@ -24,15 +24,15 @@ public class MethodNode extends AbstractPackageMember {
     private final List<Reference> thrownTypes = new ArrayList<>();
 
     /// The type (class/interface) that owns this method.
-    private TypeNode owner = null;
+    private String ownerName = null;
 
     private Text returnTypeText = Text.empty();
 
     /// Constructs a MethodNode with the specified return type and method name.
     /// @param returnType the return type of the method.
     /// @param name       the simple name of the method.
-    public MethodNode(TypeNode returnType, String name) {
-        this.returnType = returnType;
+    public MethodNode(String returnType, String name) {
+        this.returnTypeName = returnType;
         this.simpleName = name;
     }
 
@@ -50,8 +50,8 @@ public class MethodNode extends AbstractPackageMember {
 
     /// Returns the return type of this method.
     /// @return the TypeNode representing the return type.
-    public TypeNode getReturnType() {
-        return returnType;
+    public String getReturnTypeName() {
+        return returnTypeName;
     }
 
     /// Adds a parameter to this method.
@@ -79,15 +79,15 @@ public class MethodNode extends AbstractPackageMember {
     }
 
     /// Sets the owning type (class/interface) of this method.
-    /// @param owner the TypeNode representing the owner.
-    public void setOwner(TypeNode owner) {
-        this.owner = owner;
+    /// @param owner the name of the TypeNode representing the owner.
+    public void setOwnerName(String owner) {
+        this.ownerName = owner;
     }
 
     /// Returns the owning type of this method.
-    /// @return the TypeNode representing the owner.
-    public TypeNode getOwner() {
-        return owner;
+    /// @return the name of the TypeNode representing the owner.
+    public String getOwnerName() {
+        return ownerName;
     }
 
     /// Sets the interface or specification name this method is specified by.
@@ -131,15 +131,15 @@ public class MethodNode extends AbstractPackageMember {
     /// @return the method signature as a String.
     public String signature(){
         StringBuilder sb = new StringBuilder();
-        sb.append(returnType.qualifiedName);
+        sb.append(returnTypeName);
         sb.append(" ");
         sb.append(simpleName);
         sb.append("(");
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(", ");
-            String typeName = param.getType().qualifiedName;
-            if (typeName == null) typeName = param.getType().simpleName;
+            String typeName = param.getTypeName();
+            if (typeName == null) typeName = param.getTypeName();
             sb.append(typeName);
         }
         sb.append(")");

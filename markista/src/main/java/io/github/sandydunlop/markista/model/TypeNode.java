@@ -1,18 +1,16 @@
 package io.github.sandydunlop.markista.model;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-
 /// Represents a type in the API model, including its kind (class, interface, enum, annotation),
 /// supertypes, implemented interfaces, constructors, methods, fields, ownership, and relevant metadata.
-public class TypeNode extends PackageOrTypeNode {
+public class TypeNode extends PackageOrTypeNode implements TypeView {
 
-    protected Path sourcePath;
+    protected String sourcePath;
 
     /// The owner of this type, usually another type or module.
-    private PackageOrTypeNode owner = null;
+    private String owner = "";
 
     private Reference enclosingClassRef = null;
 
@@ -47,18 +45,33 @@ public class TypeNode extends PackageOrTypeNode {
     /// Constructs a TypeNode with the specified qualified name, simple name, and package.
     /// @param qualifiedName the fully qualified name of this type.
     /// @param simpleName the simple name of this type.
-    /// @param packageNode the PackageNode that contains this type.
-    public TypeNode(String qualifiedName, String simpleName, PackageNode packageNode) {
+    /// @param packageName the name of the package that contains this type.
+    public TypeNode(String qualifiedName, String simpleName, String packageName) {
         this.qualifiedName = qualifiedName;
         this.simpleName = simpleName;
-        this.packageNode = packageNode;
+        this.packageName = packageName;
     }
 
-    public void setSourcePath(Path path) {
+    @Override
+    public boolean isClass() { return kind == Kind.CLASS; }
+
+    @Override
+    public boolean isInterface() { return kind == Kind.INTERFACE; }
+    
+    @Override
+    public boolean isEnum() { return kind == Kind.ENUM; }
+    
+    @Override
+    public boolean isAnnotation() { return kind == Kind.ANNOTATION; }
+
+    @Override
+    public String getKindName() { return kind.toString(); }
+
+    public void setSourcePath(String path) {
         this.sourcePath = path;
     }
 
-    public Path getSourcePath() {
+    public String getSourcePath() {
         return sourcePath;
     }
 
@@ -106,27 +119,20 @@ public class TypeNode extends PackageOrTypeNode {
 
     /// Sets the owner of this type.
     /// @param owner the TypeOwner that owns this type.
-    public void setOwner(PackageOrTypeNode owner) {
+    public void setOwner(String owner) {
         this.owner = owner;
     }
 
     /// Returns the owner of this type.
     /// @return the TypeOwner that owns this type.
-    public PackageOrTypeNode getOwner() {
+    public String getOwner() {
         return owner;
     }
 
     /// Returns the package name for this type.
     /// @return qualified package name, or null if no package node.
     public String getPackageName() {
-        if (packageNode == null) return null;
-        return packageNode.getName();
-    }
-
-    /// Returns the package node this type belongs to.
-    /// @return the PackageNode instance.
-    public PackageNode getPackage() {
-        return packageNode;
+        return packageName;
     }
 
     /// Sets the kind (class, interface, enum, annotation) of this type.

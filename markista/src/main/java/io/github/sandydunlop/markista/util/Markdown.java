@@ -2,11 +2,11 @@ package io.github.sandydunlop.markista.util;
 
 import java.util.List;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.util.MarkdownParser.TokenKind;
 
 /// A utility class for producing Markdown formatted text and resolving
 /// Markdown links to point to the correct file, directory, or web page.
@@ -15,10 +15,14 @@ public class Markdown {
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
-    private static final Context ctx = Context.getInstance();
+    private static Context ctx = Context.getInstance();
 
     private Markdown() {
         // This hides the public constructor
+    }
+
+    public static void setContext(Context c) {
+        ctx = c;
     }
 
     /// Formats the signature of a method as markdown.
@@ -41,7 +45,6 @@ public class Markdown {
             if (paramCount++ > 0) sb.append(", ");
             String typeName = formatText(param.getTypeText());
             sb.append(typeName);
-            sb.append(param.getType().getArrayBrackets());
             sb.append(" ");
             sb.append(param.getSimpleName()); 
         }
@@ -86,37 +89,6 @@ public class Markdown {
             segment.getLink().setLabel(segment.getText());
         }
         return mdRefLink(segment.getLink());
-    }
-
-    /// Resolves markdown formatted links to point to the correct directory and page.
-    /// @param markdown Markdown formatted text containing links
-    /// @return markdown formatted text with resolved links
-    public static String resolveMarkdownLinks(String markdown) {
-        StringBuilder sb = new StringBuilder();
-        MarkdownParser parser = new MarkdownParser(markdown);
-        MarkdownParser.Token segment = parser.firstToken();
-        while (segment.getKind() != MarkdownParser.TokenKind.END) {
-            if (segment.getKind() == MarkdownParser.TokenKind.BRACKETS_TAG) {
-                MarkdownParser.Token next = segment.getNext();
-                if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
-                    Reference ref = Reference.to(next.getText());
-                    ref.setLabel(segment.getText());
-                    String link = link(ref, false);
-                    if (link.isEmpty()) {
-                        sb.append(next.getText());
-                    } else {
-                        sb.append(link);
-                    }
-                    segment = next;
-                } else {
-                    sb.append(link(Reference.to(segment.getText()), false));
-                }
-            } else if (segment.getKind() == TokenKind.TEXT) {
-                sb.append(segment.getText());
-            }
-            segment = segment.getNext();
-        }
-        return sb.toString();
     }
 
     /// Create a markdown formatted link

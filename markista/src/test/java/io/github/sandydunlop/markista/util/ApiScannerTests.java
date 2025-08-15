@@ -18,6 +18,8 @@ import java.util.Set;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
@@ -195,7 +197,7 @@ class ApiScannerTests {
         // Mock TypeUtils static behavior
         TypeNode typeNode = mock(TypeNode.class);
         PackageNode pkg = mock(PackageNode.class);
-        when(typeNode.getPackage()).thenReturn(pkg);
+        when(typeNode.getPackageName()).thenReturn(pkg.getQualifiedName());
         when(pkg.getSourcePath()).thenReturn(null);
 
         try (MockedStatic<TypeUtils> t = Mockito.mockStatic(TypeUtils.class)) {
@@ -215,10 +217,10 @@ class ApiScannerTests {
             t.verify(() -> TypeUtils.nodeFromElement(typeEl));
 
             // Verify the type node had its source path set to the JFO uri path
-            verify(typeNode).setSourcePath(Path.of(uri));
+            verify(typeNode).setSourcePath(uri.toString());
 
             // Because pkg.getSourcePath returned null, package.setSourcePath should be called with parent path
-            verify(pkg).setSourcePath(Path.of(uri).getParent());
+            verify(pkg).setSourcePath(Path.of(uri).getParent().toString());
         }
     }
 
@@ -334,7 +336,7 @@ class ApiScannerTests {
             // The added package should be associated with the current module (unnamed module initially)
             ModuleNode unnamed = api.getUnnamedModuleNode();
             boolean found = unnamed.getPackages().stream()
-                    .anyMatch(p -> "com.example".equals(((PackageNode) p).getName()));
+                    .anyMatch(p -> "com.example".equals(((PackageNode) p).getQualifiedName()));
             assertTrue(found, "Unnamed module should contain the added package");
         }
     }
@@ -346,9 +348,9 @@ class ApiScannerTests {
 
         // Create a mocked PackageNode and attach to unnamed module packages deque
         PackageNode pkg = mock(PackageNode.class);
-        when(pkg.getName()).thenReturn("com.example");
+        when(pkg.getQualifiedName()).thenReturn("com.example");
         Path srcPath = Path.of("root", "src", "com", "example");
-        when(pkg.getSourcePath()).thenReturn(srcPath);
+        when(pkg.getSourcePath()).thenReturn(srcPath.toString());
 
         // Add to unnamed module packages (LinkedList or similar)
         unnamed.getPackages().add(pkg);
@@ -360,11 +362,10 @@ class ApiScannerTests {
 
         // Expected root computed by replacing nameAsPath in the source path string
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
-        String nameAsPath = pkg.getName().replace(".", separator);
-        String expectedRootStr = pkg.getSourcePath().toString().replace(nameAsPath, "");
-        Path expected = Path.of(expectedRootStr);
+        String nameAsPath = pkg.getQualifiedName().replace(".", separator);
+        String expectedRootStr = pkg.getSourcePath().replace(nameAsPath, "");
 
-        assertEquals(expected, unnamed.getSourcePath(), "Unnamed module sourcePath should be computed from package source path");
+        assertEquals(expectedRootStr, unnamed.getSourcePath(), "Unnamed module sourcePath should be computed from package source path");
     }
 
     @Test
@@ -421,7 +422,7 @@ class ApiScannerTests {
         try (MockedStatic<TypeUtils> t = Mockito.mockStatic(TypeUtils.class)) {
             t.when(() -> TypeUtils.init(any(), eq(env))).thenAnswer(_ -> null);
             t.when(() -> TypeUtils.addConstantFieldValuesReference(any())).thenAnswer(_ -> null);
-            t.when(() -> TypeUtils.markCustomAnnotations()).thenAnswer(_ -> null);
+            t.verify(TypeUtils::markCustomAnnotations, times(1));
 
             Api resultApi = scanner.scan(elements);
 
@@ -431,3 +432,5 @@ class ApiScannerTests {
         }
     }
 }
+
+

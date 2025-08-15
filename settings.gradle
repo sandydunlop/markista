@@ -1,3 +1,4 @@
 rootProject.name = 'Markista'
 
 include('markista')
+include('docagrams')

@@ -1,10 +1,11 @@
 package io.github.sandydunlop.markista.doclet;
  
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.ModuleWriter;
 import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.spi.DocService;
 import io.github.sandydunlop.markista.util.ApiScanner;
-import io.github.sandydunlop.markista.util.Configuration;
-import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.LinkFormatter;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.ModuleDirectives;
@@ -12,11 +13,7 @@ import io.github.sandydunlop.markista.util.ModuleDirectives;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 import javax.lang.model.SourceVersion;
 import javax.tools.DocumentationTool;
@@ -88,8 +85,8 @@ public class MarkdownDoclet implements Doclet {
                 "--flatten-packages",
                 "-sourcepath", "markista/src/main/java/",
                 "-subpackages", "io.github.sandydunlop.markista",
-                "-tabs",
-                "-verbose"
+                "-tabs"
+//                "-verbose"
             };
         }
         DocumentationTool docTool = ToolProvider.getSystemDocumentationTool();
@@ -312,6 +309,7 @@ public class MarkdownDoclet implements Doclet {
         ApiScanner scanner = new ApiScanner(environment);
         Api api = scanner.scan(environment.getIncludedElements());
         ctx.setApi(api);
+        LinkResolver.setFlattenedDirectories(ctx.getFlattenedDirectories());
         LinkResolver.init(api, ctx);
         if (Configuration.getCreateExternalLinks()) {
             LinkResolver.addNativeModules();
@@ -323,6 +321,12 @@ public class MarkdownDoclet implements Doclet {
         ModuleWriter writer = new ModuleWriter();
         try{
             writer.writeDocs(api);
+
+            // Run any modules providing a DocService implementation
+            ServiceLoader<DocService> loader = ServiceLoader.load(DocService.class);
+            for (DocService docServiceImplementation : loader) {
+                docServiceImplementation.run(api, ctx);
+            }
         } catch (IOException ex) {
             ctx.reportError(ex.getMessage() + "\n" + Arrays.toString(ex.getStackTrace()));
             return FAILED;

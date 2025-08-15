@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.core;
 
 import java.util.ArrayList;
 import java.util.Arrays;

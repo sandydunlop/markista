@@ -1,8 +1,13 @@
 package io.github.sandydunlop.markista.model;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Pair<L,R> {
+public class Pair<L extends Serializable,R extends Serializable> implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private L l;
     private R r;
 
@@ -43,7 +48,7 @@ public class Pair<L,R> {
         else return l.hashCode() * 17 + r.hashCode();
     }
 
-    public static <A,B> Pair<A,B> of(A a, B b) {
+    public static <A extends Serializable,B extends Serializable> Pair<A,B> of(A a, B b) {
         return new Pair<>(a,b);
     }
 }

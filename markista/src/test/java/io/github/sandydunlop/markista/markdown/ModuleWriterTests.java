@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.*;
-import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import jdk.javadoc.doclet.Reporter;
 
@@ -144,12 +144,15 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleProvidesDirectives_WritesTableForProvides() throws IOException {
-        InterfaceTypeNode interface0 = new InterfaceTypeNode("com.example.package.Interface", "Interface", pkg);
-        InterfaceTypeNode interface1 = new InterfaceTypeNode("com.example.package.Impl1", "Impl1", pkg);
-        InterfaceTypeNode interface2 = new InterfaceTypeNode("com.example.package.Impl2", "Impl2", pkg);
-        api.addInterface(interface0);
-        api.addInterface(interface1);
-        api.addInterface(interface2);
+        InterfaceTypeNode interface0 = new InterfaceTypeNode("com.example.package.Interface", "Interface", 
+                pkg.getQualifiedName());
+        InterfaceTypeNode interface1 = new InterfaceTypeNode("com.example.package.Impl1", "Impl1",
+                pkg.getQualifiedName());
+        InterfaceTypeNode interface2 = new InterfaceTypeNode("com.example.package.Impl2", "Impl2",
+                pkg.getQualifiedName());
+        api.addType(interface0);
+        api.addType(interface1);
+        api.addType(interface2);
 
         Reference ref = Reference.to("com.example.package.Interface");
         ref.setKind(Reference.Kind.TYPE);

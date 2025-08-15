@@ -41,4 +41,8 @@
   "testing.alwaysRevealTestOnStateChange": true,
   "testing.coverageToolbarEnabled": true,
   "markiscodecoverage.enableDecorations": true,
+  "java.project.sourcePaths": [
+    "docagrams/src/main/java"
+  ],
+  
 }

@@ -9,6 +9,7 @@ import java.io.IOException;
 
 import com.sun.source.util.DocTreePath;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.EnumTypeNode;
@@ -17,8 +18,6 @@ import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.util.Context;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import jdk.javadoc.doclet.Reporter;
 
@@ -81,8 +80,7 @@ class PackageWriterTests {
         packageNode = new PackageNode("io.github.sandydunlop.markista");
         PackageNode modelPackage = new PackageNode("io.github.sandydunlop.markista.model");
 
-        TypeNode returnType = new TypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
-        MethodNode methodNode = new MethodNode(returnType, "method");
+        MethodNode methodNode = new MethodNode("io.github.sandydunlop.markista.model.Node", "method");
         Text body = Text.empty();
         body.append(Text.Segment.empty()
                 .setKind(Text.SegmentKind.TEXT)
@@ -92,21 +90,22 @@ class PackageWriterTests {
         methodNode.setFirstSentence(body);
 
 
-        ClassTypeNode nodeClass = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", packageNode);
+        ClassTypeNode nodeClass = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", 
+                packageNode.getQualifiedName());
         nodeClass.setBody(body);
         nodeClass.setFullBody(body);
         nodeClass.setFirstSentence(body);
         nodeClass.addMethod(methodNode);
 
 
-        EnumTypeNode enumNode = new EnumTypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", packageNode);
-        TypeNode fieldType = new TypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", packageNode);
-        FieldNode constant1 = new FieldNode(fieldType, "field1");
+        EnumTypeNode enumNode = new EnumTypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", 
+                packageNode.getQualifiedName());
+        FieldNode constant1 = new FieldNode("io.github.sandydunlop.markista.model.TestEnum", "field1");
         constant1.setConstantValue("1");
         enumNode.addConstant(constant1);
 
-        modelPackage.addEnum(enumNode);
-        modelPackage.addClass(nodeClass);
+        modelPackage.addType(enumNode);
+        modelPackage.addType(nodeClass);
         packageNode.addPackage(modelPackage);
         moduleNode.addPackage(packageNode);
         moduleNode.addPackage(modelPackage);
@@ -115,8 +114,8 @@ class PackageWriterTests {
         api.addModule(moduleNode);
         api.addPackage(packageNode);
         api.addPackage(modelPackage);
-        api.addClass(nodeClass);
-        api.addEnum(enumNode);
+        api.addType(nodeClass);
+        api.addType(enumNode);
 		LinkResolver.init(api, ctx);
 		LinkResolver.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");

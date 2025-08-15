@@ -2,6 +2,8 @@ package io.github.sandydunlop.markista.util;
 
 import com.sun.source.util.DocTreePath;
 
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
@@ -108,9 +110,12 @@ class LinkResolverTests {
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver","LinkResolver", util));
-		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet));
-		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", doclet));
+		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver",
+                "LinkResolver", util.getQualifiedName()));
+		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+                "MarkdownDoclet", doclet.getQualifiedName()));
+		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option",
+                "MarkdownDoclet.Option", doclet.getQualifiedName()));
 
         module = new ModuleNode("markista");
 		api.addModule(module);
@@ -118,17 +123,19 @@ class LinkResolverTests {
 		module.addPackage(util);
 		module.addPackage(doclet);
 		module.addPackage(model);
-		markista.setModule(module);
-		util.setModule(module);
-		doclet.setModule(module);
-		model.setModule(module);
+		markista.setModuleName(module.getName());
+		util.setModuleName(module.getName());
+		doclet.setModuleName(module.getName());
+		model.setModuleName(module.getName());
 
-        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", model);
-        model.addClass(node);
-        api.addClass(node);
+        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
+                "Node", model.getQualifiedName());
+        model.addType(node);
+        api.addType(node);
 
-        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
-        model.addClass(markdownDoclet);
+        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", 
+                "MarkdownDoclet", doclet.getQualifiedName());
+        model.addType(markdownDoclet);
 
 		LinkResolver.init(api, ctx);
         LinkResolver.addNativeModuleUrl("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");

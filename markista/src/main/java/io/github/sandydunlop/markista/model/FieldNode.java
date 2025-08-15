@@ -13,7 +13,7 @@ public class FieldNode extends ParamNode {
     /// Constructs a FieldNode with the given type and name.
     /// @param type The type of the field.
     /// @param name The simple name of the field.
-    public FieldNode(TypeNode type, String name) {
+    public FieldNode(String type, String name) {
         super(type, name);
     }
 

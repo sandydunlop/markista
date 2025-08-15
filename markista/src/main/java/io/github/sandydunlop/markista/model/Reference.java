@@ -1,7 +1,13 @@
 package io.github.sandydunlop.markista.model;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 /// `Reference` encapsulates links to web pages, markdown pages, modules, packages, types, and methods.
-public class Reference {
+public class Reference implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     private Kind kind = Kind.UNKNOWN;
     private Scope scope = Scope.UNKNOWN;
     private String label = "";

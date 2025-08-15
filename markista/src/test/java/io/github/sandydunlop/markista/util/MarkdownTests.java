@@ -2,6 +2,7 @@ package io.github.sandydunlop.markista.util;
 
 import com.sun.source.util.DocTreePath;
 
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
@@ -10,7 +11,6 @@ import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import jdk.javadoc.doclet.Reporter;
 
@@ -77,9 +77,12 @@ class MarkdownTests {
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver","LinkResolver", util));
-		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", doclet));
-		api.addClass(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", doclet));
+		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver",
+                "LinkResolver", util.getQualifiedName()));
+		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+                "MarkdownDoclet", doclet.getQualifiedName()));
+		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option",
+                "MarkdownDoclet.Option", doclet.getQualifiedName()));
 
         module = new ModuleNode("markista");
 		api.addModule(module);
@@ -87,17 +90,19 @@ class MarkdownTests {
 		module.addPackage(util);
 		module.addPackage(doclet);
 		module.addPackage(model);
-		markista.setModule(module);
-		util.setModule(module);
-		doclet.setModule(module);
-		model.setModule(module);
+		markista.setModuleName(module.getName());
+		util.setModuleName(module.getName());
+		doclet.setModuleName(module.getName());
+		model.setModuleName(module.getName());
 
-        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", model);
-        model.addClass(node);
-        api.addClass(node);
+        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
+                "Node", model.getQualifiedName());
+        model.addType(node);
+        api.addType(node);
 
-        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", "MarkdownDoclet", doclet);
-        model.addClass(markdownDoclet);
+        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", 
+                "MarkdownDoclet", doclet.getQualifiedName());
+        model.addType(markdownDoclet);
 
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
@@ -109,14 +114,13 @@ class MarkdownTests {
     @Test
     void formatParams() {
         List<ParamNode> params = new ArrayList<>();
-        TypeNode param1type = new TypeNode("java.lang.String", "String", model);
-        ParamNode param1 = new ParamNode(param1type, "name");
+        ParamNode param1 = new ParamNode("java.lang.String", "name");
         params.add(param1);
 
-        MethodNode method = new MethodNode(node, "subject");
+        MethodNode method = new MethodNode(node.getQualifiedName(), "subject");
         method.addParam(param1);
         markdownDoclet.addMethod(method);
-        api.addClass(markdownDoclet);
+        api.addType(markdownDoclet);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
         LinkFormatter.generateLinkTexts(api, ctx);
@@ -167,11 +171,10 @@ class MarkdownTests {
 
     @Test
     void fullSignature() {
-        MethodNode method = new MethodNode(node, "subject");
-        TypeNode param1type = new TypeNode("java.lang.String", "String", model);
-        method.addParam(new ParamNode(param1type, "name"));
+        MethodNode method = new MethodNode(node.getQualifiedName(), "subject");
+        method.addParam(new ParamNode("java.lang.String", "name"));
         markdownDoclet.addMethod(method);
-        api.addClass(markdownDoclet);
+        api.addType(markdownDoclet);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
         LinkFormatter.generateLinkTexts(api, ctx);

@@ -171,12 +171,6 @@ public class MarkdownParser {
             kind = k;
         }
 
-        /// Sets the token kind.
-        /// @param k The token kind to set.
-        public void setKind(TokenKind k) {
-            kind = k;
-        }
-
         /// Returns the token kind.
         /// @return The token kind.
         public TokenKind getKind() {

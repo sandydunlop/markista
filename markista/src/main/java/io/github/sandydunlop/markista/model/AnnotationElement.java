@@ -5,11 +5,11 @@ public class AnnotationElement extends ParamNode {
     private final String value;
 
     /// Constructs an annotation element
-    /// @param type The type of the annotation element
+    /// @param typeName The type of the annotation element
     /// @param name The name of the annotation element
     /// @param value The value of the annotation element
-    public AnnotationElement(TypeNode type, String name, String value) {
-        super(type, name);
+    public AnnotationElement(String typeName, String name, String value) {
+        super(typeName, name);
         this.value = value;
     }
 

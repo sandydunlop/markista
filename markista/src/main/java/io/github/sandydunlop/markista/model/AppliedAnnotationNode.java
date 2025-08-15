@@ -7,7 +7,7 @@ import java.util.List;
 public class AppliedAnnotationNode extends Node {
     private boolean custom = false;
     private boolean documented = false;
-    private TypeNode type;
+    private String typeName;
     private final List<AnnotationElement> elements = new ArrayList<>();
 
     /// Constructs an AppliedAnnotationNode
@@ -17,8 +17,8 @@ public class AppliedAnnotationNode extends Node {
 
     /// Constructs an AppliedAnnotationNode with the given type
     /// @param type The type of this annotation
-    public AppliedAnnotationNode(TypeNode type) {
-        this.type = type;
+    public AppliedAnnotationNode(String type) {
+        this.typeName = type;
     }
 
 
@@ -51,15 +51,15 @@ public class AppliedAnnotationNode extends Node {
     }
 
     /// Returns the type of this annotation.
-    /// @return The TypeNode representing the annotation's type.
-    public TypeNode getType() {
-        return type;
+    /// @return The name of the annotation's type.
+    public String getTypeName() {
+        return typeName;
     }
 
     /// Sets the type of this annotation.
-    /// @param type The TypeNode to set as this annotation's type.
-    public void setType(TypeNode type) {
-        this.type = type;
+    /// @param type The name to set as this annotation's type.
+    public void setTypeName(String type) {
+        this.typeName = type;
     }
 
     /// Adds an element to this annotation
