@@ -20,5 +20,6 @@ module markista {
     opens io.github.sandydunlop.markista.doclet;
     opens io.github.sandydunlop.markista.markdown;
     opens io.github.sandydunlop.markista.model;
+    opens io.github.sandydunlop.markista.spi;
     opens io.github.sandydunlop.markista.util;
 }

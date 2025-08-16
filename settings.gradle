@@ -1,4 +1,3 @@
 rootProject.name = 'Markista'
 
-include('markista')
-include('docagrams')
+include(':markista')

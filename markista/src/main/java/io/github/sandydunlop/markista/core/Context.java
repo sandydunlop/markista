@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.file.Path;
 
 import javax.tools.Diagnostic;
 
@@ -292,14 +293,16 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
 
     File createModuleFilePath(String fileName) {
         if (outputDirectory.isEmpty()) outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
-        File containingDir;
+        Path path;
         if (Configuration.getFlattenModules()) {
-            containingDir = new File(outputDirectory);
+            path = Path.of(outputDirectory);
         } else {
-            containingDir = new File(outputDirectory, moduleName);
+            path = Path.of(outputDirectory, moduleName);
         }
+        path = path.resolve(fileName);
+        File containingDir = path.getParent().toFile();
         if (!containingDir.exists()) containingDir.mkdirs();
-        return new File(containingDir, fileName);
+        return path.toFile();
     }
 
     /// Helper method that creates a Writer for a file inside the specified directory.

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"java.configuration.updateBuildConfiguration": "automatic",
+		"java.debug.settings.onBuildFailureProceed": true,
+		"testing.alwaysRevealTestOnStateChange": true,
+		"testing.coverageToolbarEnabled": true,
+	}
+}

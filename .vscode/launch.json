@@ -7,7 +7,7 @@
         
         {
             "type": "java",
-            "name": "Javadoc",
+            "name": "Markista",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista"
@@ -15,20 +15,28 @@
 
         {
             "type": "java",
-            "name": "Javadoc - Markista",
+            "name": "Markista - Options",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
             "args": ["-options", "javadoc.options"],
-            "modulePath": [
-                "path/to/your/service-api.jar",
-                "path/to/your/service-impl.jar"
+        },
+        {
+            "type": "java",
+            "name": "Markista - DocService",
+            "request": "launch",
+            "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
+            "projectName": "markista",
+            "args": ["-options", "javadoc.options"],
+            "modulePaths": [
+                "${workspaceFolder}/markista/build/classes/java/main",
+                "${workspaceFolder}/../markista.docagrams/markista.docagrams/build/libs/markista.docagrams.jar"
             ]
         },
 
         {
             "type": "java",
-            "name": "Javadoc - Module",
+            "name": "Marksita - Module",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
@@ -37,7 +45,7 @@
 
         {
             "type": "java",
-            "name": "Javadoc - Example - module",
+            "name": "Example - module",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
@@ -46,7 +54,7 @@
 
         {
             "type": "java",
-            "name": "Javadoc - Example - no module-info",
+            "name": "Example - no module-info",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
@@ -55,7 +63,7 @@
 
         {
             "type": "java",
-            "name": "Javadoc - Example - no package-info",
+            "name": "Example - no package-info",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
@@ -64,7 +72,7 @@
 
         {
             "type": "java",
-            "name": "Javadoc - Food Example",
+            "name": "Food Example",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
@@ -73,7 +81,7 @@
 
         {
             "type": "java",
-            "name": "Javadoc - Consumer",
+            "name": "Consumer",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",
@@ -82,7 +90,7 @@
 
         {
             "type": "java",
-            "name": "Javadoc - Food",
+            "name": "Food",
             "request": "launch",
             "mainClass": "markista/io.github.sandydunlop.markista.doclet.MarkdownDoclet",
             "projectName": "markista",

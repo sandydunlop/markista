@@ -101,7 +101,6 @@ class MarkdownDocletTests {
         assertTrue(docFileExists("run1/markista/doclet/index.md"));
     }
 
-    // @Disabled("WIP")
     @Test
     void run2_noFlatten() {
         String testOutputDir = BASE_DOC_PATH + "run2";

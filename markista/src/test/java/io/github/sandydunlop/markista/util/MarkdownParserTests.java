@@ -3,6 +3,7 @@ package io.github.sandydunlop.markista.util;
 import com.sun.source.util.DocTreePath;
 
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.core.Context;
 import jdk.javadoc.doclet.Reporter;
 
 import javax.lang.model.element.Element;

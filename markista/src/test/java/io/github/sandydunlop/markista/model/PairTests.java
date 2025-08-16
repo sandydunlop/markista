@@ -15,13 +15,13 @@ class PairTests {
     void whenSerializingAndDeserializing_ThenObjectIsTheSame() throws IOException, ClassNotFoundException { 
         Pair<String,String> pair = Pair.of("One","Two");
         
-        FileOutputStream fileOutputStream = new FileOutputStream("yourfile.txt");
+        FileOutputStream fileOutputStream = new FileOutputStream("build/yourfile.txt");
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
         objectOutputStream.writeObject(pair);
         objectOutputStream.flush();
         objectOutputStream.close();
         
-        FileInputStream fileInputStream = new FileInputStream("yourfile.txt");
+        FileInputStream fileInputStream = new FileInputStream("build/yourfile.txt");
         ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
         Pair<String, String> p2 = (Pair<String, String>) objectInputStream.readObject();
         objectInputStream.close(); 

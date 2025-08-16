@@ -10,6 +10,7 @@ import java.util.List;
 import com.sun.source.util.DocTreePath;
 
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 
 import jdk.javadoc.doclet.DocletEnvironment;

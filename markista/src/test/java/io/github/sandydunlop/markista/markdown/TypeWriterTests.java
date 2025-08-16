@@ -1,6 +1,7 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.*;
 import io.github.sandydunlop.markista.util.LinkFormatter;
 import io.github.sandydunlop.markista.util.LinkResolver;
