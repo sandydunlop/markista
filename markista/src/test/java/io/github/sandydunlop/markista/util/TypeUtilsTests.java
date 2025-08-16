@@ -16,13 +16,11 @@ import java.util.Set;
 
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.DocTreeVisitor;
 import com.sun.source.doctree.SeeTree;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import com.sun.source.doctree.StartElementTree;
 
-import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.Api;

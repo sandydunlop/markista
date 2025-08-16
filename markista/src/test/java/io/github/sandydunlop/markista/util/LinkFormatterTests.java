@@ -15,7 +15,6 @@ import com.sun.source.util.DocTreePath;
 
 import jdk.javadoc.doclet.Reporter;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
