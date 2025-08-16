@@ -262,7 +262,7 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         StringBuilder mods = new StringBuilder();
         List<Modifier> modifierList = ModifierSorter.sortModifiers(getModifiers());
         for (Modifier mod : modifierList) {
-            if (kind != Kind.ANNOTATION || mod != Modifier.ABSTRACT) {
+            if ((kind != Kind.ANNOTATION && kind != Kind.INTERFACE) || mod != Modifier.ABSTRACT) {
                 mods.append(mod.toString()).append(" ");
             }
         }

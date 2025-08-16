@@ -165,7 +165,7 @@ public class TypeWriter {
     /// @param typeNode the type being documented
     private void outputDeclaration(TypeNode typeNode) throws IOException {
         writer.write("<span style=\"font-family: monospace;\">");
-        String typeString = typeNode.getKind().toString();
+        String typeString = typeNode.getKind().toString().toLowerCase();
         if (typeNode.getKind() == TypeNode.Kind.ANNOTATION) { 
             typeString = "@interface";
         }
