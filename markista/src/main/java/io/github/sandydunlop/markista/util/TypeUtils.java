@@ -253,7 +253,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             FieldNode fieldNode = typeNode.getField(simpleName);
             if (fieldNode == null) {
                 fieldNode = new FieldNode(element.asType().toString(), simpleName);
-                typeNode.getFields().add(fieldNode);
+                typeNode.addField(fieldNode);
                 fieldNode.setConstantValue((Serializable) element.getConstantValue());
                 DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
                 TypeUtils.setDocumentation(fieldNode, element);

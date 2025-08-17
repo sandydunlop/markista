@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
 import org.junit.jupiter.api.Test;
 
@@ -23,10 +24,15 @@ class PairTests {
         
         FileInputStream fileInputStream = new FileInputStream("build/yourfile.txt");
         ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-        Pair<String, String> p2 = (Pair<String, String>) objectInputStream.readObject();
+        Pair<String, String> p2 = safeCast(objectInputStream.readObject());
         objectInputStream.close(); 
     
         assertEquals(p2.getL(), pair.getL());
         assertEquals(p2.getR(), pair.getR());
+    }
+
+    @SuppressWarnings("unchecked")
+    private <L extends Serializable, R extends Serializable> Pair<L, R> safeCast(Object obj) {
+        return (Pair<L, R>) obj;
     }
 }

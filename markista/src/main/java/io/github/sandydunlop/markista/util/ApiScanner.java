@@ -36,6 +36,7 @@ import jdk.javadoc.doclet.DocletEnvironment;
 /// This class extends ElementScanner9 so it can visit elements in source order and
 /// recursively walk nested elements. The scanner keeps track of the current ModuleNode
 /// being populated and updates the Api instance as elements are encountered. 
+@java.lang.SuppressWarnings("squid:S5042") // There is no way around this.
 public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// The shared Context singleton providing logging and configuration access.
     private final Context ctx;

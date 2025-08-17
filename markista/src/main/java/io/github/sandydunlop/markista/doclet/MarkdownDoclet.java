@@ -2,13 +2,14 @@ package io.github.sandydunlop.markista.doclet;
  
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.markdown.ModuleWriter;
+import io.github.sandydunlop.markista.markdown.MarkdownService;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.spi.DocService;
 import io.github.sandydunlop.markista.util.ApiScanner;
 import io.github.sandydunlop.markista.util.LinkFormatter;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.ModuleDirectives;
+import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -142,7 +143,7 @@ public class MarkdownDoclet implements Doclet {
 
     private final Set<Option> options = Set.of(
             new Option("-d", true,
-                    "output directory", null) {
+                    "The directory where documentation will be written to.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -153,7 +154,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("-doctitle", true,
-                    UNUSED_OPTION_DESCRIPTION, null) {
+                    "The title of the API being documented.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -163,8 +164,19 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
+            new Option("--extensions", true,
+                    "Specifies a colon-separated list of extensions to use in the order they should be run.", null) {
+                @Override
+                public boolean process(String option,
+                                       List<String> arguments) {
+                    if (arguments != null && !arguments.isEmpty()) {
+                        Configuration.setExtensionsOrder(arguments.getFirst());
+                    }
+                    return OK;
+                }
+            },
             new Option("--flatten-modules", false,
-                    "prevents individual directories for modules being created", null) {
+                    "Prevents individual directories for modules being created.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -173,7 +185,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("--flatten-packages", false,
-                    "prevents directories for empty packages being created", null) {
+                    "Prevents directories for empty packages being created.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -182,7 +194,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("-link", false,
-                    "create external links", null) {
+                    "Create external links.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -191,7 +203,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("--link-modules", true,
-                    "Specifies a list of modules with javadoc that can be linked to.", null) {
+                    "Specifies a colon-separated list of modules with javadoc that can be linked to.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -202,7 +214,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("--module-path", true,
-                    "Specifies where to find application modules.", null) {
+                    "Colon-separated list that specifies where to find application modules.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -249,7 +261,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("-tabs", false,
-                    "Show summary tables in content tabs", null) {
+                    "Show summary tables in content tabs.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -258,7 +270,7 @@ public class MarkdownDoclet implements Doclet {
                 }
             },
             new Option("-verbose", false,
-                    "Output informational messages", null) {
+                    "Output informational messages.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
@@ -315,22 +327,108 @@ public class MarkdownDoclet implements Doclet {
             LinkResolver.addNativeModules();
         }
         LinkFormatter.generateLinkTexts(api, ctx);
+        ctx.setModuleName("");
 
-        // The Writer used to output the generated markdown content for the current document.
-        // It handles writing text to the appropriate output file or stream.
-        ModuleWriter writer = new ModuleWriter();
-        try{
-            writer.writeDocs(api);
+
+        // Gather list of DocService providers, and decide what order they run in
+        boolean result;
+        List<DocService> extensionsOrder = new ArrayList<>();
+        DocService mainDocService = getMainServiceAndExtensions(new MarkdownService(), extensionsOrder);
+        
+        if (mainDocService != null) {
+            result = OK;
 
             // Run any modules providing a DocService implementation
-            ServiceLoader<DocService> loader = ServiceLoader.load(DocService.class);
-            for (DocService docServiceImplementation : loader) {
-                docServiceImplementation.run(api, ctx);
+            for (DocService extension : extensionsOrder) {
+                result &= extension.start(api, ctx);
             }
-        } catch (IOException ex) {
-            ctx.reportError(ex.getMessage() + "\n" + Arrays.toString(ex.getStackTrace()));
-            return FAILED;
+
+            // Run the default markdown writer or its replacement
+            mainDocService.start(api, ctx);
+
+            // Run any modules providing a DocService implementation
+            for (DocService extension : extensionsOrder) {
+                result &= extension.finish();
+            }
+        } else {
+            result = FAILED;
         }
-        return OK;
+
+        return result;
+    }
+
+    /// Populates the list of extensions and determines the main DocService.
+    /// @param defaultDocService the built-in Markdown DocService
+    /// @param orderedExtensions an empty list to be populated with extensions
+    /// @return The DocService that is expected to output the main documentation files. Null if loading extensions failed.
+    DocService getMainServiceAndExtensions(DocService defaultDocService, List<DocService> orderedExtensions) {
+        DocService mainDocService;
+        ServiceLoader<DocService> loader = ServiceLoader.load(DocService.class);
+        
+        if (Configuration.getExtensionsOrder() != null) {
+            mainDocService = populateExtensionsWithOrder(loader, orderedExtensions, defaultDocService);
+        } else {
+            mainDocService = populateExtensionsWithoutOrder(loader, orderedExtensions, defaultDocService);
+        }
+        
+        return mainDocService;
+    }
+
+    private DocService populateExtensionsWithOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions, 
+                                            DocService defaultDocService) {
+        DocService mainDocService = defaultDocService;
+        HashMap<String, DocService> extensions = new HashMap<>();
+        for (DocService extension : loader) {
+            addExtensionToMap(extensions, extension);
+        }
+        
+        String[] order = Configuration.getExtensionsOrder().split(":");
+        for (String extensionName : order) {
+            DocService extension = extensions.get(extensionName);
+            if (extension == null) {
+                ctx.reportError("Extension not found: " + extensionName);
+            } else {
+                mainDocService = handleExtension(mainDocService, defaultDocService, orderedExtensions, extension);
+                if (mainDocService == null) {
+                    return null;
+                }
+            }
+        }
+        return mainDocService;
+    }
+
+    private DocService populateExtensionsWithoutOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions, 
+                                                DocService defaultDocService) {
+        DocService mainDocService = defaultDocService;
+        for (DocService extension : loader) {
+            mainDocService = handleExtension(mainDocService, defaultDocService, orderedExtensions, extension);
+            if (mainDocService == null) {
+                return null;
+            }
+        }
+        return mainDocService;
+    }
+
+    private void addExtensionToMap(HashMap<String, DocService> extensions, DocService extension) {
+        String qualifiedName = extension.getClass().getName();
+        String simplifiedName = Utils.simplifyNames(qualifiedName);
+        extensions.put(qualifiedName, extension);
+        extensions.put(simplifiedName, extension);
+    }
+
+    private DocService handleExtension(DocService mainDocService, DocService defaultDocService, 
+                                        List<DocService> orderedExtensions, DocService extension) {
+        if (extension.replacesDefault()) {
+            if (mainDocService != defaultDocService) {
+                ctx.reportError("Only one extension can replace the default DocService.\n" + 
+                                String.format("Both %s and %s are requesting to.", 
+                                mainDocService.getClass().getName(), extension.getClass().getName()));
+                return null;
+            }
+            return extension;
+        } else {
+            orderedExtensions.add(extension);
+        }
+        return mainDocService;
     }
 }

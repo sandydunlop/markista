@@ -777,7 +777,7 @@ class TypeUtilsTests {
         assertEquals("RED", enumNode.getConstants().get(0).getSimpleName());
     }
 
-    @Disabled("WIP")
+    @Disabled("DEVELOPING")
     @Test
     void nodeFromElement_MethodNode_CreatesMethodNodeWithParams() {
         setup2();
@@ -798,7 +798,8 @@ class TypeUtilsTests {
         TypeElement ownerElement = mock(TypeElement.class);
         when(TypeUtils.getEnclosingTypeElement(methodElement)).thenReturn(ownerElement);
         TypeNode ownerType = mock(TypeNode.class);
-        when(mockApi.getTypeNode(ownerElement.getQualifiedName().toString())).thenReturn(ownerType);
+        //ownerElement.getQualifiedName().toString())
+        when(mockApi.getTypeNode(any())).thenReturn(ownerType);
 
         when(ownerType.getMethod(any())).thenReturn(null);
 
@@ -821,7 +822,6 @@ class TypeUtilsTests {
         }
     }
 
-    @Disabled("WIP")
     @Test
     void nodeFromElement_FieldNode_CreatesFieldNode() {
         setup2();
@@ -830,17 +830,17 @@ class TypeUtilsTests {
         TypeElement classElement = mock(TypeElement.class);
         when(TypeUtils.getEnclosingTypeElement(fieldElement)).thenReturn(classElement);
         when(classElement.getQualifiedName()).thenReturn(qualifiedName2);
-        TypeNode typeNode = spy(new ClassTypeNode("com.example.Foo", "Foo", null));
+        when(classElement.getKind()).thenReturn(ElementKind.CLASS);
+        TypeMirror tm = mock(TypeMirror.class);
+        TypeNode typeNode = new ClassTypeNode("com.example.Foo", "Foo", null);
 
         when(mockApi.getTypeNode("com.example.Foo")).thenReturn(typeNode);
 
         Name fieldName = mock(Name.class);
         when(fieldName.toString()).thenReturn("fieldName");
         when(fieldElement.getSimpleName()).thenReturn(fieldName);
-
-        FieldNode existingField = null;
-        doReturn(existingField).when(typeNode).getField("fieldName");
-
+        when(fieldElement.getEnclosingElement()).thenReturn(classElement);
+        when(fieldElement.asType()).thenReturn(tm);
         FieldNode resultNode = TypeUtils.nodeFromElement(fieldElement);
 
         assertNotNull(resultNode);
@@ -931,7 +931,6 @@ class TypeUtilsTests {
         when(envMock.getDocTrees()).thenReturn(mock(DocTrees.class));
     }
 
-    @Disabled("UNFINISHED STUBBING")
     @Test
     void setAppliedAnnotation_adds_applied_annotation_and_marks_documented() {
         setUp2();
@@ -974,7 +973,6 @@ class TypeUtilsTests {
         assertEquals(1, targetType.getAppliedAnnotations().size());
     }
 
-    @Disabled("UNFINISHED STUBBING")
     @Test
     void nodeFromElement_type_creates_and_adds_type_when_not_present() {
         setUp2();
@@ -1005,7 +1003,6 @@ class TypeUtilsTests {
         assertNotNull(cls);
     }
 
-    @Disabled("UNFINISHED STUBBING")
     @Test
     void setSpecifiedBy_sets_specified_interface_when_implementing() {
         setup2();
@@ -1136,7 +1133,6 @@ class TypeUtilsTests {
         assertSame(paramTree, result);
     }
 
-    @Disabled("UNFINISHED STUBBING")
     @Test
     void setMethodParams_adds_parameters_with_doc_bodies() {
         setup2();
@@ -1232,7 +1228,6 @@ class TypeUtilsTests {
         assertSame(rt, foundRet);
     }
 
-    @Disabled("UNFINISHED STUBBING")
     @Test
     void createTextSegment_handles_text_and_start_element_and_code_and_link_plain() {
         // TEXT kind

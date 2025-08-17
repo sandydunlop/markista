@@ -40,6 +40,8 @@ public class Configuration {
 
     private static String projectPath = null;
 
+    private static String extensionsOrder = null;
+
     /// The default constructor
     private Configuration() {
         // Hide the public constructor
@@ -161,5 +163,13 @@ public class Configuration {
 
     public static String getProjectPath() {
         return projectPath;
+    }
+
+    public static void setExtensionsOrder(String order) {
+        extensionsOrder = order;
+    }
+
+    public static String getExtensionsOrder() {
+        return extensionsOrder;
     }
 }
