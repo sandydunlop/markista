@@ -34,17 +34,18 @@ import io.github.sandydunlop.markista.model.Api;
 /// custom processing logic can be executed. This design makes it easier to 
 /// maintain and extend the documentation processing capabilities of Markista.
 public interface DocService {
+    /// Returns true if this Docservice replaces the default DocService.
     /// @return true if this DocService replaces the default Markdown one, false otherwise.
     boolean replacesDefault();
     
-    /// Runs before the defaullt Markdown generator.
+    /// Runs before the main Markdown DocService.
     /// Initializes a DocService with the API model and a Context for file creation and reporting.
     /// @param api the Api object representing the project's structure
     /// @param ctx the Context object providing additional information for processing
     /// @return true on success, otheriwse false
     boolean start(Api api, Context ctx);
 
-    /// Runs after the defaullt Markdown writer if it was allowed to run.
+    /// Runs after the main Markdown DocService.
     /// @return true on success, otheriwse false
     boolean finish();
 }
