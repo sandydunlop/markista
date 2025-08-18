@@ -848,10 +848,10 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     }
 
     /// Sets the parameters on a MethodNode by inspecting the ExecutableElement and its doc comment tags.
-    /// @param methodDoc The MethodNode to update.
+    /// @param methodNode The MethodNode to update.
     /// @param ee The ExecutableElement representing the method or constructor.
-    public static void setMethodParams(MethodNode methodDoc, ExecutableElement ee) {
-        methodDoc.getParams().clear();
+    public static void setMethodParams(MethodNode methodNode, ExecutableElement ee) {
+        methodNode.getParams().clear();
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
         for (VariableElement parameter : ee.getParameters()) {
             String simpleName = parameter.getSimpleName().toString();
@@ -864,7 +864,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             if (paramTree != null) {
                 param.setBody(createText(paramTree.getDescription()));
             }
-            methodDoc.addParam(param);
+            methodNode.addParam(param);
         }
     }
 

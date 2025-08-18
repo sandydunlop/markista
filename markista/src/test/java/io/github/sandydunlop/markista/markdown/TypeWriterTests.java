@@ -1,22 +1,31 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.*;
+import io.github.sandydunlop.markista.model.AnnotationElement;
+import io.github.sandydunlop.markista.model.AnnotationTypeNode;
+import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.Deprecation;
+import io.github.sandydunlop.markista.model.EnumTypeNode;
+import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.InterfaceTypeNode;
+import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.Modifier;
+import io.github.sandydunlop.markista.model.OverriddenMethodNode;
+import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Pair;
+import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.LinkFormatter;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.Markdown;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.sun.source.util.DocTreePath;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.annotation.ElementType;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +35,19 @@ import javax.tools.Diagnostic.Kind;
 
 import jdk.javadoc.doclet.Reporter;
 
-import static org.junit.jupiter.api.Assertions.*;
+import com.sun.source.util.DocTreePath;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TypeWriterTests {
@@ -36,7 +55,7 @@ class TypeWriterTests {
 
     // Mockito will now call the new constructor with this mock
     @InjectMocks
-    private TypeWriter typeWriter;
+    TypeWriter typeWriter;
 
     @Mock
     private Context contextMock;
@@ -413,5 +432,273 @@ class TypeWriterTests {
         assertTrue(output.contains("Specified.md"));
         assertTrue(output.contains("Thrown.md"));
         assertTrue(output.contains("eat"));
+    }
+
+    @Test
+    void outputMethodDetails_Since() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+        MethodNode methodNode = new MethodNode("java.lang.String", "eat");
+
+        Text since = Text.of("1980");
+        methodNode.setSince(since);
+
+        typeNode.addMethod(methodNode);
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        LinkResolver.addNativeModules();
+        LinkFormatter.generateLinkTexts(api, ctx);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("Since"));
+        assertTrue(output.contains("1980"));
+    }
+
+    @Test
+    void outputMethodDetails_References() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+        MethodNode methodNode = new MethodNode("java.lang.String", "eat");
+
+        Reference ref = Reference.to("Node").withLabel("Node");
+        ref.setTarget("http://example.com");
+        ref.setKind(Reference.Kind.URL);
+        methodNode.getReferences().add(ref);
+
+        typeNode.addMethod(methodNode);
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        LinkResolver.addNativeModules();
+        LinkFormatter.generateLinkTexts(api, ctx);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("See Also"));
+        assertTrue(output.contains("Node"));
+        assertTrue(output.contains("example.com"));
+    }
+
+    @Test
+    void outputConstructorSummary() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+        MethodNode methodNode = new MethodNode("scenario.food.berry.Avocado", "Avocado");
+        typeNode.addConstructor(methodNode);
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules(); // Needed for String
+        LinkFormatter.generateLinkTexts(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("## Constructor Summary"));
+        assertTrue(output.contains("Avocado()"));
+    }
+
+    @Test
+    void outputImplementedInterfaces() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+        List<Reference> implementedInterfaces = new ArrayList<>();
+        Reference i = Reference.to("test.interface");
+        i.setLabel("test.interface");
+        i.setTarget("test.interface");
+        i.setUri("test.interface");
+        implementedInterfaces.add(i);
+        typeNode.setImplementedInterfaces(implementedInterfaces);
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules(); // Needed for String
+        LinkFormatter.generateLinkTexts(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("Implemented Interfaces"));
+        assertTrue(output.contains("test.interface"));
+    }
+
+    @Test
+    void outputEnclosedTypes() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Tomato", "Tomato", 
+                pkg.getQualifiedName());
+
+        ClassTypeNode enclosedClass = new ClassTypeNode("scenario.food.berry.Tomato.Red", "Tomato.Red", "scenario.food.berry");
+        EnumTypeNode enclosedEnum = new EnumTypeNode("scenario.food.berry.Tomato.Orange", "Tomato.Orange", "scenario.food.berry");
+        InterfaceTypeNode enclosedInterface = new InterfaceTypeNode("scenario.food.berry.Tomato.Yellow", "Tomato.Yellow", "scenario.food.berry");
+        AnnotationTypeNode enclosedAnnotation = new AnnotationTypeNode("scenario.food.berry.Tomato.Green", "Tomato.Green", "scenario.food.berry");
+                
+        typeNode.addType(enclosedClass);
+        typeNode.addType(enclosedEnum);
+        typeNode.addType(enclosedInterface);
+        typeNode.addType(enclosedAnnotation);
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules(); // Needed for String
+        LinkFormatter.generateLinkTexts(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("Red"));
+        assertTrue(output.contains("Orange"));
+        assertTrue(output.contains("Yellow"));
+        assertTrue(output.contains("Green"));
+    }
+
+    @Test
+    void outputSupertypes() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+        Reference i = Reference.to("test.interface");
+        i.setLabel("test.interface");
+        i.setTarget("test.interface");
+        i.setUri("test.interface");
+        Text t = Text.empty();
+        typeNode.getSupertypes().add(Pair.of(i, t));
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules(); // Needed for String
+        LinkFormatter.generateLinkTexts(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("test.interface"));
+        assertTrue(output.contains("test.interface"));
+    }
+
+    @Test
+    void outputEnclosingClass() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+
+        ClassTypeNode owner = new ClassTypeNode("scenario.food.berry.Owner", "Owner", 
+                pkg.getQualifiedName());
+        Reference i = Reference.to("scenario.food.berry.Owner");
+        i.setLabel("scenario.food.berry.Owner");
+        i.setTarget("scenario.food.berry.Owner");
+        typeNode.setEnclosingClassRef(i);
+        typeNode.setOwner("scenario.food.berry.Owner");
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        api.addType(owner);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules(); // Needed for String
+        LinkFormatter.generateLinkTexts(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("Enclosing Class"));
+        assertTrue(output.contains("[scenario.food.berry.Owner]"));
+        assertTrue(output.contains("Owner.md"));
+    }
+
+    @Test
+    void outputTypeDoc_fullBody() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+        typeNode.setFullBody(Text.of("One two three"));
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules(); // Needed for String
+        LinkFormatter.generateLinkTexts(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("One two three"));
+    }
+
+    @Test
+    void outputTypeDoc_appliedAnnotations() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+
+        AnnotationTypeNode at = new AnnotationTypeNode("scenarion.food.berry.Watermelon", "Watermelon", "scenarion.food.berry");
+        AppliedAnnotationNode aa = new AppliedAnnotationNode(at.getQualifiedName());
+        aa.setCustom(true);
+        aa.setDocumented(true);
+        typeNode.addAppliedAnnotation(aa);
+        AnnotationElement element1 = new AnnotationElement("Tn", "Nm", "Va");
+        aa.addElement(element1);
+        AnnotationElement element2 = new AnnotationElement("El", "Em", "Ent");
+        aa.addElement(element2);
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        LinkResolver.addNativeModules(); // Needed for String
+        LinkFormatter.generateLinkTexts(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("@Watermelon(Nm Va, Em Ent)"));
     }
 }

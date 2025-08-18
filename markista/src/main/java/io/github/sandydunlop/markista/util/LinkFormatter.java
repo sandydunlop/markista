@@ -44,7 +44,7 @@ public class LinkFormatter {
         processJavadocComments(api);
     }
 
-    private static void processTypeNode(TypeNode typeNode) {
+    static void processTypeNode(TypeNode typeNode) {
         ctx.setPackageName(typeNode.getPackageName());
         ctx.setTypeName(typeNode.getQualifiedName());
 
@@ -103,7 +103,7 @@ public class LinkFormatter {
         }
     }
 
-    private static void processModules(Api api) {
+    static void processModules(Api api) {
         for (ModuleNode module : api.getModules()) {
             ctx.setModuleName(module.getName());
             // Constant field values
@@ -129,7 +129,7 @@ public class LinkFormatter {
         }
     }
 
-    private static void processJavadocComments(Api api) {
+    static void processJavadocComments(Api api) {
         for (Reference link : api.getLinks()) {
             ctx.setPackageName(link.getOrigin());
             LinkResolver.resolve(link);
@@ -139,7 +139,7 @@ public class LinkFormatter {
         }
     }
 
-    private static void generateLinkTextsForParams(List<ParamNode> params) {
+    static void generateLinkTextsForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
             Reference reference = Reference.to(param.getTypeName()).from(ctx.getPackageName());
             param.setTypeText(link(reference, false));

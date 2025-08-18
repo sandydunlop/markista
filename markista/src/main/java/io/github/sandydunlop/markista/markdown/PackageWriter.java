@@ -4,7 +4,7 @@ import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.PackageOrTypeNode;
+import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
 import io.github.sandydunlop.markista.util.Markdown;
@@ -21,7 +21,9 @@ public class PackageWriter {
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
-    private final Context ctx = Context.getInstance();
+    /// > **Warning**<br/>
+    /// Do not make this `final`. It will break tests with mocked [Context].
+    private Context ctx;
 
     /// The Writer used to output the generated markdown content for the current document.
     /// It handles writing text to the appropriate output file or stream.
@@ -29,7 +31,7 @@ public class PackageWriter {
 
     /// Constructor that sets up the locations API documents will be written to.
     public PackageWriter() {
-        // Nothing to see here
+        ctx = Context.getInstance();
     }
 
     /// Output the documentation files for the specified API
@@ -44,7 +46,7 @@ public class PackageWriter {
     /// Writes the Javadoc for a package as Markdown
     /// @param packageNode the package
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputPackageDoc(PackageNode packageNode) throws IOException {
+    void outputPackageDoc(PackageNode packageNode) throws IOException {
         ctx.setPackageName(packageNode.getQualifiedName());
         writer = ctx.createFileInPackage();    
         writer.write("# Package " + packageNode.getQualifiedName() + "\n");
@@ -72,7 +74,7 @@ public class PackageWriter {
         ctx.setPackageName("");
     }
 
-    /// Writes the Javadoc for a package's members as Markdown
+    /// Writes the Javadoc for a package's member packages as Markdown
     /// @param title The title of this section in the Markdown document
     /// @param members The list of members of this package
     /// @throws java.io.IOException if there is a problem writing to the output file
@@ -82,8 +84,18 @@ public class PackageWriter {
                 .addColumn(
                         "Package")
                 .addColumn(TEXT_DESCRIPTION);
-        for (PackageOrTypeNode member : members) {
-            table.addRow(Markdown.mdDocumentLink(member.getSimpleName()), Utils.inOneLine(Markdown.formatText(member.getFirstSentence())));
+        for (PackageNode member : members) {
+            String name = member.getQualifiedName();
+            int p = name.lastIndexOf(".");
+            if (p > -1 && p < name.length() - 1) {
+                name = name.substring(p + 1);
+            }
+            Reference link = Reference.to(member.getQualifiedName())
+                    .from(ctx.getPackageName())
+                    .withKind(Reference.Kind.PACKAGE)
+                    .withLabel(name)
+                    .withUri(name);
+            table.addRow(Markdown.link(link, false), Utils.inOneLine(Markdown.formatText(member.getFirstSentence())));
         }
         if (Configuration.getUseContentTabs()) {
             writer.write("=== \"" + title + "\"\n\n");

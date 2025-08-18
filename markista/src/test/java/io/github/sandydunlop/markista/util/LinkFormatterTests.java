@@ -1,6 +1,7 @@
 package io.github.sandydunlop.markista.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.List;
 
@@ -9,6 +10,7 @@ import javax.tools.Diagnostic.Kind;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
 import com.sun.source.util.DocTreePath;
@@ -17,6 +19,7 @@ import jdk.javadoc.doclet.Reporter;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
@@ -144,5 +147,23 @@ class LinkFormatterTests {
                 assertEquals(expectedSegment.getLink().getUri(), actualSegment.getLink().getUri());
             }
         }
+    }
+
+    @Test
+    void processModules() {
+        LinkFormatter.processModules(api);
+        ModuleNode module2 = api.getModules().getFirst();
+        for (DirectiveNode directive : module2.getDirectives()) {
+            assertNotEquals("", directive.getReference().getUri());
+            assertNotEquals("", directive.getReference().getUri());
+
+            for (Reference implementation : directive.getImplementations()) {
+                assertNotEquals("", implementation.getUri());
+            }
+            for (Reference pkg : directive.getPackages()) {
+                assertNotEquals("", pkg.getUri());
+            }
+        }
+
     }
 }

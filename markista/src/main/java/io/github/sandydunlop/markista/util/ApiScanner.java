@@ -17,10 +17,10 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.ModuleElement.Directive;
-import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.RecordComponentElement;
+import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
 import javax.tools.JavaFileObject;
@@ -36,7 +36,7 @@ import jdk.javadoc.doclet.DocletEnvironment;
 /// This class extends ElementScanner9 so it can visit elements in source order and
 /// recursively walk nested elements. The scanner keeps track of the current ModuleNode
 /// being populated and updates the Api instance as elements are encountered. 
-@java.lang.SuppressWarnings("squid:S5042") // There is no way around this.
+@java.lang.SuppressWarnings("squid:S110") // There is no way around this.
 public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// The shared Context singleton providing logging and configuration access.
     private final Context ctx;
@@ -54,7 +54,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     private ModuleNode currentModule;
 
     /// A set of fully-qualified names (packages and types) included in the scan invocation. 
-    private HashSet<String> includedNames;
+    HashSet<String> includedNames;
 
     /// Initializes the ApiScanner with access to the doclet environment.
     /// The doclet environment provides tools for processing API elements, types, and documentation.
@@ -105,7 +105,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// in the Javadoc invocation (via the elements set passed to the doclet).
     /// @param qualifiedName the fully-qualified package or type name to test
     /// @return true if the qualifiedName is present in the includedNames set
-    private boolean isIncludedElement(String qualifiedName) {
+    boolean isIncludedElement(String qualifiedName) {
         return includedNames.contains(qualifiedName);
     }
 
@@ -115,7 +115,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// present in includedNames but whose enclosing type may have been included.
     /// @param e the element to test (typically a member whose enclosing element is a type)
     /// @return true if the element's enclosing type was included in the elements set
-    private boolean isIncludedElement(Element e) {
+    boolean isIncludedElement(Element e) {
         if (e.getEnclosingElement() instanceof TypeElement typeElement) {
             return isIncludedElement(typeElement.getQualifiedName().toString());
         }
@@ -196,10 +196,10 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 TypeUtils.setDocumentation(pkg, ee);
                 api.addPackage(pkg);
                 Element enclosing = ee.getEnclosingElement();
-                if (enclosing != null && enclosing.getKind() == ElementKind.PACKAGE) {
-                    PackageNode owner = api.getPackageNode(ee.getQualifiedName().toString());
+                if (enclosing instanceof PackageElement enclosingPackageElement) {
+                    PackageNode owner = api.getPackageNode(enclosingPackageElement.getQualifiedName().toString());
                     if (owner != null) {
-                        owner.getPackages().add(pkg);
+                        owner.addPackage(pkg);
                     }
                 }
             }

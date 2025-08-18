@@ -1,39 +1,18 @@
 package io.github.sandydunlop.markista.util;
 
-import com.sun.source.util.DocTreePath;
-
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
-
-import javax.lang.model.element.Element;
-import javax.tools.Diagnostic.Kind;
-
-import jdk.javadoc.doclet.Reporter;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
+import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Reference;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.lang.module.ModuleDescriptor;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -46,8 +25,31 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import static org.junit.jupiter.api.Assertions.*;
-import java.io.InputStream;
+import javax.lang.model.element.Element;
+
+import jdk.javadoc.doclet.Reporter;
+
+import com.sun.source.util.DocTreePath;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class LinkResolverTests {
@@ -66,41 +68,21 @@ class LinkResolverTests {
     private static final String ORIGIN = "com.example";
     private static final String TARGET = "com.example.MyClass";
     private JarFile mockJarFile;
+
+    TestReporter reporter;
         
-	@BeforeEach
-    void setup() {
-        link = new Reference();
-        link.setOrigin(ORIGIN);
-        link.setTarget(TARGET);
-        link.setKind(Reference.Kind.UNKNOWN);
-    }
-
-	@Mock static Reporter reporter = new Reporter() {
-        @Override
-        public void print(Kind kind, String message) {
-            System.out.println(kind + ": " + message);
-        }
-
-        @Override
-        public void print(Kind kind, DocTreePath path, String message) {
-            // Do nothing
-        }
-
-        @Override
-        public void print(Kind kind, Element element, String message) {
-            // Do nothing
-        }
-    };
-
 	@BeforeAll
     static void initAll() {
 		ctx =  Context.getInstance();
-		ctx.setReporter(reporter);
     }
 
     @BeforeEach
     void init() {
-		api = new Api("Test API");
+        reporter = new TestReporter();
+        reporter.stringWriter = new StringWriter();
+		ctx.setReporter(reporter);
+
+        api = new Api("Test API");
         api.addPackage(new PackageNode("io.github.sandydunlop"));
         markista = new PackageNode("io.github.sandydunlop.markista");
 		util = new PackageNode("io.github.sandydunlop.markista.util");
@@ -143,7 +125,12 @@ class LinkResolverTests {
         LinkResolver.siblingClassNames = new java.util.HashSet<>();
 		ctx.setModuleName("markista");
         ctx.setPackageName("");
-	}
+
+        link = new Reference();
+        link.setOrigin(ORIGIN);
+        link.setTarget(TARGET);
+        link.setKind(Reference.Kind.UNKNOWN);
+    }
 
 	@Test
 	void addNativeModuleUrl() {
@@ -757,4 +744,42 @@ class LinkResolverTests {
         Reference result3 = LinkResolver.resolveUnsupported(normalRef);
         assertNotEquals(Reference.Kind.UNSUPPORTED, result3.getKind());
     }
+
+    @Test
+    void relativizeWithModules_reportsUnknownPackages() {
+        reporter.stringWriter = new StringWriter();
+        LinkResolver.relativizeWithModules("","unknown.module");
+        assertTrue(reporter.stringWriter.toString().contains("Error resolving package"));
+    }
+
+    @Test
+    void resolveLocalPackageTypeInternal_null () {
+        //"io.github.sandydunlop.markista.model.Node"
+        Reference link2 = Reference.to("unknown.package.Class")
+                .from("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option");
+        boolean r = LinkResolver.resolveLocalPackageTypeInternal(link2, "", "Class");
+        assertFalse(r);
+
+        r = LinkResolver.resolveLocalPackageTypeInternal(link2, "unknown.package", "Class");
+        assertFalse(r);
+    }
+
+    class TestReporter implements Reporter {
+        public StringWriter stringWriter;
+
+        @Override
+        public void print(javax.tools.Diagnostic.Kind kind, String message) {
+            stringWriter.write(message);
+        }
+
+        @Override
+        public void print(javax.tools.Diagnostic.Kind kind, DocTreePath path, String message) {
+            stringWriter.write(message);
+        }
+
+        @Override
+        public void print(javax.tools.Diagnostic.Kind kind, Element element, String message) {
+            stringWriter.write(message);
+        }
+    }       
 }

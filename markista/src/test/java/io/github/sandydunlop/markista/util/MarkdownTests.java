@@ -1,7 +1,5 @@
 package io.github.sandydunlop.markista.util;
 
-import com.sun.source.util.DocTreePath;
-
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
@@ -12,22 +10,24 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
-import jdk.javadoc.doclet.Reporter;
+
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.lang.model.element.Element;
-import javax.tools.Diagnostic.Kind;
 
+import jdk.javadoc.doclet.Reporter;
+
+import com.sun.source.util.DocTreePath;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.util.ArrayList;
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class MarkdownTests {
@@ -42,32 +42,20 @@ class MarkdownTests {
     private ClassTypeNode node;
     private ClassTypeNode markdownDoclet;
 
-    @Mock static Reporter reporter = new Reporter() {
-        @Override
-        public void print(Kind kind, String message) {
-            System.out.println(kind + ": " + message);
-        }
-
-        @Override
-        public void print(Kind kind, DocTreePath path, String message) {
-            // Do nothing
-        }
-
-        @Override
-        public void print(Kind kind, Element element, String message) {
-            // Do nothing
-        }
-    };
+    static TestReporter reporter;
     
 	@BeforeAll
     static void initAll() {
 		ctx = Context.getInstance();
-		ctx.setReporter(reporter);
     }
 
     @BeforeEach
     void init() {
-		api = new Api("Test API");
+        reporter = new TestReporter();
+        reporter.stringWriter = new StringWriter();
+        ctx.setReporter(reporter);
+
+        api = new Api("Test API");
         api.addPackage(new PackageNode("io.github.sandydunlop"));
         markista = new PackageNode("io.github.sandydunlop.markista");
 		util = new PackageNode("io.github.sandydunlop.markista.util");
@@ -149,6 +137,26 @@ class MarkdownTests {
     }
 
     @Test
+    void formatText_code() {
+        Text text = Text.empty();
+        text.append(Segment.empty()
+                .setKind(Text.SegmentKind.CODE)
+                .setText("#!/bin/zsh"));
+        String formatted = Markdown.formatText(text);
+        assertEquals("`#!/bin/zsh`", formatted);
+    }
+
+    @Test
+    void formatText_unhandled() {
+        Text text = Text.empty();
+        text.append(Segment.empty().setText("unhandled").setKind(Text.SegmentKind.NONE));
+        reporter.stringWriter = new StringWriter();
+        String formatted = Markdown.formatText(text);
+        assertTrue(reporter.stringWriter.toString().contains("nhandled javadoc tag"));
+        assertEquals("", formatted);
+    }
+
+    @Test
     void formatText_text_link_text() {
         Reference link = Reference.to("http://example.com");
         Text text = Text.empty();
@@ -181,4 +189,144 @@ class MarkdownTests {
         String sig = Markdown.fullSignature(method);
         assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
     }
+
+    @Test
+    void setDisplayName_1() {
+        Reference link = Reference.to("io.github.sandydunlop.markista.model.Node")
+                .from("io.github.sandydunlop.markista.model")
+                .withLabel("Node")
+                .withKind(Reference.Kind.TYPE);
+        link.setUri("Node.md");
+        String displayName = "";
+        boolean isLocalMethod = false;
+        boolean useQualifiedName = false;
+        Markdown.setContext(ctx);
+        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        assertEquals("Node.md", link.getUri());
+        assertEquals("Node", link.getLabel());
+    }
+
+    @Test
+    void setDisplayName_2() {
+        Reference link = Reference.to("io.github.sandydunlop.markista.model.Node")
+                .from("io.github.sandydunlop.markista.model")
+                .withLabel("Node")
+                .withKind(Reference.Kind.TYPE);
+        link.setUri("Node.md");
+        String displayName = "Display";
+        boolean isLocalMethod = false;
+        boolean useQualifiedName = false;
+        Markdown.setContext(ctx);
+        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        assertEquals("Node.md", link.getUri());
+        assertEquals("Display", link.getLabel());
+    }
+
+    @Test
+    void setDisplayName_3() {
+        Reference link = Reference.to("Node.test")
+                .from("io.github.sandydunlop.markista.model")
+                .withLabel("Node")
+                .withKind(Reference.Kind.METHOD);
+        link.setUri("Node.md");
+        link.setClassName("Node");
+        link.setAnchor("#test");
+        String displayName = "";
+        boolean isLocalMethod = true;
+        boolean useQualifiedName = false;
+        ctx.setTypeName("Node");
+        Markdown.setContext(ctx);
+        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        assertEquals("Node.md", link.getUri());
+        assertEquals("test", link.getLabel());
+    }
+
+    @Test
+    void setDisplayName_4() {
+        Reference link = Reference.to("Node.test")
+                .from("io.github.sandydunlop.markista.model")
+                .withLabel("Node")
+                .withKind(Reference.Kind.METHOD);
+        link.setUri("Node.md");
+        link.setClassName("Node");
+        link.setAnchor("#test");
+        String displayName = "";
+        boolean isLocalMethod = true;
+        boolean useQualifiedName = false;
+        ctx.setTypeName("Api");
+        Markdown.setContext(ctx);
+        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        assertEquals("Node.md", link.getUri());
+        assertEquals("Node.test", link.getLabel());
+    }
+
+    @Test
+    void setDisplayName_5() {
+        Reference link = Reference.to("Node")
+                .from("io.github.sandydunlop.markista.model")
+                .withKind(Reference.Kind.METHOD)
+                .withLabel(null);
+        link.setUri("Node.md");
+        String displayName = "";
+        boolean isLocalMethod = false;
+        boolean useQualifiedName = false;
+        ctx.setTypeName("Api");
+        Markdown.setContext(ctx);
+        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        assertEquals("Node.md", link.getUri());
+        assertEquals("Node", link.getLabel());
+    }
+
+    @Test
+    void setDisplayName_7() {
+        Reference link = Reference.to("markista.docagrams")
+                .from("")
+                .withKind(Reference.Kind.MODULE);
+        link.setUri("markista.docagrams/index.md");
+        String displayName = "";
+        boolean isLocalMethod = false;
+        boolean useQualifiedName = false;
+        ctx.setTypeName("Api");
+        Markdown.setContext(ctx);
+        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        assertEquals("markista.docagrams/index.md", link.getUri());
+        assertEquals("markista.docagrams", link.getLabel());
+    }
+
+    @Test
+    void mdDocumentLink_doc() {
+        String md = Markdown.mdDocumentLink("page");
+        assertEquals("[page](page.md)", md);
+    }
+
+    @Test
+    void mdDocumentLink_doc2() {
+        String md = Markdown.mdDocumentLink("page.md");
+        assertEquals("[page.md](page.md)", md);
+    }
+
+    @Test
+    void mdDocumentLink_url() {
+        String md = Markdown.mdDocumentLink("https://example.com");
+        assertEquals("[https://example.com](https://example.com)", md);
+    }
+
+    class TestReporter implements Reporter {
+        public StringWriter stringWriter;
+
+        @Override
+        public void print(javax.tools.Diagnostic.Kind kind, String message) {
+            stringWriter.write(message);
+        }
+
+        @Override
+        public void print(javax.tools.Diagnostic.Kind kind, DocTreePath path, String message) {
+            stringWriter.write(message);
+        }
+
+        @Override
+        public void print(javax.tools.Diagnostic.Kind kind, Element element, String message) {
+            stringWriter.write(message);
+        }
+    }       
 }

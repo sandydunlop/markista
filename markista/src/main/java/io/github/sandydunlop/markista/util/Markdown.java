@@ -116,8 +116,8 @@ public class Markdown {
         return mdRefLink(reference);
     }
 
-    private static void setDisplayName(Reference link, String displayName, boolean isLocalMethod, boolean useQualifiedName) {
-        if (link.getLabel() == null) {
+    static void setDisplayName(Reference link, String displayName, boolean isLocalMethod, boolean useQualifiedName) {
+        if (link.getLabel() == null || link.getLabel().isEmpty()) {
              link.setLabel(link.getTarget());
         }
         if (isLocalMethod) {

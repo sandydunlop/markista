@@ -40,5 +40,19 @@
   ],
   "testing.alwaysRevealTestOnStateChange": true,
   "testing.coverageToolbarEnabled": true,
-  "markiscodecoverage.enableDecorations": true,  
+
+  "java.completion.importOrder": [
+    "io",
+    "",
+    "java",
+    "javax",
+    "",
+    "jdk",
+    "sun",
+    "",
+    "#"
+  ],
+ "editor.codeActionsOnSave": {
+    "source.organizeImports": "always",
+  },
 }

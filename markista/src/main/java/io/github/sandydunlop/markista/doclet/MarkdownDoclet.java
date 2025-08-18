@@ -14,7 +14,12 @@ import io.github.sandydunlop.markista.util.Utils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 import javax.lang.model.SourceVersion;
 import javax.tools.DocumentationTool;
@@ -87,7 +92,6 @@ public class MarkdownDoclet implements Doclet {
                 "-sourcepath", "markista/src/main/java/",
                 "-subpackages", "io.github.sandydunlop.markista",
                 "-tabs"
-//                "-verbose"
             };
         }
         DocumentationTool docTool = ToolProvider.getSystemDocumentationTool();
@@ -333,7 +337,8 @@ public class MarkdownDoclet implements Doclet {
         // Gather list of DocService providers, and decide what order they run in
         boolean result;
         List<DocService> extensionsOrder = new ArrayList<>();
-        DocService mainDocService = getMainServiceAndExtensions(new MarkdownService(), extensionsOrder);
+        ServiceLoader<DocService> loader = ServiceLoader.load(DocService.class);
+        DocService mainDocService = getMainServiceAndExtensions(loader, new MarkdownService(), extensionsOrder);
         
         if (mainDocService != null) {
             result = OK;
@@ -358,24 +363,21 @@ public class MarkdownDoclet implements Doclet {
     }
 
     /// Populates the list of extensions and determines the main DocService.
+    /// @param loader The serice loader
     /// @param defaultDocService the built-in Markdown DocService
     /// @param orderedExtensions an empty list to be populated with extensions
     /// @return The DocService that is expected to output the main documentation files. Null if loading extensions failed.
-    DocService getMainServiceAndExtensions(DocService defaultDocService, List<DocService> orderedExtensions) {
-        DocService mainDocService;
-        ServiceLoader<DocService> loader = ServiceLoader.load(DocService.class);
-        
+    DocService getMainServiceAndExtensions(ServiceLoader<DocService> loader, DocService defaultDocService, List<DocService> orderedExtensions) {
         if (Configuration.getExtensionsOrder() != null) {
-            mainDocService = populateExtensionsWithOrder(loader, orderedExtensions, defaultDocService);
+            return populateExtensionsWithOrder(loader, orderedExtensions, defaultDocService);
         } else {
-            mainDocService = populateExtensionsWithoutOrder(loader, orderedExtensions, defaultDocService);
+            return populateExtensionsWithoutOrder(loader, orderedExtensions, defaultDocService);
         }
-        
-        return mainDocService;
     }
 
     private DocService populateExtensionsWithOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions, 
                                             DocService defaultDocService) {
+        System.out.println("XYZ ******** populateExtensionsWithOrder");
         DocService mainDocService = defaultDocService;
         HashMap<String, DocService> extensions = new HashMap<>();
         for (DocService extension : loader) {
@@ -399,9 +401,12 @@ public class MarkdownDoclet implements Doclet {
 
     private DocService populateExtensionsWithoutOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions, 
                                                 DocService defaultDocService) {
+        System.out.println("XYZ ******** populateExtensionsWithoutOrder");
         DocService mainDocService = defaultDocService;
         for (DocService extension : loader) {
+            System.out.println("XYZ ******** extension");
             mainDocService = handleExtension(mainDocService, defaultDocService, orderedExtensions, extension);
+            System.out.println("XYZ ******** ds=" + mainDocService);
             if (mainDocService == null) {
                 return null;
             }

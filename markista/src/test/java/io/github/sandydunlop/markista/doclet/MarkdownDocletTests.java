@@ -1,127 +1,228 @@
 package io.github.sandydunlop.markista.doclet;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import io.github.sandydunlop.markista.MockedDocletEnvironment;
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option;
+import io.github.sandydunlop.markista.markdown.MarkdownService;
+import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.spi.DocService;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.io.File;
-
-import com.sun.source.util.DocTreePath;
-
-import jdk.javadoc.doclet.Reporter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.Set;
 
 import javax.lang.model.element.Element;
-import javax.tools.Diagnostic.Kind;
-import javax.tools.DocumentationTool;
-import javax.tools.ToolProvider;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
-class MarkdownDocletTests {
-    static final String BASE_DOC_PATH = "/tmp/doc/";
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-    @Mock static Reporter reporter = new Reporter() {
-        @Override
-        public void print(Kind kind, String message) {
-            System.out.println(kind + ": " + message);
-        }
-
-        @Override
-        public void print(Kind kind, DocTreePath path, String message) {
-            // Do nothing
-        }
-
-        @Override
-        public void print(Kind kind, Element element, String message) {
-            // Do nothing
-        }
-    };
-
-    boolean deleteDirectory(String directoryToBeDeleted) {
-        if (directoryToBeDeleted.indexOf("tmp") == -1) return false;
-        return deleteDirectory(new File(directoryToBeDeleted));
+class MarkdownDocletTests extends MockedDocletEnvironment {
+    @Test
+    void mocks() {
+        mockDocletEnvironment();
+        assertNotNull(elementUtilsMock);
+        assertNotNull(typeUtilsMock);
+        assertNotNull(treeUtilsMock);
+        assertNotNull(docletEnvironmentMock.getIncludedElements());
     }
 
-    boolean deleteDirectory(File directoryToBeDeleted) {
-        File[] allContents = directoryToBeDeleted.listFiles();
-        if (allContents != null) {
-            for (File file : allContents) {
-                deleteDirectory(file);
+    @Test
+    void run_withoutElements() {
+        mockDocletEnvironment();
+        Configuration.setCreateExternalLinks(true);
+        List<Element> elements = new ArrayList<>();
+        mockIncludedElements(elements);
+        doclet.run(docletEnvironmentMock);
+        assertNotNull(ctx.getReporter());
+        assertNotNull(ctx.getApi());
+    }
+
+    @Test
+    void extensions_withoutOrder() {
+        mockDocletEnvironment();
+        DocService service = mock(TestDocService.class);
+        @SuppressWarnings("unchecked")
+        ServiceLoader<DocService> loader = mock(ServiceLoader.class);
+        when(loader.iterator()).thenReturn(Collections.singletonList(service).iterator());
+
+        DocService defaultDocService = new MarkdownService();
+        List<DocService> orderedExtensions = new ArrayList<>();
+
+        System.out.println(Configuration.getExtensionsOrder());
+        doclet.getMainServiceAndExtensions(loader, defaultDocService, orderedExtensions);
+
+        verify(service, times(1)).replacesDefault();
+    }
+
+    @Test
+    void extensions_withOrder() {
+        mockDocletEnvironment();
+        Configuration.setExtensionsOrder("MarkdownDocletTests$TestDocService");
+        DocService service = mock(TestDocService.class);
+        @SuppressWarnings("unchecked")
+        ServiceLoader<DocService> loader = mock(ServiceLoader.class);
+        when(loader.iterator()).thenReturn(Collections.singletonList(service).iterator());
+
+        DocService defaultDocService = new MarkdownService();
+        List<DocService> orderedExtensions = new ArrayList<>();
+
+        DocService mainDocService = doclet.getMainServiceAndExtensions(loader, defaultDocService, orderedExtensions);
+
+        assertNotNull(mainDocService);
+        verify(service, times(1)).replacesDefault();
+    }
+
+    @Test
+    void extensions_multipleReplacements() {
+        mockDocletEnvironment();
+        DocService service1 = mock(TestDocService.class);
+        when(service1.replacesDefault()).thenReturn(true);
+        DocService service2 = mock(TestDocService2.class);
+        when(service2.replacesDefault()).thenReturn(true);
+        @SuppressWarnings("unchecked")
+        ServiceLoader<DocService> loader = mock(ServiceLoader.class);
+        when(loader.iterator()).thenReturn(List.of(service1, service2).iterator());
+
+        DocService defaultDocService = new MarkdownService();
+        List<DocService> orderedExtensions = new ArrayList<>();
+
+        System.out.println("XYZ ******** extensions_multipleReplacements IN");
+        DocService mainDocService = doclet.getMainServiceAndExtensions(loader, defaultDocService, orderedExtensions);
+        System.out.println("XYZ ******** extensions_multipleReplacements OUT");
+
+        assertNull(mainDocService);
+        verify(service1, times(1)).replacesDefault();
+        verify(service2, times(1)).replacesDefault();
+    }
+
+    @Test
+    void options_string() {
+        mockDocletEnvironment();
+        Set<? extends Option> options = doclet.getSupportedOptions();
+        for (Option option : options) {
+            String description = option.getDescription();
+            assertNotNull(description);
+            assertNotEquals("", description);
+            switch (option.getNames().getFirst()) {
+                case "-d":
+                    assertTrue(option.process("-d", List.of("build/docs/javadoc")));
+                    assertEquals("build/docs/javadoc", ctx.getOutputDirectory());
+                    break;
+                case "-doctitle":
+                    assertTrue(option.process("-doctitle", List.of("Test API")));
+                    assertEquals("Test API", Configuration.getDocTitle());
+                    break;
+                case "--extensions":
+                    assertTrue(option.process("--extensions", List.of("UMLWriter:Docagrams")));
+                    assertEquals("UMLWriter:Docagrams", Configuration.getExtensionsOrder());
+                    break;
+                case "--link-modules":
+                    assertTrue(option.process("--link-modules", List.of("module1:module2")));
+                    List<String> modules = Configuration.getListExternal();
+                    assertEquals(2, modules.size());
+                    assertEquals("module1", modules.getFirst());
+                    assertEquals("module2", modules.get(1));
+                    break;
+                case "--module-path":
+                    assertTrue(option.process("--module-path", List.of("module1:module2")));
+                    List<String> paths = Configuration.getModulePaths();
+                    assertEquals("module1", paths.getFirst());
+                    assertEquals("module2", paths.get(1));
+                    break;
+                case "--project-path":
+                    assertTrue(option.process("--project-path", List.of("/home/git/project")));
+                    assertEquals("/home/git/project", Configuration.getProjectPath());
+                    break;
+                default:
+                    break;
             }
         }
-        return directoryToBeDeleted.delete();
     }
 
-    @BeforeAll
-    static void initAll() {
-        // Nothing to do here
-    }
-
-    @BeforeEach
-    void init() {
-        // Nothing to do here for now
-    }
-
-    boolean fileExists(String file) {
-        return Files.exists(Paths.get(file));
-    }
-
-    boolean docFileExists(String file) {
-        return Files.exists(Paths.get(Path.of(BASE_DOC_PATH, file).toString()));
-    }
-
-    @Disabled("WIP")
     @Test
-    void run1_flattenPackages() {
-        String testOutputDir = BASE_DOC_PATH + "run1";
-        deleteDirectory(testOutputDir);
-        DocumentationTool systemDocumentationTool = ToolProvider.getSystemDocumentationTool();
-        String[] args = new String[] {
-            "-doclet", MarkdownDoclet.class.getName(),
-            "-docletpath", "build/classes/java/main",
-            "-d", testOutputDir,
-            "-private",
-            "-link",
-            "--flatten-packages",
-            "-sourcepath", "src/main/java/",
-            "-subpackages", "io.github.sandydunlop.markista",
-        };
-        DocumentationTool.DocumentationTask task = 
-                systemDocumentationTool.getTask(null, null, null, 
-                MarkdownDoclet.class, Arrays.asList(args), null);
-        task.call();
-        assertTrue(docFileExists("run1/markista/index.md"));
-        assertTrue(docFileExists("run1/markista/constant-values.md"));
-        assertTrue(docFileExists("run1/markista/doclet/index.md"));
+    void options_boolean() {
+        mockDocletEnvironment();
+        Set<? extends Option> options = doclet.getSupportedOptions();
+        for (Option option : options) {
+            String description = option.getDescription();
+            assertNotNull(description);
+            assertNotEquals("", description);
+            switch (option.getNames().getFirst()) {
+                case "--flatten-modules":
+                    assertTrue(option.process("--flatten-modules", null));
+                    assertTrue(Configuration.getFlattenModules());
+                    break;
+                case "--flatten-packages":
+                    assertTrue(option.process("--flatten-packages", null));
+                    assertTrue(Configuration.getFlattenPackages());
+                    break;
+                case "-link":
+                    assertTrue(option.process("-link", null));
+                    assertTrue(Configuration.getCreateExternalLinks());
+                    break;
+                case "-private":
+                    assertTrue(option.process("-private", null));
+                    assertTrue(Configuration.getDocumentPrivateMembers());
+                    break;
+                case "-tabs":
+                    assertTrue(option.process("-tabs", null));
+                    assertTrue(Configuration.getUseContentTabs());
+                    break;
+                case "-verbose":
+                    assertTrue(option.process("-verbose", null));
+                    assertTrue(Configuration.getVerbose());
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
-    // @Disabled("WIP")
     @Test
-    void run2_noFlatten() {
-        String testOutputDir = BASE_DOC_PATH + "run2";
-        deleteDirectory(testOutputDir);
-        DocumentationTool systemDocumentationTool = ToolProvider.getSystemDocumentationTool();
-        String[] args = new String[] {
-            "-doclet", MarkdownDoclet.class.getName(),
-            "-docletpath", "build/classes/java/main", 
-            "-d", testOutputDir, 
-            "-private", 
-            "-link",
-            "-sourcepath", "src/main/java/",
-            "-subpackages", "io.github.sandydunlop.markista",
-        };
-        DocumentationTool.DocumentationTask task = 
-                systemDocumentationTool.getTask(null, null, null, 
-                MarkdownDoclet.class, Arrays.asList(args), null);
-        task.call();
-        assertTrue(docFileExists("run2/markista/index.md"));
-        assertTrue(docFileExists("run2/markista/constant-values.md"));
-        assertTrue(docFileExists("run2/markista/io/github/sandydunlop/markista/doclet/index.md"));
+    void options_unused() {
+        mockDocletEnvironment();
+        Set<? extends Option> options = doclet.getSupportedOptions();
+        for (Option option : options) {
+            String description = option.getDescription();
+            assertNotNull(description);
+            assertNotEquals("", description);
+            switch (option.getNames().getFirst()) {
+                case "-notimestamp":
+                    assertTrue(option.process("-notimestamp", null));
+                    break;
+                case "-quiet":
+                    assertTrue(option.process("-quiet", null));
+                    break;
+                case "-windowtitle":
+                    assertTrue(option.process("-windowtitle", null));
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    class TestDocService implements DocService {
+        @Override public boolean replacesDefault() { return true; }
+        @Override public boolean start(Api api, Context ctx) { return true; }
+        @Override public boolean finish() { return true; }
+    }
+
+    class TestDocService2 implements DocService {
+        @Override public boolean replacesDefault() { return true; }
+        @Override public boolean start(Api api, Context ctx) { return true; }
+        @Override public boolean finish() { return true; }
     }
 }

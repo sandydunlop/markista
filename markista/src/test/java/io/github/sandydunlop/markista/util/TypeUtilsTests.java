@@ -21,6 +21,7 @@ import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import com.sun.source.doctree.StartElementTree;
 
+import io.github.sandydunlop.markista.MockedDocletEnvironment;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.Api;
@@ -38,6 +39,7 @@ import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import jdk.javadoc.doclet.DocletEnvironment;
@@ -82,7 +84,7 @@ import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.ReturnTree;
 import com.sun.source.doctree.IdentifierTree;
 
-class TypeUtilsTests {
+class TypeUtilsTests extends MockedDocletEnvironment {
     private static Context ctx;
     private Api dummyApi;
     private PackageNode dummyPackage;
@@ -1257,12 +1259,6 @@ class TypeUtilsTests {
         assertNotNull(segCode.getText());
     }
 
-    Name mockName(String n) {
-        Name nameMock = mock(Name.class);
-        when(nameMock.toString()).thenReturn(n);
-        return nameMock;
-    }
-
     @Test
     void setMethodAnnotations_sets_overridden_method_when_override_annotation_present() {
         ExecutableElement methodElement = mock(ExecutableElement.class);
@@ -1324,5 +1320,89 @@ class TypeUtilsTests {
     // // If your project provides a concrete Node class you can replace references accordingly.
     private class NodeStub extends io.github.sandydunlop.markista.model.Node {
         // No additional members required; used for mocking only.
+    }
+
+    @Test
+    void docTreeToText_TEXT() {
+        TypeUtils.init(api, docletEnvironmentMock);
+        DocTree docTreeMock = mockDocCommentTree_TEXT("plain text");
+        Text text = TypeUtils.docTreeToText(docTreeMock);
+        assertEquals("plain text", text.toString());
+    }
+
+    @Test
+    void docTreeToText_MARKDOWN() {
+        TypeUtils.init(api, docletEnvironmentMock);
+        DocTree docTreeMock = mockDocCommentTree_MARKDOWN("markdown text");
+        Text text = TypeUtils.docTreeToText(docTreeMock);
+        assertEquals("markdown text", text.toString());
+    }
+
+    @Test
+    void docTreeToText_LINK() {
+        ctx.setTypeName("Mocktype");
+        TypeUtils.init(api, docletEnvironmentMock);
+        DocTree docTreeMock = mockDocCommentTree_LINK();
+        Text text = TypeUtils.docTreeToText(docTreeMock);
+        assertNotNull(text);
+        assertEquals(1, text.getSegments().size());
+        Segment segment = text.getSegment(0);
+        assertEquals(SegmentKind.LINK, segment.getKind());
+        Reference link = segment.getLink();
+        assertNotNull(link);
+        assertEquals("https://example.com", link.getTarget());
+    }
+
+    @Test
+    void docTreeToText_LINK_PLAIN() {
+        ctx.setTypeName("Mocktype");
+        TypeUtils.init(api, docletEnvironmentMock);
+        DocTree docTreeMock = mockDocCommentTree_LINK_PLAIN();
+        Text text = TypeUtils.docTreeToText(docTreeMock);
+        assertNotNull(text);
+        assertEquals(1, text.getSegments().size());
+        Segment segment = text.getSegment(0);
+        assertEquals(SegmentKind.LINK, segment.getKind());
+        Reference link = segment.getLink();
+        assertNotNull(link);
+        assertEquals("https://example.com", link.getTarget());
+        assertEquals("link text", link.getLabel());
+    }
+
+    @Test
+    void docTreeToText_START_ELEMENT() {
+        TypeUtils.init(api, docletEnvironmentMock);
+        DocTree docTreeMock = mockDocCommentTree_START_ELEMENT();
+        Text text = TypeUtils.docTreeToText(docTreeMock);
+        assertEquals("\n\n", text.toString());
+    }
+
+    @Test
+    void docTreeToText_END_ELEMENT() {
+        TypeUtils.init(api, docletEnvironmentMock);
+        DocTree docTreeMock = mockDocCommentTree_END_ELEMENT();
+        Text text = TypeUtils.docTreeToText(docTreeMock);
+        assertEquals("", text.toString());
+    }
+
+    @Test
+    void markdownToText_link_with_parens() {
+        String markdown = "onverts Markdown text into a [Text](https://example.com) object";
+        Text text = TypeUtils.markdownToText(markdown);
+        assertNotNull(text);
+        assertEquals(3, text.getSegments().size());
+        assertEquals(SegmentKind.LINK, text.getSegment(1).getKind());
+        assertEquals("https://example.com", text.getSegment(1).getLink().getTarget());
+        assertEquals("Text", text.getSegment(1).getLink().getLabel());
+    }
+
+    @Test
+    void markdownToText_link_without_parens() {
+        String markdown = "onverts Markdown text into a [Text] object";
+        Text text = TypeUtils.markdownToText(markdown);
+        assertNotNull(text);
+        assertEquals(3, text.getSegments().size());
+        assertEquals(SegmentKind.LINK, text.getSegment(1).getKind());
+        assertEquals("Text", text.getSegment(1).getLink().getTarget());
     }
 }

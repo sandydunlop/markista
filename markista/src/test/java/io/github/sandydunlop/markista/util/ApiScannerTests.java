@@ -1,49 +1,52 @@
 package io.github.sandydunlop.markista.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import io.github.sandydunlop.markista.MockedDocletEnvironment;
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeView;
 
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.sun.source.util.DocTreePath;
-import com.sun.source.util.DocTrees;
-
-import io.github.sandydunlop.markista.core.Configuration;
-import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.TypeNode;
-import jdk.javadoc.doclet.DocletEnvironment;
-import jdk.javadoc.doclet.Reporter;
-
-import javax.lang.model.element.ModuleElement.DirectiveKind;
-import javax.lang.model.element.ModuleElement.ExportsDirective;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.ModuleElement;
+import javax.lang.model.element.ModuleElement.DirectiveKind;
+import javax.lang.model.element.ModuleElement.ExportsDirective;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.Elements;
-import javax.tools.JavaFileObject;
 import javax.tools.Diagnostic.Kind;
+import javax.tools.JavaFileObject;
 
+import jdk.javadoc.doclet.DocletEnvironment;
+import jdk.javadoc.doclet.Reporter;
+
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.ReturnTree;
+import com.sun.source.util.DocTreePath;
+import com.sun.source.util.DocTrees;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -52,11 +55,19 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-import static org.mockito.Mockito.*;
-import com.sun.source.doctree.DocCommentTree;
-import com.sun.source.doctree.ReturnTree;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-class ApiScannerTests {
+class ApiScannerTests extends MockedDocletEnvironment {
     private static Context ctx;
 
     @Mock static Reporter reporter = new Reporter() {
@@ -430,6 +441,233 @@ class ApiScannerTests {
             // Ensure the package got registered in the api via visitPackage
             assertNotNull(resultApi.getPackageNode("com.scan.pkg"));
         }
+    }
+
+    @Test
+    void run_withElements() {
+
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        ModuleElement moduleMock = mockModule("mockmodule");
+        elements.add(moduleMock);
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        Api api = apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        assertNotNull(api);
+        assertNotNull(apiScanner.includedNames);
+        assertEquals(1, apiScanner.includedNames.size());
+        assertTrue(apiScanner.isIncludedElement("mockpackage"));
+    }
+
+    @Test
+    void visitModule() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        ModuleElement moduleMock = mockModule("mockmodule");
+        elements.add(moduleMock);
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+        apiScanner.visitModule(moduleMock, 1);
+
+        List<ModuleNode> moduleList = apiScanner.api.getModules();
+        assertEquals(1, moduleList.size());
+    }
+
+    @Test
+    void visitPackage() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        ModuleElement moduleMock = mockModule("mockmodule");
+        elements.add(moduleMock);
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        PackageElement parentPackageElement = mock(PackageElement.class);
+        Name packageName = mockName("mockparentpackage");
+        when (parentPackageElement.getQualifiedName()).thenReturn(packageName);
+        when (packageMock.getEnclosingElement()).thenReturn(parentPackageElement);
+        PackageNode parentPackageNode = new PackageNode("mockparentpackage");
+        apiScanner.api.addPackage(parentPackageNode);
+
+        apiScanner.visitPackage(packageMock, 1);
+
+        List<PackageNode> packageList = apiScanner.api.getPackages();
+        assertEquals(2, packageList.size());
+        PackageNode newPackage = packageList.get(1);
+        assertEquals("mockpackage", newPackage.getQualifiedName());
+        assertEquals(1, parentPackageNode.getPackages().size());
+        assertEquals("mockpackage", parentPackageNode.getPackages().getFirst().getQualifiedName());
+    }
+
+    @Test
+    void visitType() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        elements.add(mockModule("mockmodule"));
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+        TypeElement typeMock = mockType("mocktype", packageMock);
+        elements.add(typeMock);
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        PackageNode packageNode = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode);
+
+        apiScanner.visitType(typeMock, 1);
+
+        List<TypeView> moduleList = apiScanner.api.getTypes();
+        assertEquals(1, moduleList.size());
+    }
+
+    @Test
+    void visitVariable() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        elements.add(mockModule("mockmodule"));
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+        TypeElement typeMock = mockType("mocktype", packageMock);
+        elements.add(typeMock);
+        VariableElement variableMock = mockVariable("mockfield", typeMock);
+        elements.add(variableMock);
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        PackageNode packageNode = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode);
+        TypeNode typeNode = new TypeNode("mocktype", "mocktype", "mockpackage");
+        apiScanner.api.addType(typeNode);
+
+        apiScanner.visitType(typeMock, 1);
+        apiScanner.visitVariable(variableMock, 1);
+
+        List<FieldNode> fieldList = typeNode.getFields();
+        assertEquals(1, fieldList.size());
+    }
+
+    @Test
+    void visitExecutable() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        elements.add(mockModule("mockmodule"));
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+        TypeElement typeMock = mockType("mocktype", packageMock);
+        elements.add(typeMock);
+        ExecutableElement executableMock = mockExecutable("mockmethod", typeMock);
+        elements.add(executableMock);
+        mockIncludedElements(elements);
+
+        VariableElement parameterMock = mockMethodParameter("mockparameter", typeMock, executableMock);
+        elements.add(parameterMock);
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        PackageNode packageNode = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode);
+        TypeNode typeNode = new TypeNode("mocktype", "mocktype", "mockpackage");
+        apiScanner.api.addType(typeNode);
+        DocTree dct = mockDocCommentTree_TEXT("plain text");
+        when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
+
+        apiScanner.visitType(typeMock, 1);
+        apiScanner.visitExecutable(executableMock, 1);
+
+        List<MethodNode> methodList = typeNode.getMethods();
+        assertEquals(1, methodList.size());
+
+        MethodNode methodNode = methodList.getFirst();
+        List<ParamNode> paramList = methodNode.getParams();
+        assertEquals(1, paramList.size());
+    }
+
+    @Test
+    void visitExecutable_constructor() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        elements.add(mockModule("mockmodule"));
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+        TypeElement typeMock = mockType("mocktype", packageMock);
+        elements.add(typeMock);
+        ExecutableElement constructorMock = mockExecutable("mockmethod", typeMock);
+        when(constructorMock.getKind()).thenReturn(ElementKind.CONSTRUCTOR);
+        elements.add(constructorMock);
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        PackageNode packageNode = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode);
+        TypeNode typeNode = new TypeNode("mocktype", "mocktype", "mockpackage");
+        apiScanner.api.addType(typeNode);
+
+        apiScanner.visitType(typeMock, 1);
+        apiScanner.visitExecutable(constructorMock, 1);
+
+        List<MethodNode> constructorList = typeNode.getConstructors();
+        assertEquals(1, constructorList.size());
+    }
+
+    @Test
+    void visitTypeParameter() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        elements.add(mockModule("mockmodule"));
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+        TypeElement typeMock = mockType("mocktype", packageMock);
+        elements.add(typeMock);
+        TypeParameterElement parameterMock = mockTypeParameter("parametermethod", typeMock);
+        elements.add(parameterMock);
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        PackageNode packageNode = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode);
+        TypeNode typeNode = new TypeNode("mocktype", "mocktype", "mockpackage");
+        apiScanner.api.addType(typeNode);
+
+        apiScanner.visitType(typeMock, 1);
+        apiScanner.visitTypeParameter(parameterMock, 1);
+
+        assertNotNull(apiScanner.api);
+    }
+
+    @Test
+    void isIncludedElement() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        elements.add(mockModule("mockmodule"));
+        mockIncludedElements(elements);
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        Element e = mockPackage("mockpackage");
+        assertFalse(apiScanner.isIncludedElement(e));
     }
 }
 

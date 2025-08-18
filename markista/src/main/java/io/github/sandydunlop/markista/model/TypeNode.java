@@ -242,18 +242,6 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         return null;
     }
 
-    /// Returns the name of the type.
-    /// @return the simple name.
-    public String getName() {
-        return simpleName;
-    }
-
-    /// Returns the description of this type.
-    /// @return a Text object containing the first sentence or summary.
-    public Text getDescription() {
-        return firstSentence;
-    }
-
     /// Returns a string representation of modifiers.
     /// The modifiers are sorted according to a predefined order.
     /// @return A string containing sorted modifiers separated by spaces.

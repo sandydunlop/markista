@@ -306,7 +306,7 @@ public class LinkResolver {
         return false;
     }
 
-    private static boolean resolveLocalPackageTypeInternal(Reference link, String toPackageName, String toClassName) {
+    static boolean resolveLocalPackageTypeInternal(Reference link, String toPackageName, String toClassName) {
         String fromPackageName = getPackageName(link.getOrigin());
         if (getPackageName(toPackageName).isEmpty()) {
             return false;
