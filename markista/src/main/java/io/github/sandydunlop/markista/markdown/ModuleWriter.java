@@ -12,6 +12,7 @@ import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.InvalidPathException;
 import java.util.List;
 
 /// A class that outputs a module's API documentation as Markdown.
@@ -47,14 +48,14 @@ public class ModuleWriter {
     private Api api;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public ModuleWriter() {
-        this.ctx = Context.getInstance();
+    public ModuleWriter(Context context) {
+        this.ctx = context;
     }
 
     /// Output the documentation files for the specified API
     /// @param  api The API to output the documentation for
     /// @throws java.io.IOException if there is a problem writing to the output file
-    public void writeDocs(Api api) throws IOException {
+    public void writeDocs(Api api) throws InvalidPathException, IOException {
         this.api = api;
         for (ModuleNode moduleNode : api.getModules()) {
             outputModuleDoc(moduleNode);
@@ -67,7 +68,7 @@ public class ModuleWriter {
     /// are then written.
     /// @param moduleNode The module to write documentation for
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputModuleDoc(ModuleNode moduleNode) throws IOException {
+    private void outputModuleDoc(ModuleNode moduleNode) throws InvalidPathException, IOException {
         ctx.setModuleName(moduleNode.getName());
         if (!moduleNode.getPackages().isEmpty()) {
             ctx.setModuleName(moduleNode.getName());
@@ -99,7 +100,7 @@ public class ModuleWriter {
             outputModuleProvidesDirectives(moduleNode.getProvides());
             writer.flush();
             writer.close();
-            PackageWriter packageWriter = new PackageWriter();
+            PackageWriter packageWriter = new PackageWriter(ctx);
             packageWriter.writeDocs(moduleNode);
         }
         if (!moduleNode.getConstantValues().isEmpty()) {
@@ -179,7 +180,7 @@ public class ModuleWriter {
     /// Outputs the *Constant Field Values* page.
     /// @param moduleNode The API tree node representing a module.
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputConstantValues(ModuleNode moduleNode) throws IOException {
+    private void outputConstantValues(ModuleNode moduleNode) throws InvalidPathException, IOException {
         writer = ctx.createFileInModule("constant-values.md");    
         if (!moduleNode.getConstantValues().isEmpty()) {
             writer.write("# " + TITLE_CONSTANT_FIELD_VALUES + "\n");

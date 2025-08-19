@@ -20,6 +20,7 @@ import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,14 +43,14 @@ public class TypeWriter {
     private Writer writer = null;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public TypeWriter() {
-        ctx = Context.getInstance();
+    public TypeWriter(Context context) {
+        ctx = context;
     }
 
     /// Writes a Markdown file for the Javadoc of a type
     /// @param typeNode the type
     /// @throws java.io.IOException if there is a problem writing to the output file
-    public void outputTypeDoc(TypeNode typeNode) throws IOException {
+    public void outputTypeDoc(TypeNode typeNode) throws InvalidPathException, IOException {
         ctx.setTypeName(typeNode.getQualifiedName());
         writer = ctx.createFileInPackage();    
         writer.write("Package [" + typeNode.getPackageName() + "](index.md)\n\n");

@@ -1,10 +1,26 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.*;
+import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.model.DirectiveNode;
+import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.InterfaceTypeNode;
+import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.util.LinkResolver;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.file.InvalidPathException;
+import java.util.List;
+
+import javax.lang.model.element.Element;
+import javax.tools.Diagnostic.Kind;
+
 import jdk.javadoc.doclet.Reporter;
 
+import com.sun.source.util.DocTreePath;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,17 +29,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.sun.source.util.DocTreePath;
-
-import java.io.*;
-import java.util.List;
-
-import javax.lang.model.element.Element;
-import javax.tools.Diagnostic.Kind;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ModuleWriterTests {
@@ -66,7 +75,7 @@ class ModuleWriterTests {
     }
 
     @BeforeEach
-    void setup() throws IOException {
+    void setup() throws InvalidPathException, IOException {
         api = new Api("Test API");
         moduleNode = new ModuleNode("mod");
         api.addModule(moduleNode);
@@ -82,8 +91,9 @@ class ModuleWriterTests {
 
         stringWriter = new StringWriter();
 
-        // Stub the behavior of fileUtilsMock to return a StringWriter
+        // Stub the behavior of contextMock to return a StringWriter
         when(contextMock.createFileInModule(anyString())).thenReturn(stringWriter);
+        when(contextMock.createFileInPackage()).thenReturn(stringWriter);
     }
 
     @Test
@@ -182,7 +192,7 @@ class ModuleWriterTests {
     }
 
     @Test
-    void outputConstantValues_WritesConstantFieldValuesPage() throws IOException {
+    void outputConstantValues_WritesConstantFieldValuesPage() throws InvalidPathException, IOException {
         Reference ref = Reference.to("v");
         FieldNode fieldNode = mock(FieldNode.class);
         when(fieldNode.getModifiersString()).thenReturn("public static ");

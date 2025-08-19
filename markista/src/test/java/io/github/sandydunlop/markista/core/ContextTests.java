@@ -10,8 +10,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -227,7 +226,7 @@ class ContextTests {
     }
 
     @Test
-    void createModuleFile_namedModule() throws IOException {
+    void createModuleFile_namedModule() throws InvalidPathException, IOException {
         String outputDir = "/tmp/markista/dirpath/";
         ctx.setOutputDirectory(outputDir);
         Configuration.setFlattenPackages(true);
@@ -247,7 +246,7 @@ class ContextTests {
     }
 
     @Test
-    void createModuleFile_unnamedModule() throws IOException {
+    void createModuleFile_unnamedModule() throws InvalidPathException, IOException {
         String outputDir = "/tmp/markista/dirpath/";
         ctx.setOutputDirectory(outputDir);
         Configuration.setFlattenPackages(true);
@@ -397,7 +396,7 @@ class ContextTests {
     }
 
     @Test
-    void testCreateFileInModuleCreatesDirectoriesAndFile() throws IOException {
+    void testCreateFileInModuleCreatesDirectoriesAndFile() throws InvalidPathException, IOException {
         Path tempDir = Files.createTempDirectory("ctxModTest");
         context.setOutputDirectory(tempDir.toString());
         context.setModuleName("mymodule");
@@ -412,19 +411,6 @@ class ContextTests {
         // Cleanup
         expectedFile.delete();
         expectedFile.getParentFile().delete();
-    }
-
-    @Test
-    void testPathSeparatorReturnsCorrectCharacter() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        // Use reflection to access private method pathSeparator()
-        var pathSeparatorMethod = Context.class.getDeclaredMethod("pathSeparator");
-        pathSeparatorMethod.setAccessible(true);
-        char sep = (char) pathSeparatorMethod.invoke(context);
-
-        // Separator should be '/' or system-dependent but not ':'
-        assertNotEquals(':', sep);
-        // Typically it will be either '/' or File.pathSeparatorChar, verify consistency
-        assertTrue(sep == '/' || sep == File.pathSeparatorChar);
     }
 
     class TestReporter implements Reporter {

@@ -1,10 +1,12 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.EnumTypeNode;
-import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
@@ -14,6 +16,7 @@ import io.github.sandydunlop.markista.util.LinkResolver;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.file.InvalidPathException;
 
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic.Kind;
@@ -72,6 +75,8 @@ class PackageWriterTests {
     
     @BeforeEach
     void setup() throws IOException {
+        api = new Api("Test API");
+
         // Mock Writer to capture written content
         writer = new StringWriter();
         when(contextMock.createFileInPackage()).thenReturn(writer);
@@ -95,7 +100,6 @@ class PackageWriterTests {
         moduleNode.addPackage(packageNode);
         moduleNode.addPackage(modelPackage);
 
-        api = new Api("Test API");
         api.addModule(moduleNode);
         api.addPackage(packageNode);
         api.addPackage(modelPackage);
@@ -104,27 +108,94 @@ class PackageWriterTests {
 		LinkResolver.setFlattenedDirectories(null);
     }
 
-    @Test
-    void blah() throws IOException {
-        EnumTypeNode enumNode = new EnumTypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", 
-                packageNode.getQualifiedName());
-        FieldNode constant1 = new FieldNode("io.github.sandydunlop.markista.model.TestEnum", "field1");
-        constant1.setConstantValue("1");
-        enumNode.addConstant(constant1);
-        modelPackage.addType(enumNode);
-        api.addType(enumNode);
-        modelPackage.addType(enumNode);
-
+    void setupLinks() {
         Context ctx = Context.getInstance();
-
+        ctx.setApi(api);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
         LinkFormatter.generateLinkTexts(api, ctx);
+    }
+
+    @Test
+    void packageWriter_outputs_nestedPackages_withoutTabs() throws IOException {
+        setupLinks();
+
+        Configuration.setUseContentTabs(false);
 
         packageWriter.outputPackageDoc(packageNode);
         String output = writer.toString();
         assertTrue(output.contains("Packages"));
         assertTrue(output.contains("[model](model/index.md)"));
+    }
+
+    @Test
+    void packageWriter_outputs_nestedPackages_withTabs() throws IOException {
+        setupLinks();
+
+        Configuration.setUseContentTabs(true);
+
+        packageWriter.outputPackageDoc(packageNode);
+        String output = writer.toString();
+        assertTrue(output.contains("Packages"));
+        assertTrue(output.contains("[model](model/index.md)"));
+    }
+
+    @Test
+    void packagrWiter_outputsPackageMembers_withoutTabs() throws InvalidPathException, IOException {
+        EnumTypeNode enumNode = new EnumTypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", modelPackage.getModuleName());
+        InterfaceTypeNode interfaceNode = new InterfaceTypeNode("io.github.sandydunlop.markista.model.TestInterface", "TestInterface", modelPackage.getModuleName());
+        AnnotationTypeNode annotationNode = new AnnotationTypeNode("io.github.sandydunlop.markista.model.TestAnnotation", "TestAnnotation", modelPackage.getModuleName());
+        modelPackage.addType(enumNode);
+        modelPackage.addType(interfaceNode);
+        modelPackage.addType(annotationNode);
+        api.addType(enumNode);
+        api.addType(interfaceNode);
+        api.addType(annotationNode);
+        setupLinks();
+        when(contextMock.getApi()).thenReturn(api);
+
+        Configuration.setUseContentTabs(false);
+
+        packageWriter.outputPackageDoc(modelPackage);
+        String output = writer.toString();
+
+        assertTrue(output.contains("[Node](Node.md)"));
+        assertTrue(output.contains("[TestInterface](TestInterface.md)"));
+        assertTrue(output.contains("[TestEnum](TestEnum.md)"));
+        assertTrue(output.contains("[TestAnnotation](TestAnnotation.md)"));
+
+        assertTrue(output.contains("Enum TestEnum"));
+        assertTrue(output.contains("Interface TestInterface"));
+        assertTrue(output.contains("Annotation Type TestAnnotation"));
+    }
+
+    @Test
+    void packagrWiter_outputsPackageMembers_withTabs() throws InvalidPathException, IOException {
+        EnumTypeNode enumNode = new EnumTypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", modelPackage.getModuleName());
+        InterfaceTypeNode interfaceNode = new InterfaceTypeNode("io.github.sandydunlop.markista.model.TestInterface", "TestInterface", modelPackage.getModuleName());
+        AnnotationTypeNode annotationNode = new AnnotationTypeNode("io.github.sandydunlop.markista.model.TestAnnotation", "TestAnnotation", modelPackage.getModuleName());
+        modelPackage.addType(enumNode);
+        modelPackage.addType(interfaceNode);
+        modelPackage.addType(annotationNode);
+        api.addType(enumNode);
+        api.addType(interfaceNode);
+        api.addType(annotationNode);
+        setupLinks();
+        when(contextMock.getApi()).thenReturn(api);
+
+        Configuration.setUseContentTabs(true);
+        
+        packageWriter.outputPackageDoc(modelPackage);
+        String output = writer.toString();
+
+        assertTrue(output.contains("[Node](Node.md)"));
+        assertTrue(output.contains("[TestInterface](TestInterface.md)"));
+        assertTrue(output.contains("[TestEnum](TestEnum.md)"));
+        assertTrue(output.contains("[TestAnnotation](TestAnnotation.md)"));
+
+        assertTrue(output.contains("Enum TestEnum"));
+        assertTrue(output.contains("Interface TestInterface"));
+        assertTrue(output.contains("Annotation Type TestAnnotation"));
     }
 }
 

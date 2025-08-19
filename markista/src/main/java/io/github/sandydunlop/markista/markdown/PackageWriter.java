@@ -12,6 +12,7 @@ import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.InvalidPathException;
 import java.util.List;
 
 /// A class that outputs API package documentation as Markdown.
@@ -30,14 +31,14 @@ public class PackageWriter {
     private Writer writer = null;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public PackageWriter() {
-        ctx = Context.getInstance();
+    public PackageWriter(Context context) {
+        ctx = context;
     }
 
     /// Output the documentation files for the specified API
     /// @param moduleNode  The module containing the packages to output the documentation for
     /// @throws java.io.IOException if there is a problem writing to the output file
-    public void writeDocs(ModuleNode moduleNode) throws IOException {
+    public void writeDocs(ModuleNode moduleNode) throws InvalidPathException, IOException {
         for (PackageNode packageNode : moduleNode.getPackages()) {
             outputPackageDoc(packageNode);
         }
@@ -46,9 +47,10 @@ public class PackageWriter {
     /// Writes the Javadoc for a package as Markdown
     /// @param packageNode the package
     /// @throws java.io.IOException if there is a problem writing to the output file
-    void outputPackageDoc(PackageNode packageNode) throws IOException {
+    void outputPackageDoc(PackageNode packageNode) throws InvalidPathException, IOException {
         ctx.setPackageName(packageNode.getQualifiedName());
-        writer = ctx.createFileInPackage();    
+        writer = ctx.createFileInPackage();
+        writer.write("\n");
         writer.write("# Package " + packageNode.getQualifiedName() + "\n");
         writer.write("\n\n" + Markdown.formatText(packageNode.getFullBody()) + "\n\n");
         outputPackageMemberPackages("Packages", packageNode.getPackages());
@@ -58,7 +60,7 @@ public class PackageWriter {
         outputPackageMemberTypes("Annotation Types", packageNode.getAnnotations());
         writer.flush();
         writer.close();
-        TypeWriter typeWriter = new TypeWriter();
+        TypeWriter typeWriter = new TypeWriter(ctx);
         for (TypeView member : packageNode.getClasses()) {
             typeWriter.outputTypeDoc((TypeNode)member);
         }
@@ -86,10 +88,7 @@ public class PackageWriter {
                 .addColumn(TEXT_DESCRIPTION);
         for (PackageNode member : members) {
             String name = member.getQualifiedName();
-            int p = name.lastIndexOf(".");
-            if (p > -1 && p < name.length() - 1) {
-                name = name.substring(p + 1);
-            }
+            name = name.substring(name.lastIndexOf(".") + 1);
             Reference link = Reference.to(member.getQualifiedName())
                     .from(ctx.getPackageName())
                     .withKind(Reference.Kind.PACKAGE)

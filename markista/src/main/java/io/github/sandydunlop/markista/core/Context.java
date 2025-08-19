@@ -1,16 +1,18 @@
 package io.github.sandydunlop.markista.core;
 
+import io.github.sandydunlop.markista.model.Api;
+
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 
 import javax.tools.Diagnostic;
 
-import io.github.sandydunlop.markista.model.Api;
 import jdk.javadoc.doclet.Reporter;
 
 /// Singleton class that maintains the current context during documentation generation.
@@ -248,7 +250,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         } else {
             moduleDir = new File(rootDir, moduleName);
         }
-        String dirName = packageName.replace('.', pathSeparator());
+        String dirName = packageName.replace(".", File.separator);
         if (Configuration.getFlattenPackages() && dirName.length() > 2) {
             if (dirName.length() < flattenedDirectories.length()) {
                 // This was happening when mock classes ended up mixed in
@@ -286,12 +288,12 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// @param fileName The file name to create inside the module directory.
     /// @return A Writer object for writing the file.
     /// @throws IOException If an I/O error occurs creating directories or the file.
-    public Writer createFileInModule(String fileName) throws IOException {
+    public Writer createFileInModule(String fileName) throws InvalidPathException, IOException {
         File path = createModuleFilePath(fileName);
         return createFileInternal(path);
     }
 
-    File createModuleFilePath(String fileName) {
+    File createModuleFilePath(String fileName) throws InvalidPathException {
         if (outputDirectory.isEmpty()) outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
         Path path;
         if (Configuration.getFlattenModules()) {
@@ -313,14 +315,6 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         FileOutputStream fileOutputStream = new FileOutputStream(file);
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
         return new OutputStreamWriter(bufferedOutputStream);
-    }
-
-    /// Returns the character used to separate parts of filesystem paths for output directory construction.
-    /// This method works around a macOS bug where `File.pathSeparatorChar` wrongly returns ':' instead of '/'.
-    /// @return The platform-appropriate character for separating path components.
-    private char pathSeparator() {
-        // File.pathSeparatorChar is returning ":" on macOS (Sequoia 15.5) when it should be "/"
-        return File.pathSeparatorChar == ':' ? '/' : File.pathSeparatorChar;
     }
 
     public class NameSimplifier {
