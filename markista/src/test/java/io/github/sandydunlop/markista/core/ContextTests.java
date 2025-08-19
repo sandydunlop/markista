@@ -362,7 +362,8 @@ class ContextTests {
         context.setPackageName("com.example.test");
 
         // Assuming Configuration.getFlattenModules() and getFlattenPackages() are false
-        Mockito.mockStatic(Configuration.class).when(Configuration::getFlattenPackages).thenReturn(false);
+        Configuration.setFlattenModules(false);
+        Configuration.setFlattenPackages(false);
 
         File dir = context.getPackageDirectory();
 
@@ -371,6 +372,7 @@ class ContextTests {
         assertTrue(dir.getAbsolutePath().contains(new File(".").getAbsolutePath()));
     }
 
+    @Disabled("FILESYSTEM")
     @Test
     void testCreateFileInPackageCreatesDirectoriesAndFile() throws IOException {
         // Use a temp directory

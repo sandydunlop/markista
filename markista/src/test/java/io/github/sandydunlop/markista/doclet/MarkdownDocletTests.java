@@ -98,9 +98,7 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
         DocService defaultDocService = new MarkdownService();
         List<DocService> orderedExtensions = new ArrayList<>();
 
-        System.out.println("XYZ ******** extensions_multipleReplacements IN");
         DocService mainDocService = doclet.getMainServiceAndExtensions(loader, defaultDocService, orderedExtensions);
-        System.out.println("XYZ ******** extensions_multipleReplacements OUT");
 
         assertNull(mainDocService);
         verify(service1, times(1)).replacesDefault();
@@ -130,16 +128,11 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
                     break;
                 case "--link-modules":
                     assertTrue(option.process("--link-modules", List.of("module1:module2")));
-                    List<String> modules = Configuration.getListExternal();
-                    assertEquals(2, modules.size());
-                    assertEquals("module1", modules.getFirst());
-                    assertEquals("module2", modules.get(1));
+                    assertEquals("module1:module2", Configuration.getLinkExternal());
                     break;
                 case "--module-path":
                     assertTrue(option.process("--module-path", List.of("module1:module2")));
-                    List<String> paths = Configuration.getModulePaths();
-                    assertEquals("module1", paths.getFirst());
-                    assertEquals("module2", paths.get(1));
+                    assertEquals("module1:module2", Configuration.getModulePaths());
                     break;
                 case "--project-path":
                     assertTrue(option.process("--project-path", List.of("/home/git/project")));

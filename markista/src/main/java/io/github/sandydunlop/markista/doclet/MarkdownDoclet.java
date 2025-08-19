@@ -377,7 +377,6 @@ public class MarkdownDoclet implements Doclet {
 
     private DocService populateExtensionsWithOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions, 
                                             DocService defaultDocService) {
-        System.out.println("XYZ ******** populateExtensionsWithOrder");
         DocService mainDocService = defaultDocService;
         HashMap<String, DocService> extensions = new HashMap<>();
         for (DocService extension : loader) {
@@ -401,12 +400,9 @@ public class MarkdownDoclet implements Doclet {
 
     private DocService populateExtensionsWithoutOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions, 
                                                 DocService defaultDocService) {
-        System.out.println("XYZ ******** populateExtensionsWithoutOrder");
         DocService mainDocService = defaultDocService;
         for (DocService extension : loader) {
-            System.out.println("XYZ ******** extension");
             mainDocService = handleExtension(mainDocService, defaultDocService, orderedExtensions, extension);
-            System.out.println("XYZ ******** ds=" + mainDocService);
             if (mainDocService == null) {
                 return null;
             }

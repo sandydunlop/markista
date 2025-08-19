@@ -1,31 +1,33 @@
 package io.github.sandydunlop.markista.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
-import java.util.List;
-
-import javax.lang.model.element.Element;
-import javax.tools.Diagnostic.Kind;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-
-import com.sun.source.util.DocTreePath;
-
-import jdk.javadoc.doclet.Reporter;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.DirectiveNode;
+import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
+
+import java.util.List;
+
+import javax.lang.model.element.Element;
+import javax.tools.Diagnostic.Kind;
+
+import jdk.javadoc.doclet.Reporter;
+
+import com.sun.source.util.DocTreePath;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class LinkFormatterTests {
     private static Context ctx;
@@ -165,5 +167,21 @@ class LinkFormatterTests {
             }
         }
 
+    }
+
+    @Test
+    void processModules_constantValues() {
+        FieldNode constantValue = new FieldNode("java.lang.String", "fieldName");
+        node.addField(constantValue);
+        module.addConstantValue(constantValue);
+        constantValue.setConstantValue("testValue");
+        module.addConstantValue(constantValue);     
+
+        LinkFormatter.processModules(api);
+
+        Reference constantReference = constantValue.getConstantValueReference();
+        assertNotNull(constantReference);
+        assertEquals(Reference.Kind.URL, constantReference.getKind());
+        assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html", constantReference.getUri());
     }
 }

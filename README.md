@@ -62,6 +62,78 @@ javadoc {
 }
 ```
 
+## Maven
+
+pom.xml:
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.sandydunlop</groupId>
+    <artifactId>example.module.maven</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>24</maven.compiler.source>
+        <maven.compiler.target>24</maven.compiler.target>
+        <maven.compiler.release>24</maven.compiler.release>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>maven-local</id>
+            <url>file://${user.home}/.m2/repository</url>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.sandydunlop</groupId>
+            <artifactId>markista</artifactId>
+            <version>0.1.19</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <windowTitle>${project.name} API Documentation</windowTitle>
+                    <docTitle>${project.name} API Documentation</docTitle>
+                    <additionalparam>-doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet</additionalparam>
+                    <additionalparam>-private</additionalparam>
+                    <additionalparam>-link</additionalparam>
+                    <additionalparam>-verbose</additionalparam>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+```
+
 ## Command Line
 
 Markista can be used from the command line with the `javadoc` command as follows:

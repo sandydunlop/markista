@@ -1,5 +1,17 @@
 package io.github.sandydunlop.markista.util;
 
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Reference.Kind;
+import io.github.sandydunlop.markista.model.Reference.Scope;
+import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeView;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -15,25 +27,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
-import java.util.List;
-import java.util.Map;
-
-import io.github.sandydunlop.markista.core.Configuration;
-import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeView;
-import io.github.sandydunlop.markista.model.Reference.Kind;
-import io.github.sandydunlop.markista.model.Reference.Scope;
 
 /// `LinkResolver` calculates the paths for Markdown documents
 /// to link between different packages and to URLs of external
@@ -569,8 +569,20 @@ public class LinkResolver {
     /// Configures the known sibling modules for link resolution, typically loading their info.
     /// This method updates internal structures to recognize sibling modules for proper linking.
     static void configureSiblingModules() {
+        List<String> linkExternalList = List.of();
+        if (Configuration.getLinkExternal() != null) {
+            String[] modules = Configuration.getLinkExternal().split(":");
+            linkExternalList = Arrays.asList(modules);
+        }
+
+        List<String> modulePathList = List.of();
+        if (Configuration.getModulePaths() != null) {
+            String[] pathList = Configuration.getModulePaths().split(":");
+            modulePathList = Arrays.asList(pathList);
+        }
+
         classToModule = new HashMap<>();
-        for (String modulePathString : Configuration.getModulePaths()) {
+        for (String modulePathString : modulePathList) {
             File file = Paths.get(modulePathString).toFile();
             siblingModuleName = "";
             siblingClassNames = new java.util.HashSet<>();
@@ -584,7 +596,7 @@ public class LinkResolver {
                 }
             } 
             siblingModules.add(siblingModuleName);
-            if (Configuration.getListExternal().contains(siblingModuleName)) {
+            if (linkExternalList.contains(siblingModuleName)) {
                 for (String className : siblingClassNames) {
                     classToModule.put(className, siblingModuleName);
                 }

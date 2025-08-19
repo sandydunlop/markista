@@ -1,8 +1,5 @@
 package io.github.sandydunlop.markista.core;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 /// Utility class holding global configuration settings for the documentation generator.
 /// 
 /// This class provides static getter and setter methods for various options that control the behavior
@@ -33,10 +30,10 @@ public class Configuration {
     private static boolean verbose = false;
 
     /// The list of module paths passed in from the Javadoc command line
-    private static List<String> modulePathList = new ArrayList<>();
+    private static String modulePathList = null;
 
     /// The list of modules that have local Javadoc that can be linked to
-    private static List<String> linkExternal = new ArrayList<>();
+    private static String linkExternal = null;
 
     private static String projectPath = null;
 
@@ -134,26 +131,24 @@ public class Configuration {
     /// Sets the list of sibling modules that can be linked to
     /// @param moduleList a colon-separated string of module names
     public static void setLinkExternal(String moduleList) {
-        String[] modules = moduleList.split(":");
-        linkExternal = Arrays.asList(modules);
+        linkExternal = moduleList;
     }
 
     /// Gets the list of sibling modules that can be linked to
     /// @return a list of sibling modules that can be linked to
-    public static List<String> getListExternal() {
+    public static String getLinkExternal() {
         return linkExternal;
     }
 
     /// Sets the directory containing modules.
     /// @param modulePaths A colon-separated list of paths.
     public static void setModulePaths(String modulePaths) {
-        String[] pathList = modulePaths.split(":");
-        modulePathList = Arrays.asList(pathList);
+        modulePathList = modulePaths;
     }
 
     /// Gets the list of modules
     /// @return A list of the module paths
-    public static List<String> getModulePaths() {
+    public static String getModulePaths() {
         return modulePathList;
     }
 
