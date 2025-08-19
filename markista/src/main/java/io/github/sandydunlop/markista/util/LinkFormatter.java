@@ -1,8 +1,5 @@
 package io.github.sandydunlop.markista.util;
 
-import java.nio.file.Path;
-import java.util.List;
-
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.DirectiveNode;
@@ -17,6 +14,9 @@ import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
+
+import java.nio.file.Path;
+import java.util.List;
 
 public class LinkFormatter {
     private static Context ctx;
@@ -73,34 +73,40 @@ public class LinkFormatter {
                 .filter(ParamNode.class::isInstance)
                 .map(ParamNode.class::cast)
                 .toList());
-
         // Methods
         for (MethodNode method : typeNode.getMethods()) {
-            Reference returnTypeReference = Reference.to(method.getReturnTypeName()).from(ctx.getPackageName());
-            method.setReturnTypeText(link(returnTypeReference, false));
-            generateLinkTextsForParams(method.getParams()
-                    .stream()
-                    .filter(ParamNode.class::isInstance)
-                    .map(ParamNode.class::cast)
-                    .toList());
-            if (method.getSpecifiedBy() != null && !method.getSpecifiedBy().getTarget().isEmpty()) {
-                LinkResolver.resolve(method.getSpecifiedBy());
-            }
-            for (Reference thrownRef : method.getThrownTypes()) {
-                LinkResolver.resolve(thrownRef);
-            }
-            OverriddenMethodNode om = method.getOverriddenMethod();
-            if (om != null) {
-                String name = om.getClassName() + "#" + om.getMethodName();
-                Reference reference = Reference.to(name)
-                        .from(ctx.getPackageName())
-                        .withLabel(om.getClassName() + "." + om.getMethodName());
-                om.setText(link(reference, false));
-                om.getText().append(".");
-                om.getText().append(om.getMethodName());
-            }
-            generateLinkTextsForReferences(method);
+            processMethod(method);
         }
+        for (MethodNode method : typeNode.getConstructors()) {
+            processMethod(method);
+        }
+    }
+
+    static void processMethod(MethodNode method) {
+        Reference returnTypeReference = Reference.to(method.getReturnTypeName()).from(ctx.getPackageName());
+        method.setReturnTypeText(link(returnTypeReference, false));
+        generateLinkTextsForParams(method.getParams()
+                .stream()
+                .filter(ParamNode.class::isInstance)
+                .map(ParamNode.class::cast)
+                .toList());
+        if (method.getSpecifiedBy() != null && !method.getSpecifiedBy().getTarget().isEmpty()) {
+            LinkResolver.resolve(method.getSpecifiedBy());
+        }
+        for (Reference thrownRef : method.getThrownTypes()) {
+            LinkResolver.resolve(thrownRef);
+        }
+        OverriddenMethodNode om = method.getOverriddenMethod();
+        if (om != null) {
+            String name = om.getClassName() + "#" + om.getMethodName();
+            Reference reference = Reference.to(name)
+                    .from(ctx.getPackageName())
+                    .withLabel(om.getClassName() + "." + om.getMethodName());
+            om.setText(link(reference, false));
+            om.getText().append(".");
+            om.getText().append(om.getMethodName());
+        }
+        generateLinkTextsForReferences(method);
     }
 
     static void processModules(Api api) {

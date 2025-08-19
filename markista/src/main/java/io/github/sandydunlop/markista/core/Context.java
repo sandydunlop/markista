@@ -195,7 +195,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     public void reportError(String message) {
         reporter.print(Diagnostic.Kind.ERROR, message + location());
     }
-
+    
     /// Returns a string describing the current location context in module, package, type, method, and field.
     /// Used to append context details to diagnostic messages.
     /// @return A formatted multi-line string describing the current location, or empty if no location info.
