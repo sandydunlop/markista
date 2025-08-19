@@ -188,11 +188,11 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         MethodNode methodNode = new MethodNode(returnTypeName, element.getSimpleName().toString());
         PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
 
+        setModifiers(methodNode, element.getModifiers());
+        setMethodParams(methodNode, element);
         if (!setMethodOwnerDetails(methodNode, packageNode, element)) {
             return null;
         }
-        setMethodParams(methodNode, element);
-        setModifiers(methodNode, element.getModifiers());
         setThrownTypes(methodNode, element.getThrownTypes());
         setMethodAnnotations(methodNode, element);
         setSpecifiedBy(methodNode, element);
@@ -418,7 +418,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                 methodNode.setSimpleName(ownerType.getSimpleName());
                 MethodNode existingMethodNode = ownerType.getConstructor(methodNode);
                 if (existingMethodNode == null) {
-                    ownerType.getConstructors().add(methodNode);
+                    ownerType.addConstructor(methodNode);
                 }
             }
             return true;
@@ -1034,4 +1034,30 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         }
         return null;
     }    
+
+    public static void addJavadocToRecords(Api api) {
+        for (TypeView recordView : api.getRecords()) {
+            RecordTypeNode recordNode = (RecordTypeNode) recordView;
+            for (MethodNode method : recordNode.getMethods()) {
+                Text text = method.getFirstSentence();
+                if (text.isEmpty()) {
+                    switch(method.getSimpleName()) {
+                        case "equals":
+                            text = Text.of("Indicates whether some other object is \"equal to\" this one.");
+                            break;
+                        case "hashCode":
+                            text = Text.of("Returns a hash code value for this object.");
+                            break;
+                        case "toString":
+                            text = Text.of("Returns a string representation of this record class.");
+                            break;
+                        default:
+                            text = Text.of(String.format("Returns the value of the `%s` record component.", method.getSimpleName()));
+                            break;
+                    }
+                    method.setFirstSentence(text);
+                }
+            }
+        }
+    }
 }
