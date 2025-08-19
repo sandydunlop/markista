@@ -164,9 +164,9 @@ class PackageWriterTests {
         assertTrue(output.contains("[TestEnum](TestEnum.md)"));
         assertTrue(output.contains("[TestAnnotation](TestAnnotation.md)"));
 
-        assertTrue(output.contains("Enum TestEnum"));
+        assertTrue(output.contains("Enum Class TestEnum"));
         assertTrue(output.contains("Interface TestInterface"));
-        assertTrue(output.contains("Annotation Type TestAnnotation"));
+        assertTrue(output.contains("Annotation Interface TestAnnotation"));
     }
 
     @Test
@@ -193,9 +193,9 @@ class PackageWriterTests {
         assertTrue(output.contains("[TestEnum](TestEnum.md)"));
         assertTrue(output.contains("[TestAnnotation](TestAnnotation.md)"));
 
-        assertTrue(output.contains("Enum TestEnum"));
+        assertTrue(output.contains("Enum Class TestEnum"));
         assertTrue(output.contains("Interface TestInterface"));
-        assertTrue(output.contains("Annotation Type TestAnnotation"));
+        assertTrue(output.contains("Annotation Interface TestAnnotation"));
     }
 }
 

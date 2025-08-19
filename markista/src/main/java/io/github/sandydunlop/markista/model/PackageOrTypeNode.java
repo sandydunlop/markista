@@ -46,6 +46,15 @@ public abstract class PackageOrTypeNode extends AbstractPackageMember {
         return out;
     }
 
+    /// Gets the list of records *owned* by this instance.
+    public List<TypeView> getRecords() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isRecord())
+                out.add(t);
+        return out;
+    }
+
     /// Gets the list of annotations *owned* by this instance.
     public List<TypeView> getAnnotations() {
         List<TypeView> out = new ArrayList<>();

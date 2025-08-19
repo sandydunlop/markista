@@ -14,5 +14,6 @@ public interface TypeView {
     boolean isClass();
     boolean isInterface();
     boolean isEnum();
+    boolean isRecord();
     boolean isAnnotation();
 }

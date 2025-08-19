@@ -62,6 +62,9 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
     public boolean isEnum() { return kind == Kind.ENUM; }
     
     @Override
+    public boolean isRecord() { return kind == Kind.RECORD; }
+    
+    @Override
     public boolean isAnnotation() { return kind == Kind.ANNOTATION; }
 
     @Override
@@ -268,11 +271,14 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         /// An interface
         INTERFACE ("Interface"),
 
+        /// A record
+        RECORD ("Record Class"),
+
         /// An enum
-        ENUM ("Enum"),
+        ENUM ("Enum Class"),
 
         /// An annotation
-        ANNOTATION ("Annotation Type");
+        ANNOTATION ("Annotation Interface");
 
         /// The display name for the kind.
         private final String name;

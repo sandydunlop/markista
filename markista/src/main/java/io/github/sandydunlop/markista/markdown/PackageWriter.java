@@ -54,10 +54,11 @@ public class PackageWriter {
         writer.write("# Package " + packageNode.getQualifiedName() + "\n");
         writer.write("\n\n" + Markdown.formatText(packageNode.getFullBody()) + "\n\n");
         outputPackageMemberPackages("Packages", packageNode.getPackages());
-        outputPackageMemberTypes("Classes", packageNode.getClasses());
         outputPackageMemberTypes("Interfaces", packageNode.getInterfaces());
+        outputPackageMemberTypes("Classes", packageNode.getClasses());
+        outputPackageMemberTypes("Record Classes", packageNode.getRecords());
         outputPackageMemberTypes("Enum Classes", packageNode.getEnums());
-        outputPackageMemberTypes("Annotation Types", packageNode.getAnnotations());
+        outputPackageMemberTypes("Annotation Interfaces", packageNode.getAnnotations());
         writer.flush();
         writer.close();
         TypeWriter typeWriter = new TypeWriter(ctx);
@@ -65,6 +66,9 @@ public class PackageWriter {
             typeWriter.outputTypeDoc((TypeNode)member);
         }
         for (TypeView member : packageNode.getInterfaces()) {
+            typeWriter.outputTypeDoc((TypeNode)member);
+        }
+        for (TypeView member : packageNode.getRecords()) {
             typeWriter.outputTypeDoc((TypeNode)member);
         }
         for (TypeView member : packageNode.getEnums()) {

@@ -1,17 +1,5 @@
 package io.github.sandydunlop.markista.util;
 
-import com.sun.source.doctree.DeprecatedTree;
-import com.sun.source.doctree.DocCommentTree;
-import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.DocTree.Kind;
-import com.sun.source.doctree.ErroneousTree;
-import com.sun.source.doctree.LinkTree;
-import com.sun.source.doctree.ParamTree;
-import com.sun.source.doctree.ReturnTree;
-import com.sun.source.doctree.SeeTree;
-import com.sun.source.doctree.SinceTree;
-import com.sun.source.doctree.StartElementTree;
-
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractPackageMember;
@@ -32,13 +20,14 @@ import io.github.sandydunlop.markista.model.OverriddenMethodNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.RecordTypeNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.model.Text.Segment;
+import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
 import io.github.sandydunlop.markista.util.MarkdownParser.TokenKind;
-import io.github.sandydunlop.markista.model.Text.Segment;
-import io.github.sandydunlop.markista.model.Text.SegmentKind;
 
 import java.io.File;
 import java.io.Serializable;
@@ -55,8 +44,8 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
@@ -67,7 +56,20 @@ import javax.tools.JavaFileObject;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
-import static javax.lang.model.element.Modifier.*;
+import com.sun.source.doctree.DeprecatedTree;
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.DocTree.Kind;
+import com.sun.source.doctree.ErroneousTree;
+import com.sun.source.doctree.LinkTree;
+import com.sun.source.doctree.ParamTree;
+import com.sun.source.doctree.ReturnTree;
+import com.sun.source.doctree.SeeTree;
+import com.sun.source.doctree.SinceTree;
+import com.sun.source.doctree.StartElementTree;
+
+import static javax.lang.model.element.Modifier.PROTECTED;
+import static javax.lang.model.element.Modifier.PUBLIC;
 
 /// Utility class providing static methods to create and manipulate TypeNodes, MethodNodes, FieldNodes, and other API model objects
 /// from language model elements and Javadoc doc trees obtained from the Java source code.
@@ -143,15 +145,8 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             collectAllSupertypes(element.asType(), typeNode.getSupertypes());
             typeNode.getSupertypes().addFirst(Pair.of(Reference.to("java.lang.Object"), Text.empty()));
             findImplementedInterfaces(element, typeNode.getImplementedInterfaces());
-            TypeUtils.setDocumentation(typeNode, element);
-            JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(element);
-            if (jfo != null) {
-                typeNode.setSourcePath(Path.of(jfo.toUri()).toString());
-                PackageNode typePackage = api.getPackageNode(typeNode.getPackageName());
-                if (typePackage != null && typePackage.getSourcePath() == null) {
-                    typePackage.setSourcePath(Path.of(jfo.toUri()).getParent().toString());
-                }
-            }
+            setDocumentation(typeNode, element);
+            setSourcePath(typeNode, element);
             api.addType(typeNode);
         }
         return typeNode;
@@ -189,36 +184,16 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             ctx.reportError("No package for " + qualifiedTypeName);
             return null;
         }
-        PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
         String returnTypeName = qualifiedTypeName + arrayBrackets;
         MethodNode methodNode = new MethodNode(returnTypeName, element.getSimpleName().toString());
+        PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
 
-        TypeElement ownerElement = getEnclosingTypeElement(element);
-        TypeNode ownerType = api.getTypeNode(ownerElement.getQualifiedName().toString());
-        if (ownerType == null) {
-            ctx.reportError(String.format(
-                    "Unable to determine owner of method '%s' in package '%s'",
-                    methodNode.getSimpleName(), packageNode.getQualifiedName()));
+        if (!setMethodOwnerDetails(methodNode, packageNode, element)) {
             return null;
         }
         setMethodParams(methodNode, element);
-
         setModifiers(methodNode, element.getModifiers());
         setThrownTypes(methodNode, element.getThrownTypes());
-        methodNode.setOwnerName(ownerType.getQualifiedName());
-
-        if (element.getKind() == ElementKind.METHOD) {
-            MethodNode existingMethodNode = ownerType.getMethod(methodNode);
-            if (existingMethodNode == null) {   
-                ownerType.getMethods().add(methodNode);
-            }
-        } else if (element.getKind() == ElementKind.CONSTRUCTOR) {
-            methodNode.setSimpleName(ownerType.getSimpleName());
-            MethodNode existingMethodNode = ownerType.getConstructor(methodNode);
-            if (existingMethodNode == null) {
-                ownerType.getConstructors().add(methodNode);
-            }
-        }
         setMethodAnnotations(methodNode, element);
         setSpecifiedBy(methodNode, element);
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
@@ -265,7 +240,8 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         return null;
     }
 
-    /// Factory method to create TypeNode (ClassNode, InterfaceNode, EnumNode, or AnnotationNode) based on ElementKind.
+    /// Factory method to create TypeNode (ClassTypeNode, InterfaceTypeNode, RecordTypeNode,
+    /// EnumTypeNode, or AnnotationTypeNode) based on ElementKind.
     /// @param qualifiedName Fully qualified name of the type.
     /// @param simpleName The simple (unqualified) name of the type.
     /// @param packageNode The owning PackageNode.
@@ -276,6 +252,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             case ElementKind.CLASS -> new ClassTypeNode(qualifiedName, simpleName, packageNode.getQualifiedName());
             case ElementKind.INTERFACE -> new InterfaceTypeNode(qualifiedName, simpleName, packageNode
                     .getQualifiedName());
+            case ElementKind.RECORD -> new RecordTypeNode(qualifiedName, simpleName, packageNode.getQualifiedName());
             case ElementKind.ENUM -> new EnumTypeNode(qualifiedName, simpleName, packageNode.getQualifiedName());
             case ElementKind.ANNOTATION_TYPE -> new AnnotationTypeNode(qualifiedName, simpleName, packageNode
                     .getQualifiedName());
@@ -419,6 +396,46 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             return parts[n];
         }
         return "";
+    }
+
+    public static boolean setMethodOwnerDetails(MethodNode methodNode, PackageNode packageNode, ExecutableElement element) {
+        TypeElement ownerElement = getEnclosingTypeElement(element);
+        if (ownerElement != null) {
+            TypeNode ownerType = api.getTypeNode(ownerElement.getQualifiedName().toString());
+            if (ownerType == null) {
+                ctx.reportError(String.format(
+                        "Unable to determine owner of method '%s' in package '%s'",
+                        methodNode.getSimpleName(), packageNode.getQualifiedName()));
+                return false;
+            }
+            methodNode.setOwnerName(ownerType.getQualifiedName());
+            if (element.getKind() == ElementKind.METHOD) {
+                MethodNode existingMethodNode = ownerType.getMethod(methodNode);
+                if (existingMethodNode == null) {   
+                    ownerType.getMethods().add(methodNode);
+                }
+            } else if (element.getKind() == ElementKind.CONSTRUCTOR) {
+                methodNode.setSimpleName(ownerType.getSimpleName());
+                MethodNode existingMethodNode = ownerType.getConstructor(methodNode);
+                if (existingMethodNode == null) {
+                    ownerType.getConstructors().add(methodNode);
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static void setSourcePath(TypeNode typeNode, TypeElement element) {
+        JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(element);
+        if (jfo != null) {
+            typeNode.setSourcePath(Path.of(jfo.toUri()).toString());
+            PackageNode typePackage = api.getPackageNode(typeNode.getPackageName());
+            if (typePackage != null && typePackage.getSourcePath() == null) {
+                typePackage.setSourcePath(Path.of(jfo.toUri()).getParent().toString());
+            }
+        }
     }
 
     /// Sets documentation text for a Node based on the doc comment tree attached to a language model element.
@@ -973,7 +990,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         }
     }
 
-    /// Recursively finds the enclosing TypeElement (class, interface, enum, annotation) for the given element.
+    /// Recursively finds the enclosing TypeElement (class, interface, enum, record, annotation) for the given element.
     /// @param element The language model element such as a field or method.
     /// @return The enclosing TypeElement or null if none found.
     public static TypeElement getEnclosingTypeElement(Element element) {
@@ -983,6 +1000,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         }
         if (enclosing.getKind() == ElementKind.CLASS ||
                     enclosing.getKind() == ElementKind.INTERFACE ||
+                    enclosing.getKind() == ElementKind.RECORD ||
                     enclosing.getKind() == ElementKind.ENUM ||
                     enclosing.getKind() == ElementKind.ANNOTATION_TYPE) {
             return (TypeElement)enclosing;

@@ -246,11 +246,10 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         return scan(e.getEnclosedElements(), depth);
     }
 
-    /// Visit a record component. For record components, use the unknown element
-    /// visit which preserves default behavior if no special handling is required.
+    /// Visit a record component.
     @Override
     public Void visitRecordComponent(RecordComponentElement e, Integer depth) {
-        return visitUnknown(e, depth);
+        return null;
     }
 
     /// Retrieve the module-info.java file for the given ModuleElement if available.
