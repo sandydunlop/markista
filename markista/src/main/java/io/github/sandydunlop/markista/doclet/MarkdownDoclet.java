@@ -30,7 +30,9 @@ import jdk.javadoc.doclet.Doclet;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
 
-/// A doclet that renders javadoc comments as Markdown
+/// A doclet that renders javadoc comments as Markdown.
+/// 
+/// For more information, see the [Markista homepage](https://sandydunlop.github.io/markista).
 public class MarkdownDoclet implements Doclet {
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.

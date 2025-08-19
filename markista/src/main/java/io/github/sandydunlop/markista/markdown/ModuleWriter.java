@@ -7,6 +7,7 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.util.Markdown;
 import io.github.sandydunlop.markista.util.Utils;
 
@@ -170,9 +171,14 @@ public class ModuleWriter {
     /// that it uses only one line in the markdown output and links and
     /// code are rendered properly.
     private String formatDirectivePackageDoc(DirectiveNode directive) {
-        PackageNode pkg = api.getPackageNode(directive.getName());
-        if (pkg != null) {
-            return Utils.inOneLine(Markdown.formatText(pkg.getFirstSentence()));
+        String name = directive.getReference().getTarget();
+        PackageNode packageNode = api.getPackageNode(name);
+        if (packageNode != null) {
+            return Utils.inOneLine(Markdown.formatText(packageNode.getFirstSentence()));
+        }
+        TypeNode typeNode = api.getTypeNode(name);
+        if (typeNode != null) {
+            return Utils.inOneLine(Markdown.formatText(typeNode.getFirstSentence()));
         }
         return "";
     }

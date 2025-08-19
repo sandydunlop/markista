@@ -1,7 +1,6 @@
 package io.github.sandydunlop.markista.core;
 
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.Node;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -61,8 +60,6 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
 
     /// The name of the field currently being documented
     private String fieldName = "";
-
-    private Node watch = null;
 
     /// The default constructor
     private Context() {
