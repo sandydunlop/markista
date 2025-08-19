@@ -254,7 +254,8 @@ public class TypeWriter {
                 .addColumn("Constructor")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            table.addRow(methodNode.getSimpleName() + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
+            String params = Markdown.formatParams(methodNode.getParams());
+            table.addRow(methodNode.getSimpleName() + "(" + params + ")",
                         Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
         }
         table.render(writer);

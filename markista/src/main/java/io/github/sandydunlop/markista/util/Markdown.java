@@ -1,12 +1,12 @@
 package io.github.sandydunlop.markista.util;
 
-import java.util.List;
-
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
+
+import java.util.List;
 
 /// A utility class for producing Markdown formatted text and resolving
 /// Markdown links to point to the correct file, directory, or web page.
@@ -88,7 +88,7 @@ public class Markdown {
         if (segment.getLink().getLabel().isEmpty()) {
             segment.getLink().setLabel(segment.getText());
         }
-        return mdRefLink(segment.getLink());
+        return link(segment.getLink(), false);
     }
 
     /// Create a markdown formatted link
