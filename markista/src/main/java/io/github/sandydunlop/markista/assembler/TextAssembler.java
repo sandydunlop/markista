@@ -128,13 +128,14 @@ public class TextAssembler {
         Pair<Reference, Text> baseMethodPair = method.getBaseMethod();
         if (baseMethodPair != null) {
             String baseTypeName = baseTypeName(method);
-            Reference baseMethodRef = baseMethodPair.getL();
-            if (baseMethodRef.getTarget().isEmpty() && baseTypeName != null) {
-                baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
+            if (baseTypeName != null) {
+                Reference baseMethodRef = baseMethodPair.getL();
+                if (baseMethodRef.getTarget().isEmpty()) {
+                    baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
+                }
+                Text linkText = link(baseMethodRef, false);
+                baseMethodPair.setR(linkText);
             }
-            Text linkText = link(baseMethodRef, false);
-
-            baseMethodPair.setR(linkText);
 
             TypeNode baseType = api.getTypeNode(baseTypeName);
             if (baseType != null) {
@@ -151,7 +152,7 @@ public class TextAssembler {
 
     static Text processInheritDocTags(Text baseMethodText, Text text) {
         int segmentCount = text.getSegments().size();
-        for (int i = segmentCount - 1; i > 0; i--) {
+        for (int i = segmentCount - 1; i >= 0; i--) {
             Text.Segment segment = text.getSegments().get(i);
             if (segment.getKind() == SegmentKind.INHERIT) {
                 Text before = text.subtext(0, i - 1);
@@ -176,12 +177,9 @@ public class TextAssembler {
             if (supertype != null) {
                 for (MethodNode inheritedMethod : supertype.getMethods()) {
                     if (inheritedMethod.signature().equals(methodSignature)) {
-                        // Found it
                         return supertype.getQualifiedName();
                     }
                 }
-            } else {
-                ctx.reportError("ERR");
             }
         } 
         return null;
