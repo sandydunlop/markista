@@ -10,6 +10,6 @@ public class RecordTypeNode extends TypeNode {
     /// @param packageName The name of the package this record belongs to.
     public RecordTypeNode(String qualifiedName, String simpleName, String packageName) {
         super(qualifiedName, simpleName, packageName);
-        this.kind = TypeNode.Kind.RECORD;
+        this.kind = NodeKind.RECORD;
     }
 }

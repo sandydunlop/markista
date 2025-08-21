@@ -11,6 +11,7 @@ import io.github.sandydunlop.markista.model.EnumTypeNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.Node;
+import io.github.sandydunlop.markista.model.NodeKind;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
@@ -169,11 +170,11 @@ public class TypeWriter {
     private void outputDeclaration(TypeNode typeNode) throws IOException {
         writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = typeNode.getKind().toString().toLowerCase();
-        if (typeNode.getKind() == TypeNode.Kind.ANNOTATION) { 
+        if (typeNode.getKind() == NodeKind.ANNOTATION) { 
             typeString = "@interface";
         }
         for (AppliedAnnotationNode annotation : typeNode.getAppliedAnnotations()) {
-            if (typeNode.getKind() == TypeNode.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
+            if (typeNode.getKind() == NodeKind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
                 writer.write("@" + Utils.simplifyNames(annotation.getTypeName()));
                 if (!annotation.getElements().isEmpty()) {
                     writer.write("(");

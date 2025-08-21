@@ -9,6 +9,6 @@ public class InterfaceTypeNode extends TypeNode {
     /// @param packageName the name of the package that the interface is a member of
     public InterfaceTypeNode(String qualifiedName, String simpleName, String packageName) {
         super(qualifiedName, simpleName, packageName);
-        kind = TypeNode.Kind.INTERFACE;
+        kind = NodeKind.INTERFACE;
     }
 }

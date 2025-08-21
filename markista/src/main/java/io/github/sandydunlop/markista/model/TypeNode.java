@@ -50,19 +50,19 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
     }
 
     @Override
-    public boolean isClass() { return kind == Kind.CLASS; }
+    public boolean isClass() { return kind == NodeKind.CLASS; }
 
     @Override
-    public boolean isInterface() { return kind == Kind.INTERFACE; }
+    public boolean isInterface() { return kind == NodeKind.INTERFACE; }
     
     @Override
-    public boolean isEnum() { return kind == Kind.ENUM; }
+    public boolean isEnum() { return kind == NodeKind.ENUM; }
     
     @Override
-    public boolean isRecord() { return kind == Kind.RECORD; }
+    public boolean isRecord() { return kind == NodeKind.RECORD; }
     
     @Override
-    public boolean isAnnotation() { return kind == Kind.ANNOTATION; }
+    public boolean isAnnotation() { return kind == NodeKind.ANNOTATION; }
 
     @Override
     public String getKindName() { return kind.toString(); }
@@ -237,7 +237,7 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         StringBuilder mods = new StringBuilder();
         List<Modifier> modifierList = ModifierSorter.sortModifiers(getModifiers());
         for (Modifier mod : modifierList) {
-            if ((kind != Kind.ANNOTATION && kind != Kind.INTERFACE) || mod != Modifier.ABSTRACT) {
+            if ((kind != NodeKind.ANNOTATION && kind != NodeKind.INTERFACE) || mod != Modifier.ABSTRACT) {
                 mods.append(mod.toString()).append(" ");
             }
         }

@@ -8,7 +8,7 @@ public class AnnotationTypeNode extends TypeNode {
     /// @param packageName the name of the package that the annotation is a member of
     public AnnotationTypeNode(String qualifiedName, String simpleName, String packageName) {
         super(qualifiedName, simpleName, packageName);
-        kind = TypeNode.Kind.ANNOTATION;
+        kind = NodeKind.ANNOTATION;
     }
 }
 

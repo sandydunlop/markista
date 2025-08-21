@@ -10,6 +10,6 @@ public class ClassTypeNode extends TypeNode {
     /// @param packageName The name of the package this class belongs to.
     public ClassTypeNode(String qualifiedName, String simpleName, String packageName) {
         super(qualifiedName, simpleName, packageName);
-        kind = TypeNode.Kind.CLASS;
+        kind = NodeKind.CLASS;
     }
 }

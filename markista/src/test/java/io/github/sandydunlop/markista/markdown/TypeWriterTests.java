@@ -12,6 +12,7 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.Modifier;
+import io.github.sandydunlop.markista.model.NodeKind;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
@@ -92,7 +93,7 @@ class TypeWriterTests {
     void writeDoc_CreatesDocForSimpleClass_TypeNameSetAndReset() throws IOException {
         TypeNode typeNode = mock(TypeNode.class);
         when(typeNode.getQualifiedName()).thenReturn("com.example.MyClass");
-        when(typeNode.getKind()).thenReturn(TypeNode.Kind.CLASS);
+        when(typeNode.getKind()).thenReturn(NodeKind.CLASS);
         when(typeNode.getSimpleName()).thenReturn("MyClass");
         when(typeNode.getPackageName()).thenReturn("com.example");
         // Empty other methods for this simple test
@@ -142,7 +143,7 @@ class TypeWriterTests {
         TypeNode type = mock(TypeNode.class);
         when(type.getSimpleName()).thenReturn("MyClass");
         when(type.getPackageName()).thenReturn("com.example");
-        when(type.getKind()).thenReturn(TypeNode.Kind.CLASS);
+        when(type.getKind()).thenReturn(NodeKind.CLASS);
         when(type.getQualifiedName()).thenReturn("com.example.MyClass");
         when(type.getFields()).thenReturn(fields);
         when(type.getFullBody()).thenReturn(Text.empty());
@@ -186,7 +187,7 @@ class TypeWriterTests {
         when(enumNode.getQualifiedName()).thenReturn("com.example.MyEnum");
         when(enumNode.getSimpleName()).thenReturn("MyEnum");
         when(enumNode.getPackageName()).thenReturn("com.example");
-        when(enumNode.getKind()).thenReturn(TypeNode.Kind.ENUM);
+        when(enumNode.getKind()).thenReturn(NodeKind.ENUM);
 
         Reference ref = new Reference(Reference.Kind.URL, "example", "http://example.com");
         ref.setTarget(ref.getUri());
@@ -262,7 +263,7 @@ class TypeWriterTests {
 
         // Calling outputEnumConstantDetails is private; access via writeDoc on an enum with constants
         when(enumNode.getSimpleName()).thenReturn("MyEnum");
-        when(enumNode.getKind()).thenReturn(TypeNode.Kind.ENUM);
+        when(enumNode.getKind()).thenReturn(NodeKind.ENUM);
         when(enumNode.getPackageName()).thenReturn("com.example");
         when(enumNode.getFullBody()).thenReturn(Text.empty());
         when(enumNode.getClasses()).thenReturn(new ArrayList<>());
