@@ -421,10 +421,13 @@ public class TypeWriter {
             writer.write(Markdown.link(method.getSpecifiedBy(), false));
             writer.write("\n\n");
         }
-        if (method.getBaseMethod() != null && !method.getBaseMethod().getText().isEmpty()) {
-            writer.write("**Overrides:**\n\n");
-            writer.write(Markdown.formatText(method.getBaseMethod().getText()));
-            writer.write("\n\n");
+        if (method.getBaseMethod() != null) {
+            Pair<Reference, Text> pair = method.getBaseMethod();
+            if (!pair.getR().isEmpty()) {
+                writer.write("**Overrides:**\n\n");
+                writer.write(Markdown.formatText(pair.getR()));
+                writer.write("\n\n");
+            }
         }        
     }
 

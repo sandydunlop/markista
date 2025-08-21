@@ -14,9 +14,6 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
 
     private Reference enclosingClassRef = null;
 
-    /// List of annotations applied to this type.
-    private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
-
     /// List of qualified names of interfaces implemented by this type.
     private List<Reference> implementedInterfaces = new ArrayList<>();
 
@@ -37,7 +34,6 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
 
     /// Has the `@Documented` annotation applied
     private boolean hasDocumentedAnnotation = false;
-
 
     /// Constructs a TypeNode with the specified qualified name, simple name, and package.
     /// @param qualifiedName the fully qualified name of this type.
@@ -85,18 +81,6 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
     /// @return string representing array dimension brackets.
     public String getArrayBrackets() {
         return arrayBrackets;
-    }
-
-    /// Adds an applied annotation to this type
-    /// @param annotation the annotation
-    public void addAppliedAnnotation(AppliedAnnotationNode annotation) {
-        appliedAnnotations.add(annotation);
-    }
-
-    /// Returns the list of annotations applied to this type.
-    /// @return list of applied annotations
-    public List<AppliedAnnotationNode> getAppliedAnnotations() {
-        return appliedAnnotations;
     }
 
     /// Sets the list of implemented interfaces by qualified names.

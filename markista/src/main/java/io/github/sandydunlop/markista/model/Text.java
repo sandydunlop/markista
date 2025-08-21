@@ -50,9 +50,9 @@ public class Text implements Serializable {
     }
 
     /// Checks whether this Text instance is empty.
-    /// @return true if there are no segments or the segment list is null.
+    /// @return true if there are no segments.
     public boolean isEmpty() {
-        return segments == null || segments.isEmpty();
+        return segments.isEmpty();
     }
 
     /// Returns the list of segments composing this Text.

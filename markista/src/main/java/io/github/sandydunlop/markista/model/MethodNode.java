@@ -15,7 +15,7 @@ public class MethodNode extends AbstractMember {
     private final String returnTypeName;
 
     /// Information about the method that this method overrides, if any.
-    private Reference baseMethod = null;
+    private Pair<Reference, Text> baseMethod = null;
 
     /// List of parameters for this method.
     private final List<ParamNode> params = new ArrayList<>();
@@ -37,14 +37,14 @@ public class MethodNode extends AbstractMember {
     }
 
     /// Sets the base method information that this method overrides.
-    /// @param overrides an OverriddenMethodNode representing the base method.
-    public void setBaseMethod(Reference overrides) {
-        this.baseMethod = overrides;
+    /// @param baseMethod a reference to the base method and the text representing it
+    public void setBaseMethod(Pair<Reference, Text> baseMethod) {
+        this.baseMethod = baseMethod;
     }
 
     /// Returns the base method information, if any.
-    /// @return the OverriddenMethodNode representing the base method, or null if none.
-    public Reference getBaseMethod() {
+    /// @return the a reference to the base method and the text representing it, or null if none.
+    public Pair<Reference, Text> getBaseMethod() {
         return baseMethod;
     }
 

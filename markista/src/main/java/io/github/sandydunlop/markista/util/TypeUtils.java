@@ -513,7 +513,7 @@ public class TypeUtils {
                 } else {
                     overriddenMethod = Reference.toMethod(getFullSignature(methodElement));
                 }
-                method.setBaseMethod(overriddenMethod);
+                method.setBaseMethod(Pair.of(overriddenMethod, Text.empty()));
             }
         }
     }
@@ -806,12 +806,13 @@ public class TypeUtils {
         DeclaredType declaredType = annotationMirror.getAnnotationType();
         Element declaredElement = declaredType.asElement();
         if (declaredElement instanceof TypeElement declaredTypeElement) {
-            AppliedAnnotationNode annotationNode = new AppliedAnnotationNode(
+            AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode(
                     declaredTypeElement.getQualifiedName().toString());
-            node.addAppliedAnnotation(annotationNode);
-            api.addAppliedAnnotation(annotationNode);
-            if (declaredTypeElement.getQualifiedName().toString().equals("java.lang.annotation.Documented")) {
-                node.setHasDocumentedAnnotation(true);
+            node.addAppliedAnnotation(appliedAnnotation);
+            api.addAppliedAnnotation(appliedAnnotation);
+            if (declaredTypeElement.getQualifiedName().toString().equals("java.lang.annotation.Documented") &&
+                    node instanceof AnnotationTypeNode annotationNode) {
+                annotationNode.setHasDocumentedAnnotation(true);
             }
             Map<? extends ExecutableElement, ? extends AnnotationValue> values = annotationMirror.getElementValues();
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : values.entrySet()) {
@@ -832,10 +833,10 @@ public class TypeUtils {
                 AnnotationValue value = entry.getValue();
                 Object entryValue = value.getValue();
                 AnnotationElement parameter = new AnnotationElement(paramType.getQualifiedName(), entryName, entryValue.toString());
-                annotationNode.addElement(parameter);
+                appliedAnnotation.addElement(parameter);
             }
         } else {
-            ctx.reportWarning("Unexpected annotation element kind: " + declaredElement.getKind().toString());
+            ctx.reportWarning("Unexpected annotation element kind: " + annotationMirror.getAnnotationType().toString());
         }
     }
 

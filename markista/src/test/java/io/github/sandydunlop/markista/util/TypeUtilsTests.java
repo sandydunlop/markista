@@ -1325,9 +1325,9 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         // Mock the supertype with a method to be overridden
         TypeElement supertypeMock = mockType("MockSupertype", packageMock);
         elements.add(supertypeMock);
-        ExecutableElement overriddenExecutableMock = mockExecutable("mockmethod", supertypeMock);
-        elements.add(overriddenExecutableMock);
-        VariableElement overriddenParameterMock = mockMethodParameter("mockparameter", supertypeMock, overriddenExecutableMock);
+        ExecutableElement baseExecutableMock = mockExecutable("mockmethod", supertypeMock);
+        elements.add(baseExecutableMock);
+        VariableElement overriddenParameterMock = mockMethodParameter("mockparameter", supertypeMock, baseExecutableMock);
         elements.add(overriddenParameterMock);
 
         // Mock the type with a method that overrides
@@ -1338,8 +1338,8 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         VariableElement parameterMock = mockMethodParameter("mockparameter", typeMock, executableMock);
         elements.add(parameterMock);
 
+        // Add all of the above to the list of elements that ApiScanner will scan
         mockIncludedElements(elements);
-
 
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
         apiScanner.scan(docletEnvironmentMock.getIncludedElements());
@@ -1348,36 +1348,53 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         PackageNode pkgNode = new PackageNode("mockpackage");
         apiScanner.api.addPackage(pkgNode);
 
-        // Set up dummy API model nodes for the mocked types and methods
-        TypeNode supertypeNode = new TypeNode("MockSupertype", "MockSupertype", "mockpackage");
-        apiScanner.api.addType(supertypeNode);
-        TypeNode typeNode = new TypeNode("MockType", "MockType", "mockpackage");
-        apiScanner.api.addType(typeNode);
-
-        // Set the supertypeNode as the supertype of typeNode
-        Reference reference = Reference.to(supertypeNode.getQualifiedName())
-                .from(pkgNode.getQualifiedName())
-                .withKind(Reference.Kind.TYPE)
-                .withLabel(supertypeNode.getQualifiedName());
-        typeNode.getSupertypes().add(Pair.of(reference, Text.empty()));
-
         // Mocked elementUtils returns the supertypeMock with its method
-        List<Element> enclosedElements = List.of(overriddenExecutableMock);
-        when(supertypeMock.getEnclosedElements()).thenAnswer(_ -> enclosedElements);
-        when(elementUtilsMock.getTypeElement(reference.getTarget())).thenReturn(supertypeMock);
+        List<Element> supertypeMembers = List.of(baseExecutableMock);
+        when(supertypeMock.getEnclosedElements()).thenAnswer(_ -> supertypeMembers);
+        when(elementUtilsMock.getTypeElement(supertypeMock.getQualifiedName().toString())).thenReturn(supertypeMock);
 
-        // DocTree dct = mockDocCommentTree_TEXT("plain text");
-        // when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
-        // apiScanner.visitType(typeMock, 1);
-        // apiScanner.visitExecutable(executableMock, 1);
+        // Mocked elementUtils returns the typeMock with its method
+        List<Element> typeMembers = List.of(baseExecutableMock);
+        when(typeMock.getEnclosedElements()).thenAnswer(_ -> typeMembers);
+        when(elementUtilsMock.getTypeElement(typeMock.getQualifiedName().toString())).thenReturn(typeMock);
 
-        MethodNode overridingMethod = new MethodNode("void", "mockmethod");
-        overridingMethod.setOwnerName(typeNode.getQualifiedName());
-        // OverriddenMethodNode om = TypeUtils.getOverriddenMethod(overridingMethod, executableMock);
+        // DocCommentTree for the supertype's method has text
+        DocCommentTree baseMethodDocTree = mockDocCommentTree();
+        DocTree baseMethodText = mockDocCommentTree_TEXT("supertypeMethodText");
+        List<DocTree> baseMethodDoc = List.of(baseMethodText);
+        when(baseMethodDocTree.getFirstSentence()).thenAnswer(_ -> baseMethodDoc);
+        when(treeUtilsMock.getDocCommentTree(baseExecutableMock)).thenReturn(baseMethodDocTree);
 
-        // TypeElement expectedSupertype = TypeUtils.getOverriddenMethodOwner(overridingMethod, executableMock);
+        // DocCommentTree for the overriding method has inheritDoc
+        DocCommentTree typeMethodDocTree = mockDocCommentTree();
+        DocTree typeMethodText = mockDocCommentTree_INHERIT_DOC();
+        List<DocTree> typeMethodDoc = List.of(typeMethodText);
+        when(typeMethodDocTree.getFirstSentence()).thenAnswer(_ -> typeMethodDoc);
+        when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn(typeMethodDocTree);
+        mockMethodAnnotation("java.lang.Override", "Override", executableMock);
 
-        // assertNotNull(expectedSupertype);
-        // assertEquals("MockSupertype", om.getClassName());
+        // Run the code we're testing
+        apiScanner.visitType(supertypeMock, 1);
+        apiScanner.visitType(typeMock, 1);
+        apiScanner.visitExecutable(baseExecutableMock, 1);
+        apiScanner.visitExecutable(executableMock, 1);
+
+        // Get the TypeNodes that have just been created
+        TypeNode supertypeNode = apiScanner.api.getTypeNode(supertypeMock.getQualifiedName().toString());
+        TypeNode typeNode = apiScanner.api.getTypeNode(typeMock.getQualifiedName().toString());
+        assertEquals(1, supertypeNode.getMethods().size());
+        assertEquals(1, typeNode.getMethods().size());
+
+        // Check the supertype's documentation
+        MethodNode supertypeMethodNode = supertypeNode.getMethods().getFirst();
+        String supertypeText = supertypeMethodNode.getFirstSentence().toString();
+        assertEquals("supertypeMethodText", supertypeText);
+
+        // Check the overriding type's documentation
+        MethodNode typeMethodNode = typeNode.getMethods().getFirst();
+        Text text = typeMethodNode.getFirstSentence();
+        assertEquals(1, text.getSegments().size());
+        Text.Segment segment = text.getSegment(0);
+        assertEquals(SegmentKind.INHERIT, segment.getKind());
     }
 }

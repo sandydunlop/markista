@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -21,6 +22,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -32,6 +34,7 @@ import jdk.javadoc.doclet.Reporter;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
+import com.sun.source.doctree.InheritDocTree;
 import com.sun.source.doctree.LinkTree;
 import com.sun.source.doctree.StartElementTree;
 import com.sun.source.util.DocTreePath;
@@ -107,6 +110,12 @@ public class MockedDocletEnvironment {
         return mockTypeMirror;
     }
 
+    protected DocCommentTree mockDocCommentTree() {
+        DocCommentTree dct = mock(DocCommentTree.class);
+        when(dct.getKind()).thenReturn(Kind.DOC_COMMENT);
+        return dct;
+    }
+
     protected DocTree mockDocCommentTree_MARKDOWN(String string) {
         DocTree dct = mock(DocCommentTree.class);
         when(dct.getKind()).thenReturn(Kind.MARKDOWN);
@@ -149,6 +158,12 @@ public class MockedDocletEnvironment {
     protected DocTree mockDocCommentTree_END_ELEMENT() {
         DocTree dct = mock(DocTree.class);
         when(dct.getKind()).thenReturn(Kind.END_ELEMENT);
+        return dct;
+    }
+
+    protected DocTree mockDocCommentTree_INHERIT_DOC() {
+        InheritDocTree dct = mock(InheritDocTree.class);
+        when(dct.getKind()).thenReturn(Kind.INHERIT_DOC);
         return dct;
     }
 
@@ -248,6 +263,24 @@ public class MockedDocletEnvironment {
         when (mockMethod.getParameters()).thenAnswer(_ -> paramList);
 
         return mockParameterElement;
+    }
+
+    protected AnnotationMirror mockMethodAnnotation(String qualifiedName, String simplifiedName, ExecutableElement mockMethod) {
+        Name qName = mockName(qualifiedName);
+        Name sName = mockName(simplifiedName);
+        TypeElement element = mock(TypeElement.class);
+        when (element.getQualifiedName()).thenReturn(qName);
+        when (element.getSimpleName()).thenReturn(sName);
+
+        DeclaredType dt = mock(DeclaredType.class);
+        when (dt.asElement()).thenReturn(element);
+
+        AnnotationMirror mirror = mock(AnnotationMirror.class);
+        when (mirror.getAnnotationType()).thenReturn(dt);
+
+        List<AnnotationMirror> annoList = List.of(mirror);
+        when (mockMethod.getAnnotationMirrors()).thenAnswer(_ -> annoList);
+        return mirror;
     }
 
     protected void mockIncludedElements(List<Element> elementsList) {

@@ -96,14 +96,16 @@ public class TextAssembler {
         for (Reference thrownRef : method.getThrownTypes()) {
             LinkResolver.resolve(thrownRef);
         }
-        Reference baseMethodRef = method.getBaseMethod();
-        if (baseMethodRef != null) {
+        Pair<Reference, Text> baseMethodPair = method.getBaseMethod();
+        if (baseMethodPair != null) {
             String baseTypeName = baseTypeName(method);
+            Reference baseMethodRef = baseMethodPair.getL();
             if (baseMethodRef.getTarget().isEmpty() && baseTypeName != null) {
                 baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
             }
             Text linkText = link(baseMethodRef, false);
-            baseMethodRef.setText(linkText);
+
+            baseMethodPair.setR(linkText);
 
             TypeNode baseType = api.getTypeNode(baseTypeName);
             if (baseType != null) {

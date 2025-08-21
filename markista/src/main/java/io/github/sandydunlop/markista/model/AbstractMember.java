@@ -23,9 +23,6 @@ public abstract class AbstractMember extends Node {
     /// List of annotations applied to this type.
     private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
 
-    /// Has the `@Documented` annotation applied
-    private boolean hasDocumentedAnnotation = false;
-
     /// Sets the simple name of this type.
     /// @param name the simple name to set.
     public void setSimpleName(String name) {
@@ -72,19 +69,6 @@ public abstract class AbstractMember extends Node {
     /// @return list of applied annotations
     public List<AppliedAnnotationNode> getAppliedAnnotations() {
         return appliedAnnotations;
-    }
-
-    /// Sets a flag indicating if this type as having a `@Documented` meta-annotation
-    /// @param b If true, this type is marked as having a `@Documented` meta-annotation.
-    /// If false, it is marked as not having the met-annotation.
-    public void setHasDocumentedAnnotation(boolean b) {
-        this.hasDocumentedAnnotation = b;
-    }
-
-    /// Does this type have a `@Documented` meta-annotation?
-    /// @return True if it has a `@Documented` meta-annotation
-    public boolean hasDocumentedAnnotation() {
-        return hasDocumentedAnnotation;
     }
 
     /// Returns a string representation of modifiers.

@@ -16,6 +16,7 @@ import io.github.sandydunlop.markista.model.NodeKind;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.RecordTypeNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
@@ -408,7 +409,7 @@ class TypeWriterTests {
         methodNode.setSpecifiedBy(specifiedByRef);
         methodNode.addThrownType(thrownRef);
         Reference overriddenMethod = Reference.to("scenario.food.berry.Avocado" + "#" + "eat");
-        methodNode.setBaseMethod(overriddenMethod);
+        methodNode.setBaseMethod(Pair.of(overriddenMethod, Text.empty()));
 
         typeNode.addMethod(methodNode);
 
@@ -700,5 +701,25 @@ class TypeWriterTests {
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
         assertTrue(output.contains("@Watermelon(Nm Va, Em Ent)"));
+    }
+
+    @Test
+    void outputDeprecation_record() throws IOException {
+        PackageNode pkg = new PackageNode("scenario.food.berry");
+        RecordTypeNode typeNode = new RecordTypeNode("scenario.food.berry.Avocado", "Avocado", 
+                pkg.getQualifiedName());
+
+        Context ctx = Context.getInstance();
+        ctx.setPackageName("scenario.food.berry");
+        Api api = new Api("Test API");
+        api.addPackage(pkg);
+        api.addType(typeNode);
+        pkg.addType(typeNode);
+        LinkResolver.init(api, ctx);
+        when(contextMock.getApi()).thenReturn(api);
+
+        typeWriter.outputTypeDoc(typeNode);
+        String output = writer.toString();
+        assertTrue(output.contains("Avocado"));
     }
 }
