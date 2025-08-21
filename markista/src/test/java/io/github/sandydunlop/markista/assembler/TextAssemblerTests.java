@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.assembler;
 
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-class LinkFormatterTests {
+class TextAssemblerTests {
     private static Context ctx;
 	private Api api;
     private ModuleNode module;

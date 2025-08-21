@@ -16,10 +16,11 @@ module markista {
     exports io.github.sandydunlop.markista.spi;
 
     // These opens are needed to allow JUnit testing
+    opens io.github.sandydunlop.markista.assembler;
     opens io.github.sandydunlop.markista.core;
     opens io.github.sandydunlop.markista.doclet;
     opens io.github.sandydunlop.markista.markdown;
     opens io.github.sandydunlop.markista.model;
+    opens io.github.sandydunlop.markista.scanner;
     opens io.github.sandydunlop.markista.spi;
-    opens io.github.sandydunlop.markista.util;
 }

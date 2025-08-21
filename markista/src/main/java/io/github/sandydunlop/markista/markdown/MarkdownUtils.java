@@ -1,5 +1,6 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
@@ -10,14 +11,14 @@ import java.util.List;
 
 /// A utility class for producing Markdown formatted text and resolving
 /// Markdown links to point to the correct file, directory, or web page.
-public class Markdown {
+public class MarkdownUtils {
     private static final String FORMAT_SIMPLE_LINK = "[%s](%s)";
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
     private static Context ctx = Context.getInstance();
 
-    private Markdown() {
+    private MarkdownUtils() {
         // This hides the public constructor
     }
 
@@ -197,7 +198,7 @@ public class Markdown {
     /// @param phrase A string to be used in an anchor link
     /// @return Markdown formatted text containing a correctly formatted anchor link
     public static String mdAnchorLink(String phrase){
-        if (Utils.isNullOrEmpty(phrase)) return "";
+        if (phrase == null || phrase.isEmpty()) return "";
         if (phrase.length() > 1 && phrase.charAt(0) == '#') {
             phrase = phrase.substring(1);
         }
@@ -227,5 +228,13 @@ public class Markdown {
         return str
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
+    }
+
+    /// Removes new line characters from a string, replacing them with spaces
+    /// @param str The string
+    /// @return The string, with newlines converted to spaces
+    public static String inOneLine(String str) {
+        if (str == null || str.isEmpty()) return "";
+        return str.replace("\n", " ");
     }
 }

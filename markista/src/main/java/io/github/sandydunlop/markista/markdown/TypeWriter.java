@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;
@@ -18,8 +19,6 @@ import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
-import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -67,7 +66,7 @@ public class TypeWriter {
         outputDeclaration(typeNode);
 
         if (!typeNode.getFullBody().isEmpty()) {
-            writer.write(Markdown.formatText(typeNode.getFullBody()));
+            writer.write(MarkdownUtils.formatText(typeNode.getFullBody()));
             writer.write("\n\n");
         }
 
@@ -129,7 +128,7 @@ public class TypeWriter {
         int indentation = 0;
         for (Pair<Reference,Text> pair : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(Markdown.formatText(pair.getR()) + BR + "\n");
+            writer.write(MarkdownUtils.formatText(pair.getR()) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -146,7 +145,7 @@ public class TypeWriter {
             writer.write(NBSP.repeat(4));
             for (int i=0; i<typeNode.getImplementedInterfaces().size(); i++) {
                 if (i > 0) writer.write(", ");
-                writer.write(Markdown.link(typeNode.getImplementedInterfaces().get(i), true));
+                writer.write(MarkdownUtils.link(typeNode.getImplementedInterfaces().get(i), true));
             }
             writer.write("\n\n");
         }
@@ -160,7 +159,7 @@ public class TypeWriter {
         if (ownerTypeNode instanceof ClassTypeNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
-            writer.write(Markdown.link(typeNode.getEnclosingClassRef(), true) + "\n\n");
+            writer.write(MarkdownUtils.link(typeNode.getEnclosingClassRef(), true) + "\n\n");
         }
     }
 
@@ -194,9 +193,9 @@ public class TypeWriter {
         writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = "";
         if (member instanceof MethodNode method) {
-            typeString = Markdown.formatText(method.getReturnTypeText());
+            typeString = MarkdownUtils.formatText(method.getReturnTypeText());
         } else if (member instanceof FieldNode field) {
-            typeString = Markdown.formatText(field.getTypeText());
+            typeString = MarkdownUtils.formatText(field.getTypeText());
         }
         for (AppliedAnnotationNode annotation : member.getAppliedAnnotations()) {
             if (member instanceof AnnotationTypeNode || (annotation.isCustom() && annotation.isDocumented())) {
@@ -239,8 +238,8 @@ public class TypeWriter {
                 .addColumn(TEXT_DESCRIPTION);
         for (TypeView nestedClassNode : nestedClasses) {
             table.addRow(nestedClassNode.getModifiersString(),
-                        Markdown.mdDocumentLink(nestedClassNode.getSimpleName()), 
-                        Utils.inOneLine(Markdown.formatText(nestedClassNode.getFirstSentence())));
+                        MarkdownUtils.mdDocumentLink(nestedClassNode.getSimpleName()), 
+                        MarkdownUtils.inOneLine(MarkdownUtils.formatText(nestedClassNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -253,8 +252,8 @@ public class TypeWriter {
                 .addColumn("Enum Constant")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode constantNode : enumNode.getConstants()) {
-            String link = Markdown.mdAnchorLink(constantNode.getSimpleName());
-            table.addRow(link, Utils.inOneLine(Markdown.formatText(constantNode.getFirstSentence())));
+            String link = MarkdownUtils.mdAnchorLink(constantNode.getSimpleName());
+            table.addRow(link, MarkdownUtils.inOneLine(MarkdownUtils.formatText(constantNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -268,9 +267,9 @@ public class TypeWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = Markdown.formatText(fieldNode.getTypeText());
+            String link = MarkdownUtils.formatText(fieldNode.getTypeText());
             table.addRow(fieldNode.getModifiersString() + link, 
-                        Markdown.mdAnchorLink(fieldNode.getSimpleName()), Utils.inOneLine(Markdown.formatText(fieldNode.getFirstSentence())));
+                        MarkdownUtils.mdAnchorLink(fieldNode.getSimpleName()), MarkdownUtils.inOneLine(MarkdownUtils.formatText(fieldNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -283,9 +282,9 @@ public class TypeWriter {
                 .addColumn("Constructor")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            String params = Markdown.formatParams(methodNode.getParams());
+            String params = MarkdownUtils.formatParams(methodNode.getParams());
             table.addRow(methodNode.getSimpleName() + "(" + params + ")",
-                        Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
+                        MarkdownUtils.inOneLine(MarkdownUtils.formatText(methodNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -299,12 +298,12 @@ public class TypeWriter {
                 .addColumn("Method")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            String link = Markdown.formatText(methodNode.getReturnTypeText());
+            String link = MarkdownUtils.formatText(methodNode.getReturnTypeText());
             table.addRow(methodNode.getModifiersString() + 
                         // Markdown.link(Reference.to(methodNode.getReturnType().getQualifiedName()), false), 
                         link,
-                        Markdown.mdAnchorLink(methodNode.getSimpleName()) + "(" + Markdown.formatParams(methodNode.getParams()) + ")",
-                        Utils.inOneLine(Markdown.formatText(methodNode.getFirstSentence())));
+                        MarkdownUtils.mdAnchorLink(methodNode.getSimpleName()) + "(" + MarkdownUtils.formatParams(methodNode.getParams()) + ")",
+                        MarkdownUtils.inOneLine(MarkdownUtils.formatText(methodNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -317,11 +316,11 @@ public class TypeWriter {
             writer.write("### " + constant.getSimpleName() + "\n\n");
             writer.write("public static final ");
             writer.write(" " + constant.fullSignature() + "\n\n");
-            writer.write(Markdown.formatText(constant.getFullBody()) + "\n\n");
+            writer.write(MarkdownUtils.formatText(constant.getFullBody()) + "\n\n");
 
             if (!constant.getSince().isEmpty()) {
                 writer.write("**Since:**\n\n");
-                writer.write(Markdown.formatText(constant.getSince()));
+                writer.write(MarkdownUtils.formatText(constant.getSince()));
                 writer.write("\n\n");
             }
 
@@ -330,7 +329,7 @@ public class TypeWriter {
                 writer.write("**See Also:**\n\n");
                 for (Reference ref : references) {
                     writer.write("\n");
-                    writer.write("See: " + Markdown.link(ref, false) + "\n\n");
+                    writer.write("See: " + MarkdownUtils.link(ref, false) + "\n\n");
                 }
                 writer.write("\n");
             }
@@ -355,7 +354,7 @@ public class TypeWriter {
                 writer.write("### " + field.getSimpleName() + "\n\n");
                 outputMethodOrFieldDeclaration(field);
             }
-            writer.write(Markdown.formatText(node.getFullBody()) + "\n\n");
+            writer.write(MarkdownUtils.formatText(node.getFullBody()) + "\n\n");
 
             if (node.getDeprecation() != Deprecation.NONE || !node.getDeprecationText().isEmpty()) {
                 outputDeprecation(node.getDeprecation(), node.getDeprecationText());
@@ -367,7 +366,7 @@ public class TypeWriter {
 
             if (!node.getSince().isEmpty()) {
                 writer.write("**Since:**\n\n");
-                writer.write(Markdown.formatText(node.getSince()));
+                writer.write(MarkdownUtils.formatText(node.getSince()));
                 writer.write("\n\n");
             }
 
@@ -386,7 +385,7 @@ public class TypeWriter {
             writer.write("**See Also:**\n\n");
             for (Reference ref : node.getReferences()) {
                 writer.write("\n");
-                writer.write(Markdown.link(ref, false) + "\n\n");
+                writer.write(MarkdownUtils.link(ref, false) + "\n\n");
             }
             writer.write("\n");
         }
@@ -402,7 +401,7 @@ public class TypeWriter {
 
         if (!method.getReturnDescription().isEmpty()) {
             writer.write("**Returns:**\n\n");
-            writer.write(Markdown.formatText(method.getReturnDescription()) + "\n\n");
+            writer.write(MarkdownUtils.formatText(method.getReturnDescription()) + "\n\n");
         }
 
         if (!method.getThrownTypes().isEmpty()) {
@@ -412,20 +411,20 @@ public class TypeWriter {
                 if (count++ > 0) {
                     writer.write(", ");
                 }
-                writer.write(Markdown.link(thrownType, false) + "\n");
+                writer.write(MarkdownUtils.link(thrownType, false) + "\n");
             }
             writer.write("\n");
         }
         if (method.getSpecifiedBy() != null) {
             writer.write("**Specified By:**\n\n");
-            writer.write(Markdown.link(method.getSpecifiedBy(), false));
+            writer.write(MarkdownUtils.link(method.getSpecifiedBy(), false));
             writer.write("\n\n");
         }
         if (method.getBaseMethod() != null) {
             Pair<Reference, Text> pair = method.getBaseMethod();
             if (!pair.getR().isEmpty()) {
                 writer.write("**Overrides:**\n\n");
-                writer.write(Markdown.formatText(pair.getR()));
+                writer.write(MarkdownUtils.formatText(pair.getR()));
                 writer.write("\n\n");
             }
         }        
@@ -444,7 +443,7 @@ public class TypeWriter {
             for (ParamNode param : method.getParams()) {
                 if (!param.getFullBody().isEmpty()) {
                     writer.write("`" +param.getSimpleName() + "` - " + 
-                            Markdown.formatText(param.getFullBody()) +"\n\n");
+                            MarkdownUtils.formatText(param.getFullBody()) +"\n\n");
                 }
             }
         }
@@ -464,7 +463,7 @@ public class TypeWriter {
                 writer.write("    This has been marked as deprecated.\n");
             }
         } else {
-            writer.write("    " + Markdown.formatText(text));
+            writer.write("    " + MarkdownUtils.formatText(text));
         }
         writer.write("\n\n");
     }

@@ -1,5 +1,7 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.assembler.LinkResolver;
+import io.github.sandydunlop.markista.assembler.TextAssembler;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AnnotationElement;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
@@ -20,9 +22,6 @@ import io.github.sandydunlop.markista.model.RecordTypeNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.util.LinkResolver;
-import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.TextAssembler;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -226,7 +225,7 @@ class TypeWriterTests {
         LinkResolver.init(api, contextMock);
         LinkResolver.addNativeModules();
         TextAssembler.assembleTextAndLinks(api, contextMock);
-        Markdown.setContext(contextMock);
+        MarkdownUtils.setContext(contextMock);
 
         typeWriter.outputTypeDoc(enumNode);
 

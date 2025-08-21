@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.scanner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ public class MarkdownParser {
     /// Creates a new MarkdownParser and immediately parses the provided Markdown string.
     /// @param md The Markdown string to parse.
     public MarkdownParser(String md) {
-        if (Utils.isNullOrEmpty(md)) return;
+        if (md == null || md.isEmpty()) return;
 
         markdown = md;
         boolean inCode = false;

@@ -1,15 +1,15 @@
 package io.github.sandydunlop.markista.doclet;
  
+import io.github.sandydunlop.markista.assembler.LinkResolver;
+import io.github.sandydunlop.markista.assembler.TextAssembler;
+import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.MarkdownService;
 import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.scanner.ApiScanner;
+import io.github.sandydunlop.markista.scanner.ModuleDirectives;
 import io.github.sandydunlop.markista.spi.DocService;
-import io.github.sandydunlop.markista.util.ApiScanner;
-import io.github.sandydunlop.markista.util.LinkResolver;
-import io.github.sandydunlop.markista.util.ModuleDirectives;
-import io.github.sandydunlop.markista.util.TextAssembler;
-import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.nio.file.Files;

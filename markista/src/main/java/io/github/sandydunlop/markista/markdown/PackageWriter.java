@@ -7,8 +7,6 @@ import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
-import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -52,7 +50,7 @@ public class PackageWriter {
         writer = ctx.createFileInPackage();
         writer.write("\n");
         writer.write("# Package " + packageNode.getQualifiedName() + "\n");
-        writer.write("\n\n" + Markdown.formatText(packageNode.getFullBody()) + "\n\n");
+        writer.write("\n\n" + MarkdownUtils.formatText(packageNode.getFullBody()) + "\n\n");
         outputPackageMemberPackages("Packages", packageNode.getPackages());
         outputPackageMemberTypes("Interfaces", packageNode.getInterfaces());
         outputPackageMemberTypes("Classes", packageNode.getClasses());
@@ -98,7 +96,7 @@ public class PackageWriter {
                     .withKind(Reference.Kind.PACKAGE)
                     .withLabel(name)
                     .withUri(name);
-            table.addRow(Markdown.link(link, false), Utils.inOneLine(Markdown.formatText(member.getFirstSentence())));
+            table.addRow(MarkdownUtils.link(link, false), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));
         }
         if (Configuration.getUseContentTabs()) {
             writer.write("=== \"" + title + "\"\n\n");
@@ -121,8 +119,8 @@ public class PackageWriter {
                         TEXT_CLASS)
                 .addColumn(TEXT_DESCRIPTION);
         for (TypeView member : members) {
-            table.addRow(Markdown.mdDocumentLink(member.getSimpleName()),
-                    Utils.inOneLine(Markdown.formatText(member.getFirstSentence())));
+            table.addRow(MarkdownUtils.mdDocumentLink(member.getSimpleName()),
+                    MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));
         }
         if (Configuration.getUseContentTabs()) {
             writer.write("=== \"" + title + "\"\n\n");

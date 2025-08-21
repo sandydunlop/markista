@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.assembler;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;

@@ -1,25 +1,10 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.common;
 
 /// A set of utility methods for changing between qualified and unqualified names.
 public class Utils {
 
     private Utils(){
         // This hides the public constructor
-    }
-
-    /// Removes the generic type and its surrounding <> from a string, if present
-    /// @param str The string
-    /// @return The string with the generic type and surrounding <> removed
-    public static String removeGenerics(String str) {
-        if (isNullOrEmpty(str)) return "";
-        int start = str.indexOf("<");
-        if (start > -1) {
-            int end = str.indexOf(">");
-            if (end > start) {
-                return str.substring(0, start);
-            }
-        }
-        return str;
     }
 
     /// Removes parentheses and what they contain from an expression
@@ -45,7 +30,7 @@ public class Utils {
     /// @param  str A string that may contain one or more qualified names.
     /// @return The input string, with all qualified names changed to unqualified names.
     public static String simplifyNames(String str) {
-        if (isNullOrEmpty(str)) return "";
+        if (str == null || str.isEmpty()) return "";
         return simplifyNamesLoop(str);
     }
 
@@ -90,30 +75,14 @@ public class Utils {
     /// Checks if the given character is valid in an unqualified name.
     /// @param c The character to check.
     /// @return  Whether or not the character is valid in an unqualified name.
-    public static boolean isValidSimpleNameChar(char c){
+    private static boolean isValidSimpleNameChar(char c){
         return Character.isAlphabetic(c) || c == '.';
     }
 
     /// Checks if the given character is valid in a qualified name.
     /// @param c The character to check.
     /// @return  Whether or not the character is valid in a qualified name.
-    public static boolean isValidQualifiedNameChar(char c){
+    private static boolean isValidQualifiedNameChar(char c){
         return (Character.isAlphabetic(c) && Character.isLowerCase(c)) || c == '.';
     }
-
-    /// Checks if a string is null or empty
-    /// @param str The string
-    /// @return True if the string is either null or empty
-    public static boolean isNullOrEmpty(String str) {
-        return str == null || str.isEmpty();
-    }
-
-    /// Removes new line characters from a string, replacing them with spaces
-    /// @param str The string
-    /// @return The string, with newlines converted to spaces
-    public static String inOneLine(String str) {
-        if (isNullOrEmpty(str)) return "";
-        return str.replace("\n", " ");
-    }
-
 }

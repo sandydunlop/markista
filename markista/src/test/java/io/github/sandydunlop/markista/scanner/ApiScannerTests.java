@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.scanner;
 
 import io.github.sandydunlop.markista.MockedDocletEnvironment;
 import io.github.sandydunlop.markista.core.Configuration;

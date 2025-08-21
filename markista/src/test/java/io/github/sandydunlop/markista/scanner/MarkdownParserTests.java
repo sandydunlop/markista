@@ -1,13 +1,13 @@
-package io.github.sandydunlop.markista.util;
-
-import com.sun.source.util.DocTreePath;
+package io.github.sandydunlop.markista.scanner;
 
 import io.github.sandydunlop.markista.core.Context;
-import jdk.javadoc.doclet.Reporter;
 
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic.Kind;
 
+import jdk.javadoc.doclet.Reporter;
+
+import com.sun.source.util.DocTreePath;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

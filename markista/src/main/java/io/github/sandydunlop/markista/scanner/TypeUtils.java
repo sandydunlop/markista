@@ -1,5 +1,6 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.scanner;
 
+import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractMember;
@@ -26,7 +27,7 @@ import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
-import io.github.sandydunlop.markista.util.MarkdownParser.TokenKind;
+import io.github.sandydunlop.markista.scanner.MarkdownParser.TokenKind;
 
 import java.io.File;
 import java.io.Serializable;
@@ -568,7 +569,7 @@ public class TypeUtils {
         for (int i = ownerTypeNode.getSupertypes().size() - 1; i >= 0; i--) {
             Pair<Reference, Text> pair = ownerTypeNode.getSupertypes().get(i);
             Reference typeRef = pair.getL();
-            String canonicalName = Utils.removeGenerics(typeRef.getTarget());
+            String canonicalName = removeGenerics(typeRef.getTarget());
             try {
                 Class<?> cls = Class.forName(canonicalName);
                 if (cls != null && belongsToClass(cls, method)) {
@@ -1072,4 +1073,19 @@ public class TypeUtils {
         }
         return null;
     }    
+
+    /// Removes the generic type and its surrounding <> from a string, if present
+    /// @param str The string
+    /// @return The string with the generic type and surrounding <> removed
+    public static String removeGenerics(String str) {
+        if (str == null || str.isEmpty()) return "";
+        int start = str.indexOf("<");
+        if (start > -1) {
+            int end = str.indexOf(">");
+            if (end > start) {
+                return str.substring(0, start);
+            }
+        }
+        return str;
+    }
 }

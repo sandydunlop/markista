@@ -8,8 +8,6 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.util.Markdown;
-import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -79,7 +77,7 @@ public class ModuleWriter {
             } else {
                 writer.write("# " + TITLE_MODULE + " " + moduleNode.getName() + "\n");
             }
-            writer.write("\n\n" + Markdown.formatText(moduleNode.getFullBody()) + "\n\n");
+            writer.write("\n\n" + MarkdownUtils.formatText(moduleNode.getFullBody()) + "\n\n");
             if (moduleNode.getName().isEmpty() && !moduleNode.getPackages().isEmpty()) {
                 writer.write("## " + TITLE_PACKAGES + "\n\n");
                 MarkdownTable table = new MarkdownTable()
@@ -90,7 +88,7 @@ public class ModuleWriter {
                             .to(member.getQualifiedName())
                             .withKind(Reference.Kind.PACKAGE)
                             .withLabel(member.getQualifiedName());
-                    table.addRow(Markdown.link(reference, true), Utils.inOneLine(Markdown.formatText(member.getDescription())));
+                    table.addRow(MarkdownUtils.link(reference, true), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getDescription())));
                 }
                 table.render(writer);
             }
@@ -123,7 +121,7 @@ public class ModuleWriter {
                 .addColumn(TITLE_DESCRIPTION);
         for (DirectiveNode directive : directives) {
             String columnTwo = formatDirectivePackageDoc(directive);
-            String link = Markdown.link(directive.getReference(), true);
+            String link = MarkdownUtils.link(directive.getReference(), true);
             table.addRow(link, columnTwo);
         }
         table.render(writer, 4);
@@ -143,7 +141,7 @@ public class ModuleWriter {
                 ctx.reportError("provides directive with no details");
             }
             Reference reference = directive.getReference();
-            table.addRow(Markdown.link(reference, true),
+            table.addRow(MarkdownUtils.link(reference, true),
                          multiLink(directive.getImplementations()));
         }
         table.render(writer, 4);
@@ -174,11 +172,11 @@ public class ModuleWriter {
         String name = directive.getReference().getTarget();
         PackageNode packageNode = api.getPackageNode(name);
         if (packageNode != null) {
-            return Utils.inOneLine(Markdown.formatText(packageNode.getFirstSentence()));
+            return MarkdownUtils.inOneLine(MarkdownUtils.formatText(packageNode.getFirstSentence()));
         }
         TypeNode typeNode = api.getTypeNode(name);
         if (typeNode != null) {
-            return Utils.inOneLine(Markdown.formatText(typeNode.getFirstSentence()));
+            return MarkdownUtils.inOneLine(MarkdownUtils.formatText(typeNode.getFirstSentence()));
         }
         return "";
     }
@@ -201,7 +199,7 @@ public class ModuleWriter {
                     modifiersAndType.append(" ");
                 }
                 Reference reference = constantValue.getConstantValueReference();
-                modifiersAndType.append(Markdown.link(reference, true));
+                modifiersAndType.append(MarkdownUtils.link(reference, true));
                 table.addRow(modifiersAndType.toString(), constantValue.getSimpleName(), escape(constantValue.getConstantValue().toString()));
             }
             table.render(writer);

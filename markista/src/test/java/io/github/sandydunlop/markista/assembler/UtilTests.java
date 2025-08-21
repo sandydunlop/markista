@@ -1,41 +1,26 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.assembler;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import io.github.sandydunlop.markista.common.Utils;
+import io.github.sandydunlop.markista.markdown.MarkdownUtils;
 
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class UtilTests {
 	@Test
 	void inOneLine() {
-		assertEquals("one two three", Utils.inOneLine("one\ntwo\nthree"));
+		assertEquals("one two three", MarkdownUtils.inOneLine("one\ntwo\nthree"));
 	}
 
 	@Test
 	void inOneLine_emptyString() {
-		assertEquals("", Utils.inOneLine(""));
+		assertEquals("", MarkdownUtils.inOneLine(""));
 	}
 
 	@Test
 	void inOneLine_null() {
-		assertEquals("", Utils.inOneLine(null));
-	}
-
-	@Test
-	void isNullOrEmptyString() {
-		String nullString = null;
-		assertEquals(true, Utils.isNullOrEmpty(nullString));
-		assertEquals(true, Utils.isNullOrEmpty(""));
-		assertEquals(false, Utils.isNullOrEmpty("text"));
-	}
-
-	@Test
-	void removeGenerics() {
-		String x = Utils.removeGenerics("List<String>");
-		assertEquals("List", x);
-		assertEquals("List", Utils.removeGenerics("List<? extends ArrayList>"));
-		assertEquals("List", Utils.removeGenerics("List<String[]>"));
-		assertEquals("", Utils.removeGenerics(""));
-		assertEquals("", Utils.removeGenerics(null));
+		assertEquals("", MarkdownUtils.inOneLine(null));
 	}
 
 	@Test

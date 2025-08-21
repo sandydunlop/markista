@@ -1,7 +1,10 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.scanner;
 
 import io.github.sandydunlop.markista.MockedDocletEnvironment;
+import io.github.sandydunlop.markista.assembler.LinkResolver;
+import io.github.sandydunlop.markista.assembler.TextAssembler;
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.markdown.MarkdownUtils;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
@@ -527,10 +530,10 @@ class TypeUtilsTests extends MockedDocletEnvironment {
                 "Node", packageNode.getQualifiedName());
         api.addType(classNode);
         TypeUtils.setDocumentation(classNode, typeElement);
-        String fmt = Markdown.formatText(classNode.getFirstSentence());
+        String fmt = MarkdownUtils.formatText(classNode.getFirstSentence());
         assertEquals("berry", fmt);
-        assertEquals("berry", Markdown.formatText(classNode.getBody()));
-        assertEquals("berry", Markdown.formatText(classNode.getFullBody()));
+        assertEquals("berry", MarkdownUtils.formatText(classNode.getBody()));
+        assertEquals("berry", MarkdownUtils.formatText(classNode.getFullBody()));
     }
 
     @Test
@@ -1397,4 +1400,14 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         Text.Segment segment = text.getSegment(0);
         assertEquals(SegmentKind.INHERIT, segment.getKind());
     }
+
+	@Test
+	void removeGenerics() {
+		String x = TypeUtils.removeGenerics("List<String>");
+		assertEquals("List", x);
+		assertEquals("List", TypeUtils.removeGenerics("List<? extends ArrayList>"));
+		assertEquals("List", TypeUtils.removeGenerics("List<String[]>"));
+		assertEquals("", TypeUtils.removeGenerics(""));
+		assertEquals("", TypeUtils.removeGenerics(null));
+	}
 }

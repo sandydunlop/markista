@@ -1,5 +1,7 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.assembler.LinkResolver;
+import io.github.sandydunlop.markista.assembler.TextAssembler;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
@@ -10,8 +12,6 @@ import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.util.LinkResolver;
-import io.github.sandydunlop.markista.util.TextAssembler;
 
 import java.io.IOException;
 import java.io.StringWriter;

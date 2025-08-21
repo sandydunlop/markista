@@ -1,5 +1,7 @@
-package io.github.sandydunlop.markista.util;
+package io.github.sandydunlop.markista.markdown;
 
+import io.github.sandydunlop.markista.assembler.LinkResolver;
+import io.github.sandydunlop.markista.assembler.TextAssembler;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
@@ -113,7 +115,7 @@ class MarkdownTests {
         LinkResolver.addNativeModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
 
-        String markdown = Markdown.formatParams(params);
+        String markdown = MarkdownUtils.formatParams(params);
         assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html) name", markdown);
     }
 
@@ -132,7 +134,7 @@ class MarkdownTests {
         text.append(Segment.empty()
                 .setKind(Text.SegmentKind.TEXT)
                 .setText("hello world"));
-        String formatted = Markdown.formatText(text);
+        String formatted = MarkdownUtils.formatText(text);
         assertEquals("hello world", formatted);
     }
 
@@ -142,7 +144,7 @@ class MarkdownTests {
         text.append(Segment.empty()
                 .setKind(Text.SegmentKind.CODE)
                 .setText("#!/bin/zsh"));
-        String formatted = Markdown.formatText(text);
+        String formatted = MarkdownUtils.formatText(text);
         assertEquals("`#!/bin/zsh`", formatted);
     }
 
@@ -151,7 +153,7 @@ class MarkdownTests {
         Text text = Text.empty();
         text.append(Segment.empty().setText("unhandled").setKind(Text.SegmentKind.NONE));
         reporter.stringWriter = new StringWriter();
-        String formatted = Markdown.formatText(text);
+        String formatted = MarkdownUtils.formatText(text);
         assertTrue(reporter.stringWriter.toString().contains("nhandled javadoc tag"));
         assertEquals("", formatted);
     }
@@ -173,7 +175,7 @@ class MarkdownTests {
         api.addLink(link);
         LinkResolver.init(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
-        String formatted = Markdown.formatText(text);
+        String formatted = MarkdownUtils.formatText(text);
         assertEquals("hello [link](http://example.com) world", formatted);
     }
 
@@ -186,7 +188,7 @@ class MarkdownTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
-        String sig = Markdown.fullSignature(method);
+        String sig = MarkdownUtils.fullSignature(method);
         assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
     }
 
@@ -200,8 +202,8 @@ class MarkdownTests {
         String displayName = "";
         boolean isLocalMethod = false;
         boolean useQualifiedName = false;
-        Markdown.setContext(ctx);
-        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        MarkdownUtils.setContext(ctx);
+        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
         assertEquals("Node.md", link.getUri());
         assertEquals("Node", link.getLabel());
     }
@@ -216,8 +218,8 @@ class MarkdownTests {
         String displayName = "Display";
         boolean isLocalMethod = false;
         boolean useQualifiedName = false;
-        Markdown.setContext(ctx);
-        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        MarkdownUtils.setContext(ctx);
+        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
         assertEquals("Node.md", link.getUri());
         assertEquals("Display", link.getLabel());
     }
@@ -235,8 +237,8 @@ class MarkdownTests {
         boolean isLocalMethod = true;
         boolean useQualifiedName = false;
         ctx.setTypeName("Node");
-        Markdown.setContext(ctx);
-        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        MarkdownUtils.setContext(ctx);
+        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
         assertEquals("Node.md", link.getUri());
         assertEquals("test", link.getLabel());
     }
@@ -254,8 +256,8 @@ class MarkdownTests {
         boolean isLocalMethod = true;
         boolean useQualifiedName = false;
         ctx.setTypeName("Api");
-        Markdown.setContext(ctx);
-        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        MarkdownUtils.setContext(ctx);
+        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
         assertEquals("Node.md", link.getUri());
         assertEquals("Node.test", link.getLabel());
     }
@@ -271,8 +273,8 @@ class MarkdownTests {
         boolean isLocalMethod = false;
         boolean useQualifiedName = false;
         ctx.setTypeName("Api");
-        Markdown.setContext(ctx);
-        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        MarkdownUtils.setContext(ctx);
+        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
         assertEquals("Node.md", link.getUri());
         assertEquals("Node", link.getLabel());
     }
@@ -287,27 +289,27 @@ class MarkdownTests {
         boolean isLocalMethod = false;
         boolean useQualifiedName = false;
         ctx.setTypeName("Api");
-        Markdown.setContext(ctx);
-        Markdown.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
+        MarkdownUtils.setContext(ctx);
+        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
         assertEquals("markista.docagrams/index.md", link.getUri());
         assertEquals("markista.docagrams", link.getLabel());
     }
 
     @Test
     void mdDocumentLink_doc() {
-        String md = Markdown.mdDocumentLink("page");
+        String md = MarkdownUtils.mdDocumentLink("page");
         assertEquals("[page](page.md)", md);
     }
 
     @Test
     void mdDocumentLink_doc2() {
-        String md = Markdown.mdDocumentLink("page.md");
+        String md = MarkdownUtils.mdDocumentLink("page.md");
         assertEquals("[page.md](page.md)", md);
     }
 
     @Test
     void mdDocumentLink_url() {
-        String md = Markdown.mdDocumentLink("https://example.com");
+        String md = MarkdownUtils.mdDocumentLink("https://example.com");
         assertEquals("[https://example.com](https://example.com)", md);
     }
 
