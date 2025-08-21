@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class PackageOrTypeNode extends AbstractPackageMember {
+public abstract class PackageOrTypeNode extends AbstractMember {
     // store children by the interface type (no concrete TypeNode mention)
     protected final List<TypeView> types = new ArrayList<>();
 

@@ -1,26 +1,5 @@
 package io.github.sandydunlop.markista.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import com.sun.source.doctree.DocCommentTree;
-import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.SeeTree;
-import com.sun.source.util.DocTreePath;
-import com.sun.source.util.DocTrees;
-import com.sun.source.doctree.StartElementTree;
-
 import io.github.sandydunlop.markista.MockedDocletEnvironment;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
@@ -33,7 +12,6 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.OverriddenMethodNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
@@ -42,8 +20,14 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
-import jdk.javadoc.doclet.DocletEnvironment;
-import jdk.javadoc.doclet.Reporter;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.AnnotationValue;
@@ -64,6 +48,20 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 
+import jdk.javadoc.doclet.DocletEnvironment;
+import jdk.javadoc.doclet.Reporter;
+
+import com.sun.source.doctree.DeprecatedTree;
+import com.sun.source.doctree.DocCommentTree;
+import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.IdentifierTree;
+import com.sun.source.doctree.ParamTree;
+import com.sun.source.doctree.ReturnTree;
+import com.sun.source.doctree.SeeTree;
+import com.sun.source.doctree.SinceTree;
+import com.sun.source.doctree.StartElementTree;
+import com.sun.source.util.DocTreePath;
+import com.sun.source.util.DocTrees;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -74,15 +72,18 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
-import com.sun.source.doctree.DeprecatedTree;
-import com.sun.source.doctree.SinceTree;
-import com.sun.source.doctree.ParamTree;
-import com.sun.source.doctree.ReturnTree;
-import com.sun.source.doctree.IdentifierTree;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class TypeUtilsTests extends MockedDocletEnvironment {
     private static Context ctx;
@@ -217,49 +218,50 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         assertEquals(1, unnamedModule.getConstantValues().size());
     }
 
-    @Test
-    void getOverriddenMethod_local() {
-        Name methodName1 = mock(Name.class);
-        when(methodName1.toString()).thenReturn("length");
-        ExecutableElement methodElement1 = mock(ExecutableElement.class);
-        when(methodElement1.getReturnType()).thenReturn(typeMirror);
-        when(methodElement1.getSimpleName()).thenReturn(methodName1);
-        when(methodElement1.getEnclosingElement()).thenReturn(typeElement);
+    //. Local overrieds are now dealt with in LinkFormatter aka TextAssembler
+    // @Test
+    // void getOverriddenMethod_local() {
+    //     Name methodName1 = mock(Name.class);
+    //     when(methodName1.toString()).thenReturn("length");
+    //     ExecutableElement methodElement1 = mock(ExecutableElement.class);
+    //     when(methodElement1.getReturnType()).thenReturn(typeMirror);
+    //     when(methodElement1.getSimpleName()).thenReturn(methodName1);
+    //     when(methodElement1.getEnclosingElement()).thenReturn(typeElement);
 
-        Name methodName2 = mock(Name.class);
-        when(methodName2.toString()).thenReturn("length");
-        ExecutableElement methodElement2 = mock(ExecutableElement.class);
-        when(methodElement2.getReturnType()).thenReturn(typeMirror);
-        when(methodElement2.getSimpleName()).thenReturn(methodName2);
-        when(methodElement2.getEnclosingElement()).thenReturn(typeElement);
+    //     Name methodName2 = mock(Name.class);
+    //     when(methodName2.toString()).thenReturn("length");
+    //     ExecutableElement methodElement2 = mock(ExecutableElement.class);
+    //     when(methodElement2.getReturnType()).thenReturn(typeMirror);
+    //     when(methodElement2.getSimpleName()).thenReturn(methodName2);
+    //     when(methodElement2.getEnclosingElement()).thenReturn(typeElement);
 
-        ClassTypeNode classNode1 = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
-                "Node", packageNode.getQualifiedName());
-        api.addType(classNode1);
-        MethodNode methodNode1 = new MethodNode("int", "length");
-        methodNode1.setOwnerName(classNode1.getQualifiedName());
-        classNode1.addMethod(methodNode1);
+    //     ClassTypeNode classNode1 = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
+    //             "Node", packageNode.getQualifiedName());
+    //     api.addType(classNode1);
+    //     MethodNode methodNode1 = new MethodNode("int", "length");
+    //     methodNode1.setOwnerName(classNode1.getQualifiedName());
+    //     classNode1.addMethod(methodNode1);
 
-        ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", 
-                "Node", packageNode.getQualifiedName());
-        Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
-                .withKind(Reference.Kind.TYPE);
-        Pair<Reference,Text> supertype = Pair.of(ref, null);
-        classNode2.getSupertypes().add(supertype);
-        api.addType(classNode2);
-        MethodNode methodNode2 = new MethodNode("int", "length");
-        methodNode2.setOwnerName(classNode2.getQualifiedName());
-        classNode2.addMethod(methodNode2);
+    //     ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", 
+    //             "Node", packageNode.getQualifiedName());
+    //     Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
+    //             .withKind(Reference.Kind.TYPE);
+    //     Pair<Reference,Text> supertype = Pair.of(ref, null);
+    //     classNode2.getSupertypes().add(supertype);
+    //     api.addType(classNode2);
+    //     MethodNode methodNode2 = new MethodNode("int", "length");
+    //     methodNode2.setOwnerName(classNode2.getQualifiedName());
+    //     classNode2.addMethod(methodNode2);
 
-        when(elementUtils.getTypeElement("io.github.sandydunlop.markista.model.Node")).thenAnswer(_ -> typeElement);
-        List<? extends Element> enclosedElements = List.of(methodElement1);
-        when(typeElement.getEnclosedElements()).thenAnswer(_ -> enclosedElements);
+    //     when(elementUtils.getTypeElement("io.github.sandydunlop.markista.model.Node")).thenAnswer(_ -> typeElement);
+    //     List<? extends Element> enclosedElements = List.of(methodElement1);
+    //     when(typeElement.getEnclosedElements()).thenAnswer(_ -> enclosedElements);
 
-        OverriddenMethodNode om = TypeUtils.getOverriddenMethod(methodNode2, methodElement2);
-        assertNotNull(om);
-        assertEquals("io.github.sandydunlop.markista.model.Node", om.getClassName());
-        assertEquals("length", om.getMethodName());
-    }
+    //     InheritedMethodRef om = TypeUtils.getInheritedMethod(methodNode2, methodElement2);
+    //     assertNotNull(om);
+    //     assertEquals("io.github.sandydunlop.markista.model.Node", om.getClassName());
+    //     assertEquals("length", om.getMethodName());
+    // }
 
     @Test
     void getOverriddenMethod_native() {
@@ -282,10 +284,9 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         methodNode.setOwnerName(classNode.getQualifiedName());
         classNode.addMethod(methodNode);
 
-        OverriddenMethodNode om = TypeUtils.getOverriddenMethod(methodNode, methodElement);
-        assertNotNull(om);
-        assertEquals("java.lang.String", om.getClassName());
-        assertEquals("length", om.getMethodName());
+        String nativeClass = TypeUtils.getNativeClassForInheritedMethod(methodNode);
+        assertNotNull(nativeClass);
+        assertEquals("java.lang.String", nativeClass);
     }
 
     @Test
@@ -529,7 +530,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         List<? extends DocTree> dtList = List.of(docTree);
         Text text = TypeUtils.createText(dtList);
         LinkResolver.init(api, ctx);
-        LinkFormatter.generateLinkTexts(api, ctx);
+        TextAssembler.generateLinkTexts(api, ctx);
         assertNotNull(text);
         assertEquals(1, text.getSegments().size());
         assertEquals(Text.SegmentKind.LINK, text.getSegments().get(0).getKind());
@@ -1197,23 +1198,25 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         verify(applied).setCustom(true);
     }
 
-    @Test
-    void getOverriddenNativeMethod_finds_native_method_override() {
-        // Create a MethodNode representing equals(Object)
-        MethodNode method = mock(MethodNode.class);
-        when(method.getSimpleName()).thenReturn("equals");
+    // getInheritedNativeMethod no longer exists. 
+    // LinkFormatter/TextAssembler now deals with most of this
+    // @Test
+    // void getOverriddenNativeMethod_finds_native_method_override() {
+    //     // Create a MethodNode representing equals(Object)
+    //     MethodNode method = mock(MethodNode.class);
+    //     when(method.getSimpleName()).thenReturn("equals");
 
-        // Build a ParamNode list with one parameter of type java.lang.Object
-        io.github.sandydunlop.markista.model.ParamNode p = mock(io.github.sandydunlop.markista.model.ParamNode.class);
-        when(p.getTypeName()).thenReturn("java.lang.Object");
+    //     // Build a ParamNode list with one parameter of type java.lang.Object
+    //     io.github.sandydunlop.markista.model.ParamNode p = mock(io.github.sandydunlop.markista.model.ParamNode.class);
+    //     when(p.getTypeName()).thenReturn("java.lang.Object");
 
-        when(method.getParams()).thenReturn(List.of(p));
+    //     when(method.getParams()).thenReturn(List.of(p));
 
-        // Call the utility against java.lang.Object - should find equals(Object)
-        OverriddenMethodNode overridden = TypeUtils.getOverriddenNativeMethod("java.lang.Object", method);
-        assertNotNull(overridden);
-        assertEquals("java.lang.Object", overridden.getClassName());
-    }
+    //     // Call the utility against java.lang.Object - should find equals(Object)
+    //     InheritedMethodRef overridden = TypeUtils.getInheritedNativeMethod("java.lang.Object", method);
+    //     assertNotNull(overridden);
+    //     assertEquals("java.lang.Object", overridden.getClassName());
+    // }
 
     @Test
     void getDeprecation_and_getReturnTree_detect_block_tags() {
@@ -1259,36 +1262,37 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         assertNotNull(segCode.getText());
     }
 
-    @Test
-    void setMethodAnnotations_sets_overridden_method_when_override_annotation_present() {
-        ExecutableElement methodElement = mock(ExecutableElement.class);
+    // Inheritance related
+    // @Test
+    // void setMethodAnnotations_sets_overridden_method_when_override_annotation_present() {
+    //     ExecutableElement methodElement = mock(ExecutableElement.class);
 
-        // AnnotationMirror for @Override
-        AnnotationMirror overrideMirror = mock(AnnotationMirror.class);
-        DeclaredType declaredType = mock(DeclaredType.class);
-        TypeElement declaredElement = mock(TypeElement.class);
-        when(overrideMirror.getAnnotationType()).thenReturn(declaredType);
-        when(declaredType.asElement()).thenReturn(declaredElement);
+    //     // AnnotationMirror for @Override
+    //     AnnotationMirror overrideMirror = mock(AnnotationMirror.class);
+    //     DeclaredType declaredType = mock(DeclaredType.class);
+    //     TypeElement declaredElement = mock(TypeElement.class);
+    //     when(overrideMirror.getAnnotationType()).thenReturn(declaredType);
+    //     when(declaredType.asElement()).thenReturn(declaredElement);
 
-        Name nameMock = mockName("Override");
-        when(declaredElement.getSimpleName()).thenReturn(nameMock);        
-        when(methodElement.getAnnotationMirrors()).thenAnswer(_ -> List.of(overrideMirror));
-        MethodNode methodNode = mock(MethodNode.class);
+    //     Name nameMock = mockName("Override");
+    //     when(declaredElement.getSimpleName()).thenReturn(nameMock);        
+    //     when(methodElement.getAnnotationMirrors()).thenAnswer(_ -> List.of(overrideMirror));
+    //     MethodNode methodNode = mock(MethodNode.class);
 
-        // We want the real setMethodAnnotations to run but wish to stub getOverriddenMethod to return a known value.
-        OverriddenMethodNode om = new OverriddenMethodNode("java.lang.Object", "equals");
+    //     // We want the real setMethodAnnotations to run but wish to stub getOverriddenMethod to return a known value.
+    //     InheritedMethodRef om = new InheritedMethodRef("java.lang.Object", "equals");
 
-        try (MockedStatic<TypeUtils> mts = Mockito.mockStatic(TypeUtils.class, Mockito.CALLS_REAL_METHODS)) {
-            // Ensure TypeUtils.init already done earlier and static fields intact
-            mts.when(() -> TypeUtils.getOverriddenMethod(methodNode, methodElement)).thenReturn(om);
+    //     try (MockedStatic<TypeUtils> mts = Mockito.mockStatic(TypeUtils.class, Mockito.CALLS_REAL_METHODS)) {
+    //         // Ensure TypeUtils.init already done earlier and static fields intact
+    //         mts.when(() -> TypeUtils.getInheritedMethod(methodNode, methodElement)).thenReturn(om);
 
-            // Now invoke the real setMethodAnnotations (CALLS_REAL_METHODS ensures real method executed)
-            TypeUtils.setMethodAnnotations(methodNode, methodElement);
+    //         // Now invoke the real setMethodAnnotations (CALLS_REAL_METHODS ensures real method executed)
+    //         TypeUtils.setMethodAnnotations(methodNode, methodElement);
 
-            // verify that methodNode.setOverriddenMethod was called with our stubbed OverriddenMethodNode
-            verify(methodNode).setOverriddenMethod(om);
-        }
-    }
+    //         // verify that methodNode.setOverriddenMethod was called with our stubbed OverriddenMethodNode
+    //         verify(methodNode).setOverriddenMethod(om);
+    //     }
+    // }
 
     @Test
     void setThrownTypes_adds_exception_type_names_to_methodnode() {
@@ -1316,8 +1320,8 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         assertEquals(1, methodNode.getThrownTypes().size());
     }
 
-    // // A small helper stub interface so we can verify Node interactions without requiring the real Node implementation.
-    // // If your project provides a concrete Node class you can replace references accordingly.
+    // A small helper stub interface so we can verify Node interactions without requiring the real Node implementation.
+    // If your project provides a concrete Node class you can replace references accordingly.
     private class NodeStub extends io.github.sandydunlop.markista.model.Node {
         // No additional members required; used for mocking only.
     }
@@ -1404,5 +1408,134 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         assertEquals(3, text.getSegments().size());
         assertEquals(SegmentKind.LINK, text.getSegment(1).getKind());
         assertEquals("Text", text.getSegment(1).getLink().getTarget());
+    }
+
+    // Inheritance related
+    //
+    // @Test
+    // void overriddenMethod() {
+    //     mockDocletEnvironment();
+    //     List<Element> elements = new ArrayList<>();
+    //     elements.add(mockModule("mockmodule"));
+    //     PackageElement packageMock = mockPackage("mockpackage");
+    //     elements.add(packageMock);
+
+    //     // Mock the supertype with a method to be overridden
+    //     TypeElement supertypeMock = mockType("MockSupertype", packageMock);
+    //     elements.add(supertypeMock);
+    //     ExecutableElement overriddenExecutableMock = mockExecutable("mockmethod", supertypeMock);
+    //     elements.add(overriddenExecutableMock);
+    //     VariableElement overriddenParameterMock = mockMethodParameter("mockparameter", supertypeMock, overriddenExecutableMock);
+    //     elements.add(overriddenParameterMock);
+
+    //     // Mock the type with a method that overrides
+    //     TypeElement typeMock = mockType("MockType", packageMock);
+    //     elements.add(typeMock);
+    //     ExecutableElement executableMock = mockExecutable("mockmethod", typeMock);
+    //     elements.add(executableMock);
+    //     VariableElement parameterMock = mockMethodParameter("mockparameter", typeMock, executableMock);
+    //     elements.add(parameterMock);
+
+    //     mockIncludedElements(elements);
+
+
+    //     ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+    //     apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+    //     // Set up a dummy API model node for the mocked package
+    //     PackageNode pkgNode = new PackageNode("mockpackage");
+    //     apiScanner.api.addPackage(pkgNode);
+
+    //     // Set up dummy API model nodes for the mocked types and methods
+    //     TypeNode supertypeNode = new TypeNode("MockSupertype", "MockSupertype", "mockpackage");
+    //     apiScanner.api.addType(supertypeNode);
+    //     TypeNode typeNode = new TypeNode("MockType", "MockType", "mockpackage");
+    //     apiScanner.api.addType(typeNode);
+
+    //     // Set the supertypeNode as the supertype of typeNode
+    //     Reference reference = Reference.to(supertypeNode.getQualifiedName())
+    //             .from(pkgNode.getQualifiedName())
+    //             .withKind(Reference.Kind.TYPE)
+    //             .withLabel(supertypeNode.getQualifiedName());
+    //     typeNode.getSupertypes().add(Pair.of(reference, Text.empty()));
+
+    //     // Mocked elementUtils returns the supertypeMock with its method
+    //     List<Element> enclosedElements = List.of(overriddenExecutableMock);
+    //     when(supertypeMock.getEnclosedElements()).thenAnswer(_ -> enclosedElements);
+    //     when(elementUtilsMock.getTypeElement(reference.getTarget())).thenReturn(supertypeMock);
+
+    //     MethodNode overridingMethod = new MethodNode("void", "mockmethod");
+    //     overridingMethod.setOwnerName(typeNode.getQualifiedName());
+    //     InheritedMethodRef om = TypeUtils.getInheritedMethod(overridingMethod, executableMock);
+
+    //     assertNotNull(om);
+    //     assertEquals("MockSupertype", om.getClassName());
+    // }
+
+    @Test
+    void overriddenMethodInheritDocs() {
+        mockDocletEnvironment();
+        List<Element> elements = new ArrayList<>();
+        elements.add(mockModule("mockmodule"));
+        PackageElement packageMock = mockPackage("mockpackage");
+        elements.add(packageMock);
+
+        // Mock the supertype with a method to be overridden
+        TypeElement supertypeMock = mockType("MockSupertype", packageMock);
+        elements.add(supertypeMock);
+        ExecutableElement overriddenExecutableMock = mockExecutable("mockmethod", supertypeMock);
+        elements.add(overriddenExecutableMock);
+        VariableElement overriddenParameterMock = mockMethodParameter("mockparameter", supertypeMock, overriddenExecutableMock);
+        elements.add(overriddenParameterMock);
+
+        // Mock the type with a method that overrides
+        TypeElement typeMock = mockType("MockType", packageMock);
+        elements.add(typeMock);
+        ExecutableElement executableMock = mockExecutable("mockmethod", typeMock);
+        elements.add(executableMock);
+        VariableElement parameterMock = mockMethodParameter("mockparameter", typeMock, executableMock);
+        elements.add(parameterMock);
+
+        mockIncludedElements(elements);
+
+
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+
+        // Set up a dummy API model node for the mocked package
+        PackageNode pkgNode = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(pkgNode);
+
+        // Set up dummy API model nodes for the mocked types and methods
+        TypeNode supertypeNode = new TypeNode("MockSupertype", "MockSupertype", "mockpackage");
+        apiScanner.api.addType(supertypeNode);
+        TypeNode typeNode = new TypeNode("MockType", "MockType", "mockpackage");
+        apiScanner.api.addType(typeNode);
+
+        // Set the supertypeNode as the supertype of typeNode
+        Reference reference = Reference.to(supertypeNode.getQualifiedName())
+                .from(pkgNode.getQualifiedName())
+                .withKind(Reference.Kind.TYPE)
+                .withLabel(supertypeNode.getQualifiedName());
+        typeNode.getSupertypes().add(Pair.of(reference, Text.empty()));
+
+        // Mocked elementUtils returns the supertypeMock with its method
+        List<Element> enclosedElements = List.of(overriddenExecutableMock);
+        when(supertypeMock.getEnclosedElements()).thenAnswer(_ -> enclosedElements);
+        when(elementUtilsMock.getTypeElement(reference.getTarget())).thenReturn(supertypeMock);
+
+        // DocTree dct = mockDocCommentTree_TEXT("plain text");
+        // when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
+        // apiScanner.visitType(typeMock, 1);
+        // apiScanner.visitExecutable(executableMock, 1);
+
+        MethodNode overridingMethod = new MethodNode("void", "mockmethod");
+        overridingMethod.setOwnerName(typeNode.getQualifiedName());
+        // OverriddenMethodNode om = TypeUtils.getOverriddenMethod(overridingMethod, executableMock);
+
+        // TypeElement expectedSupertype = TypeUtils.getOverriddenMethodOwner(overridingMethod, executableMock);
+
+        // assertNotNull(expectedSupertype);
+        // assertEquals("MockSupertype", om.getClassName());
     }
 }

@@ -7,18 +7,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public abstract class AbstractPackageMember extends Node {
+public abstract class AbstractMember extends Node {
     /// A list of the modifiers a node has
     private final Set<Modifier> modifiers = new HashSet<>();
 
-    /// The simple form of the node's name
+    /// The simple form of the name
     protected String simpleName = "";
 
-    /// The canonical form of the type's name
+    /// The qualified form of the name
     protected String qualifiedName;
 
     /// A [PackageNode] representing the package the node belongs to
     protected String packageName = null;
+
+    /// List of annotations applied to this type.
+    private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
+
+    /// Has the `@Documented` annotation applied
+    private boolean hasDocumentedAnnotation = false;
 
     /// Sets the simple name of this type.
     /// @param name the simple name to set.
@@ -54,6 +60,31 @@ public abstract class AbstractPackageMember extends Node {
     /// @return Set of modifiers.
     public Set<Modifier> getModifiers() {
         return modifiers;
+    }
+
+    /// Adds an applied annotation to this type
+    /// @param annotation the annotation
+    public void addAppliedAnnotation(AppliedAnnotationNode annotation) {
+        appliedAnnotations.add(annotation);
+    }
+
+    /// Returns the list of annotations applied to this type.
+    /// @return list of applied annotations
+    public List<AppliedAnnotationNode> getAppliedAnnotations() {
+        return appliedAnnotations;
+    }
+
+    /// Sets a flag indicating if this type as having a `@Documented` meta-annotation
+    /// @param b If true, this type is marked as having a `@Documented` meta-annotation.
+    /// If false, it is marked as not having the met-annotation.
+    public void setHasDocumentedAnnotation(boolean b) {
+        this.hasDocumentedAnnotation = b;
+    }
+
+    /// Does this type have a `@Documented` meta-annotation?
+    /// @return True if it has a `@Documented` meta-annotation
+    public boolean hasDocumentedAnnotation() {
+        return hasDocumentedAnnotation;
     }
 
     /// Returns a string representation of modifiers.

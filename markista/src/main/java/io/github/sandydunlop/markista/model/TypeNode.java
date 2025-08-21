@@ -35,9 +35,6 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
     /// List of fields belonging to this type.
     private final List<FieldNode> fields = new ArrayList<>();
 
-    /// The kind of this type (e.g., class, interface, enum, annotation).
-    protected Kind kind = Kind.NONE;
-
     /// Has the `@Documented` annotation applied
     private boolean hasDocumentedAnnotation = false;
 
@@ -138,18 +135,6 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         return packageName;
     }
 
-    /// Sets the kind (class, interface, enum, annotation) of this type.
-    /// @param kind the Kind enum value.
-    public void setKind(Kind kind) {
-        this.kind = kind;
-    }
-
-    /// Returns the kind of this type.
-    /// @return the Kind enum value.
-    public Kind getKind() {
-        return kind;
-    }
-
     /// Adds a method to this type.
     /// @param method the MethodNode to add.
     public void addMethod(MethodNode method) {
@@ -245,8 +230,7 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         return null;
     }
 
-    /// Returns a string representation of modifiers.
-    /// The modifiers are sorted according to a predefined order.
+    /// {@inheritDoc}
     /// @return A string containing sorted modifiers separated by spaces.
     @Override
     public String getModifiersString() {
@@ -258,40 +242,5 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
             }
         }
         return mods.toString();
-    }
-
-    /// Enumeration representing kinds of types: None, Class, Interface, Enum, Annotation.
-    public enum Kind {
-        /// No type has been set
-        NONE ("None"),
-
-        /// A class, including abstract class and exception class
-        CLASS ("Class"),
-
-        /// An interface
-        INTERFACE ("Interface"),
-
-        /// A record
-        RECORD ("Record Class"),
-
-        /// An enum
-        ENUM ("Enum Class"),
-
-        /// An annotation
-        ANNOTATION ("Annotation Interface");
-
-        /// The display name for the kind.
-        private final String name;
-
-        /// Constructor assigning the display name.
-        Kind(String s) {
-            name = s;
-        }
-
-        /// Returns the display name of the kind.
-        @Override
-        public String toString() {
-            return this.name;
-        }
     }
 }

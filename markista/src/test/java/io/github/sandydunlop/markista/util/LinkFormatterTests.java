@@ -104,7 +104,7 @@ class LinkFormatterTests {
 
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
-        LinkFormatter.generateLinkTexts(api, ctx);
+        TextAssembler.generateLinkTexts(api, ctx);
         LinkResolver.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
@@ -139,7 +139,7 @@ class LinkFormatterTests {
     @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
 	void link_to_text(String target, Segment[] expected) {
         Reference link = Reference.to(target);
-        Text text = LinkFormatter.link(link, false);
+        Text text = TextAssembler.link(link, false);
         assertEquals(expected.length, text.getSegments().size());
         for (int i=0; i<expected.length; i++) {
             Segment expectedSegment = expected[i];
@@ -153,7 +153,7 @@ class LinkFormatterTests {
 
     @Test
     void processModules() {
-        LinkFormatter.processModules(api);
+        TextAssembler.processModules(api);
         ModuleNode module2 = api.getModules().getFirst();
         for (DirectiveNode directive : module2.getDirectives()) {
             assertNotEquals("", directive.getReference().getUri());
@@ -177,7 +177,7 @@ class LinkFormatterTests {
         constantValue.setConstantValue("testValue");
         module.addConstantValue(constantValue);     
 
-        LinkFormatter.processModules(api);
+        TextAssembler.processModules(api);
 
         Reference constantReference = constantValue.getConstantValueReference();
         assertNotNull(constantReference);

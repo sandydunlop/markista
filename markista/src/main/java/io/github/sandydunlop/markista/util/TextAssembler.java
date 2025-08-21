@@ -7,22 +7,22 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
-import io.github.sandydunlop.markista.model.OverriddenMethodNode;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
 
 import java.nio.file.Path;
 import java.util.List;
 
-public class LinkFormatter {
+public class TextAssembler {
     private static Context ctx;
     private static Api api;
 
-    private LinkFormatter() {
+    private TextAssembler() {
         // Nothing to see here
     }
 
@@ -96,17 +96,64 @@ public class LinkFormatter {
         for (Reference thrownRef : method.getThrownTypes()) {
             LinkResolver.resolve(thrownRef);
         }
-        OverriddenMethodNode om = method.getOverriddenMethod();
-        if (om != null) {
-            String name = om.getClassName() + "#" + om.getMethodName();
-            Reference reference = Reference.to(name)
-                    .from(ctx.getPackageName())
-                    .withLabel(om.getClassName() + "." + om.getMethodName());
-            om.setText(link(reference, false));
-            om.getText().append(".");
-            om.getText().append(om.getMethodName());
+        Reference baseMethodRef = method.getBaseMethod();
+        if (baseMethodRef != null) {
+            String baseTypeName = baseTypeName(method);
+            if (baseMethodRef.getTarget().isEmpty() && baseTypeName != null) {
+                baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
+            }
+            Text linkText = link(baseMethodRef, false);
+            baseMethodRef.setText(linkText);
+
+            TypeNode baseType = api.getTypeNode(baseTypeName);
+            if (baseType != null) {
+                MethodNode baseMethod = baseType.getMethod(method);
+                if (baseMethod != null) {
+                    method.setFirstSentence(processInheritDocTags(baseMethod.getFirstSentence(), method.getFirstSentence()));
+                    method.setBody(processInheritDocTags(baseMethod.getBody(), method.getBody()));
+                    method.setFullBody(processInheritDocTags(baseMethod.getFullBody(), method.getFullBody()));
+                }
+            }
         }
         generateLinkTextsForReferences(method);
+    }
+
+    static Text processInheritDocTags(Text baseMethodText, Text text) {
+        int segmentCount = text.getSegments().size();
+        for (int i = segmentCount - 1; i > 0; i--) {
+            Text.Segment segment = text.getSegments().get(i);
+            if (segment.getKind() == SegmentKind.INHERIT) {
+                Text before = text.subtext(0, i - 1);
+                Text after = text.subtext(i + 1);
+                Text inherited = baseMethodText;
+                text = before.append(inherited).append(after);
+            }
+        }
+        return text;
+    }
+
+    static String baseTypeName(MethodNode method){
+        String methodSignature = method.signature();
+        TypeNode type = api.getTypeNode(method.getOwnerName());
+
+        if (type == null) {
+            return null;
+        }
+        for (int i = type.getSupertypes().size() - 1; i > 0; i--) {
+            Pair<Reference, Text> supertypePair = type.getSupertypes().get(i);
+            TypeNode supertype = api.getTypeNode(supertypePair.getL().getTarget());
+            if (supertype != null) {
+                for (MethodNode inheritedMethod : supertype.getMethods()) {
+                    if (inheritedMethod.signature().equals(methodSignature)) {
+                        // Found it
+                        return supertype.getQualifiedName();
+                    }
+                }
+            } else {
+                ctx.reportError("ERR");
+            }
+        } 
+        return null;
     }
 
     static void processModules(Api api) {

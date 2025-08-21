@@ -16,6 +16,10 @@ public class Reference implements Serializable {
     private String anchor = "";
     private boolean resolved = false;
     private boolean hasAnchor = false;
+    private String methodSignature = "";
+    
+    /// Text with a link to the class the overridden method belongs to.
+    private Text text = Text.empty();
 
     /// The package the link is coming from. Empty string means there is no package. Null means it hasn't been set yet.
     private String origin = null; 
@@ -44,6 +48,25 @@ public class Reference implements Serializable {
         ref.setScope(Scope.UNKNOWN);
         ref.setTarget(target);
         return ref;
+    }
+
+    public static Reference toMethod(String signature) {
+        Reference ref = new Reference();
+        ref.setScope(Scope.UNKNOWN);
+        ref.methodSignature = signature;
+        return ref;
+    }
+
+    public String getMethodSignature() {
+        return methodSignature;
+    }
+
+    public void setText(Text text) {
+        this.text = text;
+    }
+
+    public Text getText() {
+        return text;
     }
 
     /// Sets the origin package of the reference.

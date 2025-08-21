@@ -75,7 +75,9 @@ public class Text implements Serializable {
     /// @param segment The segment to add.
     /// @return This Text instance for chaining.
     public Text append(Segment segment) {
-        if (!segment.getText().isEmpty() || !segment.getLink().getTarget().isEmpty()) {
+        if (!segment.getText().isEmpty() || 
+                !segment.getLink().getTarget().isEmpty() ||
+                segment.getKind() == SegmentKind.INHERIT) {
             segments.add(segment);
         }
         return this;
@@ -97,6 +99,22 @@ public class Text implements Serializable {
     public Text append(Text text) {
         segments.addAll(text.getSegments());
         return this;
+    }
+
+    public Text subtext(int start) {
+        Text text = Text.empty();
+        for (int i = start; i < segments.size(); i++) {
+            text.append(segments.get(i));
+        }
+        return text;
+    }
+
+    public Text subtext(int start, int end) {
+        Text text = Text.empty();
+        for (int i = start; i <= end; i++) {
+            text.append(segments.get(i));
+        }
+        return text;
     }
 
     /// Represents a segment of the Text with its kind, content, and optional link.
@@ -188,5 +206,8 @@ public class Text implements Serializable {
 
         /// Source code
         CODE,
+
+        /// Inherited documentation
+        INHERIT,
     }
 }

@@ -2,7 +2,7 @@ package io.github.sandydunlop.markista.util;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.AbstractPackageMember;
+import io.github.sandydunlop.markista.model.AbstractMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;
 import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.Api;
@@ -16,7 +16,6 @@ import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
-import io.github.sandydunlop.markista.model.OverriddenMethodNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
@@ -81,17 +80,21 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 /// 
 /// It provides numerous helper methods to process types, methods, fields, annotations, and project structure metadata.
 /// 
-/// Methods also support handling Javadoc comment trees to extract detailed documentation fragments such as @deprecated, @param, @return, @since, and @see tags.
+/// Methods also support handling Javadoc comment trees to extract detailed documentation fragments such as `@deprecated`, @param, @return, @since, and @see tags.
 /// 
 /// The class works internally with the Api model for cross-referencing and linking discovered elements.
 /// 
 /// This class is for internal use within the documentation generator and is not thread-safe.
-public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it's not
+@SuppressWarnings({"squid:S1123", "squid:S1133"}) // Sonar thinks this is deprecated, but it's not.
+public class TypeUtils {
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
     static Context ctx;
 
     private static DocletEnvironment environment;
+
+    static ExecutableElement currentMethodElement;
+    static MethodNode currentMethodNode;
 
     /// The Api model representing the entire documented API structure,
     /// including modules, packages, types, and members used for cross-referencing and navigation.
@@ -188,13 +191,20 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         MethodNode methodNode = new MethodNode(returnTypeName, element.getSimpleName().toString());
         PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
 
-        setModifiers(methodNode, element.getModifiers());
+        // setMethodParams must be called before setMethodOwnerDetails as the method
+        // parameters need to be present to determine if this method already exists.
         setMethodParams(methodNode, element);
         if (!setMethodOwnerDetails(methodNode, packageNode, element)) {
             return null;
         }
+
+        currentMethodElement = element; // Used for @inheritDoc
+        currentMethodNode = methodNode;
+
+        setModifiers(methodNode, element.getModifiers());
         setThrownTypes(methodNode, element.getThrownTypes());
         setMethodAnnotations(methodNode, element);
+        setAppliedAnnotations(methodNode, element);
         setSpecifiedBy(methodNode, element);
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
         TypeUtils.setDeprecationStatus(methodNode, element, dct);
@@ -231,9 +241,10 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                 typeNode.addField(fieldNode);
                 fieldNode.setConstantValue((Serializable) element.getConstantValue());
                 DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
-                TypeUtils.setDocumentation(fieldNode, element);
-                TypeUtils.setModifiers(fieldNode, element.getModifiers());
-                TypeUtils.setDeprecationStatus(fieldNode, element, dct);
+                setDocumentation(fieldNode, element);
+                setModifiers(fieldNode, element.getModifiers());
+                setDeprecationStatus(fieldNode, element, dct);
+                setAppliedAnnotations(fieldNode, element);
             }
             return fieldNode;
         }
@@ -319,6 +330,12 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                 text.append(segment);
                 break;
             case END_ELEMENT:
+                break;
+            case INHERIT_DOC:
+                // Inherited docs are processed in TextAssembler as they need the
+                // full API model which is incomplete here.
+                segment.setKind(SegmentKind.INHERIT);
+                text.append(segment);
                 break;
             default:
                 break;
@@ -413,12 +430,20 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
                 MethodNode existingMethodNode = ownerType.getMethod(methodNode);
                 if (existingMethodNode == null) {   
                     ownerType.getMethods().add(methodNode);
+                } else {
+                    // Method already exists in the API model.
+                    // Returning false instructs the caller not to continue.
+                    return false;
                 }
             } else if (element.getKind() == ElementKind.CONSTRUCTOR) {
                 methodNode.setSimpleName(ownerType.getSimpleName());
                 MethodNode existingMethodNode = ownerType.getConstructor(methodNode);
                 if (existingMethodNode == null) {
                     ownerType.addConstructor(methodNode);
+                } else {
+                    // Method already exists in the API model
+                    // Returning false instructs the caller not to continue.
+                    return false;
                 }
             }
             return true;
@@ -480,8 +505,15 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
             DeclaredType declaredType = anno.getAnnotationType();
             Element typeElement = declaredType.asElement();
             if ("Override".equals(typeElement.getSimpleName().toString())) {
-                OverriddenMethodNode overrides = getOverriddenMethod(method, methodElement);
-                method.setOverriddenMethod(overrides);
+                String nativeBaseClass = getNativeClassForInheritedMethod(method);
+                Reference overriddenMethod = null;
+                if (nativeBaseClass != null) {
+                    String methodName = methodElement.getSimpleName().toString();
+                    overriddenMethod = Reference.to(nativeBaseClass + "#" + methodName);
+                } else {
+                    overriddenMethod = Reference.toMethod(getFullSignature(methodElement));
+                }
+                method.setBaseMethod(overriddenMethod);
             }
         }
     }
@@ -506,77 +538,81 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         }
     }
 
+    static String getFullSignature(ExecutableElement element) {
+        StringBuilder signature = new StringBuilder();
+        
+        // Get method name
+        signature.append(element.getSimpleName()).append("(");
+        
+        // Get parameter types
+        List<? extends VariableElement> parameters = element.getParameters();
+        for (int i = 0; i < parameters.size(); i++) {
+            TypeMirror type = parameters.get(i).asType();
+            signature.append(type.toString());
+            if (i < parameters.size() - 1) {
+                signature.append(", ");
+            }
+        }
+        
+        signature.append(")");
+        return signature.toString();
+    }
+
     /// Recursively searches for an overridden method matching the supplied method within the supertypes of its owner.
     /// @param method The MethodNode for which to find an overridden method.
-    /// @param methodElement The ExecutableElement representing the method.
-    /// @return An OverriddenMethodNode if a matching override is found, else null.
-    public static OverriddenMethodNode getOverriddenMethod(MethodNode method, ExecutableElement methodElement) {
+    /// @return An InheritedMethodNode if a matching overriden method is found, else null.
+    public static String getNativeClassForInheritedMethod(MethodNode method) {
         if (method.getOwnerName() == null) return null;
 
         TypeNode ownerTypeNode = api.getTypeNode(method.getOwnerName());
         for (int i = ownerTypeNode.getSupertypes().size() - 1; i >= 0; i--) {
             Pair<Reference, Text> pair = ownerTypeNode.getSupertypes().get(i);
             Reference typeRef = pair.getL();
-            TypeElement superclass = environment.getElementUtils().getTypeElement(typeRef.getTarget());
-            OverriddenMethodNode overridden = getOverriddenMethod(superclass, methodElement);
-            if (overridden != null) return overridden;
-            overridden = getOverriddenNativeMethod(typeRef.getTarget(), method);
-            if (overridden != null) return overridden;
-        }
-        return null;
-    }
-
-    /// Searches the given TypeElement for a method matching the supplied ExecutableElement’s name.
-    /// @param superclass The TypeElement representing a supertype.
-    /// @param methodElement The method to match by name.
-    /// @return An OverriddenMethodNode if a match found, else null.
-    public static OverriddenMethodNode getOverriddenMethod(TypeElement superclass, ExecutableElement methodElement) {
-        if (superclass == null) return null;
-        for (Element superMethod : superclass.getEnclosedElements()) {
-            if (superMethod instanceof ExecutableElement && superMethod.getSimpleName().toString().equals(methodElement.getSimpleName().toString())) {
-                return new OverriddenMethodNode(superclass.getQualifiedName().toString(), superMethod.getSimpleName().toString());
+            String canonicalName = Utils.removeGenerics(typeRef.getTarget());
+            try {
+                Class<?> cls = Class.forName(canonicalName);
+                if (cls != null && belongsToClass(cls, method)) {
+                    return canonicalName;
+                }
+            } catch (SecurityException | ClassNotFoundException _) {
+                ctx.reportWarning("Failed to read information for " + canonicalName + "." + method.getSimpleName());
             }
         }
         return null;
     }
 
-    /// Attempts to find an overridden method defined in native Java classes (e.g., from runtime classes).
-    /// @param qualifiedTypeName The fully qualified name of the type.
-    /// @param method The MethodNode that may override the native method.
-    /// @return An OverriddenMethodNode if found, or null otherwise.
-    public static OverriddenMethodNode getOverriddenNativeMethod(String qualifiedTypeName, MethodNode method) {
-        try {
-            String canonicalName = Utils.removeGenerics(qualifiedTypeName);
-            Class<?> cls = Class.forName(canonicalName);
-            Method[] listMethods = cls.getDeclaredMethods();
-            for (Method listMethod : listMethods) {
-                // Compare method names and parameter counts
-                if (listMethod.getName().equals(method.getSimpleName()) &&
-                    listMethod.getParameterCount() == method.getParams().size()) {
-                    boolean parametersMatch = true;
-                    Class<?>[] listMethodParamTypes = listMethod.getParameterTypes();
-                    for (int i = 0; i < listMethodParamTypes.length; i++) {
-                        Class<?> clsB = Class.forName(method.getParams().get(i).getTypeName());
-                        if (!listMethodParamTypes[i].isAssignableFrom(clsB)) {
-                            parametersMatch = false;
-                            break;
-                        }
-                    }
-                    if (parametersMatch) {
-                        return new OverriddenMethodNode(qualifiedTypeName, listMethod.getName());
+    /// Attempts to find an inherited method defined in native Java classes (e.g., from runtime classes).
+    /// @param cls The class the method belongs to
+    /// @param method The MethodNode that may override the inherited native method.
+    /// @return An InheritedMethodNode if found, or null otherwise.
+    /// @throws ClassNotFoundException 
+    public static boolean belongsToClass(Class<?> cls, MethodNode method) throws ClassNotFoundException {
+        Method[] listMethods = cls.getDeclaredMethods();
+        for (Method listMethod : listMethods) {
+            // Compare method names and parameter counts
+            if (listMethod.getName().equals(method.getSimpleName()) &&
+                listMethod.getParameterCount() == method.getParams().size()) {
+                boolean parametersMatch = true;
+                Class<?>[] listMethodParamTypes = listMethod.getParameterTypes();
+                for (int i = 0; i < listMethodParamTypes.length; i++) {
+                    Class<?> clsB = Class.forName(method.getParams().get(i).getTypeName());
+                    if (!listMethodParamTypes[i].isAssignableFrom(clsB)) {
+                        parametersMatch = false;
+                        break;
                     }
                 }
+                if (parametersMatch) {
+                    return true;
+                }
             }
-        } catch (SecurityException | ClassNotFoundException _) {
-            ctx.reportWarning("Failed to read information for " + qualifiedTypeName + "." + method.getSimpleName());
         }
-        return null; // No overridden method found
+        return false; // No overridden method found
     }
 
     /// Adds references to constant field values from classes in the API to the provided module node.
     /// @param moduleNode The ModuleNode to which constant value references will be added.
     public static void addConstantFieldValuesReference(ModuleNode moduleNode) {
-        for (TypeView classNode : api.getClasses()) {
+        for (TypeView classNode : api.getTypes()) {
             for (FieldNode fieldNode : ((TypeNode)classNode).getFields()) {
                 if (fieldNode.getConstantValue() != null) {
                     Reference ref = Reference.to("constant-values")
@@ -743,7 +779,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// Adds modifiers to a model Node based on the set of language model modifiers.
     /// @param node The Node to add modifiers to.
     /// @param modifiers The set of Modifier enums from language model.
-    public static void setModifiers(AbstractPackageMember node, Set<Modifier> modifiers) {
+    public static void setModifiers(AbstractMember node, Set<Modifier> modifiers) {
         for (Modifier modifier : modifiers) {
             io.github.sandydunlop.markista.model.Modifier mod = 
                 io.github.sandydunlop.markista.model.Modifier.valueOf(modifier.name());
@@ -751,10 +787,10 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         }
     }
 
-    /// Adds applied annotations to a TypeNode.
+    /// Adds applied annotations to a TypeNode, FieldNode, or MethodNode.
     /// @param node The TypeNode to add annotations to.
     /// @param elem The scanned Element that contains information about the applied annotations.
-    public static void setAppliedAnnotations(TypeNode node, TypeElement elem) {
+    public static void setAppliedAnnotations(AbstractMember node, Element elem) {
         if (elem instanceof javax.lang.model.AnnotatedConstruct annotatedConstruct) {
             List<? extends AnnotationMirror> annotationMirrors = annotatedConstruct.getAnnotationMirrors();
             for (AnnotationMirror annotationMirror : annotationMirrors) {
@@ -766,7 +802,7 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
     /// Adds an applied annotation to a TypeNode.
     /// @param node The TypeNode to add annotations to.
     /// @param annotationMirror The scanned annotation
-    public static void setAppliedAnnotation(TypeNode node, AnnotationMirror annotationMirror) {
+    public static void setAppliedAnnotation(AbstractMember node, AnnotationMirror annotationMirror) {
         DeclaredType declaredType = annotationMirror.getAnnotationType();
         Element declaredElement = declaredType.asElement();
         if (declaredElement instanceof TypeElement declaredTypeElement) {
@@ -834,11 +870,12 @@ public class TypeUtils { //NOSONAR - Sonar thinks a method is deprecated but it'
         }
     }
 
-    /// Sets the deprecation status of a Node based on element annotations and Javadoc @deprecated tag.
+    /// Sets the deprecation status of a Node based on element annotations and Javadoc `@Deprecated` tag.
     /// @param node The Node to update.
     /// @param e The language model element corresponding to the node.
     /// @param dct The DocCommentTree containing javadoc comments.
-    public static void setDeprecationStatus(Node node, Element e, DocCommentTree dct) { //NOSONAR - Sonar thinks this method is deprecated
+    @SuppressWarnings({"squid:S1123", "squid:S1133"}) // Sonar thinks this is deprecated but it's not
+    public static void setDeprecationStatus(Node node, Element e, DocCommentTree dct) {
         if (node == null) return;
         DeprecatedTree deprecatedTree = getDeprecation(dct);
         Deprecated deprecatedAnnotation = e.getAnnotation(Deprecated.class);

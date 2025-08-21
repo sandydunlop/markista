@@ -5,13 +5,19 @@ import java.util.List;
 
 /// Represents the API being documented, encapsulating its modules and packages.
 /// Provides methods to add and retrieve modules, packages, and types, as well as sorting them.
-public class Api extends PackageOrTypeNode {
+public class Api extends Node {
+    /// The name of the API
+    private String name = "API";
+
     /// List of modules included in the API.
     private final List<ModuleNode> modules = new ArrayList<>();
 
     /// List of packages included in the API.
     private final List<PackageNode> packages = new ArrayList<>();
     
+    // store children by the interface type (no concrete TypeNode mention)
+    protected final List<TypeView> types = new ArrayList<>();
+
     /// Represents the unnamed module in the API.
     private final ModuleNode unnamedModule = new ModuleNode("");
 
@@ -24,13 +30,13 @@ public class Api extends PackageOrTypeNode {
     /// Constructs an empty Api instance with the given name.
     /// @param name The name of the API
     public Api(String name) {
-        simpleName = name;
+        this.name = name;
     }
 
     /// Returns the name of the API.
     /// @return The name of the API
     public String getName() {
-        return simpleName;
+        return name;
     }
 
     /// Adds a module to the API.
@@ -99,6 +105,15 @@ public class Api extends PackageOrTypeNode {
         return links;
     }
 
+    public void addType(TypeView typeNode) {
+        types.add(typeNode);
+    }
+
+    /// Gets the list of types *owned* by this instance.
+    public List<TypeView> getTypes() {
+        return List.copyOf(types);
+    }
+
     /// Retrieves a package matching the specified qualified name.
     /// @param qualifiedName the fully qualified name of the package.
     /// @return the matching PackageNode if found, or null otherwise.
@@ -109,6 +124,15 @@ public class Api extends PackageOrTypeNode {
             }
         }
         return null;
+    }
+
+    /// Gets the list of records *owned* by this instance.
+    public List<TypeView> getRecords() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isRecord())
+                out.add(t);
+        return out;
     }
 
     /// Retrieves a TypeNode based on its fully qualified name.
@@ -125,7 +149,6 @@ public class Api extends PackageOrTypeNode {
     }
 
     /// Sorts the types in descending order by qualified name and sorts all child types recursively.
-    @Override
     public void sort() {
         packages.sort((o1, o2) -> o2.getQualifiedName().compareTo(o1.getQualifiedName()));
         for (TypeView node : getTypes()) {

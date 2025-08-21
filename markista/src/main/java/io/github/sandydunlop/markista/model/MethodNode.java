@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /// Contains information about a method being documented
-public class MethodNode extends AbstractPackageMember {
+public class MethodNode extends AbstractMember {
     /// Description of the method's return value.
     private Text returnDescription = Text.empty();
 
@@ -15,7 +15,7 @@ public class MethodNode extends AbstractPackageMember {
     private final String returnTypeName;
 
     /// Information about the method that this method overrides, if any.
-    private OverriddenMethodNode overrides = null;
+    private Reference baseMethod = null;
 
     /// List of parameters for this method.
     private final List<ParamNode> params = new ArrayList<>();
@@ -36,16 +36,16 @@ public class MethodNode extends AbstractPackageMember {
         this.simpleName = name;
     }
 
-    /// Sets the overridden method information that this method overrides.
-    /// @param overrides an OverriddenMethodNode representing the overridden method.
-    public void setOverriddenMethod(OverriddenMethodNode overrides) {
-        this.overrides = overrides;
+    /// Sets the base method information that this method overrides.
+    /// @param overrides an OverriddenMethodNode representing the base method.
+    public void setBaseMethod(Reference overrides) {
+        this.baseMethod = overrides;
     }
 
-    /// Returns the overridden method information, if any.
-    /// @return the OverriddenMethodNode representing the overridden method, or null if none.
-    public OverriddenMethodNode getOverriddenMethod() {
-        return overrides;
+    /// Returns the base method information, if any.
+    /// @return the OverriddenMethodNode representing the base method, or null if none.
+    public Reference getBaseMethod() {
+        return baseMethod;
     }
 
     /// Returns the return type of this method.

@@ -10,8 +10,8 @@ import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.util.LinkFormatter;
 import io.github.sandydunlop.markista.util.LinkResolver;
+import io.github.sandydunlop.markista.util.TextAssembler;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -113,7 +113,7 @@ class PackageWriterTests {
         ctx.setApi(api);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
-        LinkFormatter.generateLinkTexts(api, ctx);
+        TextAssembler.generateLinkTexts(api, ctx);
     }
 
     @Test

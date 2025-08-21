@@ -3,7 +3,6 @@ package io.github.sandydunlop.markista.util;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Reference;
@@ -231,8 +230,8 @@ public class LinkResolver {
         String toClassName = getClassName(name);
         if (toPackageName.isEmpty()) {
             String qualifiedTo = "";
-            for (TypeView member : api.getClasses()) {
-                if (member instanceof ClassTypeNode classNode && classNode.getSimpleName().equals(toClassName)) {
+            for (TypeView member : api.getTypes()) {
+                if (member instanceof TypeNode classNode && classNode.getSimpleName().equals(toClassName)) {
                     qualifiedTo = classNode.getQualifiedName();
                     break;
                 }

@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.model;
 
 /// A class to hold information about method parameters.
-public class ParamNode extends AbstractPackageMember {
+public class ParamNode extends AbstractMember {
     /// The type of this parameter
     private String typeName;
     private Text typeText = Text.empty();

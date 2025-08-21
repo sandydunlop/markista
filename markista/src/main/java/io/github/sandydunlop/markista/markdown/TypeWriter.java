@@ -1,7 +1,9 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.model.AbstractMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;
+import io.github.sandydunlop.markista.model.AnnotationTypeNode;
 import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.Deprecation;
@@ -165,7 +167,7 @@ public class TypeWriter {
     /// Outputs the type declaration
     /// @param typeNode the type being documented
     private void outputDeclaration(TypeNode typeNode) throws IOException {
-        writer.write("<span style=\"font-family: monospace;\">");
+        writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = typeNode.getKind().toString().toLowerCase();
         if (typeNode.getKind() == TypeNode.Kind.ANNOTATION) { 
             typeString = "@interface";
@@ -182,6 +184,32 @@ public class TypeWriter {
             }
         }
         writer.write(typeNode.getModifiersString() + typeString + " __" + typeNode.getSimpleName() + "__");
+        writer.write("</span>\n\n");
+    }
+
+    /// Outputs the type declaration
+    /// @param typeNode the type being documented
+    private void outputMethodOrFieldDeclaration(AbstractMember member) throws IOException {
+        writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
+        String typeString = "";
+        if (member instanceof MethodNode method) {
+            typeString = Markdown.formatText(method.getReturnTypeText());
+        } else if (member instanceof FieldNode field) {
+            typeString = Markdown.formatText(field.getTypeText());
+        }
+        for (AppliedAnnotationNode annotation : member.getAppliedAnnotations()) {
+            if (member instanceof AnnotationTypeNode || (annotation.isCustom() && annotation.isDocumented())) {
+                writer.write("@" + Utils.simplifyNames(annotation.getTypeName()));
+                if (!annotation.getElements().isEmpty()) {
+                    writer.write("(");
+                    writer.write(createAnnotationString(annotation));
+                    writer.write(")");
+                }
+                writer.write(BR + "\n");
+            }
+        }
+        String modifiers = member.getModifiersString();
+        writer.write(modifiers + typeString + " __" + member.getSimpleName() + "__");
         writer.write("</span>\n\n");
     }
 
@@ -286,7 +314,7 @@ public class TypeWriter {
     private void outputEnumConstantDetails(List<FieldNode> constants) throws IOException {
         for (FieldNode constant : constants) {
             writer.write("### " + constant.getSimpleName() + "\n\n");
-            writer.write("public static final " + constant.getSimpleName());
+            writer.write("public static final ");
             writer.write(" " + constant.fullSignature() + "\n\n");
             writer.write(Markdown.formatText(constant.getFullBody()) + "\n\n");
 
@@ -320,10 +348,11 @@ public class TypeWriter {
             if (node instanceof MethodNode method) {
                 ctx.setMethodName(method.getSimpleName());
                 writer.write("### " + method.getSimpleName() + "\n\n");
-                writer.write(Markdown.fullSignature(method) + "\n\n");
+                outputMethodOrFieldDeclaration(method);
             } else if (node instanceof FieldNode field) {
                 ctx.setFieldName(field.getSimpleName());
                 writer.write("### " + field.getSimpleName() + "\n\n");
+                outputMethodOrFieldDeclaration(field);
             }
             writer.write(Markdown.formatText(node.getFullBody()) + "\n\n");
 
@@ -391,9 +420,9 @@ public class TypeWriter {
             writer.write(Markdown.link(method.getSpecifiedBy(), false));
             writer.write("\n\n");
         }
-        if (method.getOverriddenMethod() != null && !method.getOverriddenMethod().getClassName().isEmpty() && !method.getOverriddenMethod().getMethodName().isEmpty()) {
+        if (method.getBaseMethod() != null && !method.getBaseMethod().getText().isEmpty()) {
             writer.write("**Overrides:**\n\n");
-            writer.write(Markdown.formatText(method.getOverriddenMethod().getText()));
+            writer.write(Markdown.formatText(method.getBaseMethod().getText()));
             writer.write("\n\n");
         }        
     }

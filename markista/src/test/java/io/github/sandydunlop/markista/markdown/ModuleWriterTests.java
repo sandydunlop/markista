@@ -140,7 +140,6 @@ class ModuleWriterTests {
         Reference ref = Reference.to("com.example.package")
                 .withLabel("com.example.package");
         DirectiveNode exportsDirective = mock(DirectiveNode.class);
-        when(exportsDirective.getName()).thenReturn("com.example.package");
         when(exportsDirective.getKind()).thenReturn(DirectiveNode.Kind.EXPORTS);        
         when(exportsDirective.getReference()).thenReturn(ref);        
         moduleNode.addDirective(exportsDirective);
