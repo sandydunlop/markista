@@ -104,7 +104,7 @@ class LinkFormatterTests {
 
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         LinkResolver.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");

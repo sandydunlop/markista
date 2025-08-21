@@ -9,6 +9,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.RecordTypeNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
@@ -30,7 +31,7 @@ public class TextAssembler {
     /// This is where we decide if the label for those links shows qualified names or simplified names.
     /// @param a The API model
     /// @param context The doclet context to keep track of why package and type are being processed
-    public static void generateLinkTexts(Api a, Context context) {
+    public static void assembleTextAndLinks(Api a, Context context) {
         api = a;
         ctx = context;
 
@@ -42,6 +43,33 @@ public class TextAssembler {
 
         }
         processJavadocComments(api);
+        addJavadocToRecords(api);
+    }
+
+    public static void addJavadocToRecords(Api api) {
+        for (TypeView recordView : api.getRecords()) {
+            RecordTypeNode recordNode = (RecordTypeNode) recordView;
+            for (MethodNode method : recordNode.getMethods()) {
+                Text text = method.getFirstSentence();
+                if (text.isEmpty()) {
+                    switch(method.getSimpleName()) {
+                        case "equals":
+                            text = Text.of("Indicates whether some other object is \"equal to\" this one.");
+                            break;
+                        case "hashCode":
+                            text = Text.of("Returns a hash code value for this object.");
+                            break;
+                        case "toString":
+                            text = Text.of("Returns a string representation of this record class.");
+                            break;
+                        default:
+                            text = Text.of(String.format("Returns the value of the `%s` record component.", method.getSimpleName()));
+                            break;
+                    }
+                    method.setFirstSentence(text);
+                }
+            }
+        }
     }
 
     static void processTypeNode(TypeNode typeNode) {

@@ -113,7 +113,7 @@ class PackageWriterTests {
         ctx.setApi(api);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
     }
 
     @Test

@@ -9,7 +9,6 @@ import io.github.sandydunlop.markista.util.ApiScanner;
 import io.github.sandydunlop.markista.util.LinkResolver;
 import io.github.sandydunlop.markista.util.ModuleDirectives;
 import io.github.sandydunlop.markista.util.TextAssembler;
-import io.github.sandydunlop.markista.util.TypeUtils;
 import io.github.sandydunlop.markista.util.Utils;
 
 import java.io.IOException;
@@ -333,8 +332,7 @@ public class MarkdownDoclet implements Doclet {
         if (Configuration.getCreateExternalLinks()) {
             LinkResolver.addNativeModules();
         }
-        TextAssembler.generateLinkTexts(api, ctx);
-        TypeUtils.addJavadocToRecords(api);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setModuleName("");
 
         // Gather list of DocService providers, and decide what order they run in

@@ -1072,30 +1072,4 @@ public class TypeUtils {
         }
         return null;
     }    
-
-    public static void addJavadocToRecords(Api api) {
-        for (TypeView recordView : api.getRecords()) {
-            RecordTypeNode recordNode = (RecordTypeNode) recordView;
-            for (MethodNode method : recordNode.getMethods()) {
-                Text text = method.getFirstSentence();
-                if (text.isEmpty()) {
-                    switch(method.getSimpleName()) {
-                        case "equals":
-                            text = Text.of("Indicates whether some other object is \"equal to\" this one.");
-                            break;
-                        case "hashCode":
-                            text = Text.of("Returns a hash code value for this object.");
-                            break;
-                        case "toString":
-                            text = Text.of("Returns a string representation of this record class.");
-                            break;
-                        default:
-                            text = Text.of(String.format("Returns the value of the `%s` record component.", method.getSimpleName()));
-                            break;
-                    }
-                    method.setFirstSentence(text);
-                }
-            }
-        }
-    }
 }

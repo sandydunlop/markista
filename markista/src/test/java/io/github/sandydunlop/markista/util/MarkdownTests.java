@@ -111,7 +111,7 @@ class MarkdownTests {
         api.addType(markdownDoclet);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
 
         String markdown = Markdown.formatParams(params);
         assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html) name", markdown);
@@ -172,7 +172,7 @@ class MarkdownTests {
                 .setText(" world"));
         api.addLink(link);
         LinkResolver.init(api, ctx);
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         String formatted = Markdown.formatText(text);
         assertEquals("hello [link](http://example.com) world", formatted);
     }
@@ -185,7 +185,7 @@ class MarkdownTests {
         api.addType(markdownDoclet);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         String sig = Markdown.fullSignature(method);
         assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
     }

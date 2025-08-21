@@ -486,7 +486,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         List<? extends DocTree> dtList = List.of(docTree);
         Text text = TypeUtils.createText(dtList);
         LinkResolver.init(api, ctx);
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         assertNotNull(text);
         assertEquals(1, text.getSegments().size());
         assertEquals(Text.SegmentKind.LINK, text.getSegments().get(0).getKind());

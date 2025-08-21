@@ -165,7 +165,7 @@ class TypeWriterTests {
         LinkResolver.init(testApi, contextMock);
         LinkResolver.addNativeModules();
         LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
-        TextAssembler.generateLinkTexts(testApi, contextMock);
+        TextAssembler.assembleTextAndLinks(testApi, contextMock);
 
         typeWriter.outputTypeDoc(type);
 
@@ -225,7 +225,7 @@ class TypeWriterTests {
 
         LinkResolver.init(api, contextMock);
         LinkResolver.addNativeModules();
-        TextAssembler.generateLinkTexts(api, contextMock);
+        TextAssembler.assembleTextAndLinks(api, contextMock);
         Markdown.setContext(contextMock);
 
         typeWriter.outputTypeDoc(enumNode);
@@ -282,7 +282,7 @@ class TypeWriterTests {
         LinkResolver.init(testApi, contextMock);
         LinkResolver.addNativeModules();
         LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
-        TextAssembler.generateLinkTexts(testApi, contextMock);
+        TextAssembler.assembleTextAndLinks(testApi, contextMock);
 
         typeWriter.outputTypeDoc(enumNode);
 
@@ -378,7 +378,7 @@ class TypeWriterTests {
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         when(contextMock.getApi()).thenReturn(api);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -425,7 +425,7 @@ class TypeWriterTests {
         when(contextMock.getApi()).thenReturn(api);
 
         LinkResolver.addNativeModules();
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -456,7 +456,7 @@ class TypeWriterTests {
         when(contextMock.getApi()).thenReturn(api);
 
         LinkResolver.addNativeModules();
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -487,7 +487,7 @@ class TypeWriterTests {
         when(contextMock.getApi()).thenReturn(api);
 
         LinkResolver.addNativeModules();
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -512,7 +512,7 @@ class TypeWriterTests {
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         when(contextMock.getApi()).thenReturn(api);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -542,7 +542,7 @@ class TypeWriterTests {
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         when(contextMock.getApi()).thenReturn(api);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -575,7 +575,7 @@ class TypeWriterTests {
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         when(contextMock.getApi()).thenReturn(api);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -606,7 +606,7 @@ class TypeWriterTests {
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         when(contextMock.getApi()).thenReturn(api);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -638,7 +638,7 @@ class TypeWriterTests {
         api.addType(owner);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         when(contextMock.getApi()).thenReturn(api);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -663,7 +663,7 @@ class TypeWriterTests {
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         when(contextMock.getApi()).thenReturn(api);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -695,7 +695,7 @@ class TypeWriterTests {
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
-        TextAssembler.generateLinkTexts(api, ctx);
+        TextAssembler.assembleTextAndLinks(api, ctx);
         when(contextMock.getApi()).thenReturn(api);
 
         typeWriter.outputTypeDoc(typeNode);
