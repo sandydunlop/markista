@@ -139,7 +139,6 @@ public class Api extends Node {
     /// @param qualifiedName the fully qualified name of the type.
     /// @return the matching TypeNode if found, or null otherwise.
     public TypeNode getTypeNode(String qualifiedName) {
-        if (types == null) return null;
         for (TypeView typeNode : types) {
             if (typeNode.getQualifiedName().equals(qualifiedName)){
                 return (TypeNode)typeNode;
