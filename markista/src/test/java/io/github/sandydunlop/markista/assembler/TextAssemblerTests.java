@@ -5,12 +5,16 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Pair;
+import io.github.sandydunlop.markista.model.RecordTypeNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
+import io.github.sandydunlop.markista.model.TypeNode;
 
 import java.util.List;
 
@@ -28,6 +32,7 @@ import org.mockito.Mock;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TextAssemblerTests {
     private static Context ctx;
@@ -183,5 +188,79 @@ class TextAssemblerTests {
         assertNotNull(constantReference);
         assertEquals(Reference.Kind.URL, constantReference.getKind());
         assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html", constantReference.getUri());
+    }
+
+    @Test
+    void test_addJavadocToRecords() {
+        RecordTypeNode recordNode = new RecordTypeNode("io.github.sandydunlop.markista.model.RecordTest","RecordTest",model.getQualifiedName());
+        MethodNode equalsNode = new MethodNode("boolean","equals");
+        MethodNode hashCode = new MethodNode("long","hashCode");
+        MethodNode toString = new MethodNode("java.lang.String","toString");
+        MethodNode test = new MethodNode("java.lang.String","test");
+        recordNode.addMethod(equalsNode);
+        recordNode.addMethod(hashCode);
+        recordNode.addMethod(toString);
+        recordNode.addMethod(test);
+
+        api.addType(recordNode);
+        TextAssembler.addJavadocToRecords(api);
+
+        assertEquals("Indicates whether some other object is \"equal to\" this one.",
+                equalsNode.getFirstSentence().toString());
+
+        assertEquals("Returns a hash code value for this object.",
+                hashCode.getFirstSentence().toString());
+
+        assertEquals("Returns a string representation of this record class.",
+                toString.getFirstSentence().toString());
+
+        assertEquals("Returns the value of the `test` record component.",
+                test.getFirstSentence().toString());
+    }
+
+    @Test
+    void inheritance() {
+        TypeNode baseTypeNode = new TypeNode("io.github.sandydunlop.markista.BaseType", 
+                "BaseType", "io.github.sandydunlop.markista");
+        MethodNode baseTypeMethod = new MethodNode("java.lang.String","toString");
+        baseTypeMethod.setOwnerName(baseTypeNode.getQualifiedName());
+        baseTypeNode.addMethod(baseTypeMethod);
+        markista.addType(baseTypeNode);
+        api.addType(baseTypeNode);
+
+        TypeNode typeNode = new TypeNode("io.github.sandydunlop.markista.Type", 
+                "BaseType", "io.github.sandydunlop.markista");
+        MethodNode typeMethod = new MethodNode("java.lang.String","toString");
+        typeMethod.setOwnerName(typeNode.getQualifiedName());
+        typeNode.addMethod(typeMethod);
+        markista.addType(typeNode);
+        api.addType(typeNode);
+
+        // Add some javadoc
+        baseTypeMethod.setFirstSentence(Text.of("BaseDoc"));
+        Text typeMethodText = Text.of(Segment.empty().setKind(SegmentKind.INHERIT));
+        typeMethod.setFirstSentence(typeMethodText);
+
+        // Set baseTypeNode as the supertype of typeNode
+        Reference supertype = Reference.to(baseTypeNode.getQualifiedName());
+        Pair<Reference,Text> pair = Pair.of(supertype, Text.empty());
+        typeNode.getSupertypes().add(pair);
+        typeMethod.setBaseMethod(pair);
+
+        TextAssembler.assembleTextAndLinks(api, ctx);
+
+        // Verify
+        assertEquals("BaseDoc", typeMethod.getFirstSentence().toString());
+    }
+
+    @Test
+    void moduleDirectives() {
+        Reference ref1 = Reference.to("io.github.sandydunlop.markista");
+        DirectiveNode directive1 = new DirectiveNode(DirectiveNode.Kind.EXPORTS, ref1);
+        module.addDirective(directive1);
+
+        TextAssembler.assembleTextAndLinks(api, ctx);
+
+        assertTrue(ref1.isResolved());
     }
 }

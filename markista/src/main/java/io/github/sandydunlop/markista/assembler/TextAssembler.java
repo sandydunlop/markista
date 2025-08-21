@@ -171,7 +171,7 @@ public class TextAssembler {
         if (type == null) {
             return null;
         }
-        for (int i = type.getSupertypes().size() - 1; i > 0; i--) {
+        for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
             Pair<Reference, Text> supertypePair = type.getSupertypes().get(i);
             TypeNode supertype = api.getTypeNode(supertypePair.getL().getTarget());
             if (supertype != null) {
