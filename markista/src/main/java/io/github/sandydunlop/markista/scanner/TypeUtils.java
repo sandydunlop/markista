@@ -26,6 +26,7 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 import io.github.sandydunlop.markista.model.TypeView;
 import io.github.sandydunlop.markista.scanner.MarkdownParser.TokenKind;
 
@@ -147,7 +148,7 @@ public class TypeUtils {
             setModifiers(typeNode, element.getModifiers());
             setAppliedAnnotations(typeNode, element);
             collectAllSupertypes(element.asType(), typeNode.getSupertypes());
-            typeNode.getSupertypes().addFirst(Pair.of(Reference.to("java.lang.Object"), Text.empty()));
+            typeNode.getSupertypes().addFirst(TypeReference.to("java.lang.Object"));
             findImplementedInterfaces(element, typeNode.getImplementedInterfaces());
             setDocumentation(typeNode, element);
             setSourcePath(typeNode, element);
@@ -524,10 +525,10 @@ public class TypeUtils {
     /// @param methodElement The ExecutableElement representing the method.
     public static void setSpecifiedBy(MethodNode methodNode, ExecutableElement methodElement) {
         TypeNode ownerTypeNode = api.getTypeNode(methodNode.getOwnerName());
-        List<Pair<Reference, Text>> interfaces = ownerTypeNode.getImplementedInterfaces();
+        List<TypeReference> interfaces = ownerTypeNode.getImplementedInterfaces();
         if (interfaces == null || interfaces.isEmpty()) return;
-        for (Pair<Reference, Text> interfacePair : interfaces) {
-            Reference interfaceRef = interfacePair.getL();
+        for (TypeReference typeRef : interfaces) {
+            Reference interfaceRef = typeRef.getReference();
             TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceRef.getClassName());
             if (interfaceElement == null) continue;
             List<? extends Element>  enclosedElements = interfaceElement.getEnclosedElements();
@@ -568,9 +569,8 @@ public class TypeUtils {
 
         TypeNode ownerTypeNode = api.getTypeNode(method.getOwnerName());
         for (int i = ownerTypeNode.getSupertypes().size() - 1; i >= 0; i--) {
-            Pair<Reference, Text> pair = ownerTypeNode.getSupertypes().get(i);
-            Reference typeRef = pair.getL();
-            String canonicalName = removeGenerics(typeRef.getTarget());
+            TypeReference typeRef = ownerTypeNode.getSupertypes().get(i);
+            String canonicalName = removeGenerics(typeRef.getReference().getTarget());
             try {
                 Class<?> cls = Class.forName(canonicalName);
                 if (cls != null && belongsToClass(cls, method)) {
@@ -644,15 +644,10 @@ public class TypeUtils {
     /// Finds all interfaces implemented directly by the given TypeElement and adds their names to the result list.
     /// @param typeElement The type to examine.
     /// @param result The list to receive the qualified interface names.
-    public static void findImplementedInterfaces(TypeElement typeElement, List<Pair<Reference,Text>> result) {
+    public static void findImplementedInterfaces(TypeElement typeElement, List<TypeReference> result) {
         List<? extends TypeMirror> interfaces = typeElement.getInterfaces();
         for (TypeMirror interfaceType : interfaces) {
-            Reference reference = Reference
-                    .to(interfaceType.toString())
-                    .from(ctx.getPackageName())
-                    .withKind(Reference.Kind.TYPE)
-                    .withLabel(interfaceType.toString());
-            result.add(Pair.of(reference,Text.empty()));
+            result.add(TypeReference.to(interfaceType.toString()));
         }
     }
 
@@ -660,16 +655,13 @@ public class TypeUtils {
     /// java.lang.Object is excluded.
     /// @param t The type to examine.
     /// @param result The list to receive supertypes.
-    public static void collectAllSupertypes(TypeMirror t, List<Pair<Reference, Text>> result) {
+    public static void collectAllSupertypes(TypeMirror t, List<TypeReference> result) {
         for (TypeMirror s : environment.getTypeUtils().directSupertypes(t)) {
             if (result != null) {
                 String name = s.toString();
                 if (!"java.lang.Object".equals(name)) {
                     if (!isInterface(s)){
-                        Reference reference = Reference.to(name)
-                                .from(ctx.getPackageName())
-                                .withKind(Reference.Kind.TYPE);
-                        result.addFirst(Pair.of(reference, Text.empty()));
+                        result.addFirst(TypeReference.to(name));
                     }
                     collectAllSupertypes(s, result);
                 }

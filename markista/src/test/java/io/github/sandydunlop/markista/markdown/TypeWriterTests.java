@@ -22,6 +22,7 @@ import io.github.sandydunlop.markista.model.RecordTypeNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -525,12 +526,8 @@ class TypeWriterTests {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
                 pkg.getQualifiedName());
-        List<Pair<Reference,Text>> implementedInterfaces = new ArrayList<>();
-        Reference i = Reference.to("test.interface");
-        i.setLabel("test.interface");
-        i.setTarget("test.interface");
-        i.setUri("test.interface");
-        implementedInterfaces.add(Pair.of(i,Text.empty()));
+        List<TypeReference> implementedInterfaces = new ArrayList<>();
+        implementedInterfaces.add(TypeReference.to("test.interface"));
         typeNode.setImplementedInterfaces(implementedInterfaces);
 
         Context ctx = Context.getInstance();
@@ -590,12 +587,7 @@ class TypeWriterTests {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
                 pkg.getQualifiedName());
-        Reference i = Reference.to("test.interface");
-        i.setLabel("test.interface");
-        i.setTarget("test.interface");
-        i.setUri("test.interface");
-        Text t = Text.empty();
-        typeNode.getSupertypes().add(Pair.of(i, t));
+        typeNode.getSupertypes().add(TypeReference.to("test.interface"));
 
         Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");

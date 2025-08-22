@@ -17,13 +17,13 @@ import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.NodeKind;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -210,9 +210,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
     void addConstantFieldValuesReference() {
         ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode", 
                 "Node", packageNode.getQualifiedName());
-        Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
-                .withKind(Reference.Kind.TYPE);
-        Pair<Reference,Text> supertype = Pair.of(ref, null);
+        TypeReference supertype = TypeReference.to("io.github.sandydunlop.markista.model.Node");
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
         FieldNode fieldNode = new FieldNode("int", "field");
@@ -233,9 +231,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
 
         ClassTypeNode classNode = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
                 "Node", packageNode.getQualifiedName());
-        Reference ref = Reference.to("java.lang.String")
-                .withKind(Reference.Kind.TYPE);
-        Pair<Reference,Text> supertype = Pair.of(ref, null);
+        TypeReference supertype = TypeReference.to("java.lang.String");
         classNode.getSupertypes().add(supertype);
         api.addType(classNode);
 
@@ -977,7 +973,9 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         MethodNode methodNode = mock(MethodNode.class);
         TypeNode ownerType = mock(TypeNode.class);
         when(methodNode.getOwnerName()).thenReturn("com.example.MyIfc");
-        when(ownerType.getImplementedInterfaces()).thenReturn(List.of(Pair.of(Reference.to("com.example.MyIfc").withClassName("com.example.MyIfc"),Text.empty())));
+        TypeReference typeRef = TypeReference.to("com.example.MyIfc");
+        typeRef.getReference().setClassName("com.example.MyIfc");
+        when(ownerType.getImplementedInterfaces()).thenReturn(List.of(typeRef));
 
         when(mockApi.getTypeNode(any())).thenReturn(ownerType);
         // Prepare interface TypeElement with a method named "doThing"
@@ -1437,9 +1435,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
 
         ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode",
                 "Node", packageNode.getQualifiedName());
-        Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
-                .withKind(Reference.Kind.TYPE);
-        Pair<Reference,Text> supertype = Pair.of(ref, null);
+        TypeReference supertype = TypeReference.to("io.github.sandydunlop.markista.model.Node");
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
         MethodNode methodNode2 = new MethodNode("int", "length");

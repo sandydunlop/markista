@@ -15,6 +15,7 @@ import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 import io.github.sandydunlop.markista.model.TypeView;
 
 import java.nio.file.Path;
@@ -87,27 +88,24 @@ public class TextAssembler {
             LinkResolver.resolve(ref);
             typeNode.setEnclosingClassRef(ref);
         }
-        for (Pair<Reference,Text> pair : typeNode.getImplementedInterfaces()) {
-            Reference implementedInterfaceRef = pair.getL();
-            Text text = link(implementedInterfaceRef);
-            pair.getR().append(text);
-            LinkResolver.resolve(implementedInterfaceRef);
+        for (TypeReference pair : typeNode.getImplementedInterfaces()) {
+            Text text = link(pair.getReference());
+            pair.getText().append(text);
         }
-        for (Pair<Reference,Text> pair : typeNode.getSupertypes()) {
-            Reference supertypeReference = pair.getL();
-            Text text = link(supertypeReference);
-            pair.getR().append(text);
+        for (TypeReference pair : typeNode.getSupertypes()) {
+            Text text = link(pair.getReference());
+            pair.getText().append(text);
         }
         // Subtypes
         if (typeNode.getSupertypes().size() > 1) {
-            Pair<Reference,Text> directSupertypePair = typeNode.getSupertypes().getLast();
-            String directSupertypeName = directSupertypePair.getL().getTarget();
+            TypeReference directSupertypePair = typeNode.getSupertypes().getLast();
+            String directSupertypeName = directSupertypePair.getReference().getTarget();
             TypeNode directSupertype = api.getTypeNode(directSupertypeName);
             if (directSupertype != null) {
                 Reference subtypeRef = Reference.to(typeNode.getQualifiedName())
                         .from(directSupertype.getQualifiedName() + "." + directSupertype.getPackageName());
                 Text subtypeText = link(subtypeRef);
-                directSupertype.getSubtypes().add(Pair.of(subtypeRef, subtypeText));
+                directSupertype.getSubtypes().add(TypeReference.to(subtypeRef, subtypeText));
             }
         }
 
@@ -189,8 +187,8 @@ public class TextAssembler {
             return null;
         }
         for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
-            Pair<Reference, Text> supertypePair = type.getSupertypes().get(i);
-            TypeNode supertype = api.getTypeNode(supertypePair.getL().getTarget());
+            TypeReference supertypePair = type.getSupertypes().get(i);
+            TypeNode supertype = api.getTypeNode(supertypePair.getReference().getTarget());
             if (supertype != null) {
                 for (MethodNode inheritedMethod : supertype.getMethods()) {
                     if (inheritedMethod.signature().equals(methodSignature)) {

@@ -15,6 +15,7 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 
 import java.util.List;
 
@@ -242,9 +243,11 @@ class TextAssemblerTests {
         typeMethod.setFirstSentence(typeMethodText);
 
         // Set baseTypeNode as the supertype of typeNode
-        Reference supertype = Reference.to(baseTypeNode.getQualifiedName());
-        Pair<Reference,Text> pair = Pair.of(supertype, Text.empty());
-        typeNode.getSupertypes().add(pair);
+        TypeReference typeRef = TypeReference.to(baseTypeNode.getQualifiedName());
+        typeNode.getSupertypes().add(typeRef);
+
+        Reference methodRef = Reference.to(baseTypeNode.getQualifiedName() + "#" + baseTypeMethod.getSimpleName());
+        Pair<Reference,Text> pair = Pair.of(methodRef,Text.empty());
         typeMethod.setBaseMethod(pair);
 
         TextAssembler.assembleTextAndLinks(api, ctx);

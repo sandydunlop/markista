@@ -18,6 +18,7 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 import io.github.sandydunlop.markista.model.TypeView;
 
 import java.io.IOException;
@@ -127,9 +128,9 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputSupertypes(TypeNode typeNode) throws IOException {
         int indentation = 0;
-        for (Pair<Reference,Text> pair : typeNode.getSupertypes()) {
+        for (TypeReference pair : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(MarkdownUtils.formatText(pair.getR(), true) + BR + "\n");
+            writer.write(MarkdownUtils.formatText(pair.getText(), true) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -142,11 +143,11 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputImplementedInterfaces(TypeNode typeNode) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for (Pair<Reference,Text> pair : typeNode.getImplementedInterfaces()) {
+        for (TypeReference pair : typeNode.getImplementedInterfaces()) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatText(pair.getR()));
+            sb.append(MarkdownUtils.formatText(pair.getText()));
         }
         if (!sb.isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");
@@ -171,11 +172,11 @@ public class TypeWriter {
 
     private void outputDirectKnownSubtypes(TypeNode typeNode) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for (Pair<Reference,Text> pair : typeNode.getSubtypes()) {
+        for (TypeReference pair : typeNode.getSubtypes()) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatText(pair.getR()));
+            sb.append(MarkdownUtils.formatText(pair.getText()));
         }
         if (!sb.isEmpty()) {
             writer.write("Direct Known Subtypes:<br/>\n");
@@ -206,10 +207,10 @@ public class TypeWriter {
         }
         writer.write(typeNode.getModifiersString() + typeString + " __" + typeNode.getSimpleName() + "__");
         if (typeNode.getSupertypes().size() > 1) {
-            Pair<Reference,Text> superTypePair = typeNode.getSupertypes().getLast();
+            TypeReference superTypePair = typeNode.getSupertypes().getLast();
             writer.write(BR);
             writer.write("extends ");
-            writer.write(MarkdownUtils.formatText(superTypePair.getR()));
+            writer.write(MarkdownUtils.formatText(superTypePair.getText()));
             writer.write("\n");
         }
         writer.write("</span>\n\n");
