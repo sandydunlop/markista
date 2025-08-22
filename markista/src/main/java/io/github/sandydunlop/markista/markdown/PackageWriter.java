@@ -52,6 +52,7 @@ public class PackageWriter {
         writer.write("# Package " + packageNode.getQualifiedName() + "\n");
         writer.write("\n\n" + MarkdownUtils.formatText(packageNode.getFullBody()) + "\n\n");
         outputPackageMemberPackages("Packages", packageNode.getPackages());
+        outputPackageMemberTypes("All Classes and Interfaces", packageNode.getTypes());
         outputPackageMemberTypes("Interfaces", packageNode.getInterfaces());
         outputPackageMemberTypes("Classes", packageNode.getClasses());
         outputPackageMemberTypes("Record Classes", packageNode.getRecords());
