@@ -977,7 +977,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         MethodNode methodNode = mock(MethodNode.class);
         TypeNode ownerType = mock(TypeNode.class);
         when(methodNode.getOwnerName()).thenReturn("com.example.MyIfc");
-        when(ownerType.getImplementedInterfaces()).thenReturn(List.of(Reference.to("com.example.MyIfc").withClassName("com.example.MyIfc")));
+        when(ownerType.getImplementedInterfaces()).thenReturn(List.of(Pair.of(Reference.to("com.example.MyIfc").withClassName("com.example.MyIfc"),Text.empty())));
 
         when(mockApi.getTypeNode(any())).thenReturn(ownerType);
         // Prepare interface TypeElement with a method named "doThing"

@@ -61,6 +61,7 @@ public class TypeWriter {
         outputSupertypes(typeNode);
         outputImplementedInterfaces(typeNode);
         outputEnclosingClass(typeNode);
+        outputDirectKnownSubtypes(typeNode);
         writer.write("\n----\n\n");
 
         outputDeclaration(typeNode);
@@ -140,13 +141,17 @@ public class TypeWriter {
     /// @param typeNode a TypeNode representing a class, interface, enum, or annotation
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputImplementedInterfaces(TypeNode typeNode) throws IOException {
-        if (!typeNode.getImplementedInterfaces().isEmpty()) {
+        StringBuilder sb = new StringBuilder();
+        for (Pair<Reference,Text> pair : typeNode.getImplementedInterfaces()) {
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
+            sb.append(MarkdownUtils.formatText(pair.getR()));
+        }
+        if (!sb.isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");
             writer.write(NBSP.repeat(4));
-            for (int i=0; i<typeNode.getImplementedInterfaces().size(); i++) {
-                if (i > 0) writer.write(", ");
-                writer.write(MarkdownUtils.link(typeNode.getImplementedInterfaces().get(i), true));
-            }
+            writer.write(sb.toString());
             writer.write("\n\n");
         }
     }
@@ -159,10 +164,26 @@ public class TypeWriter {
         if (ownerTypeNode instanceof ClassTypeNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
-            writer.write(MarkdownUtils.link(typeNode.getEnclosingClassRef(), true) + "\n\n");
+            writer.write(MarkdownUtils.link(typeNode.getEnclosingClassRef(), true));
+            writer.write("\n\n");
         }
     }
 
+    private void outputDirectKnownSubtypes(TypeNode typeNode) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        for (Pair<Reference,Text> pair : typeNode.getSubtypes()) {
+            if (!sb.isEmpty()) {
+                sb.append(", ");
+            }
+            sb.append(MarkdownUtils.formatText(pair.getR()));
+        }
+        if (!sb.isEmpty()) {
+            writer.write("Direct Known Subtypes:<br/>\n");
+            writer.write(NBSP.repeat(4));
+            writer.write(sb.toString());
+            writer.write("\n\n");
+        }
+    }
 
     /// Outputs the type declaration
     /// @param typeNode the type being documented

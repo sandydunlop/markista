@@ -14,11 +14,14 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
 
     private Reference enclosingClassRef = null;
 
-    /// List of qualified names of interfaces implemented by this type.
-    private List<Reference> implementedInterfaces = new ArrayList<>();
+    /// List of references to interfaces implemented by this type and text containing links.
+    private List<Pair<Reference, Text>> implementedInterfaces = new ArrayList<>();
 
-    /// List of qualified names of this type's supertypes.
+    /// List of references to this type's supertypes and text containing links.
     private List<Pair<Reference, Text>> supertypes = new ArrayList<>();
+
+    /// List of references to this type's subtypes and text containing links.
+    private List<Pair<Reference, Text>> subtypes = new ArrayList<>();
 
     /// String representation of array brackets if this type is an array (e.g., `[]`).
     private String arrayBrackets = "";
@@ -85,19 +88,25 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
 
     /// Sets the list of implemented interfaces by qualified names.
     /// @param implementedInterfaces list of qualified interface names.
-    public void setImplementedInterfaces(List<Reference> implementedInterfaces) {
+    public void setImplementedInterfaces(List<Pair<Reference, Text>> implementedInterfaces) {
         this.implementedInterfaces = implementedInterfaces;
     }
 
-    /// Returns the list of supertypes by qualified names.
-    /// @return list of qualified supertype names.
+    /// Returns the list of supertype references and text.
+    /// @return list of supertype references and text.
     public List<Pair<Reference, Text>> getSupertypes() {
         return supertypes;
     }
 
+    /// Returns the list of subtype references and text.
+    /// @return list of subtype references and text.
+    public List<Pair<Reference, Text>> getSubtypes() {
+        return subtypes;
+    }
+
     /// Returns the list of implemented interfaces by qualified names.
     /// @return list of qualified interface names.
-    public List<Reference> getImplementedInterfaces() {
+    public List<Pair<Reference, Text>> getImplementedInterfaces() {
         return implementedInterfaces;
     }
 

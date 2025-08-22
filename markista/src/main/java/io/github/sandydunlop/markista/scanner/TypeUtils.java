@@ -524,15 +524,16 @@ public class TypeUtils {
     /// @param methodElement The ExecutableElement representing the method.
     public static void setSpecifiedBy(MethodNode methodNode, ExecutableElement methodElement) {
         TypeNode ownerTypeNode = api.getTypeNode(methodNode.getOwnerName());
-        List<Reference> interfaces = ownerTypeNode.getImplementedInterfaces();
+        List<Pair<Reference, Text>> interfaces = ownerTypeNode.getImplementedInterfaces();
         if (interfaces == null || interfaces.isEmpty()) return;
-        for (Reference interfaceName : interfaces) {
-            TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceName.getClassName());
+        for (Pair<Reference, Text> interfacePair : interfaces) {
+            Reference interfaceRef = interfacePair.getL();
+            TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceRef.getClassName());
             if (interfaceElement == null) continue;
             List<? extends Element>  enclosedElements = interfaceElement.getEnclosedElements();
             for (ExecutableElement interfaceMethod : ElementFilter.methodsIn(enclosedElements)) {
                 if (interfaceMethod.getSimpleName().toString().equals(methodElement.getSimpleName().toString())) {
-                    methodNode.setSpecifiedBy(interfaceName);
+                    methodNode.setSpecifiedBy(interfaceRef);
                     return;
                 }
             }
@@ -643,7 +644,7 @@ public class TypeUtils {
     /// Finds all interfaces implemented directly by the given TypeElement and adds their names to the result list.
     /// @param typeElement The type to examine.
     /// @param result The list to receive the qualified interface names.
-    public static void findImplementedInterfaces(TypeElement typeElement, List<Reference> result) {
+    public static void findImplementedInterfaces(TypeElement typeElement, List<Pair<Reference,Text>> result) {
         List<? extends TypeMirror> interfaces = typeElement.getInterfaces();
         for (TypeMirror interfaceType : interfaces) {
             Reference reference = Reference
@@ -651,7 +652,7 @@ public class TypeUtils {
                     .from(ctx.getPackageName())
                     .withKind(Reference.Kind.TYPE)
                     .withLabel(interfaceType.toString());
-            result.add(reference);
+            result.add(Pair.of(reference,Text.empty()));
         }
     }
 
@@ -668,7 +669,6 @@ public class TypeUtils {
                         Reference reference = Reference.to(name)
                                 .from(ctx.getPackageName())
                                 .withKind(Reference.Kind.TYPE);
-                                // .withLabel(name);
                         result.addFirst(Pair.of(reference, Text.empty()));
                     }
                     collectAllSupertypes(s, result);

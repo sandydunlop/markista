@@ -41,8 +41,8 @@ public class TextAssembler {
         // Links from types used in methods and fields
         for (TypeView typeView : api.getTypes()) {
             processTypeNode((TypeNode) typeView);
-
         }
+
         processJavadocComments(api);
         addJavadocToRecords(api);
     }
@@ -87,14 +87,30 @@ public class TextAssembler {
             LinkResolver.resolve(ref);
             typeNode.setEnclosingClassRef(ref);
         }
-        for (Reference implementedInterfaceRef : typeNode.getImplementedInterfaces()) {
+        for (Pair<Reference,Text> pair : typeNode.getImplementedInterfaces()) {
+            Reference implementedInterfaceRef = pair.getL();
+            Text text = link(implementedInterfaceRef);
+            pair.getR().append(text);
             LinkResolver.resolve(implementedInterfaceRef);
         }
         for (Pair<Reference,Text> pair : typeNode.getSupertypes()) {
             Reference supertypeReference = pair.getL();
-            Text text = link(supertypeReference, false);
+            Text text = link(supertypeReference);
             pair.getR().append(text);
         }
+        // Subtypes
+        if (typeNode.getSupertypes().size() > 1) {
+            Pair<Reference,Text> directSupertypePair = typeNode.getSupertypes().getLast();
+            String directSupertypeName = directSupertypePair.getL().getTarget();
+            TypeNode directSupertype = api.getTypeNode(directSupertypeName);
+            if (directSupertype != null) {
+                Reference subtypeRef = Reference.to(typeNode.getQualifiedName())
+                        .from(directSupertype.getQualifiedName() + "." + directSupertype.getPackageName());
+                Text subtypeText = link(subtypeRef);
+                directSupertype.getSubtypes().add(Pair.of(subtypeRef, subtypeText));
+            }
+        }
+
         generateLinkTextsForReferences(typeNode);
 
         // Fields
@@ -114,7 +130,7 @@ public class TextAssembler {
 
     static void processMethod(MethodNode method) {
         Reference returnTypeReference = Reference.to(method.getReturnTypeName()).from(ctx.getPackageName());
-        method.setReturnTypeText(link(returnTypeReference, false));
+        method.setReturnTypeText(link(returnTypeReference));
         generateLinkTextsForParams(method.getParams()
                 .stream()
                 .filter(ParamNode.class::isInstance)
@@ -134,7 +150,7 @@ public class TextAssembler {
                 if (baseMethodRef.getTarget().isEmpty()) {
                     baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
                 }
-                Text linkText = link(baseMethodRef, false);
+                Text linkText = link(baseMethodRef);
                 baseMethodPair.setR(linkText);
             }
 
@@ -225,7 +241,7 @@ public class TextAssembler {
     static void generateLinkTextsForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
             Reference reference = Reference.to(param.getTypeName()).from(ctx.getPackageName());
-            param.setTypeText(link(reference, false));
+            param.setTypeText(link(reference));
             generateLinkTextsForReferences(param);
         }
     }
@@ -243,9 +259,8 @@ public class TextAssembler {
 
     /// Create a markdown link, automatically deciding what kind of link to make.
     /// @param reference a Reference object describing the link
-    /// @param useQualifiedName If true, qualified names will be used in the link label
     /// @return markdown formatted link
-    public static Text link(Reference reference, boolean useQualifiedName) {
+    public static Text link(Reference reference) {
         String targetName = reference.getTarget();
         if (targetName == null || targetName.isEmpty()) {
             ctx.reportWarning("No link target supplied");
@@ -273,9 +288,9 @@ public class TextAssembler {
         if (targetName.indexOf('<') > -1) {
             // Does escaping need done here?
             // See: https://sandydunlop.atlassian.net/browse/MFLP-57
-            return linkGenerics(targetName, useQualifiedName);
+            return linkGenerics(targetName);
         } else if (targetName.indexOf(',') > -1) {
-            return splitAndLink(targetName, useQualifiedName);
+            return splitAndLink(targetName);
         } else if (targetName.lastIndexOf(' ') > 0) {
             int p = targetName.lastIndexOf(' ');
             pre = targetName.substring(0, p) + " ";
@@ -305,7 +320,7 @@ public class TextAssembler {
             // are currently headings without parameters.
             reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
         }
-        setDisplayName(reference, displayName, isLocalMethod, useQualifiedName);
+        setDisplayName(reference, displayName, isLocalMethod);
 
         Text.Segment link = Text.Segment.empty()
                 .setKind(Text.SegmentKind.LINK)
@@ -318,7 +333,7 @@ public class TextAssembler {
         return r;
     }
 
-    private static void setDisplayName(Reference reference, String displayName, boolean isLocalMethod, boolean useQualifiedName) {
+    private static void setDisplayName(Reference reference, String displayName, boolean isLocalMethod) {
         if (reference.getLabel() == null) {
              reference.setLabel(reference.getTarget());
         }
@@ -333,16 +348,8 @@ public class TextAssembler {
         }
         if (displayName != null && !displayName.isEmpty()) {
             reference.setLabel(displayName.replace("#","."));
-        } else if (!useQualifiedName && canBeSimplified(reference)) {
-            // reference.setLabel(Utils.simplifyNames(reference.getLabel()));
         }
         reference.setLabel(escape(reference.getLabel()));
-    }
-
-    private static boolean canBeSimplified(Reference link) {
-        boolean originIsInPackage = !ctx.getPackageName().isEmpty();
-        boolean kindCanBeSimplified = link.getKind() == Reference.Kind.TYPE || link.getKind() == Reference.Kind.METHOD || link.getKind() == Reference.Kind.URL;
-        return kindCanBeSimplified && originIsInPackage;
     }
 
     /// Escapes HTML `<` and `>` characters in a string with their corresponding
@@ -358,23 +365,22 @@ public class TextAssembler {
     /// Changes qualified generic type names to unqualified generic 
     /// type names and adds links to their API documentation.
     /// @param str A string containing a qualified generic name.
-    /// @param useQualifiedName If true, qualified type names will be displayed
     /// @return    A Text object with the qualified names changed to unqualified
     ///            names and links to types added
-    public static Text linkGenerics(String str, boolean useQualifiedName) {
+    public static Text linkGenerics(String str) {
         if (str == null || str.isEmpty()) return Text.of(str);
         int openingChevron = str.indexOf("<");
         int closingChevron = str.lastIndexOf(">");
         String before = str.substring(0, openingChevron);
         String mid = str.substring(openingChevron + 1, closingChevron);
         String after = str.substring(closingChevron + 1);
-        Text typeLink = link(Reference.to(before), useQualifiedName);
+        Text typeLink = link(Reference.to(before));
 
         Text midLinks;
         if (mid.contains("<")) {
-            midLinks = linkGenerics(mid, useQualifiedName);
+            midLinks = linkGenerics(mid);
         } else {
-            midLinks = splitAndLink(mid, useQualifiedName);
+            midLinks = splitAndLink(mid);
         }
 
         Text ret = Text.empty();
@@ -389,9 +395,8 @@ public class TextAssembler {
     /// Creates markdown formatted text with links to types from a string.
     /// containing one or more types separated by commas.
     /// @param typesString A string containing a comma-separated list of type names
-    /// @param useQualifiedName if true, the qualified version of the identifier is shown
     /// @return a list of links to types formatted as Markdown
-    public static Text splitAndLink(String typesString, boolean useQualifiedName) {
+    public static Text splitAndLink(String typesString) {
         Text text = Text.empty();
         String[] types = typesString.split(",");
         for (String t : types) {
@@ -399,7 +404,7 @@ public class TextAssembler {
             if (!text.isEmpty()) {
                 text.append(", ");
             }
-            text.append(link(Reference.to(typeName), useQualifiedName));
+            text.append(link(Reference.to(typeName)));
         }
         return text;
     }

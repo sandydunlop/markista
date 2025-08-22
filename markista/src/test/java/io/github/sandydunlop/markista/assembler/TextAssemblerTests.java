@@ -144,7 +144,7 @@ class TextAssemblerTests {
     @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
 	void link_to_text(String target, Segment[] expected) {
         Reference link = Reference.to(target);
-        Text text = TextAssembler.link(link, false);
+        Text text = TextAssembler.link(link);
         assertEquals(expected.length, text.getSegments().size());
         for (int i=0; i<expected.length; i++) {
             Segment expectedSegment = expected[i];

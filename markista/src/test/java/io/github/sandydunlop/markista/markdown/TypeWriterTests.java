@@ -525,12 +525,12 @@ class TypeWriterTests {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
                 pkg.getQualifiedName());
-        List<Reference> implementedInterfaces = new ArrayList<>();
+        List<Pair<Reference,Text>> implementedInterfaces = new ArrayList<>();
         Reference i = Reference.to("test.interface");
         i.setLabel("test.interface");
         i.setTarget("test.interface");
         i.setUri("test.interface");
-        implementedInterfaces.add(i);
+        implementedInterfaces.add(Pair.of(i,Text.empty()));
         typeNode.setImplementedInterfaces(implementedInterfaces);
 
         Context ctx = Context.getInstance();
