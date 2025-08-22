@@ -66,6 +66,6 @@ public abstract class PackageOrTypeNode extends AbstractMember {
 
     /// Sorts the nodes owned by this instance into alphabetical order.
     public void sort() {
-        types.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
+       types.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
     }
 }

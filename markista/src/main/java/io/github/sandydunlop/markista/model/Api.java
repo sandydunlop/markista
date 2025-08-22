@@ -150,8 +150,8 @@ public class Api extends Node {
     /// Sorts the types in descending order by qualified name and sorts all child types recursively.
     public void sort() {
         packages.sort((o1, o2) -> o2.getQualifiedName().compareTo(o1.getQualifiedName()));
-        for (TypeView node : getTypes()) {
-            node.sort();
+        for (TypeView type : getTypes()) {
+            type.sort();
         }
     }
 

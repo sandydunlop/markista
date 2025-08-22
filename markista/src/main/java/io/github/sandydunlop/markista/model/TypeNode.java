@@ -227,4 +227,12 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         }
         return mods.toString();
     }
+
+    /// Sorts the nodes owned by this instance into alphabetical order.
+    @Override
+    public void sort() {
+        super.sort();
+        fields.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
+        methods.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
+    }
 }
