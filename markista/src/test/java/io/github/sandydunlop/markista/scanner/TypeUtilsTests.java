@@ -1410,4 +1410,48 @@ class TypeUtilsTests extends MockedDocletEnvironment {
 		assertEquals("", TypeUtils.removeGenerics(""));
 		assertEquals("", TypeUtils.removeGenerics(null));
 	}
+
+    @Test
+    void getOverriddenMethod_local() {
+        Name methodName1 = mock(Name.class);
+        when(methodName1.toString()).thenReturn("length");
+        ExecutableElement methodElement1 = mock(ExecutableElement.class);
+        when(methodElement1.getReturnType()).thenReturn(typeMirror);
+        when(methodElement1.getSimpleName()).thenReturn(methodName1);
+        when(methodElement1.getEnclosingElement()).thenReturn(typeElement);
+
+        Name methodName2 = mock(Name.class);
+        when(methodName2.toString()).thenReturn("length");
+        ExecutableElement methodElement2 = mock(ExecutableElement.class);
+        when(methodElement2.getReturnType()).thenReturn(typeMirror);
+        when(methodElement2.getSimpleName()).thenReturn(methodName2);
+        when(methodElement2.getEnclosingElement()).thenReturn(typeElement);
+
+        ClassTypeNode classNode1 = new ClassTypeNode("io.github.sandydunlop.markista.model.Node",
+                "Node", packageNode.getQualifiedName());
+        api.addType(classNode1);
+        MethodNode methodNode1 = new MethodNode("int", "length");
+        methodNode1.setOwnerName(classNode1.getQualifiedName());
+        classNode1.addMethod(methodNode1);
+
+        ClassTypeNode classNode2 = new ClassTypeNode("io.github.sandydunlop.markista.model.TypeNode",
+                "Node", packageNode.getQualifiedName());
+        Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
+                .withKind(Reference.Kind.TYPE);
+        Pair<Reference,Text> supertype = Pair.of(ref, null);
+        classNode2.getSupertypes().add(supertype);
+        api.addType(classNode2);
+        MethodNode methodNode2 = new MethodNode("int", "length");
+        methodNode2.setOwnerName(classNode2.getQualifiedName());
+        classNode2.addMethod(methodNode2);
+
+        when(elementUtils.getTypeElement("io.github.sandydunlop.markista.model.Node")).thenAnswer(_ -> typeElement);
+        List<? extends Element> enclosedElements = List.of(methodElement1);
+        when(typeElement.getEnclosedElements()).thenAnswer(_ -> enclosedElements);
+
+        String className = TypeUtils.getNativeClassForInheritedMethod(methodNode2);
+
+        assertNotNull(className);
+        assertEquals("io.github.sandydunlop.markista.model.Node", className);
+    }
 }

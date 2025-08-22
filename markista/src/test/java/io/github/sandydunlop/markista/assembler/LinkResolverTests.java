@@ -32,6 +32,7 @@ import jdk.javadoc.doclet.Reporter;
 import com.sun.source.util.DocTreePath;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
@@ -46,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -753,6 +755,107 @@ class LinkResolverTests {
     }
 
     @Test
+    void processDirectoryUrl_callsProcessClassFileForClassFiles() throws Exception {
+        Path tempDir = Files.createTempDirectory("lr-processdir");
+        File dir = tempDir.toFile();
+        try {
+            // create a dummy class file in the directory
+            File classFile = new File(dir, "MyClass.class");
+            assertTrue(classFile.createNewFile(), "create dummy class file");
+
+            URL[] urls = new URL[] { dir.toURI().toURL() };
+
+            // Mock processClassFile so we can verify it is invoked
+            try (MockedStatic<LinkResolver> lrStatic = Mockito.mockStatic(LinkResolver.class, Mockito.CALLS_REAL_METHODS)) {
+                lrStatic.when(() -> LinkResolver.processClassFile(any(File.class), any(File.class), any(URLClassLoader.class)))
+                        .thenAnswer(invocation -> {
+                            File directoryArg = invocation.getArgument(0);
+                            File fileArg = invocation.getArgument(1);
+                            // assert the arguments are as expected inside the stub
+                            assertEquals(dir.getAbsoluteFile(), directoryArg.getAbsoluteFile());
+                            assertEquals(classFile.getName(), fileArg.getName());
+                            return null;
+                        });
+
+                // Call the real processDirectoryUrl which will call our mocked processClassFile
+                LinkResolver.processDirectoryUrl(dir, urls);
+
+                // Verify interaction: at least one call to processClassFile was made
+                lrStatic.verify(() -> LinkResolver.processClassFile(eq(dir), eq(classFile), any(URLClassLoader.class)), times(1));
+            }
+        } finally {
+            // cleanup
+            Files.deleteIfExists(tempDir.resolve("MyClass.class"));
+            Files.deleteIfExists(tempDir);
+        }
+    }
+
+    @Test
+    void processClassFile_readsModuleInfoAndSetsSiblingModuleName() throws Exception {
+        Path tempDir = Files.createTempDirectory("lr-moduleinfo");
+        File dir = tempDir.toFile();
+        File moduleInfo = new File(dir, "module-info.class");
+        try {
+            assertTrue(moduleInfo.createNewFile(), "create module-info.class placeholder");
+
+            // Mock ModuleDescriptor.read to avoid parsing actual class bytes
+            ModuleDescriptor fakeDescriptor = mock(ModuleDescriptor.class);
+            when(fakeDescriptor.name()).thenReturn("fake.module");
+
+            try (MockedStatic<ModuleDescriptor> mdStatic = Mockito.mockStatic(ModuleDescriptor.class)) {
+                mdStatic.when(() -> ModuleDescriptor.read(any(InputStream.class))).thenReturn(fakeDescriptor);
+
+                // siblingModuleName should be updated by processClassFile
+                LinkResolver.siblingModuleName = "";
+                LinkResolver.siblingClassNames.clear();
+
+                // classLoader not needed for module-info branch; pass null
+                LinkResolver.processClassFile(dir, moduleInfo, null);
+
+                assertEquals("fake.module", LinkResolver.siblingModuleName, "processClassFile should set siblingModuleName from module-info");
+            }
+        } finally {
+            Files.deleteIfExists(moduleInfo.toPath());
+            Files.deleteIfExists(tempDir);
+        }
+    }
+
+    @Disabled("FILESYSTEM")
+    @Test
+    void processClassFile_loadsClassAndAddsToSiblingClassNames() throws Exception {
+        Path tempDir = Files.createTempDirectory("lr-classfile");
+        File dir = tempDir.toFile();
+        // create nested path matching package structure: com/example/Test.class
+        File packageDir = new File(dir, "com/example");
+        assertTrue(packageDir.mkdirs(), "create package directories");
+        File testClassFile = new File(packageDir, "Test.class");
+        assertTrue(testClassFile.createNewFile(), "create Test.class placeholder");
+
+        try {
+            // Provide a mock URLClassLoader that returns a known Class object for the requested class
+            URLClassLoader mockLoader = mock(URLClassLoader.class);
+            // the className computed by processClassFile will be "com/example/Test" relative path replaced to dots and trimmed of ".class"
+            // On most platforms path separators are '/', so relative path "com/example/Test.class" -> "com.example.Test"
+            String expectedClassName = "com.example.Test";
+            when(mockLoader.loadClass(expectedClassName)).thenAnswer(_ -> (Class<?>)String.class); // use real Class as return
+
+            // Ensure siblingClassNames is empty
+            LinkResolver.siblingClassNames.clear();
+
+            LinkResolver.processClassFile(dir, testClassFile, mockLoader);
+
+            // String.class.getName() should be present in siblingClassNames
+            assertTrue(LinkResolver.siblingClassNames.contains(String.class.getName()),
+                    "siblingClassNames should include the loaded class name");
+        } finally {
+            // cleanup
+            Files.deleteIfExists(testClassFile.toPath());
+            Files.deleteIfExists(packageDir.toPath());
+            Files.deleteIfExists(tempDir);
+        }
+    }
+
+    @Test
     void resolveLocalPackageTypeInternal_null () {
         //"io.github.sandydunlop.markista.model.Node"
         Reference link2 = Reference.to("unknown.package.Class")
@@ -762,6 +865,78 @@ class LinkResolverTests {
 
         r = LinkResolver.resolveLocalPackageTypeInternal(link2, "unknown.package", "Class");
         assertFalse(r);
+    }
+
+    @Test
+    void relativizeWithSiblingModule_returnsPathContainingModuleName() {
+        // Basic sanity test: relativizeWithSiblingModule should include provided sibling module component
+        String from = "com.example.from";
+        String to = "com.example.to";
+        String toModule = "some.module";
+
+        String path = LinkResolver.relativizeWithSiblingModule(from, to, toModule);
+
+        assertNotNull(path);
+        assertTrue(path.contains(toModule) || path.contains("some" /* fallback check */),
+                "Result should mention the sibling module name");
+    }
+
+    @Test
+    void resolveSiblingType_resolvesWhenClassKnownInMap() {
+        Reference ref = new Reference();
+        ref.setOrigin("com.example.origin");
+        ref.setTarget("com.example.Foo");
+        ref.setKind(Reference.Kind.UNKNOWN);
+
+        // set up mapping so LinkResolver knows where the class lives
+        LinkResolver.classToModule.put("com.example.Foo", "other.module");
+
+        // call method under test
+        boolean resolved = LinkResolver.resolveSiblingType(ref);
+
+        assertTrue(resolved);
+        assertTrue(ref.isResolved(), "Reference should be marked resolved");
+        assertEquals(Reference.Scope.SIBLING, ref.getScope(), "Scope should be SIBLING");
+        assertEquals(Reference.Kind.TYPE, ref.getKind(), "Kind should be TYPE");
+        assertNotNull(ref.getUri(), "URI should be set for resolved sibling type");
+    }
+
+    @Test
+    void resolveSiblingModule_resolvesWhenModuleInSiblingList() {
+        Reference ref = new Reference();
+        ref.setOrigin("com.example.origin");
+        ref.setTarget("sibling.module");
+        ref.setKind(Reference.Kind.UNKNOWN);
+
+        LinkResolver.siblingModules.add("sibling.module");
+
+        boolean resolved = LinkResolver.resolveSiblingModule(ref);
+
+        assertTrue(resolved);
+
+        assertTrue(ref.isResolved(), "Reference should be marked resolved");
+        assertEquals(Reference.Scope.SIBLING, ref.getScope(), "Scope should be SIBLING");
+        assertEquals(Reference.Kind.MODULE, ref.getKind(), "Kind should be MODULE");
+        assertNotNull(ref.getUri(), "URI should be set for resolved sibling module");
+    }
+
+    @Test
+    void resolveUnsupported_marksUnsupportedInputs() {
+        Reference r1 = new Reference();
+        r1.setTarget("?");
+        Reference out1 = LinkResolver.resolveUnsupported(r1);
+        assertEquals(Reference.Kind.UNSUPPORTED, out1.getKind(), "Single '?' should be treated as unsupported");
+
+        Reference r2 = new Reference();
+        r2.setTarget("List<String>");
+        Reference out2 = LinkResolver.resolveUnsupported(r2);
+        assertEquals(Reference.Kind.UNSUPPORTED, out2.getKind(), "Type-like constructs containing '<' should be unsupported");
+
+        Reference r3 = new Reference();
+        r3.setTarget("com.example.Foo");
+        Reference out3 = LinkResolver.resolveUnsupported(r3);
+        // non-unsupported input should not have kind UNSUPPORTED (could be UNKNOWN or other, but not UNSUPPORTED)
+        assertNotEquals(Reference.Kind.UNSUPPORTED, out3.getKind());
     }
 
     class TestReporter implements Reporter {
