@@ -6,8 +6,9 @@ import java.io.Serializable;
 public class TypeReference implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
-    private Reference reference;
+    private Link link;
     private Text text;
+    private String qualifiedName;
 
     private TypeReference() {
         // Nothing to see here
@@ -15,24 +16,26 @@ public class TypeReference implements Serializable {
 
     public static TypeReference to(String typeName) {
         TypeReference ref = new TypeReference();
-        ref.setReference(Reference.to(typeName));
+        ref.setLink(Link.to(typeName));
         ref.setText(Text.empty());
+        ref.setQualifiedName(typeName);
         return ref;
     }
 
-    public static TypeReference to(Reference r, Text t) {
+    public static TypeReference to(Link r, Text t) {
         TypeReference ref = new TypeReference();
-        ref.setReference(r);
+        ref.setLink(r);
         ref.setText(t);
+        ref.setQualifiedName(r.getTarget());
         return ref;
     }
 
-    public void setReference(Reference ref) {
-        reference = ref;
+    public void setLink(Link ref) {
+        link = ref;
     }
 
-    public Reference getReference() {
-        return reference;
+    public Link getLink() {
+        return link;
     }
 
     public void setText(Text text) {
@@ -41,5 +44,13 @@ public class TypeReference implements Serializable {
 
     public Text getText() {
         return text;
+    }
+
+    public void setQualifiedName(String name) {
+        qualifiedName = name;
+    }
+
+    public String getQualifiedName() {
+        return qualifiedName;
     }
 }

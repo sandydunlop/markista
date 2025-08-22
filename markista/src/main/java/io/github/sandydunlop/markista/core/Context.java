@@ -61,9 +61,23 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// The name of the field currently being documented
     private String fieldName = "";
 
+    private WriterFactory writerFactory;
+
+    public interface WriterFactory {
+        Writer createWriter(File file);
+    }
+
     /// The default constructor
     private Context() {
         // No public constructor here
+    }
+
+    public void setWriterFactory(WriterFactory wf) {
+        this.writerFactory = wf;
+    }
+
+    public static void reset() {
+        instance = null;
     }
 
     public String getFlattenedDirectories() {
@@ -312,9 +326,13 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// @return A Writer for the file.
     /// @throws IOException If an I/O error occurs opening the file.
     private Writer createFileInternal(File file) throws IOException {
-        FileOutputStream fileOutputStream = new FileOutputStream(file);
-        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
-        return new OutputStreamWriter(bufferedOutputStream);
+        if (writerFactory != null) {
+            return writerFactory.createWriter(file);
+        } else {
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
+            return new OutputStreamWriter(bufferedOutputStream);
+        }
     }
 
     public class NameSimplifier {

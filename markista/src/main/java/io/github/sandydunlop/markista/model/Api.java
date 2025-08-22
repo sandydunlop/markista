@@ -25,7 +25,7 @@ public class Api extends Node {
     private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
 
     /// List of links.
-    private final List<Reference> links = new ArrayList<>();
+    private final List<Link> links = new ArrayList<>();
 
     /// Constructs an empty Api instance with the given name.
     /// @param name The name of the API
@@ -95,13 +95,13 @@ public class Api extends Node {
 
     /// Adds a link
     /// @param link the link to add
-    public void addLink(Reference link) {
+    public void addLink(Link link) {
         links.add(link);
     }
 
     /// Returns the list of link.
     /// @return list of links
-    public List<Reference> getLinks() {
+    public List<Link> getLinks() {
         return links;
     }
 
@@ -150,6 +150,9 @@ public class Api extends Node {
     /// Sorts the types in descending order by qualified name and sorts all child types recursively.
     public void sort() {
         packages.sort((o1, o2) -> o2.getQualifiedName().compareTo(o1.getQualifiedName()));
+        for (PackageNode pkg : getPackages()) {
+            pkg.sort();
+        }
         for (TypeView type : getTypes()) {
             type.sort();
         }

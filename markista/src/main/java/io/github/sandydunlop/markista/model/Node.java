@@ -36,7 +36,7 @@ public class Node implements Serializable {
     private final Text fullBody = Text.empty();
 
     /// A list of references specified in this node's Javadoc
-    private List<Reference> references = new ArrayList<>();
+    private List<Link> references = new ArrayList<>();
 
     /// The default constructor
     protected Node() {
@@ -133,13 +133,13 @@ public class Node implements Serializable {
 
     /// Sets the list of references for this node.
     /// @param refs List of Reference objects.
-    public void setReferences(List<Reference> refs) {
+    public void setReferences(List<Link> refs) {
         references = refs;
     }
 
     /// Returns the list of references associated with this node.
     /// @return List of Reference objects.
-    public List<Reference> getReferences() {
+    public List<Link> getReferences() {
         return references;
     }
 }

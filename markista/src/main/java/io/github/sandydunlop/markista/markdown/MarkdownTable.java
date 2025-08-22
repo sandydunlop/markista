@@ -85,6 +85,7 @@ public class MarkdownTable {
             }
             writer.write("|\n");
         }
+        writer.write("\n\n");
         writer.flush();
     }
 

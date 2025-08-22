@@ -127,7 +127,7 @@ public class Text implements Serializable {
         /// The textual content of this segment.
         private String text = "";
         /// The associated link if the segment represents a link.
-        private Reference link = new Reference();
+        private Link link = new Link();
 
         /// Private constructor to restrict instantiation.
         private Segment() {
@@ -181,14 +181,14 @@ public class Text implements Serializable {
         /// Sets the link value of this segment.
         /// @param link The link to set.
         /// @return This Segment instance for chaining.
-        public Segment setLink(Reference link) {
+        public Segment setLink(Link link) {
             this.link = link;
             return this;
         }
 
         /// Returns the link associated with this segment.
         /// @return The link reference.
-        public Reference getLink() {
+        public Link getLink() {
             return link;
         }
     }

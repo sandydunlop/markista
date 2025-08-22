@@ -8,7 +8,7 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -21,32 +21,22 @@ import javax.tools.Diagnostic.Kind;
 import jdk.javadoc.doclet.Reporter;
 
 import com.sun.source.util.DocTreePath;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class ModuleWriterTests {
     private static Context ctx;
     Api api;
     ModuleNode moduleNode;
     PackageNode pkg;
 
-    // Mockito will now call the new constructor with this mock
-    @InjectMocks
     private ModuleWriter moduleWriter;
-
-    @Mock
-    private Context contextMock;
 
     // This is the writer we will use to capture output
     private StringWriter stringWriter;
@@ -68,14 +58,19 @@ class ModuleWriterTests {
         }
     };
 
-	@BeforeAll
-    static void initAll() {
-		ctx =  Context.getInstance();
-		ctx.setReporter(reporter);
+    @AfterEach
+    void resetSingleton() {
+        Context.reset();
     }
 
     @BeforeEach
-    void setup() throws InvalidPathException, IOException {
+    void setup() throws InvalidPathException {
+        stringWriter = new StringWriter();
+        ctx = Context.getInstance();
+        ctx.setWriterFactory(_ -> stringWriter);
+        ctx.setReporter(reporter);
+        moduleWriter = new ModuleWriter(ctx);
+
         api = new Api("Test API");
         moduleNode = new ModuleNode("mod");
         api.addModule(moduleNode);
@@ -90,10 +85,6 @@ class ModuleWriterTests {
         LinkResolver.init(api, ctx);
 
         stringWriter = new StringWriter();
-
-        // Stub the behavior of contextMock to return a StringWriter
-        when(contextMock.createFileInModule(anyString())).thenReturn(stringWriter);
-        when(contextMock.createFileInPackage()).thenReturn(stringWriter);
     }
 
     @Test
@@ -137,7 +128,7 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleDirectives_WritesTableForDirectiveNodes() throws IOException {
-        Reference ref = Reference.to("com.example.package")
+        Link ref = Link.to("com.example.package")
                 .withLabel("com.example.package");
         DirectiveNode exportsDirective = mock(DirectiveNode.class);
         when(exportsDirective.getKind()).thenReturn(DirectiveNode.Kind.EXPORTS);        
@@ -163,16 +154,16 @@ class ModuleWriterTests {
         api.addType(interface1);
         api.addType(interface2);
 
-        Reference ref = Reference.to("com.example.package.Interface");
-        ref.setKind(Reference.Kind.TYPE);
+        Link ref = Link.to("com.example.package.Interface");
+        ref.setKind(Link.Kind.TYPE);
         ref.setLabel("com.example.package.Interface");
         ref.setUri("com/example/package/Interface.md");
         DirectiveNode providesDirective = mock(DirectiveNode.class);
-        List<Reference> implementations = List.of(
-                Reference.to("com.example.package.Impl1")
+        List<Link> implementations = List.of(
+                Link.to("com.example.package.Impl1")
                         .withLabel("com.example.package.Impl1")
                         .withUri("com.example.package.Impl1"), 
-                Reference.to("com.example.package.Impl2")
+                Link.to("com.example.package.Impl2")
                         .withLabel("com.example.package.Impl2")
                         .withUri("com.example.package.Impl2")); 
         when(providesDirective.getImplementations()).thenReturn(implementations);
@@ -192,7 +183,7 @@ class ModuleWriterTests {
 
     @Test
     void outputConstantValues_WritesConstantFieldValuesPage() throws InvalidPathException, IOException {
-        Reference ref = Reference.to("v");
+        Link ref = Link.to("v");
         FieldNode fieldNode = mock(FieldNode.class);
         when(fieldNode.getModifiersString()).thenReturn("public static ");
         when(fieldNode.getSimpleName()).thenReturn("MY_CONSTANT");
@@ -200,8 +191,6 @@ class ModuleWriterTests {
         when(fieldNode.getConstantValueReference()).thenReturn(ref);
 
         moduleNode.addConstantValue(fieldNode);
-
-        when(contextMock.createFileInModule("constant-values.md")).thenReturn(stringWriter);
 
         moduleWriter.writeDocs(api);
 

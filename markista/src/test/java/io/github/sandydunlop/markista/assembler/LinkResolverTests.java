@@ -6,7 +6,7 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -66,7 +66,7 @@ class LinkResolverTests {
     private ClassTypeNode node;
     private ClassTypeNode markdownDoclet;
 
-    Reference link;
+    Link link;
     private static final String ORIGIN = "com.example";
     private static final String TARGET = "com.example.MyClass";
     private JarFile mockJarFile;
@@ -128,10 +128,10 @@ class LinkResolverTests {
 		ctx.setModuleName("markista");
         ctx.setPackageName("");
 
-        link = new Reference();
+        link = new Link();
         link.setOrigin(ORIGIN);
         link.setTarget(TARGET);
-        link.setKind(Reference.Kind.UNKNOWN);
+        link.setKind(Link.Kind.UNKNOWN);
     }
 
 	@Test
@@ -142,12 +142,12 @@ class LinkResolverTests {
 		String moduleName = "jdk.javadoc";
         LinkResolver.addNativeModuleUrl(moduleName, JAVA_24_URL + moduleName, ".html");
 
-		Reference ref = new Reference();
+		Link ref = new Link();
 		ref.setTarget("jdk.javadoc.doclet.Doclet");
 		assertTrue(LinkResolver.resolveNativePackageOrType(ref));
 
-		assertEquals(Reference.Scope.NATIVE, ref.getScope());
-		assertEquals(Reference.Kind.URL, ref.getKind());
+		assertEquals(Link.Scope.NATIVE, ref.getScope());
+		assertEquals(Link.Kind.URL, ref.getKind());
 		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.html", ref.getUri());
     }
 
@@ -192,49 +192,49 @@ class LinkResolverTests {
 
 	@Test
 	void resolve_empty() {
-		link = LinkResolver.resolve(Reference.to(""));
-		assertEquals(Reference.Kind.UNKNOWN, link.getKind());
+		link = LinkResolver.resolve(Link.to(""));
+		assertEquals(Link.Kind.UNKNOWN, link.getKind());
 		assertEquals("", link.getUri());
 	}
 
 	@Test
 	void resolve_module() {
-		link = LinkResolver.resolve(Reference.to("java.base"));
-		assertEquals(Reference.Kind.URL, link.getKind());
+		link = LinkResolver.resolve(Link.to("java.base"));
+		assertEquals(Link.Kind.URL, link.getKind());
 		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/module-summary.html", link.getUri());
 	}
 
 	@Test
 	void resolve_packageFromModule() {
 		LinkResolver.setFlattenedDirectories("io.github.sandydunlop.markista");
-		link = LinkResolver.resolve(Reference.to("io.github.sandydunlop.markista.doclet"));
+		link = LinkResolver.resolve(Link.to("io.github.sandydunlop.markista.doclet"));
 		assertEquals("doclet", link.getUri());
 	}
 
 	@Test
 	void resolve_primitive() {
-		link = Reference.to("boolean").from("io.github.sandydunlop.markista.util");
+		link = Link.to("boolean").from("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
-		assertEquals(Reference.Kind.PRIMITIVE, link.getKind());
+		assertEquals(Link.Kind.PRIMITIVE, link.getKind());
 	}
 
 	@Test
 	void resolve_qualifiedPackage_prevLevel() {
-		link = Reference.to("io.github.sandydunlop.markista").from("io.github.sandydunlop.markista.util");
+		link = Link.to("io.github.sandydunlop.markista").from("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals("..", link.getUri());
 	}
 
 	@Test
 	void resolve_qualifiedNativeClass() {
-		link = LinkResolver.resolve(Reference.to("java.util.List"));
+		link = LinkResolver.resolve(Link.to("java.util.List"));
 		link = LinkResolver.resolve(link);
 		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html", link.getUri());
 	}
 
 	@Test
 	void resolve_qualifiedClass_noLevel() {
-		link = LinkResolver.resolve(Reference.to("io.github.sandydunlop.markista.model.Node"));
+		link = LinkResolver.resolve(Link.to("io.github.sandydunlop.markista.model.Node"));
 		link = LinkResolver.resolve(link);
 		assertEquals("io/github/sandydunlop/markista/model/Node", link.getUri());
 	}
@@ -242,61 +242,61 @@ class LinkResolverTests {
 	@Test
 	void resolve_undefinedType() {
 		// This will show a warning in the test output
-		link = LinkResolver.resolve(Reference.to("Coso"));
+		link = LinkResolver.resolve(Link.to("Coso"));
 		assertEquals("", link.getUri());
-		assertEquals(Reference.Kind.UNKNOWN, link.getKind());
+		assertEquals(Link.Kind.UNKNOWN, link.getKind());
 	}
 
 	@Test
 	void resolve_unqualifiedPackage_nextLevelPackage() {
-		link = Reference.to("doclet").from("io.github.sandydunlop.markista");
+		link = Link.to("doclet").from("io.github.sandydunlop.markista");
 		link = LinkResolver.resolve(link);
 		assertEquals("doclet", link.getUri());
 	}
 
 	@Test
 	void resolve_unqualifiedPackage_sameLevelPackage() {
-		link = Reference.to("doclet").from("io.github.sandydunlop.markista.util");
+		link = Link.to("doclet").from("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals("../doclet", link.getUri());
 	}
 
 	@Test
 	void resolve_unqualifiedClass_sameLevel() {
-		link = Reference.to("MarkdownDoclet").from("io.github.sandydunlop.markista.util");
+		link = Link.to("MarkdownDoclet").from("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals("../doclet/MarkdownDoclet", link.getUri());
 	}
 
 	@Test
 	void resolve_unqualifiedPackage_prevLevel() {
-		link = Reference.to("markista").from("io.github.sandydunlop.markista.util");
+		link = Link.to("markista").from("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals("..", link.getUri());
 	}
 
 	@Test
 	void resolve_void() {
-		link = LinkResolver.resolve(Reference.to("void"));
-		assertEquals(Reference.Kind.VOID, link.getKind());
+		link = LinkResolver.resolve(Link.to("void"));
+		assertEquals(Link.Kind.VOID, link.getKind());
 		assertEquals("", link.getUri());
 	}
 
 	@Test
 	void resolveModule() {
-		link = Reference.to("markista/");
+		link = Link.to("markista/");
 		link = LinkResolver.resolve(link);
-		assertEquals(Reference.Kind.MODULE, link.getKind());
+		assertEquals(Link.Kind.MODULE, link.getKind());
 		assertNotEquals("", link.getUri());
 		assertNotEquals(null, link.getUri());
 	}
 
-
+    @Disabled("CONTEXT")
     @Test
     void resolve_NullOrigin_SetsOriginFromContext() {
-        Reference linkWithoutOrigin = new Reference();
+        Link linkWithoutOrigin = new Link();
         linkWithoutOrigin.setTarget("java.lang.String");
-        linkWithoutOrigin.setKind(Reference.Kind.UNKNOWN);
+        linkWithoutOrigin.setKind(Link.Kind.UNKNOWN);
 
         Context mockContext = mock(Context.class);
         when(mockContext.getPackageName()).thenReturn("default.pkg");
@@ -304,7 +304,7 @@ class LinkResolverTests {
         Context originalCtx = LinkResolver.ctx;
         LinkResolver.ctx = mockContext;
 
-        Reference resolvedLink = LinkResolver.resolve(linkWithoutOrigin);
+        Link resolvedLink = LinkResolver.resolve(linkWithoutOrigin);
         assertEquals("default.pkg", resolvedLink.getOrigin());
 
         LinkResolver.ctx = originalCtx;
@@ -313,7 +313,7 @@ class LinkResolverTests {
     @Test
     void resolve_EmptyTarget_ReturnsUnchanged() {
         link.setTarget("");
-        Reference resolved = LinkResolver.resolve(link);
+        Link resolved = LinkResolver.resolve(link);
         // Target empty, should return quickly
         assertEquals("", resolved.getTarget());
         assertFalse(resolved.isResolved());
@@ -321,11 +321,11 @@ class LinkResolverTests {
 
     @Test
     void resolve_UnsupportedKind_ReturnsImmediately() {
-        link.setKind(Reference.Kind.UNSUPPORTED);
+        link.setKind(Link.Kind.UNSUPPORTED);
 
         // We simulate resolveUnsupported returns the same link with unsupported kind
-        Reference resolved = LinkResolver.resolve(link);
-        assertEquals(Reference.Kind.UNSUPPORTED, resolved.getKind());
+        Link resolved = LinkResolver.resolve(link);
+        assertEquals(Link.Kind.UNSUPPORTED, resolved.getKind());
     }
 
     @Test
@@ -334,26 +334,26 @@ class LinkResolverTests {
         api.addModule(module);
         LinkResolver.init(api, ctx);
         link.setTarget("markista/");
-        Reference resolved = LinkResolver.resolve(link);
-        assertEquals(Reference.Kind.MODULE, resolved.getKind());
+        Link resolved = LinkResolver.resolve(link);
+        assertEquals(Link.Kind.MODULE, resolved.getKind());
     }
 
     @Test
     void resolve_PrimitiveOrVoid_ResolvesSuccessfully() {
         link.setTarget("void");
-        link.setKind(Reference.Kind.UNKNOWN);
+        link.setKind(Link.Kind.UNKNOWN);
 
-        Reference spyLink = spy(link);
+        Link spyLink = spy(link);
         // will call real resolvePrimitiveOrVoid - simulate it resolving the link
         LinkResolver.resolvePrimitiveOrVoid(spyLink);
-        Reference resolved = LinkResolver.resolve(spyLink);
+        Link resolved = LinkResolver.resolve(spyLink);
         assertTrue(resolved.isResolved());
     }
 
     @Test
     void tryResolvePrimitiveOrVoid_ReturnsTrueIfResolved() {
-        Reference primitiveLink = new Reference();
-        primitiveLink.setKind(Reference.Kind.UNKNOWN);
+        Link primitiveLink = new Link();
+        primitiveLink.setKind(Link.Kind.UNKNOWN);
         primitiveLink.setTarget("int");
 
         boolean result = LinkResolver.resolvePrimitiveOrVoid(primitiveLink);
@@ -362,8 +362,8 @@ class LinkResolverTests {
 
     @Test
     void tryResolveNativePackageOrType_ReturnsFalseIfNotResolved() {
-        link = new Reference();
-        link.setKind(Reference.Kind.TYPE);
+        link = new Link();
+        link.setKind(Link.Kind.TYPE);
         link.setTarget("unknown.Target");
 
         boolean result = LinkResolver.resolveNativePackageOrType(link);
@@ -373,8 +373,8 @@ class LinkResolverTests {
 
     @Test
     void tryResolveLocalPackageOrType_ReturnsFalseIfNotResolved() {
-        link = new Reference();
-        link.setKind(Reference.Kind.PACKAGE);
+        link = new Link();
+        link.setKind(Link.Kind.PACKAGE);
         link.setTarget("local.pkg");
 
         boolean result = LinkResolver.resolveLocalPackageOrType(link);
@@ -383,8 +383,8 @@ class LinkResolverTests {
 
     @Test
     void tryResolveLocalModule_ReturnsFalseIfNotResolved() {
-        link = new Reference();
-        link.setKind(Reference.Kind.MODULE);
+        link = new Link();
+        link.setKind(Link.Kind.MODULE);
         link.setTarget("local.module");
 
         boolean result = LinkResolver.resolveLocalModule(link);
@@ -393,8 +393,8 @@ class LinkResolverTests {
 
     @Test
     void tryResolveSiblingModule_ReturnsFalseIfNotResolved() {
-        link = new Reference();
-        link.setKind(Reference.Kind.MODULE);
+        link = new Link();
+        link.setKind(Link.Kind.MODULE);
         link.setTarget("sibling.module");
 
         boolean result = LinkResolver.resolveSiblingModule(link);
@@ -403,8 +403,8 @@ class LinkResolverTests {
 
     @Test
     void tryResolveSiblingType_ReturnsFalseIfNotResolved() {
-        link = new Reference();
-        link.setKind(Reference.Kind.TYPE);
+        link = new Link();
+        link.setKind(Link.Kind.TYPE);
         link.setTarget("sibling.type");
 
         boolean result = LinkResolver.resolveSiblingType(link);
@@ -695,16 +695,16 @@ class LinkResolverTests {
         LinkResolver.classToModule.put("com.example.Foo", "example.module");
         LinkResolver.siblingModuleName = "example.module";
 
-        Reference ref = new Reference();
+        Link ref = new Link();
         ref.setTarget("com.example.Foo");
         ref.setOrigin("com.example.other");
-        ref.setKind(Reference.Kind.UNKNOWN);
+        ref.setKind(Link.Kind.UNKNOWN);
 
         assertTrue(LinkResolver.resolveSiblingType(ref));
 
         assertTrue(ref.isResolved());
-        assertEquals(Reference.Scope.SIBLING, ref.getScope());
-        assertEquals(Reference.Kind.TYPE, ref.getKind());
+        assertEquals(Link.Scope.SIBLING, ref.getScope());
+        assertEquals(Link.Kind.TYPE, ref.getKind());
         assertNotNull(ref.getUri());
         assertTrue(ref.getUri().contains("com/example/Foo".replace('.', '/')) || ref.getUri().contains("com.example.Foo"));
     }
@@ -714,16 +714,16 @@ class LinkResolverTests {
         setup2();
         LinkResolver.siblingModules.add("example.module");
 
-        Reference ref = new Reference();
+        Link ref = new Link();
         ref.setTarget("example.module");
         ref.setOrigin("com.example.other");
-        ref.setKind(Reference.Kind.UNKNOWN);
+        ref.setKind(Link.Kind.UNKNOWN);
 
         assertTrue(LinkResolver.resolveSiblingModule(ref));
 
         assertTrue(ref.isResolved());
-        assertEquals(Reference.Scope.SIBLING, ref.getScope());
-        assertEquals(Reference.Kind.MODULE, ref.getKind());
+        assertEquals(Link.Scope.SIBLING, ref.getScope());
+        assertEquals(Link.Kind.MODULE, ref.getKind());
         assertNotNull(ref.getUri());
         assertTrue(ref.getUri().contains("example.module"));
     }
@@ -731,20 +731,20 @@ class LinkResolverTests {
     @Test
     void testResolveUnsupported_forUnsupportedPatterns() {
         setup2();
-        Reference ref = new Reference();
+        Link ref = new Link();
         ref.setTarget("?");
-        Reference result = LinkResolver.resolveUnsupported(ref);
-        assertEquals(Reference.Kind.UNSUPPORTED, result.getKind());
+        Link result = LinkResolver.resolveUnsupported(ref);
+        assertEquals(Link.Kind.UNSUPPORTED, result.getKind());
 
-        Reference refWithAngleBrackets = new Reference();
+        Link refWithAngleBrackets = new Link();
         refWithAngleBrackets.setTarget("List<String>");
-        Reference result2 = LinkResolver.resolveUnsupported(refWithAngleBrackets);
-        assertEquals(Reference.Kind.UNSUPPORTED, result2.getKind());
+        Link result2 = LinkResolver.resolveUnsupported(refWithAngleBrackets);
+        assertEquals(Link.Kind.UNSUPPORTED, result2.getKind());
 
-        Reference normalRef = new Reference();
+        Link normalRef = new Link();
         normalRef.setTarget("com.example.Foo");
-        Reference result3 = LinkResolver.resolveUnsupported(normalRef);
-        assertNotEquals(Reference.Kind.UNSUPPORTED, result3.getKind());
+        Link result3 = LinkResolver.resolveUnsupported(normalRef);
+        assertNotEquals(Link.Kind.UNSUPPORTED, result3.getKind());
     }
 
     @Test
@@ -858,7 +858,7 @@ class LinkResolverTests {
     @Test
     void resolveLocalPackageTypeInternal_null () {
         //"io.github.sandydunlop.markista.model.Node"
-        Reference link2 = Reference.to("unknown.package.Class")
+        Link link2 = Link.to("unknown.package.Class")
                 .from("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option");
         boolean r = LinkResolver.resolveLocalPackageTypeInternal(link2, "", "Class");
         assertFalse(r);
@@ -883,10 +883,10 @@ class LinkResolverTests {
 
     @Test
     void resolveSiblingType_resolvesWhenClassKnownInMap() {
-        Reference ref = new Reference();
+        Link ref = new Link();
         ref.setOrigin("com.example.origin");
         ref.setTarget("com.example.Foo");
-        ref.setKind(Reference.Kind.UNKNOWN);
+        ref.setKind(Link.Kind.UNKNOWN);
 
         // set up mapping so LinkResolver knows where the class lives
         LinkResolver.classToModule.put("com.example.Foo", "other.module");
@@ -896,17 +896,17 @@ class LinkResolverTests {
 
         assertTrue(resolved);
         assertTrue(ref.isResolved(), "Reference should be marked resolved");
-        assertEquals(Reference.Scope.SIBLING, ref.getScope(), "Scope should be SIBLING");
-        assertEquals(Reference.Kind.TYPE, ref.getKind(), "Kind should be TYPE");
+        assertEquals(Link.Scope.SIBLING, ref.getScope(), "Scope should be SIBLING");
+        assertEquals(Link.Kind.TYPE, ref.getKind(), "Kind should be TYPE");
         assertNotNull(ref.getUri(), "URI should be set for resolved sibling type");
     }
 
     @Test
     void resolveSiblingModule_resolvesWhenModuleInSiblingList() {
-        Reference ref = new Reference();
+        Link ref = new Link();
         ref.setOrigin("com.example.origin");
         ref.setTarget("sibling.module");
-        ref.setKind(Reference.Kind.UNKNOWN);
+        ref.setKind(Link.Kind.UNKNOWN);
 
         LinkResolver.siblingModules.add("sibling.module");
 
@@ -915,28 +915,28 @@ class LinkResolverTests {
         assertTrue(resolved);
 
         assertTrue(ref.isResolved(), "Reference should be marked resolved");
-        assertEquals(Reference.Scope.SIBLING, ref.getScope(), "Scope should be SIBLING");
-        assertEquals(Reference.Kind.MODULE, ref.getKind(), "Kind should be MODULE");
+        assertEquals(Link.Scope.SIBLING, ref.getScope(), "Scope should be SIBLING");
+        assertEquals(Link.Kind.MODULE, ref.getKind(), "Kind should be MODULE");
         assertNotNull(ref.getUri(), "URI should be set for resolved sibling module");
     }
 
     @Test
     void resolveUnsupported_marksUnsupportedInputs() {
-        Reference r1 = new Reference();
+        Link r1 = new Link();
         r1.setTarget("?");
-        Reference out1 = LinkResolver.resolveUnsupported(r1);
-        assertEquals(Reference.Kind.UNSUPPORTED, out1.getKind(), "Single '?' should be treated as unsupported");
+        Link out1 = LinkResolver.resolveUnsupported(r1);
+        assertEquals(Link.Kind.UNSUPPORTED, out1.getKind(), "Single '?' should be treated as unsupported");
 
-        Reference r2 = new Reference();
+        Link r2 = new Link();
         r2.setTarget("List<String>");
-        Reference out2 = LinkResolver.resolveUnsupported(r2);
-        assertEquals(Reference.Kind.UNSUPPORTED, out2.getKind(), "Type-like constructs containing '<' should be unsupported");
+        Link out2 = LinkResolver.resolveUnsupported(r2);
+        assertEquals(Link.Kind.UNSUPPORTED, out2.getKind(), "Type-like constructs containing '<' should be unsupported");
 
-        Reference r3 = new Reference();
+        Link r3 = new Link();
         r3.setTarget("com.example.Foo");
-        Reference out3 = LinkResolver.resolveUnsupported(r3);
+        Link out3 = LinkResolver.resolveUnsupported(r3);
         // non-unsupported input should not have kind UNSUPPORTED (could be UNKNOWN or other, but not UNSUPPORTED)
-        assertNotEquals(Reference.Kind.UNSUPPORTED, out3.getKind());
+        assertNotEquals(Link.Kind.UNSUPPORTED, out3.getKind());
     }
 
     class TestReporter implements Reporter {

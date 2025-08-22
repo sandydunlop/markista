@@ -18,7 +18,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.NodeKind;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
@@ -341,13 +341,13 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         List<? extends DocTree> blockTags = List.of(seeTree);
         when(docCommentTree.getBlockTags()).thenAnswer(_ -> blockTags);
 
-        List<Reference> refs = TypeUtils.getReferences(docCommentTree);
+        List<Link> refs = TypeUtils.getReferences(docCommentTree);
         assertNotNull(refs);
         assertEquals(2, refs.size());
         LinkResolver.resolve(refs.get(0));
-        assertEquals(Reference.Kind.URL, refs.get(0).getKind());
+        assertEquals(Link.Kind.URL, refs.get(0).getKind());
         assertEquals("http://example.com", refs.get(0).getUri());
-        assertEquals(Reference.Kind.TYPE, refs.get(1).getKind());
+        assertEquals(Link.Kind.TYPE, refs.get(1).getKind());
         assertEquals("Node", refs.get(1).getTarget());
     }
 
@@ -974,7 +974,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         TypeNode ownerType = mock(TypeNode.class);
         when(methodNode.getOwnerName()).thenReturn("com.example.MyIfc");
         TypeReference typeRef = TypeReference.to("com.example.MyIfc");
-        typeRef.getReference().setClassName("com.example.MyIfc");
+        typeRef.getLink().setClassName("com.example.MyIfc");
         when(ownerType.getImplementedInterfaces()).thenReturn(List.of(typeRef));
 
         when(mockApi.getTypeNode(any())).thenReturn(ownerType);
@@ -1257,7 +1257,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         assertEquals(1, text.getSegments().size());
         Segment segment = text.getSegment(0);
         assertEquals(SegmentKind.LINK, segment.getKind());
-        Reference link = segment.getLink();
+        Link link = segment.getLink();
         assertNotNull(link);
         assertEquals("https://example.com", link.getTarget());
     }
@@ -1272,7 +1272,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         assertEquals(1, text.getSegments().size());
         Segment segment = text.getSegment(0);
         assertEquals(SegmentKind.LINK, segment.getKind());
-        Reference link = segment.getLink();
+        Link link = segment.getLink();
         assertNotNull(link);
         assertEquals("https://example.com", link.getTarget());
         assertEquals("link text", link.getLabel());

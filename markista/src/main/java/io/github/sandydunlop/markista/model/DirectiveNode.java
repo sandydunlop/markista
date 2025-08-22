@@ -18,25 +18,25 @@ public class DirectiveNode implements Serializable {
     /// The name associated with this directive.
     private String name = "";
 
-    private Reference reference;
+    private Link reference;
 
     /// Indicates whether this directive is transitive.
     private boolean transitive;
 
     /// List of package names associated with this directive.
-    private final List<Reference> packages = new ArrayList<>();
+    private final List<Link> packages = new ArrayList<>();
 
     /// List of implementation names associated with this directive.
-    private final List<Reference> implementations = new ArrayList<>();
+    private final List<Link> implementations = new ArrayList<>();
 
     /// The interface name associated with this directive, if any.
-    private Reference interfaceReference;
+    private Link interfaceReference;
 
     /// Constructs a DirectiveNode with the specified kind, name and transitive flag.
     /// @param kind the kind of directive.
     /// @param reference the name associated with the directive.
     /// @param transitive true if the directive is transitive; false otherwise.
-    public DirectiveNode(Kind kind, Reference reference, boolean transitive) {
+    public DirectiveNode(Kind kind, Link reference, boolean transitive) {
         this.kind = kind;
         this.reference = reference;
         this.transitive = transitive;
@@ -46,7 +46,7 @@ public class DirectiveNode implements Serializable {
     /// The transitive flag is not set and defaults to false.
     /// @param kind the kind of directive.
     /// @param reference the name associated with the directive.
-    public DirectiveNode(Kind kind, Reference reference) {
+    public DirectiveNode(Kind kind, Link reference) {
         this.kind = kind;
         this.reference = reference;
     }
@@ -63,7 +63,7 @@ public class DirectiveNode implements Serializable {
         return name;
     }
 
-    public Reference getReference() {
+    public Link getReference() {
         return reference;
     }
 
@@ -75,31 +75,31 @@ public class DirectiveNode implements Serializable {
 
     /// Adds a package reference to this directive's package list.
     /// @param reference A reference to thepackage to add.
-    public void addPackage(Reference reference) {
+    public void addPackage(Link reference) {
         packages.add(reference);
     }
 
     /// Returns the list of package references associated with this directive.
     /// @return list of package names.
-    public List<Reference> getPackages() {
+    public List<Link> getPackages() {
         return packages;
     }
 
     /// Adds the reference to an implementation associated with this directive.
     /// @param reference A reference to the implementation to add.
-    public void addImplementation(Reference reference) {
+    public void addImplementation(Link reference) {
         implementations.add(reference);
     }
 
     /// Returns the list of implementations associated with this directive.
     /// @return list of implementation references.
-    public List<Reference> getImplementations() {
+    public List<Link> getImplementations() {
         return implementations;
     }
 
     /// Sets the interface name related to this directive.
     /// @param interfaceReference the interface name to set.
-    public void setInterface(Reference interfaceReference) {
+    public void setInterface(Link interfaceReference) {
         this.interfaceReference = interfaceReference;
     }
 
@@ -109,7 +109,7 @@ public class DirectiveNode implements Serializable {
 
     /// Returns the interface name associated with this directive.
     /// @return the interface name, or an empty string if none set.
-    public Reference getInterface() {
+    public Link getInterface() {
         return interfaceReference;
     }
 

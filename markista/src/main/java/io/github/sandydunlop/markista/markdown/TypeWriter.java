@@ -11,11 +11,11 @@ import io.github.sandydunlop.markista.model.Deprecation;
 import io.github.sandydunlop.markista.model.EnumTypeNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.NodeKind;
-import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
@@ -26,6 +26,7 @@ import java.io.Writer;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /// A class that outputs API type documentation as Markdown.
 public class TypeWriter {
@@ -94,6 +95,9 @@ public class TypeWriter {
             writer.write("\n## Method Summary\n\n");
             outputMethodSummary(typeNode.getMethods());
         }
+
+        outputInheritedMethods(typeNode);
+
         if (typeNode instanceof EnumTypeNode enumNode && !enumNode.getConstants().isEmpty()) {
             writer.write("\n## Enum Constant Details\n\n");
             outputEnumConstantDetails(enumNode.getConstants());
@@ -128,9 +132,9 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputSupertypes(TypeNode typeNode) throws IOException {
         int indentation = 0;
-        for (TypeReference pair : typeNode.getSupertypes()) {
+        for (TypeReference typeRef : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(MarkdownUtils.formatText(pair.getText(), true) + BR + "\n");
+            writer.write(MarkdownUtils.formatText(typeRef.getText(), true, false) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -143,11 +147,11 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputImplementedInterfaces(TypeNode typeNode) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for (TypeReference pair : typeNode.getImplementedInterfaces()) {
+        for (TypeReference typeRef : typeNode.getImplementedInterfaces()) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatText(pair.getText()));
+            sb.append(MarkdownUtils.formatText(typeRef.getText()));
         }
         if (!sb.isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");
@@ -172,11 +176,11 @@ public class TypeWriter {
 
     private void outputDirectKnownSubtypes(TypeNode typeNode) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for (TypeReference pair : typeNode.getSubtypes()) {
+        for (TypeReference typeRef : typeNode.getSubtypes()) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatText(pair.getText()));
+            sb.append(MarkdownUtils.formatText(typeRef.getText()));
         }
         if (!sb.isEmpty()) {
             writer.write("Direct Known Subtypes:<br/>\n");
@@ -207,10 +211,10 @@ public class TypeWriter {
         }
         writer.write(typeNode.getModifiersString() + typeString + " __" + typeNode.getSimpleName() + "__");
         if (typeNode.getSupertypes().size() > 1) {
-            TypeReference superTypePair = typeNode.getSupertypes().getLast();
+            TypeReference typeRef = typeNode.getSupertypes().getLast();
             writer.write(BR);
             writer.write("extends ");
-            writer.write(MarkdownUtils.formatText(superTypePair.getText()));
+            writer.write(MarkdownUtils.formatText(typeRef.getText()));
             writer.write("\n");
         }
         writer.write("</span>\n\n");
@@ -356,10 +360,10 @@ public class TypeWriter {
                 writer.write("\n\n");
             }
 
-            List<Reference> references = constant.getReferences();
+            List<Link> references = constant.getReferences();
             if (references != null && !references.isEmpty()) {
                 writer.write("**See Also:**\n\n");
-                for (Reference ref : references) {
+                for (Link ref : references) {
                     writer.write("\n");
                     writer.write("See: " + MarkdownUtils.link(ref, false) + "\n\n");
                 }
@@ -417,7 +421,7 @@ public class TypeWriter {
     private void outputReferences(Node node) throws IOException {
         if (!node.getReferences().isEmpty()) {
             writer.write("**See Also:**\n\n");
-            for (Reference ref : node.getReferences()) {
+            for (Link ref : node.getReferences()) {
                 writer.write("\n");
                 writer.write(MarkdownUtils.link(ref, false) + "\n\n");
             }
@@ -441,7 +445,7 @@ public class TypeWriter {
         if (!method.getThrownTypes().isEmpty()) {
             writer.write("**Throws:**\n\n");
             int count = 0;
-            for (Reference thrownType : method.getThrownTypes()) {
+            for (Link thrownType : method.getThrownTypes()) {
                 if (count++ > 0) {
                     writer.write(", ");
                 }
@@ -455,10 +459,10 @@ public class TypeWriter {
             writer.write("\n\n");
         }
         if (method.getBaseMethod() != null) {
-            Pair<Reference, Text> pair = method.getBaseMethod();
-            if (!pair.getR().isEmpty()) {
+            MethodReference pair = method.getBaseMethod();
+            if (!pair.getText().isEmpty()) {
                 writer.write("**Overrides:**\n\n");
-                writer.write(MarkdownUtils.formatText(pair.getR()));
+                writer.write(MarkdownUtils.formatText(pair.getText()));
                 writer.write("\n\n");
             }
         }        
@@ -500,5 +504,25 @@ public class TypeWriter {
             writer.write("    " + MarkdownUtils.formatText(text));
         }
         writer.write("\n\n");
+    }
+
+    private void outputInheritedMethods(TypeNode typeNode) throws IOException {
+        for(Map.Entry<TypeReference,List<MethodReference>> entry : typeNode.getInheritedMethods().entrySet()) {
+            StringBuilder sb = new StringBuilder();
+            List<MethodReference> methodList = entry.getValue();
+            for(MethodReference methodRef : methodList) {
+                if (!sb.isEmpty()) {
+                    sb.append(", ");
+                }
+                sb.append(MarkdownUtils.formatText(methodRef.getText(), false, false));
+            }
+            if (!sb.isEmpty()) {
+                writer.write("### Methods inherited from ");
+                writer.write(MarkdownUtils.formatText(entry.getKey().getText(), true, false));
+                writer.write("\n\n");
+                writer.write(sb.toString());
+                writer.write("\n\n");
+            }
+        }
     }
 }

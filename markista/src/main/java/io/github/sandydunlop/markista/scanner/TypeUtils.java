@@ -15,13 +15,13 @@ import io.github.sandydunlop.markista.model.EnumTypeNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.RecordTypeNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
@@ -301,7 +301,7 @@ public class TypeUtils {
             case LINK:
                 segment.setKind(SegmentKind.LINK);
                 origin = ctx.getTypeName().isEmpty() ? ctx.getPackageName() : ctx.getTypeName();
-                Reference link = Reference.to(getDocTreePart(docTree, 1)).from(origin);
+                Link link = Link.to(getDocTreePart(docTree, 1)).from(origin);
                 api.addLink(link);
                 segment.setLink(link);
                 text.append(segment);
@@ -309,7 +309,7 @@ public class TypeUtils {
             case LINK_PLAIN:
                 segment.setKind(SegmentKind.LINK);
                 origin = ctx.getTypeName().isEmpty() ? ctx.getPackageName() : ctx.getTypeName();
-                link = Reference.to(getDocTreePart(docTree, 1)).from(origin);
+                link = Link.to(getDocTreePart(docTree, 1)).from(origin);
                 segment.setLink(link);
                 text.append(segment);
                 api.addLink(link);
@@ -356,7 +356,7 @@ public class TypeUtils {
             if (token.getKind() == MarkdownParser.TokenKind.BRACKETS_TAG) {
                 MarkdownParser.Token next = token.getNext();
                 if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
-                    Reference ref = Reference.to(next.getText());
+                    Link ref = Link.to(next.getText());
                     ref.setLabel(token.getText());
                     Segment segment = Segment.empty()
                             .setKind(SegmentKind.LINK)
@@ -366,7 +366,7 @@ public class TypeUtils {
                     api.addLink(ref);
                     token = next;
                 } else {
-                    Reference ref = Reference.to(token.getText());
+                    Link ref = Link.to(token.getText());
                     Segment segment = Segment.empty()
                             .setKind(SegmentKind.LINK)
                             .setLink(ref)
@@ -508,14 +508,14 @@ public class TypeUtils {
             Element typeElement = declaredType.asElement();
             if ("Override".equals(typeElement.getSimpleName().toString())) {
                 String nativeBaseClass = getNativeClassForInheritedMethod(method);
-                Reference overriddenMethod = null;
+                MethodReference overriddenMethod = null;
                 if (nativeBaseClass != null) {
                     String methodName = methodElement.getSimpleName().toString();
-                    overriddenMethod = Reference.to(nativeBaseClass + "#" + methodName);
+                    overriddenMethod = MethodReference.to(nativeBaseClass + "#" + methodName);
                 } else {
-                    overriddenMethod = Reference.toMethod(getFullSignature(methodElement));
+                    overriddenMethod = MethodReference.to(getFullSignature(methodElement));
                 }
-                method.setBaseMethod(Pair.of(overriddenMethod, Text.empty()));
+                method.setBaseMethod(overriddenMethod);
             }
         }
     }
@@ -528,7 +528,7 @@ public class TypeUtils {
         List<TypeReference> interfaces = ownerTypeNode.getImplementedInterfaces();
         if (interfaces == null || interfaces.isEmpty()) return;
         for (TypeReference typeRef : interfaces) {
-            Reference interfaceRef = typeRef.getReference();
+            Link interfaceRef = typeRef.getLink();
             TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceRef.getClassName());
             if (interfaceElement == null) continue;
             List<? extends Element>  enclosedElements = interfaceElement.getEnclosedElements();
@@ -570,7 +570,7 @@ public class TypeUtils {
         TypeNode ownerTypeNode = api.getTypeNode(method.getOwnerName());
         for (int i = ownerTypeNode.getSupertypes().size() - 1; i >= 0; i--) {
             TypeReference typeRef = ownerTypeNode.getSupertypes().get(i);
-            String canonicalName = removeGenerics(typeRef.getReference().getTarget());
+            String canonicalName = removeGenerics(typeRef.getLink().getTarget());
             try {
                 Class<?> cls = Class.forName(canonicalName);
                 if (cls != null && belongsToClass(cls, method)) {
@@ -617,9 +617,9 @@ public class TypeUtils {
         for (TypeView classNode : api.getTypes()) {
             for (FieldNode fieldNode : ((TypeNode)classNode).getFields()) {
                 if (fieldNode.getConstantValue() != null) {
-                    Reference ref = Reference.to("constant-values")
+                    Link ref = Link.to("constant-values")
                             .from(((TypeNode) classNode).getPackageName())
-                            .withKind(Reference.Kind.PAGE)
+                            .withKind(Link.Kind.PAGE)
                             .withLabel("Constant Field Values");
                     fieldNode.getReferences().add(ref);
                     moduleNode.addConstantValue(fieldNode);
@@ -712,18 +712,18 @@ public class TypeUtils {
     /// Extracts a list of Reference objects representing occurrences of @see tags in the Javadoc comment.
     /// @param dcTree The DocCommentTree to process.
     /// @return A list of Reference objects extracted from @see tags.
-    public static List<Reference> getReferences(DocCommentTree dcTree) {
+    public static List<Link> getReferences(DocCommentTree dcTree) {
         if (dcTree == null) return new ArrayList<>();
-        List<Reference> refs = new ArrayList<>();
+        List<Link> refs = new ArrayList<>();
         for (DocTree tagTree : dcTree.getBlockTags()) {
             if (tagTree instanceof SeeTree seeTree) {
                 List<? extends DocTree> see = seeTree.getReference();
                 for (DocTree docRef : see) {
                     if (docRef.getKind() == Kind.MARKDOWN) {
                         // This is sometimes (always?!) HTML, not Markdown?
-                        refs.add(Reference.to(getUrl(docRef.toString())));
+                        refs.add(Link.to(getUrl(docRef.toString())));
                     } else if (docRef.getKind() == Kind.REFERENCE) {
-                        refs.add(Reference.to(docRef.toString()).withKind(Reference.Kind.TYPE));
+                        refs.add(Link.to(docRef.toString()).withKind(Link.Kind.TYPE));
                     } else {
                         ctx.reportWarning("Unhandled reference type: " + docRef.getKind().toString());
                     }
@@ -855,9 +855,9 @@ public class TypeUtils {
             Element element = environment.getTypeUtils().asElement(typeMirror);
             if (element instanceof TypeElement typeElement) {
                 String name = typeElement.getQualifiedName().toString();
-                Reference reference = Reference.to(name)
+                Link reference = Link.to(name)
                         .from(ctx.getPackageName())
-                        .withKind(Reference.Kind.TYPE)
+                        .withKind(Link.Kind.TYPE)
                         .withLabel(name);
                 methodNode.addThrownType(reference);
             }
@@ -922,8 +922,8 @@ public class TypeUtils {
     public static void setImplementations(DirectiveNode directiveNode, List<? extends TypeElement> implementations) {
         for (TypeElement e : implementations) {
             String implName = e.getQualifiedName().toString();
-            Reference reference = Reference.to(implName)
-                    .withKind(Reference.Kind.TYPE)
+            Link reference = Link.to(implName)
+                    .withKind(Link.Kind.TYPE)
                     .withLabel(implName);
             directiveNode.addImplementation(reference);
         }

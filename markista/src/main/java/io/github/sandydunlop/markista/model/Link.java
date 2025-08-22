@@ -4,7 +4,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /// `Reference` encapsulates links to web pages, markdown pages, modules, packages, types, and methods.
-public class Reference implements Serializable {
+public class Link implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
@@ -17,20 +17,21 @@ public class Reference implements Serializable {
     private boolean resolved = false;
     private boolean hasAnchor = false;
     private String methodSignature = "";
+    private String methodName = "";
     
     /// The package the link is coming from. Empty string means there is no package. Null means it hasn't been set yet.
     private String origin = null; 
     private String target = "";
 
     /// Default constructor creates an empty reference with kind and scope set to NONE.
-    public Reference() {
+    public Link() {
     }
 
     /// Constructs a Reference with given kind, name, and URI. Scope defaults to LOCAL.
     /// @param kind The kind of the reference.
     /// @param label The display name for the reference.
     /// @param target What the refrence links to
-    public Reference(Kind kind, String label, String target) {
+    public Link(Kind kind, String label, String target) {
         this.scope = Scope.LOCAL;
         this.kind = kind;
         this.target = target;
@@ -40,15 +41,15 @@ public class Reference implements Serializable {
     /// Sets the target of the reference.
     /// @param target The target to set.
     /// @return the reference with target set
-    public static Reference to(String target) {
-        Reference ref = new Reference();
+    public static Link to(String target) {
+        Link ref = new Link();
         ref.setScope(Scope.UNKNOWN);
         ref.setTarget(target);
         return ref;
     }
 
-    public static Reference toMethod(String signature) {
-        Reference ref = new Reference();
+    public static Link toMethod(String signature) {
+        Link ref = new Link();
         ref.setScope(Scope.UNKNOWN);
         ref.methodSignature = signature;
         return ref;
@@ -61,7 +62,7 @@ public class Reference implements Serializable {
     /// Sets the origin package of the reference.
     /// @param origin The origin package to set.
     /// @return the reference with origin set
-    public Reference from(String origin) {
+    public Link from(String origin) {
         this.origin = origin;
         return this;
     }
@@ -69,17 +70,17 @@ public class Reference implements Serializable {
     /// Sets the display name of the reference.
     /// @param label The display name to set.
     /// @return the reference with label set
-    public Reference withLabel(String label) {
+    public Link withLabel(String label) {
         this.label = label;
         return this;
     }
 
-    public Reference withClassName(String className) {
+    public Link withClassName(String className) {
         this.className = className;
         return this;
     }
 
-    public Reference withUri(String uri) {
+    public Link withUri(String uri) {
         this.uri = uri;
         return this;
     }
@@ -87,7 +88,7 @@ public class Reference implements Serializable {
     /// Sets the kind/type of the reference.
     /// @param kind The kind to set.
     /// @return the label with kind set
-    public Reference withKind(Kind kind) {
+    public Link withKind(Kind kind) {
         this.kind = kind;
         return this;
     }
@@ -102,6 +103,19 @@ public class Reference implements Serializable {
     /// @return The reference kind.
     public Kind getKind() {
         return kind;
+    }
+
+    /// Sets the method name of the reference.
+    /// @param name The method name to set.
+    public Link setMethodName(String name) {
+        this.methodName = name;
+        return this;
+    }
+
+    /// Returns the method name of the reference.
+    /// @return The reference method name.
+    public String getMethodName() {
+        return methodName;
     }
 
     /// Sets the scope of the reference.

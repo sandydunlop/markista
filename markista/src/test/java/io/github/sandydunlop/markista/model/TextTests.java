@@ -34,7 +34,7 @@ class TextTests {
 
     @Test
     void linkLabel_empty() {
-        Reference link = Reference.to("java.lang.String").withLabel("String");
+        Link link = Link.to("java.lang.String").withLabel("String");
         Text.Segment seg = Text.Segment.empty().setLink(link);
         seg.setText("");
         assertEquals("String", seg.toString());
@@ -48,7 +48,7 @@ class TextTests {
 
     @Test
     void test_null() {
-        Reference link = Reference.to("java.lang.String").withLabel("String");
+        Link link = Link.to("java.lang.String").withLabel("String");
         Text.Segment seg = Text.Segment.empty().setLink(link);
         seg.setText(null);
         assertEquals("String", seg.toString());

@@ -13,6 +13,7 @@ import javax.lang.model.element.Element;
 import jdk.javadoc.doclet.Reporter;
 
 import com.sun.source.util.DocTreePath;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,6 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MarkdownServiceTests {
+    @AfterEach
+    void resetSingleton() {
+        Context.reset();
+    }
+
     @Test
     void doesntReplaceItself() {
         MarkdownService service = new MarkdownService();

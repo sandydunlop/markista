@@ -6,12 +6,13 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.RecordTypeNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
@@ -19,7 +20,10 @@ import io.github.sandydunlop.markista.model.TypeReference;
 import io.github.sandydunlop.markista.model.TypeView;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TextAssembler {
     private static Context ctx;
@@ -81,34 +85,23 @@ public class TextAssembler {
         // Types
         TypeNode ownerTypeNode = api.getTypeNode(typeNode.getOwner());
         if (ownerTypeNode != null) {
-            Reference ref = Reference.to(ownerTypeNode.getQualifiedName())
+            Link ref = Link.to(ownerTypeNode.getQualifiedName())
                     .from(ctx.getPackageName())
-                    .withKind(Reference.Kind.TYPE)
+                    .withKind(Link.Kind.TYPE)
                     .withLabel(ownerTypeNode.getQualifiedName());
             LinkResolver.resolve(ref);
             typeNode.setEnclosingClassRef(ref);
         }
-        for (TypeReference pair : typeNode.getImplementedInterfaces()) {
-            Text text = link(pair.getReference());
-            pair.getText().append(text);
+        for (TypeReference typeRef : typeNode.getImplementedInterfaces()) {
+            Text text = link(typeRef.getLink());
+            typeRef.getText().append(text);
         }
-        for (TypeReference pair : typeNode.getSupertypes()) {
-            Text text = link(pair.getReference());
-            pair.getText().append(text);
+        for (TypeReference typeRef : typeNode.getSupertypes()) {
+            Text text = link(typeRef.getLink());
+            typeRef.getText().append(text);
         }
-        // Subtypes
-        if (typeNode.getSupertypes().size() > 1) {
-            TypeReference directSupertypePair = typeNode.getSupertypes().getLast();
-            String directSupertypeName = directSupertypePair.getReference().getTarget();
-            TypeNode directSupertype = api.getTypeNode(directSupertypeName);
-            if (directSupertype != null) {
-                Reference subtypeRef = Reference.to(typeNode.getQualifiedName())
-                        .from(directSupertype.getQualifiedName() + "." + directSupertype.getPackageName());
-                Text subtypeText = link(subtypeRef);
-                directSupertype.getSubtypes().add(TypeReference.to(subtypeRef, subtypeText));
-            }
-        }
-
+        processSubtypes(typeNode);
+        processInheritedMethods(typeNode);
         generateLinkTextsForReferences(typeNode);
 
         // Fields
@@ -126,8 +119,75 @@ public class TextAssembler {
         }
     }
 
+    static void processSubtypes(TypeNode typeNode) {
+        if (typeNode.getSupertypes().size() > 1) {
+            TypeReference typeRef = typeNode.getSupertypes().getLast();
+            String directSupertypeName = typeRef.getLink().getTarget();
+            TypeNode directSupertype = api.getTypeNode(directSupertypeName);
+            if (directSupertype != null) {
+                Link subtypeRef = Link.to(typeNode.getQualifiedName())
+                        .from(directSupertype.getQualifiedName() + "." + directSupertype.getPackageName());
+                Text subtypeText = link(subtypeRef);
+                directSupertype.getSubtypes().add(TypeReference.to(subtypeRef, subtypeText));
+            }
+        }
+    }
+
+    static HashMap<String,Pair<String,MethodReference>> gatherOverriddenMethods(TypeNode typeNode) {
+        HashMap<String,Pair<String,MethodReference>> methodLookup1 = new HashMap<>();
+        // Skip the first one (java.lang.Object)
+        for (int i = 1; i < typeNode.getSupertypes().size() ; i++) {
+            String supertypeName = typeNode.getSupertypes().get(i).getQualifiedName();
+            TypeNode supertype = api.getTypeNode(supertypeName);
+            if (supertype != null) {
+                for (MethodNode baseMethod : supertype.getMethods()) {
+                    if (!typeHasMethod(typeNode, baseMethod)) {
+                        MethodReference methodRef = MethodReference.to(supertypeName + "#" + baseMethod.signature());
+                        methodRef.setText(Text.of(baseMethod.getSimpleName()));
+                        Pair<String,MethodReference> refs = Pair.of(supertypeName, methodRef);
+                        methodLookup1.put(baseMethod.signature(), refs);
+                    }
+                }
+            }
+        }
+        return methodLookup1;
+    }
+            
+    private static HashMap<String,List<MethodReference>> listBySupertypeName(HashMap<String,Pair<String,MethodReference>> methodLookup1) {
+        HashMap<String,List<MethodReference>> methodLookup2 = new HashMap<>();
+        for (Map.Entry<String,Pair<String,MethodReference>> entry : methodLookup1.entrySet()) {
+            Pair<String,MethodReference> refs = entry.getValue();
+            String supertypeName = refs.getL();
+            MethodReference methodRef = refs.getR();
+            methodRef.setText(link(methodRef.getLink()));
+            List<MethodReference> inheritedMethods = methodLookup2.get(supertypeName);
+            if (inheritedMethods == null) {
+                List<MethodReference> newList = new ArrayList<>();
+                newList.add(methodRef);
+                methodLookup2.put(supertypeName, newList);
+            } else {
+                methodLookup2.get(supertypeName).add(methodRef);
+            }
+        }
+        return methodLookup2;
+    }
+
+    static void processInheritedMethods(TypeNode typeNode) {
+        if (typeNode.getSupertypes().size() > 1) {
+            HashMap<String,List<MethodReference>> methodLookup2 = listBySupertypeName(gatherOverriddenMethods(typeNode));
+            // Copy methodLookup2 into typeNode's inheritedMethods hash table
+            // but use a TypeReference as the key
+            for (Map.Entry<String,List<MethodReference>> entry : methodLookup2.entrySet()) {
+                List<MethodReference> methods = entry.getValue();
+                TypeReference supertypeRef = TypeReference.to(entry.getKey());
+                supertypeRef.setText(link(supertypeRef.getLink()));
+                typeNode.getInheritedMethods().put(supertypeRef, methods);
+            }            
+        }
+    }
+
     static void processMethod(MethodNode method) {
-        Reference returnTypeReference = Reference.to(method.getReturnTypeName()).from(ctx.getPackageName());
+        Link returnTypeReference = Link.to(method.getReturnTypeName()).from(ctx.getPackageName());
         method.setReturnTypeText(link(returnTypeReference));
         generateLinkTextsForParams(method.getParams()
                 .stream()
@@ -137,19 +197,19 @@ public class TextAssembler {
         if (method.getSpecifiedBy() != null && !method.getSpecifiedBy().getTarget().isEmpty()) {
             LinkResolver.resolve(method.getSpecifiedBy());
         }
-        for (Reference thrownRef : method.getThrownTypes()) {
+        for (Link thrownRef : method.getThrownTypes()) {
             LinkResolver.resolve(thrownRef);
         }
-        Pair<Reference, Text> baseMethodPair = method.getBaseMethod();
+        MethodReference baseMethodPair = method.getBaseMethod();
         if (baseMethodPair != null) {
             String baseTypeName = baseTypeName(method);
             if (baseTypeName != null) {
-                Reference baseMethodRef = baseMethodPair.getL();
+                Link baseMethodRef = baseMethodPair.getLink();
                 if (baseMethodRef.getTarget().isEmpty()) {
                     baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
                 }
                 Text linkText = link(baseMethodRef);
-                baseMethodPair.setR(linkText);
+                baseMethodPair.setText(linkText);
             }
 
             TypeNode baseType = api.getTypeNode(baseTypeName);
@@ -180,24 +240,28 @@ public class TextAssembler {
     }
 
     static String baseTypeName(MethodNode method){
-        String methodSignature = method.signature();
         TypeNode type = api.getTypeNode(method.getOwnerName());
-
         if (type == null) {
             return null;
         }
         for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
-            TypeReference supertypePair = type.getSupertypes().get(i);
-            TypeNode supertype = api.getTypeNode(supertypePair.getReference().getTarget());
-            if (supertype != null) {
-                for (MethodNode inheritedMethod : supertype.getMethods()) {
-                    if (inheritedMethod.signature().equals(methodSignature)) {
-                        return supertype.getQualifiedName();
-                    }
-                }
+            TypeReference typeRef = type.getSupertypes().get(i);
+            TypeNode supertypeNode = api.getTypeNode(typeRef.getLink().getTarget());
+            if (supertypeNode != null && typeHasMethod(supertypeNode, method)) {
+                return supertypeNode.getQualifiedName();
             }
         } 
         return null;
+    }
+
+    static boolean typeHasMethod(TypeNode typeNode, MethodNode methodNode) {
+        String methodSignature = methodNode.signature();
+        for (MethodNode inheritedMethod : typeNode.getMethods()) {
+            if (inheritedMethod.signature().equals(methodSignature)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static void processModules(Api api) {
@@ -205,7 +269,7 @@ public class TextAssembler {
             ctx.setModuleName(module.getName());
             // Constant field values
             for (FieldNode constant : module.getConstantValues()) {
-                Reference ref = Reference.to(constant.getTypeName())
+                Link ref = Link.to(constant.getTypeName())
                         .from("")
                         .withLabel(constant.getTypeName());
                 LinkResolver.resolve(ref);
@@ -216,10 +280,10 @@ public class TextAssembler {
             for (DirectiveNode directive : module.getDirectives()) {
                 LinkResolver.resolve(directive.getReference());
                 LinkResolver.resolve(directive.getInterface());
-                for (Reference implementation : directive.getImplementations()) {
+                for (Link implementation : directive.getImplementations()) {
                     LinkResolver.resolve(implementation);
                 }
-                for (Reference pkg : directive.getPackages()) {
+                for (Link pkg : directive.getPackages()) {
                     LinkResolver.resolve(pkg);
                 }
             }
@@ -227,7 +291,7 @@ public class TextAssembler {
     }
 
     static void processJavadocComments(Api api) {
-        for (Reference link : api.getLinks()) {
+        for (Link link : api.getLinks()) {
             ctx.setPackageName(link.getOrigin());
             LinkResolver.resolve(link);
             if (link.getLabel().contains(".")) {
@@ -238,15 +302,15 @@ public class TextAssembler {
 
     static void generateLinkTextsForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
-            Reference reference = Reference.to(param.getTypeName()).from(ctx.getPackageName());
+            Link reference = Link.to(param.getTypeName()).from(ctx.getPackageName());
             param.setTypeText(link(reference));
             generateLinkTextsForReferences(param);
         }
     }
 
     private static void generateLinkTextsForReferences(Node node) {
-        for (Reference reference : node.getReferences()) {
-            if (reference.getKind() == Reference.Kind.PAGE) {
+        for (Link reference : node.getReferences()) {
+            if (reference.getKind() == Link.Kind.PAGE) {
                 String relativePath = LinkResolver.relativize("");
                 reference.setUri(Path.of(relativePath, reference.getTarget()).toString());
             } else {
@@ -258,7 +322,7 @@ public class TextAssembler {
     /// Create a markdown link, automatically deciding what kind of link to make.
     /// @param reference a Reference object describing the link
     /// @return markdown formatted link
-    public static Text link(Reference reference) {
+    public static Text link(Link reference) {
         String targetName = reference.getTarget();
         if (targetName == null || targetName.isEmpty()) {
             ctx.reportWarning("No link target supplied");
@@ -309,7 +373,7 @@ public class TextAssembler {
             reference.setLabel(reference.getTarget());
         }
         LinkResolver.resolve(reference);
-        if (!anchor.isEmpty() && reference.getKind() != Reference.Kind.URL) {
+        if (!anchor.isEmpty() && reference.getKind() != Link.Kind.URL) {
             isLocalMethod = true;
             // Issue: https://github.com/sandydunlop/markista/issues/1
             // Workaround:
@@ -331,13 +395,14 @@ public class TextAssembler {
         return r;
     }
 
-    private static void setDisplayName(Reference reference, String displayName, boolean isLocalMethod) {
+    private static void setDisplayName(Link reference, String displayName, boolean isLocalMethod) {
         if (reference.getLabel() == null) {
              reference.setLabel(reference.getTarget());
         }
         if (isLocalMethod) {
-            reference.setKind(Reference.Kind.METHOD);
+            reference.setKind(Link.Kind.METHOD);
             String methodName = reference.getAnchor().substring(1);
+            reference.setMethodName(methodName);
             if (!reference.getClassName().equals(ctx.getTypeName())) {
                 reference.setLabel(reference.getLabel() + "." + methodName);
             } else {
@@ -372,7 +437,7 @@ public class TextAssembler {
         String before = str.substring(0, openingChevron);
         String mid = str.substring(openingChevron + 1, closingChevron);
         String after = str.substring(closingChevron + 1);
-        Text typeLink = link(Reference.to(before));
+        Text typeLink = link(Link.to(before));
 
         Text midLinks;
         if (mid.contains("<")) {
@@ -402,7 +467,7 @@ public class TextAssembler {
             if (!text.isEmpty()) {
                 text.append(", ");
             }
-            text.append(link(Reference.to(typeName)));
+            text.append(link(Link.to(typeName)));
         }
         return text;
     }

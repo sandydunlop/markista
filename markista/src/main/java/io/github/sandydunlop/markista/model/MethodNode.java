@@ -9,19 +9,19 @@ public class MethodNode extends AbstractMember {
     private Text returnDescription = Text.empty();
 
     /// Name of the interface or specification this method is specified by.
-    private Reference specifiedBy;
+    private Link specifiedBy;
 
     /// The return type of this method.
     private final String returnTypeName;
 
     /// Information about the method that this method overrides, if any.
-    private Pair<Reference, Text> baseMethod = null;
+    private MethodReference baseMethod = null;
 
     /// List of parameters for this method.
     private final List<ParamNode> params = new ArrayList<>();
 
     /// List of exception types that this method declares it can throw.
-    private final List<Reference> thrownTypes = new ArrayList<>();
+    private final List<Link> thrownTypes = new ArrayList<>();
 
     /// The type (class/interface) that owns this method.
     private String ownerName = null;
@@ -38,13 +38,13 @@ public class MethodNode extends AbstractMember {
 
     /// Sets the base method information that this method overrides.
     /// @param baseMethod a reference to the base method and the text representing it
-    public void setBaseMethod(Pair<Reference, Text> baseMethod) {
+    public void setBaseMethod(MethodReference baseMethod) {
         this.baseMethod = baseMethod;
     }
 
     /// Returns the base method information, if any.
     /// @return the a reference to the base method and the text representing it, or null if none.
-    public Pair<Reference, Text> getBaseMethod() {
+    public MethodReference getBaseMethod() {
         return baseMethod;
     }
 
@@ -68,13 +68,13 @@ public class MethodNode extends AbstractMember {
 
     /// Adds an exception type that this method declares it throws.
     /// @param name the fully qualified name of the exception type.
-    public void addThrownType(Reference name) {
+    public void addThrownType(Link name) {
         thrownTypes.add(name);
     }
 
     /// Returns the list of exception types declared by this method.
     /// @return List of exception type names as Strings.
-    public List<Reference> getThrownTypes() {
+    public List<Link> getThrownTypes() {
         return thrownTypes;
     }
 
@@ -92,13 +92,13 @@ public class MethodNode extends AbstractMember {
 
     /// Sets the interface or specification name this method is specified by.
     /// @param interfaceName the name of the specifying interface or specification.
-    public void setSpecifiedBy(Reference interfaceName) {
+    public void setSpecifiedBy(Link interfaceName) {
         this.specifiedBy = interfaceName;
     }
 
     /// Returns the name of the interface or specification this method is specified by.
     /// @return the specifying interface or specification name.
-    public Reference getSpecifiedBy() {
+    public Link getSpecifiedBy() {
         return specifiedBy;
     }
 
@@ -127,17 +127,15 @@ public class MethodNode extends AbstractMember {
     }
 
     /// Computes and returns the method signature string, including return type, name, and parameters.
-    /// Example format: "java.lang.String methodName(int, java.util.List)"
+    /// Example format: "java.lang.String methodName(int,java.util.List)"
     /// @return the method signature as a String.
     public String signature(){
         StringBuilder sb = new StringBuilder();
-        sb.append(returnTypeName);
-        sb.append(" ");
         sb.append(simpleName);
         sb.append("(");
         int paramCount = 0;
         for (ParamNode param : params) {
-            if (paramCount++ > 0) sb.append(", ");
+            if (paramCount++ > 0) sb.append(",");
             String typeName = param.getTypeName();
             if (typeName == null) typeName = param.getTypeName();
             sb.append(typeName);

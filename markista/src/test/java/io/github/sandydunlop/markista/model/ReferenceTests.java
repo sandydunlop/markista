@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ReferenceTests {
     @Test
     void anchor() {
-        Reference ref = Reference.to("Node");
+        Link ref = Link.to("Node");
         assertFalse(ref.hasAnchor());
         ref.setAnchor("#a");
         ref.setHasAnchor(true);

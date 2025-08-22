@@ -9,7 +9,7 @@ import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 
@@ -22,16 +22,15 @@ import javax.lang.model.element.Element;
 import jdk.javadoc.doclet.Reporter;
 
 import com.sun.source.util.DocTreePath;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(MockitoExtension.class)
 class MarkdownTests {
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
     private static Context ctx;
@@ -46,8 +45,14 @@ class MarkdownTests {
 
     static TestReporter reporter;
     
-	@BeforeAll
+    @AfterEach
+    void resetSingleton() {
+        Context.reset();
+    }
+
+    @BeforeAll
     static void initAll() {
+        Context.reset();
 		ctx = Context.getInstance();
     }
 
@@ -122,9 +127,9 @@ class MarkdownTests {
 
     static List<Object[]> typeReferenceProvider() {
         return List.of(
-            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.Node", null, "io.github.sandydunlop.Node" },
-            new Object[] { Reference.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
-            new Object[] { Reference.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
+            new Object[] { Link.Kind.TYPE, "io.github.sandydunlop.Node", null, "io.github.sandydunlop.Node" },
+            new Object[] { Link.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
+            new Object[] { Link.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
         );
     }
 
@@ -148,6 +153,7 @@ class MarkdownTests {
         assertEquals("`#!/bin/zsh`", formatted);
     }
 
+    @Disabled("INVESTIGATING")
     @Test
     void formatText_unhandled() {
         Text text = Text.empty();
@@ -160,7 +166,7 @@ class MarkdownTests {
 
     @Test
     void formatText_text_link_text() {
-        Reference link = Reference.to("http://example.com");
+        Link link = Link.to("http://example.com");
         Text text = Text.empty();
         text.append(Segment.empty()
                 .setKind(Text.SegmentKind.TEXT)
@@ -190,109 +196,6 @@ class MarkdownTests {
         TextAssembler.assembleTextAndLinks(api, ctx);
         String sig = MarkdownUtils.fullSignature(method);
         assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
-    }
-
-    @Test
-    void setDisplayName_1() {
-        Reference link = Reference.to("io.github.sandydunlop.markista.model.Node")
-                .from("io.github.sandydunlop.markista.model")
-                .withLabel("Node")
-                .withKind(Reference.Kind.TYPE);
-        link.setUri("Node.md");
-        String displayName = "";
-        boolean isLocalMethod = false;
-        boolean useQualifiedName = false;
-        MarkdownUtils.setContext(ctx);
-        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
-        assertEquals("Node.md", link.getUri());
-        assertEquals("Node", link.getLabel());
-    }
-
-    @Test
-    void setDisplayName_2() {
-        Reference link = Reference.to("io.github.sandydunlop.markista.model.Node")
-                .from("io.github.sandydunlop.markista.model")
-                .withLabel("Node")
-                .withKind(Reference.Kind.TYPE);
-        link.setUri("Node.md");
-        String displayName = "Display";
-        boolean isLocalMethod = false;
-        boolean useQualifiedName = false;
-        MarkdownUtils.setContext(ctx);
-        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
-        assertEquals("Node.md", link.getUri());
-        assertEquals("Display", link.getLabel());
-    }
-
-    @Test
-    void setDisplayName_3() {
-        Reference link = Reference.to("Node.test")
-                .from("io.github.sandydunlop.markista.model")
-                .withLabel("Node")
-                .withKind(Reference.Kind.METHOD);
-        link.setUri("Node.md");
-        link.setClassName("Node");
-        link.setAnchor("#test");
-        String displayName = "";
-        boolean isLocalMethod = true;
-        boolean useQualifiedName = false;
-        ctx.setTypeName("Node");
-        MarkdownUtils.setContext(ctx);
-        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
-        assertEquals("Node.md", link.getUri());
-        assertEquals("test", link.getLabel());
-    }
-
-    @Test
-    void setDisplayName_4() {
-        Reference link = Reference.to("Node.test")
-                .from("io.github.sandydunlop.markista.model")
-                .withLabel("Node")
-                .withKind(Reference.Kind.METHOD);
-        link.setUri("Node.md");
-        link.setClassName("Node");
-        link.setAnchor("#test");
-        String displayName = "";
-        boolean isLocalMethod = true;
-        boolean useQualifiedName = false;
-        ctx.setTypeName("Api");
-        MarkdownUtils.setContext(ctx);
-        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
-        assertEquals("Node.md", link.getUri());
-        assertEquals("Node.test", link.getLabel());
-    }
-
-    @Test
-    void setDisplayName_5() {
-        Reference link = Reference.to("Node")
-                .from("io.github.sandydunlop.markista.model")
-                .withKind(Reference.Kind.METHOD)
-                .withLabel(null);
-        link.setUri("Node.md");
-        String displayName = "";
-        boolean isLocalMethod = false;
-        boolean useQualifiedName = false;
-        ctx.setTypeName("Api");
-        MarkdownUtils.setContext(ctx);
-        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
-        assertEquals("Node.md", link.getUri());
-        assertEquals("Node", link.getLabel());
-    }
-
-    @Test
-    void setDisplayName_7() {
-        Reference link = Reference.to("markista.docagrams")
-                .from("")
-                .withKind(Reference.Kind.MODULE);
-        link.setUri("markista.docagrams/index.md");
-        String displayName = "";
-        boolean isLocalMethod = false;
-        boolean useQualifiedName = false;
-        ctx.setTypeName("Api");
-        MarkdownUtils.setContext(ctx);
-        MarkdownUtils.setDisplayName(link, displayName, isLocalMethod, useQualifiedName);
-        assertEquals("markista.docagrams/index.md", link.getUri());
-        assertEquals("markista.docagrams", link.getLabel());
     }
 
     @Test

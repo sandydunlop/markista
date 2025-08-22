@@ -24,18 +24,13 @@ import javax.tools.Diagnostic.Kind;
 import jdk.javadoc.doclet.Reporter;
 
 import com.sun.source.util.DocTreePath;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class PackageWriterTests {
     Api api;
     ModuleNode moduleNode;
@@ -44,16 +39,13 @@ class PackageWriterTests {
 
     Writer writer;
 
-    // Mockito will now call the new constructor with this mock
-    @InjectMocks
     PackageWriter packageWriter;
 
-    @Mock
-    private Context contextMock;
+    private Context ctx;
 
-    @BeforeAll
-    static void initAll() {
-        // Nothing to see here
+    @AfterEach
+    void resetSingleton() {
+        Context.reset();
     }
 
     @Mock static Reporter reporter = new Reporter() {
@@ -74,12 +66,15 @@ class PackageWriterTests {
     };
     
     @BeforeEach
-    void setup() throws IOException {
-        api = new Api("Test API");
-
-        // Mock Writer to capture written content
+    void setup() {
+        // Mocking Context interfered with other tests, so we're doing this the manual way
         writer = new StringWriter();
-        when(contextMock.createFileInPackage()).thenReturn(writer);
+        ctx = Context.getInstance();
+        ctx.setWriterFactory(_ -> writer);
+        ctx.setReporter(reporter);
+        packageWriter = new PackageWriter(ctx);
+    
+        api = new Api("Test API");
 
         moduleNode = new ModuleNode("markista");
         packageNode = new PackageNode("io.github.sandydunlop.markista");
@@ -104,12 +99,12 @@ class PackageWriterTests {
         api.addPackage(packageNode);
         api.addPackage(modelPackage);
         api.addType(nodeClass);
-		LinkResolver.init(api, contextMock);
+		LinkResolver.init(api, ctx);
 		LinkResolver.setFlattenedDirectories(null);
     }
 
     void setupLinks() {
-        Context ctx = Context.getInstance();
+        ctx = Context.getInstance();
         ctx.setApi(api);
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
@@ -152,7 +147,7 @@ class PackageWriterTests {
         api.addType(interfaceNode);
         api.addType(annotationNode);
         setupLinks();
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         Configuration.setUseContentTabs(false);
 
@@ -181,7 +176,7 @@ class PackageWriterTests {
         api.addType(interfaceNode);
         api.addType(annotationNode);
         setupLinks();
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         Configuration.setUseContentTabs(true);
         

@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.scanner;
 
 import io.github.sandydunlop.markista.model.DirectiveNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 
 import java.util.List;
 
@@ -61,8 +61,8 @@ public class ModuleDirectives {
         ModuleElement directiveModuleElement = environment.getElementUtils().getModuleOf(dependency);
         String name = directiveModuleElement.getQualifiedName().toString();
         boolean transitive = requires.isTransitive();
-        Reference reference = Reference.to(name)
-                .withKind(Reference.Kind.MODULE)
+        Link reference = Link.to(name)
+                .withKind(Link.Kind.MODULE)
                 .withLabel(name);
         return new DirectiveNode(kind, reference, transitive);
     }
@@ -76,15 +76,15 @@ public class ModuleDirectives {
         PackageElement directivePackageElement = exports.getPackage();
         String name = directivePackageElement.getQualifiedName().toString();
         List<? extends ModuleElement> modules = exports.getTargetModules();
-        Reference ref = Reference.to(name)
-                .withKind(Reference.Kind.PACKAGE)
+        Link ref = Link.to(name)
+                .withKind(Link.Kind.PACKAGE)
                 .withLabel(name);
         DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         if (modules != null) {
             for (ModuleElement moduleElement : modules) {
                 String packageName = moduleElement.getQualifiedName().toString();
-                Reference reference = Reference.to(packageName)
-                        .withKind(Reference.Kind.PACKAGE)
+                Link reference = Link.to(packageName)
+                        .withKind(Link.Kind.PACKAGE)
                         .withLabel(packageName);
                 directiveNode.addPackage(reference);
             }
@@ -101,15 +101,15 @@ public class ModuleDirectives {
         PackageElement directivePackageElement = opens.getPackage();
         String name = directivePackageElement.getQualifiedName().toString();
         List<? extends ModuleElement> modules = opens.getTargetModules();
-        Reference ref = Reference.to(name)
-                .withKind(Reference.Kind.PACKAGE)
+        Link ref = Link.to(name)
+                .withKind(Link.Kind.PACKAGE)
                 .withLabel(name);
         DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         if (modules != null) {
             for (ModuleElement moduleElement : modules) {
                 String moduleName = moduleElement.getQualifiedName().toString();
-                Reference reference = Reference.to(moduleName)
-                        .withKind(Reference.Kind.PACKAGE)
+                Link reference = Link.to(moduleName)
+                        .withKind(Link.Kind.PACKAGE)
                         .withLabel(moduleName);
                 directiveNode.addPackage(reference);
             }
@@ -124,8 +124,8 @@ public class ModuleDirectives {
         DirectiveNode.Kind kind = DirectiveNode.Kind.USES;
         UsesDirective uses = (UsesDirective) directive;
         String name = uses.getService().getQualifiedName().toString();
-        Reference ref = Reference.to(name)
-                .withKind(Reference.Kind.TYPE)
+        Link ref = Link.to(name)
+                .withKind(Link.Kind.TYPE)
                 .withLabel(name);
         return new DirectiveNode(kind, ref);
     }
@@ -138,14 +138,14 @@ public class ModuleDirectives {
         ProvidesDirective provides = (ProvidesDirective) directive;
         TypeElement service = provides.getService();
         String name = service.getQualifiedName().toString();
-        Reference ref = Reference.to(name)
-                .withKind(Reference.Kind.TYPE)
+        Link ref = Link.to(name)
+                .withKind(Link.Kind.TYPE)
                 .withLabel(name);
         DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         TypeUtils.setImplementations(directiveNode, provides.getImplementations());
         String interfaceName = service.getQualifiedName().toString();
-        Reference reference = Reference.to(interfaceName)
-                .withKind(Reference.Kind.PACKAGE)
+        Link reference = Link.to(interfaceName)
+                .withKind(Link.Kind.PACKAGE)
                 .withLabel(interfaceName);
         directiveNode.setInterface(reference);
         return directiveNode;

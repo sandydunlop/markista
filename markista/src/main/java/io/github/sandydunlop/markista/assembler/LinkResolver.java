@@ -5,9 +5,9 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.model.Reference.Kind;
-import io.github.sandydunlop.markista.model.Reference.Scope;
+import io.github.sandydunlop.markista.model.Link;
+import io.github.sandydunlop.markista.model.Link.Kind;
+import io.github.sandydunlop.markista.model.Link.Scope;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
 
@@ -148,10 +148,10 @@ public class LinkResolver {
     /// target of the link: a class, a module, etc. If the link can be resolved, 
     /// the details of the type of link are set in the `link` object before it is
     /// returned. 
-    /// @param link A [Reference] object specifying the target of the link
+    /// @param link A [Link] object specifying the target of the link
     /// @return The `link` with its `uri` field set, or its `kind` field set to `UNKNOWN`
     /// if the link was not able to be resolved.
-    public static Reference resolve(Reference link) {
+    public static Link resolve(Link link) {
         if (link == null || link.getTarget() == null || link.getTarget().isEmpty()) {
             return link;
         }
@@ -163,18 +163,18 @@ public class LinkResolver {
 
         if (link.getTarget().contains("://")) {
             link.setUri(link.getTarget());
-            link.setKind(Reference.Kind.URL);
+            link.setKind(Link.Kind.URL);
             link.setResolved(true);
             return link;
         }
 
         resolveUnsupported(link);
-        if (link.getKind() == Reference.Kind.UNSUPPORTED) {
+        if (link.getKind() == Link.Kind.UNSUPPORTED) {
             return link;
         }
 
         if (link.getTarget().endsWith("/")) {
-            link.setKind(Reference.Kind.MODULE);
+            link.setKind(Link.Kind.MODULE);
         }
 
         if (resolvePrimitiveOrVoid(link)) return link;
@@ -185,7 +185,7 @@ public class LinkResolver {
         if (resolveSiblingType(link)) return link;
 
         if (!link.isResolved()) {
-            link.setKind(Reference.Kind.UNKNOWN);
+            link.setKind(Link.Kind.UNKNOWN);
         }
         return link;
     }
@@ -193,7 +193,7 @@ public class LinkResolver {
     /// Checks if the target is unsupported by the `LinkResolver`.
     /// @param link The target to be resolved.
     /// @return A `Reference` with `Reference.Kind.UNKNOWN` if unsupported, else `Reference.Kind.NONE`.
-    static Reference resolveUnsupported(Reference link) {
+    static Link resolveUnsupported(Link link) {
         if (link.getTarget().equals("?") || link.getTarget().contains("<")) {
             link.setScope(Scope.UNKNOWN);
             link.setKind(Kind.UNSUPPORTED);
@@ -204,7 +204,7 @@ public class LinkResolver {
     /// Checks if the target is a primitive type or void.
     /// @param link The target to be resolved.
     /// @return True if the reference resolved to primitive or void, else false.
-    static boolean resolvePrimitiveOrVoid(Reference link) {
+    static boolean resolvePrimitiveOrVoid(Link link) {
         if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.PRIMITIVE || link.getKind() == Kind.VOID) {
             if ("void".equals(link.getTarget()) || "Void".equals(link.getTarget())){
                 link.setScope(Scope.NATIVE);
@@ -250,7 +250,7 @@ public class LinkResolver {
     /// Resolves a native Java package or type to an external documentation URL.
     /// @param link The link to be resolved
     /// @return True if the reference resolved to a native package or type.
-    static boolean resolveNativePackageOrType(Reference link) {
+    static boolean resolveNativePackageOrType(Link link) {
         if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.PACKAGE || link.getKind() == Kind.TYPE) {
             String[] qualified = qualifyType(link.getTarget());
             String toPackageName = qualified[0];
@@ -264,11 +264,11 @@ public class LinkResolver {
         return false;
     }
 
-    private static boolean resolveNativePackageTypeInternal(Reference link, String toPackageName, String toClassName) {
+    private static boolean resolveNativePackageTypeInternal(Link link, String toPackageName, String toClassName) {
         String baseUrl = nativePackageNames.get(toPackageName);
         if (baseUrl != null) {
-            link.setScope(Reference.Scope.NATIVE);
-            link.setKind(Reference.Kind.URL);
+            link.setScope(Link.Scope.NATIVE);
+            link.setKind(Link.Kind.URL);
             String uri = baseUrl + "/" + toPackageName.replace(".", "/");
             if (!toClassName.isEmpty()) {
                 if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
@@ -291,7 +291,7 @@ public class LinkResolver {
     /// Resolves a local package or type within the documented API to a relative link.
     /// @param link the link to resolve
     /// @return True if the reference resolved to a local package or type.
-    static boolean resolveLocalPackageOrType(Reference link) {
+    static boolean resolveLocalPackageOrType(Link link) {
         if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.PACKAGE || link.getKind() == Kind.TYPE) {
             String[] qualified = qualifyType(link.getTarget());
             String toPackageName = qualified[0];
@@ -305,7 +305,7 @@ public class LinkResolver {
         return false;
     }
 
-    static boolean resolveLocalPackageTypeInternal(Reference link, String toPackageName, String toClassName) {
+    static boolean resolveLocalPackageTypeInternal(Link link, String toPackageName, String toClassName) {
         String fromPackageName = getPackageName(link.getOrigin());
         if (getPackageName(toPackageName).isEmpty()) {
             return false;
@@ -321,8 +321,8 @@ public class LinkResolver {
         
         PackageNode packageNode = api.getPackageNode(toPackageName);
         if (packageNode == null) return false;
-        link.setScope(Reference.Scope.LOCAL);
-        link.setKind(Reference.Kind.PACKAGE);
+        link.setScope(Link.Scope.LOCAL);
+        link.setKind(Link.Kind.PACKAGE);
         link.setResolved(true);
         link.setUri(relativizeWithModules(fromPackageName, toPackageName));
         if (!toClassName.isEmpty()) {
@@ -340,18 +340,18 @@ public class LinkResolver {
     /// Appends the class name to the URI on the Reference and sets kind TYPE if not URL.
     /// @param className The class name to add.
     /// @param link The Reference object to modify.
-    static void addClassToReference(String className, Reference link) {
+    static void addClassToReference(String className, Link link) {
         if (!link.getUri().isEmpty()) link.setUri(link.getUri() + "/");
         link.setUri(link.getUri() + className);
-        if (link.getKind() != Reference.Kind.URL) {
-            link.setKind(Reference.Kind.TYPE);
+        if (link.getKind() != Link.Kind.URL) {
+            link.setKind(Link.Kind.TYPE);
         }
     }
 
     /// Resolves a module reference by name to a Reference either local or native.
     /// @param link the link to be resolved
     /// @return True if the reference resolved to a local module.
-    static boolean resolveLocalModule(Reference link) {
+    static boolean resolveLocalModule(Link link) {
         if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.MODULE) {
             String target = link.getTarget();
             if (target.endsWith("/")) {
@@ -382,7 +382,7 @@ public class LinkResolver {
     /// Attempts to resolve the link as a sibling module relative to the current context.
     /// @param link The Reference object to resolve.
     /// @return True if the reference resolved to a sibling module.
-    static boolean resolveSiblingModule(Reference link) {
+    static boolean resolveSiblingModule(Link link) {
         if ((link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.MODULE) && 
                 siblingModules.contains(link.getTarget())) {
             String toRoot = relativize(link.getOrigin(), "");
@@ -399,7 +399,7 @@ public class LinkResolver {
     /// Attempts to resolve the link as a sibling type relative to the current context.
     /// @param link The Reference object to resolve.
     /// @return True if the reference resolved to a sibling type.
-    static boolean resolveSiblingType(Reference link) {
+    static boolean resolveSiblingType(Link link) {
         if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.TYPE) {
             String moduleName = classToModule.get(link.getTarget());
             if (moduleName != null) {

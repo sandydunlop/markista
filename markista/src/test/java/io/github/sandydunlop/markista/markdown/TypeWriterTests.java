@@ -13,13 +13,13 @@ import io.github.sandydunlop.markista.model.EnumTypeNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceTypeNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.Modifier;
 import io.github.sandydunlop.markista.model.NodeKind;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.RecordTypeNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
@@ -37,34 +37,22 @@ import javax.tools.Diagnostic.Kind;
 import jdk.javadoc.doclet.Reporter;
 
 import com.sun.source.util.DocTreePath;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
+// @ExtendWith(MockitoExtension.class)
 class TypeWriterTests {
     Writer writer;
 
-    // Mockito will now call the new constructor with this mock
-    @InjectMocks
     TypeWriter typeWriter;
 
-    @Mock
-    private Context contextMock;
-
-    @BeforeAll
-    static void initAll() {
-        // Nothing to see here
-    }
+    private Context ctx;
 
     @Mock static Reporter reporter = new Reporter() {
         @Override
@@ -84,10 +72,14 @@ class TypeWriterTests {
     };
     
     @BeforeEach
-    void setup() throws IOException {
-        // Mock Writer to capture written content
+    void setup() {
+        // Mocking Context interfered with other tests, so we're doing this the manual way
+        Context.reset();
         writer = new StringWriter();
-        when(contextMock.createFileInPackage()).thenReturn(writer);
+        ctx = Context.getInstance();
+        ctx.setWriterFactory(_ -> writer);
+        ctx.setReporter(reporter);
+        typeWriter = new TypeWriter(ctx);
     }
 
     @Test
@@ -111,12 +103,12 @@ class TypeWriterTests {
         when(typeNode.getOwner()).thenReturn("com.example");
         when(typeNode.getKindName()).thenReturn("Class");
 
-        Reference enclosing = Reference.to("com.example.AClass");
+        Link enclosing = Link.to("com.example.AClass");
         TypeNode typeNode2 = new TypeNode("com.example.MyClass","MyClass","com.example");
         typeNode2.setEnclosingClassRef(enclosing);
         Api api = mock(Api.class);
         when(api.getTypeNode(any())).thenReturn(typeNode2);
-        when (contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
 
@@ -158,20 +150,21 @@ class TypeWriterTests {
         when(type.getAnnotations()).thenReturn(new ArrayList<>());
         when(type.getOwner()).thenReturn(null);
 
-        when(contextMock.getPackageName()).thenReturn("com.example");
+        ctx.setPackageName("com.example");
         Api testApi = new Api("Test API");
         testApi.addType(type);
-        when(contextMock.getApi()).thenReturn(testApi);
-        LinkResolver.init(testApi, contextMock);
+        ctx.setApi(testApi);
+        LinkResolver.init(testApi, ctx);
         LinkResolver.addNativeModules();
         LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
-        TextAssembler.assembleTextAndLinks(testApi, contextMock);
+        TextAssembler.assembleTextAndLinks(testApi, ctx);
 
         typeWriter.outputTypeDoc(type);
 
         String output = writer.toString();
 
         // The output should contain "Field Summary" heading and the modifiers, field names
+        System.err.println("0000000000000\n" + output);
         assertTrue(output.contains("## Field Summary"));
         assertTrue(output.contains("public [String]"));
         assertTrue(output.contains("private int"));
@@ -182,7 +175,7 @@ class TypeWriterTests {
     @Test
     void outputEnumConstantsSummary_WritesEnumConstantsTable() throws IOException {
         Api api = mock(Api.class);
-        LinkResolver.init(api, contextMock);
+        LinkResolver.init(api, ctx);
 
         EnumTypeNode enumNode = mock(EnumTypeNode.class);
         when(enumNode.getQualifiedName()).thenReturn("com.example.MyEnum");
@@ -190,9 +183,9 @@ class TypeWriterTests {
         when(enumNode.getPackageName()).thenReturn("com.example");
         when(enumNode.getKind()).thenReturn(NodeKind.ENUM);
 
-        Reference ref = new Reference(Reference.Kind.URL, "example", "http://example.com");
+        Link ref = new Link(Link.Kind.URL, "example", "http://example.com");
         ref.setTarget(ref.getUri());
-        List<Reference> references = List.of(ref);
+        List<Link> references = List.of(ref);
 
         FieldNode constant1 = mock(FieldNode.class);
         when(constant1.getSimpleName()).thenReturn("CONST_ONE");
@@ -221,12 +214,12 @@ class TypeWriterTests {
         when(enumNode.getEnums()).thenReturn(new ArrayList<>());
         when(enumNode.getAnnotations()).thenReturn(new ArrayList<>());
         when(enumNode.getOwner()).thenReturn(null);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
-        LinkResolver.init(api, contextMock);
+        LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules();
-        TextAssembler.assembleTextAndLinks(api, contextMock);
-        MarkdownUtils.setContext(contextMock);
+        TextAssembler.assembleTextAndLinks(api, ctx);
+        MarkdownUtils.setContext(ctx);
 
         typeWriter.outputTypeDoc(enumNode);
 
@@ -242,7 +235,7 @@ class TypeWriterTests {
     @Test
     void outputEnumConstantDetails_IncludesSinceAndReferences() throws IOException {
         Api api = mock(Api.class);
-        LinkResolver.init(api, contextMock);
+        LinkResolver.init(api, ctx);
 
         EnumTypeNode enumNode = mock(EnumTypeNode.class);
         when(enumNode.getQualifiedName()).thenReturn("com.example.MyEnum");
@@ -253,8 +246,8 @@ class TypeWriterTests {
         when(constant.getFullBody()).thenReturn(Text.empty().append("Full body text for const"));
         when(constant.getSince()).thenReturn(Text.empty().append("Since version 1.0"));
 
-        Reference ref = Reference.to("io.github.sandydunlop.markista.model.Node")
-                .withKind(Reference.Kind.TYPE)
+        Link ref = Link.to("io.github.sandydunlop.markista.model.Node")
+                .withKind(Link.Kind.TYPE)
                 .withLabel("See ALso");
         when(constant.getReferences()).thenReturn(List.of(ref));
 
@@ -278,11 +271,11 @@ class TypeWriterTests {
         when(enumNode.getOwner()).thenReturn(null);
 
         Api testApi = new Api("Test API");
-        when(contextMock.getApi()).thenReturn(testApi);
-        LinkResolver.init(testApi, contextMock);
+        ctx.setApi(testApi);
+        LinkResolver.init(testApi, ctx);
         LinkResolver.addNativeModules();
         LinkResolver.addNativeModuleUrl("java.base", "http://example.com", ".html");
-        TextAssembler.assembleTextAndLinks(testApi, contextMock);
+        TextAssembler.assembleTextAndLinks(testApi, ctx);
 
         typeWriter.outputTypeDoc(enumNode);
 
@@ -303,7 +296,7 @@ class TypeWriterTests {
         AnnotationElement param = new AnnotationElement(null, "value", ElementType.TYPE.toString());
         appliedAnnotation.addElement(param);
 
-        when(contextMock.getApi()).thenReturn(new Api(""));
+        ctx.setApi(new Api(""));
         typeNode.addAppliedAnnotation(appliedAnnotation);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -322,7 +315,7 @@ class TypeWriterTests {
         methodNode.setDeprecation(Deprecation.DEPRECATED);
         methodNode.setDeprecationText(Text.empty().append("This is deprecated"));
         typeNode.addMethod(methodNode);
-        when(contextMock.getApi()).thenReturn(new Api(""));
+        ctx.setApi(new Api(""));
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -340,14 +333,13 @@ class TypeWriterTests {
         methodNode.setDeprecation(Deprecation.DEPRECATED);
         typeNode.addMethod(methodNode);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -356,6 +348,7 @@ class TypeWriterTests {
 
     @Test
     void outputMethodParams() throws IOException {
+        Context.reset();
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassTypeNode typeNode = new ClassTypeNode("scenario.food.berry.Avocado", "Avocado", 
                 pkg.getQualifiedName());
@@ -370,7 +363,6 @@ class TypeWriterTests {
 
         typeNode.addMethod(methodNode);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -379,10 +371,11 @@ class TypeWriterTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         TextAssembler.assembleTextAndLinks(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
+        System.err.println("11111111111\n" + output);
         assertTrue(output.contains("[eat](#eat)([String](https"));
         assertTrue(output.contains("param2doc"));
     }
@@ -394,11 +387,11 @@ class TypeWriterTests {
                 pkg.getQualifiedName());
         MethodNode methodNode = new MethodNode("java.lang.String", "eat");
 
-        Reference thrownRef = Reference.to("scenario.food.berry.Thrown")
-                .withKind(Reference.Kind.TYPE)
+        Link thrownRef = Link.to("scenario.food.berry.Thrown")
+                .withKind(Link.Kind.TYPE)
                 .withLabel("scenario.food.berry.Thrown");
-        Reference specifiedByRef = Reference.to("scenario.food.berry.Specified")
-                .withKind(Reference.Kind.TYPE)
+        Link specifiedByRef = Link.to("scenario.food.berry.Specified")
+                .withKind(Link.Kind.TYPE)
                 .withLabel("scenario.food.berry.Specified");
         ClassTypeNode specifiedByType = new ClassTypeNode("scenario.food.berry.Specified", "Specified", 
                 pkg.getQualifiedName());
@@ -408,12 +401,11 @@ class TypeWriterTests {
         methodNode.setReturnDescription(Text.empty().append("returnDescription"));
         methodNode.setSpecifiedBy(specifiedByRef);
         methodNode.addThrownType(thrownRef);
-        Reference overriddenMethod = Reference.to("scenario.food.berry.Avocado" + "#" + "eat");
-        methodNode.setBaseMethod(Pair.of(overriddenMethod, Text.empty()));
+        MethodReference overriddenMethod = MethodReference.to("scenario.food.berry.Avocado" + "#" + "eat");
+        methodNode.setBaseMethod(overriddenMethod);
 
         typeNode.addMethod(methodNode);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -422,7 +414,7 @@ class TypeWriterTests {
         api.addType(specifiedByType);
         api.addType(thrownType);
         LinkResolver.init(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         LinkResolver.addNativeModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
@@ -447,13 +439,12 @@ class TypeWriterTests {
 
         typeNode.addMethod(methodNode);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         LinkResolver.init(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         LinkResolver.addNativeModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
@@ -471,20 +462,19 @@ class TypeWriterTests {
                 pkg.getQualifiedName());
         MethodNode methodNode = new MethodNode("java.lang.String", "eat");
 
-        Reference ref = Reference.to("Node").withLabel("Node");
+        Link ref = Link.to("Node").withLabel("Node");
         ref.setTarget("http://example.com");
-        ref.setKind(Reference.Kind.URL);
+        ref.setKind(Link.Kind.URL);
         methodNode.getReferences().add(ref);
 
         typeNode.addMethod(methodNode);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         LinkResolver.init(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         LinkResolver.addNativeModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
@@ -504,7 +494,6 @@ class TypeWriterTests {
         MethodNode methodNode = new MethodNode("scenario.food.berry.Avocado", "Avocado");
         typeNode.addConstructor(methodNode);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -513,7 +502,7 @@ class TypeWriterTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         TextAssembler.assembleTextAndLinks(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -530,7 +519,6 @@ class TypeWriterTests {
         implementedInterfaces.add(TypeReference.to("test.interface"));
         typeNode.setImplementedInterfaces(implementedInterfaces);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -539,7 +527,7 @@ class TypeWriterTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         TextAssembler.assembleTextAndLinks(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -563,7 +551,6 @@ class TypeWriterTests {
         typeNode.addType(enclosedInterface);
         typeNode.addType(enclosedAnnotation);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -572,7 +559,7 @@ class TypeWriterTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         TextAssembler.assembleTextAndLinks(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -589,7 +576,6 @@ class TypeWriterTests {
                 pkg.getQualifiedName());
         typeNode.getSupertypes().add(TypeReference.to("test.interface"));
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -598,7 +584,7 @@ class TypeWriterTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         TextAssembler.assembleTextAndLinks(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -614,13 +600,12 @@ class TypeWriterTests {
 
         ClassTypeNode owner = new ClassTypeNode("scenario.food.berry.Owner", "Owner", 
                 pkg.getQualifiedName());
-        Reference i = Reference.to("scenario.food.berry.Owner");
+        Link i = Link.to("scenario.food.berry.Owner");
         i.setLabel("scenario.food.berry.Owner");
         i.setTarget("scenario.food.berry.Owner");
         typeNode.setEnclosingClassRef(i);
         typeNode.setOwner("scenario.food.berry.Owner");
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -630,7 +615,7 @@ class TypeWriterTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         TextAssembler.assembleTextAndLinks(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -646,7 +631,6 @@ class TypeWriterTests {
                 pkg.getQualifiedName());
         typeNode.setFullBody(Text.of("One two three"));
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -655,7 +639,7 @@ class TypeWriterTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         TextAssembler.assembleTextAndLinks(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -678,7 +662,6 @@ class TypeWriterTests {
         AnnotationElement element2 = new AnnotationElement("El", "Em", "Ent");
         aa.addElement(element2);
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
@@ -687,7 +670,7 @@ class TypeWriterTests {
         LinkResolver.init(api, ctx);
         LinkResolver.addNativeModules(); // Needed for String
         TextAssembler.assembleTextAndLinks(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -700,14 +683,13 @@ class TypeWriterTests {
         RecordTypeNode typeNode = new RecordTypeNode("scenario.food.berry.Avocado", "Avocado", 
                 pkg.getQualifiedName());
 
-        Context ctx = Context.getInstance();
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
         LinkResolver.init(api, ctx);
-        when(contextMock.getApi()).thenReturn(api);
+        ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();

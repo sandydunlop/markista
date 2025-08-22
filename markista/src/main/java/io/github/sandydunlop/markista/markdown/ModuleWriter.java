@@ -6,7 +6,7 @@ import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.TypeNode;
 
 import java.io.IOException;
@@ -84,9 +84,9 @@ public class ModuleWriter {
                         .addColumn(TITLE_PACKAGE)
                         .addColumn(TITLE_DESCRIPTION);
                 for (PackageNode member : moduleNode.getPackages()) {
-                    Reference reference = Reference
+                    Link reference = Link
                             .to(member.getQualifiedName())
-                            .withKind(Reference.Kind.PACKAGE)
+                            .withKind(Link.Kind.PACKAGE)
                             .withLabel(member.getQualifiedName());
                     table.addRow(MarkdownUtils.link(reference, true), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getDescription())));
                 }
@@ -140,7 +140,7 @@ public class ModuleWriter {
             if (directive.getName() == null || directive.getName().isEmpty()) {
                 ctx.reportError("provides directive with no details");
             }
-            Reference reference = directive.getReference();
+            Link reference = directive.getReference();
             table.addRow(MarkdownUtils.link(reference, true),
                          multiLink(directive.getImplementations()));
         }
@@ -150,9 +150,9 @@ public class ModuleWriter {
     /// Turns each member of a list of strings into a link to the documentation
     /// for the module, package, or type denoted by that list member.
     /// @param names A list of strings that represent modules, packages, or types.
-    private String multiLink(List<Reference> references) {
+    private String multiLink(List<Link> references) {
         StringBuilder sb = new StringBuilder();
-        for (Reference reference : references) {
+        for (Link reference : references) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
@@ -198,7 +198,7 @@ public class ModuleWriter {
                     modifiersAndType.append(constantValue.getModifiersString());
                     modifiersAndType.append(" ");
                 }
-                Reference reference = constantValue.getConstantValueReference();
+                Link reference = constantValue.getConstantValueReference();
                 modifiersAndType.append(MarkdownUtils.link(reference, true));
                 table.addRow(modifiersAndType.toString(), constantValue.getSimpleName(), escape(constantValue.getConstantValue().toString()));
             }

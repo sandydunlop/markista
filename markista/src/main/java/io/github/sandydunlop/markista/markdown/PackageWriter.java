@@ -4,7 +4,7 @@ import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeView;
 
@@ -92,9 +92,9 @@ public class PackageWriter {
         for (PackageNode member : members) {
             String name = member.getQualifiedName();
             name = name.substring(name.lastIndexOf(".") + 1);
-            Reference link = Reference.to(member.getQualifiedName())
+            Link link = Link.to(member.getQualifiedName())
                     .from(ctx.getPackageName())
-                    .withKind(Reference.Kind.PACKAGE)
+                    .withKind(Link.Kind.PACKAGE)
                     .withLabel(name)
                     .withUri(name);
             table.addRow(MarkdownUtils.link(link, false), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));

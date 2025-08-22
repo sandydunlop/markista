@@ -6,11 +6,11 @@ import io.github.sandydunlop.markista.model.ClassTypeNode;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.RecordTypeNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.Text.SegmentKind;
@@ -121,7 +121,7 @@ class TextAssemblerTests {
     }
 
     static Segment link(String t, String u) {
-        return Segment.empty().setKind(SegmentKind.LINK).setText(t).setLink(new Reference().withUri(u));
+        return Segment.empty().setKind(SegmentKind.LINK).setText(t).setLink(new Link().withUri(u));
     }
 
     static List<Object[]> typeReferenceProvider() {
@@ -144,7 +144,7 @@ class TextAssemblerTests {
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
 	void link_to_text(String target, Segment[] expected) {
-        Reference link = Reference.to(target);
+        Link link = Link.to(target);
         Text text = TextAssembler.link(link);
         assertEquals(expected.length, text.getSegments().size());
         for (int i=0; i<expected.length; i++) {
@@ -165,10 +165,10 @@ class TextAssemblerTests {
             assertNotEquals("", directive.getReference().getUri());
             assertNotEquals("", directive.getReference().getUri());
 
-            for (Reference implementation : directive.getImplementations()) {
+            for (Link implementation : directive.getImplementations()) {
                 assertNotEquals("", implementation.getUri());
             }
-            for (Reference pkg : directive.getPackages()) {
+            for (Link pkg : directive.getPackages()) {
                 assertNotEquals("", pkg.getUri());
             }
         }
@@ -185,9 +185,9 @@ class TextAssemblerTests {
 
         TextAssembler.processModules(api);
 
-        Reference constantReference = constantValue.getConstantValueReference();
+        Link constantReference = constantValue.getConstantValueReference();
         assertNotNull(constantReference);
-        assertEquals(Reference.Kind.URL, constantReference.getKind());
+        assertEquals(Link.Kind.URL, constantReference.getKind());
         assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html", constantReference.getUri());
     }
 
@@ -246,9 +246,8 @@ class TextAssemblerTests {
         TypeReference typeRef = TypeReference.to(baseTypeNode.getQualifiedName());
         typeNode.getSupertypes().add(typeRef);
 
-        Reference methodRef = Reference.to(baseTypeNode.getQualifiedName() + "#" + baseTypeMethod.getSimpleName());
-        Pair<Reference,Text> pair = Pair.of(methodRef,Text.empty());
-        typeMethod.setBaseMethod(pair);
+        MethodReference methodRef = MethodReference.to(baseTypeNode.getQualifiedName() + "#" + baseTypeMethod.getSimpleName());
+        typeMethod.setBaseMethod(methodRef);
 
         TextAssembler.assembleTextAndLinks(api, ctx);
 
@@ -258,7 +257,7 @@ class TextAssemblerTests {
 
     @Test
     void moduleDirectives() {
-        Reference ref1 = Reference.to("io.github.sandydunlop.markista");
+        Link ref1 = Link.to("io.github.sandydunlop.markista");
         DirectiveNode directive1 = new DirectiveNode(DirectiveNode.Kind.EXPORTS, ref1);
         module.addDirective(directive1);
 

@@ -1,7 +1,9 @@
 package io.github.sandydunlop.markista.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /// Represents a type in the API model, including its kind (class, interface, enum, annotation),
 /// supertypes, implemented interfaces, constructors, methods, fields, ownership, and relevant metadata.
@@ -12,7 +14,7 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
     /// The owner of this type, usually another type or module.
     private String owner = "";
 
-    private Reference enclosingClassRef = null;
+    private Link enclosingClassRef = null;
 
     /// List of references to interfaces implemented by this type and text containing links.
     private List<TypeReference> implementedInterfaces = new ArrayList<>();
@@ -22,6 +24,8 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
 
     /// List of references to this type's subtypes and text containing links.
     private List<TypeReference> subtypes = new ArrayList<>();
+
+    private HashMap<TypeReference,List<MethodReference>> inheritedMethods = new HashMap<>();
 
     /// String representation of array brackets if this type is an array (e.g., `[]`).
     private String arrayBrackets = "";
@@ -92,6 +96,12 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         this.implementedInterfaces = implementedInterfaces;
     }
 
+    /// Returns the list of implemented interfaces by qualified names.
+    /// @return list of qualified interface names.
+    public List<TypeReference> getImplementedInterfaces() {
+        return implementedInterfaces;
+    }
+
     /// Returns the list of supertype references and text.
     /// @return list of supertype references and text.
     public List<TypeReference> getSupertypes() {
@@ -104,10 +114,10 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         return subtypes;
     }
 
-    /// Returns the list of implemented interfaces by qualified names.
-    /// @return list of qualified interface names.
-    public List<TypeReference> getImplementedInterfaces() {
-        return implementedInterfaces;
+    /// Returns the list of inherited methods organized by the type they are defined in.
+    /// @return HashMap of types containing inherited methods to inherited methods.
+    public Map<TypeReference,List<MethodReference>> getInheritedMethods() {
+        return inheritedMethods;
     }
 
     /// Sets the owner of this type.
@@ -177,11 +187,11 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         return hasDocumentedAnnotation;
     }
 
-    public void setEnclosingClassRef(Reference ref) {
+    public void setEnclosingClassRef(Link ref) {
         enclosingClassRef = ref;
     }
 
-    public Reference getEnclosingClassRef() {
+    public Link getEnclosingClassRef() {
         return enclosingClassRef;
     }
 
