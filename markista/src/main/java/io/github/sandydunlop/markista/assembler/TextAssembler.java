@@ -92,7 +92,8 @@ public class TextAssembler {
         }
         for (Pair<Reference,Text> pair : typeNode.getSupertypes()) {
             Reference supertypeReference = pair.getL();
-            pair.getR().append(link(supertypeReference, true));
+            Text text = link(supertypeReference, false);
+            pair.getR().append(text);
         }
         generateLinkTextsForReferences(typeNode);
 
@@ -309,7 +310,7 @@ public class TextAssembler {
         Text.Segment link = Text.Segment.empty()
                 .setKind(Text.SegmentKind.LINK)
                 .setLink(reference)
-                .setText(reference.getLabel());
+                .setText(Utils.simplifyNames(reference.getLabel()));
         Text r = Text.empty();
         r.append(pre);
         r.append(link);
@@ -317,25 +318,25 @@ public class TextAssembler {
         return r;
     }
 
-    private static void setDisplayName(Reference link, String displayName, boolean isLocalMethod, boolean useQualifiedName) {
-        if (link.getLabel() == null) {
-             link.setLabel(link.getTarget());
+    private static void setDisplayName(Reference reference, String displayName, boolean isLocalMethod, boolean useQualifiedName) {
+        if (reference.getLabel() == null) {
+             reference.setLabel(reference.getTarget());
         }
         if (isLocalMethod) {
-            link.setKind(Reference.Kind.METHOD);
-            String methodName = link.getAnchor().substring(1);
-            if (!link.getClassName().equals(ctx.getTypeName())) {
-                link.setLabel(link.getLabel() + "." + methodName);
+            reference.setKind(Reference.Kind.METHOD);
+            String methodName = reference.getAnchor().substring(1);
+            if (!reference.getClassName().equals(ctx.getTypeName())) {
+                reference.setLabel(reference.getLabel() + "." + methodName);
             } else {
-                link.setLabel(methodName);
+                reference.setLabel(methodName);
             }
         }
         if (displayName != null && !displayName.isEmpty()) {
-            link.setLabel(displayName.replace("#","."));
-        } else if (!useQualifiedName && canBeSimplified(link)) {
-            link.setLabel(Utils.simplifyNames(link.getLabel()));
+            reference.setLabel(displayName.replace("#","."));
+        } else if (!useQualifiedName && canBeSimplified(reference)) {
+            // reference.setLabel(Utils.simplifyNames(reference.getLabel()));
         }
-        link.setLabel(escape(link.getLabel()));
+        reference.setLabel(escape(reference.getLabel()));
     }
 
     private static boolean canBeSimplified(Reference link) {

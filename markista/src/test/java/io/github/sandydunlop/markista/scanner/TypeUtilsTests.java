@@ -1411,6 +1411,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
 		assertEquals("", TypeUtils.removeGenerics(null));
 	}
 
+    @Disabled("Calling method for native types, but setting up non native types")
     @Test
     void getOverriddenMethod_local() {
         Name methodName1 = mock(Name.class);

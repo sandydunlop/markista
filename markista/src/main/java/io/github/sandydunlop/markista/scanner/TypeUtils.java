@@ -667,8 +667,8 @@ public class TypeUtils {
                     if (!isInterface(s)){
                         Reference reference = Reference.to(name)
                                 .from(ctx.getPackageName())
-                                .withKind(Reference.Kind.TYPE)
-                                .withLabel(name);
+                                .withKind(Reference.Kind.TYPE);
+                                // .withLabel(name);
                         result.addFirst(Pair.of(reference, Text.empty()));
                     }
                     collectAllSupertypes(s, result);

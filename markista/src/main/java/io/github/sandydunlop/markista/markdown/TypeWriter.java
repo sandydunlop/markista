@@ -128,7 +128,7 @@ public class TypeWriter {
         int indentation = 0;
         for (Pair<Reference,Text> pair : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(MarkdownUtils.formatText(pair.getR()) + BR + "\n");
+            writer.write(MarkdownUtils.formatText(pair.getR(), true) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -184,6 +184,13 @@ public class TypeWriter {
             }
         }
         writer.write(typeNode.getModifiersString() + typeString + " __" + typeNode.getSimpleName() + "__");
+        if (typeNode.getSupertypes().size() > 1) {
+            Pair<Reference,Text> superTypePair = typeNode.getSupertypes().getLast();
+            writer.write(BR);
+            writer.write("extends ");
+            writer.write(MarkdownUtils.formatText(superTypePair.getR()));
+            writer.write("\n");
+        }
         writer.write("</span>\n\n");
     }
 

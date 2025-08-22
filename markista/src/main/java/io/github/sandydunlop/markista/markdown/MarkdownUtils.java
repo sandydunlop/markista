@@ -56,6 +56,10 @@ public class MarkdownUtils {
     /// @param text A `Text` object to be formatted
     /// @return Markdown formatted text
     public static String formatText(Text text) {
+        return formatText(text, false);
+    }
+
+    public static String formatText(Text text, boolean useQualifiedName) {
         if (text == null) return "";
         List<Text.Segment> parsedSegments = text.getSegments();
         if (parsedSegments == null) {
@@ -73,7 +77,7 @@ public class MarkdownUtils {
                     sb.append("`");
                     break;
                 case Text.SegmentKind.LINK:
-                    sb.append(formatLink(segment));
+                    sb.append(formatLink(segment, useQualifiedName));
                     break;
                 default:
                     ctx.reportWarning("Unhandled javadoc tag:\n  " + segment.getKind().toString() + "\n  " + segment);
@@ -85,11 +89,15 @@ public class MarkdownUtils {
     /// Formats links contained in a text segment as markdown.
     /// @param segment A text segment
     /// @return Markdown formatted text with a resolved link
-    public static String formatLink(Text.Segment segment) {
+    public static String formatLink(Text.Segment segment, boolean useQualifiedName) {
         if (segment.getLink().getLabel().isEmpty()) {
             segment.getLink().setLabel(segment.getText());
         }
-        return link(segment.getLink(), false);
+        if (useQualifiedName) {
+            return link(segment.getLink(), segment.getLink().getLabel(), useQualifiedName);
+        } else {
+            return link(segment.getLink(), segment.getText(), useQualifiedName);
+        }
     }
 
     /// Create a markdown formatted link
@@ -97,13 +105,17 @@ public class MarkdownUtils {
     /// @param useQualifiedName If true, qualified names will be used in the link label
     /// @return markdown formatted link
     public static String link(Reference reference, boolean useQualifiedName) {
+        return link(reference, null, useQualifiedName);
+    }
+
+    public static String link(Reference reference, String label, boolean useQualifiedName) {
         String targetName = reference.getTarget();
         if (targetName == null || targetName.isEmpty()) {
             ctx.reportWarning("No link target supplied");
             return reference.getLabel();
         }
         boolean isLocalMethod = false;
-        String displayName = reference.getLabel();
+        String displayName = label == null ? reference.getLabel() : label;
         if (reference.hasAnchor() && reference.getKind() != Reference.Kind.URL) {
             isLocalMethod = true;
             // Issue: https://github.com/sandydunlop/markista/issues/1
