@@ -210,6 +210,11 @@ public class TypeWriter {
         }
         String modifiers = member.getModifiersString();
         writer.write(modifiers + typeString + " __" + member.getSimpleName() + "__");
+        if (member instanceof MethodNode method) {
+            writer.write("(");
+            writer.write(MarkdownUtils.formatParams(method.getParams()));
+            writer.write(")");
+        }
         writer.write("</span>\n\n");
     }
 
@@ -298,10 +303,8 @@ public class TypeWriter {
                 .addColumn("Method")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            String link = MarkdownUtils.formatText(methodNode.getReturnTypeText());
-            table.addRow(methodNode.getModifiersString() + 
-                        // Markdown.link(Reference.to(methodNode.getReturnType().getQualifiedName()), false), 
-                        link,
+            String returnTypeText = MarkdownUtils.formatText(methodNode.getReturnTypeText());
+            table.addRow(methodNode.getModifiersString() + returnTypeText,
                         MarkdownUtils.mdAnchorLink(methodNode.getSimpleName()) + "(" + MarkdownUtils.formatParams(methodNode.getParams()) + ")",
                         MarkdownUtils.inOneLine(MarkdownUtils.formatText(methodNode.getFirstSentence())));
         }
@@ -347,11 +350,13 @@ public class TypeWriter {
         for (Node node : nodes) {
             if (node instanceof MethodNode method) {
                 ctx.setMethodName(method.getSimpleName());
-                writer.write("### " + method.getSimpleName() + "\n\n");
+                writer.write("### " + method.getSimpleName());
+                writer.write("\n\n");
                 outputMethodOrFieldDeclaration(method);
             } else if (node instanceof FieldNode field) {
                 ctx.setFieldName(field.getSimpleName());
-                writer.write("### " + field.getSimpleName() + "\n\n");
+                writer.write("### " + field.getSimpleName());
+                writer.write("\n\n");
                 outputMethodOrFieldDeclaration(field);
             }
             writer.write(MarkdownUtils.formatText(node.getFullBody()) + "\n\n");
