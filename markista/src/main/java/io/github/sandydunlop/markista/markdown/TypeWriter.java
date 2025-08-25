@@ -4,16 +4,16 @@ import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;
-import io.github.sandydunlop.markista.model.AnnotationTypeNode;
+import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Deprecation;
-import io.github.sandydunlop.markista.model.EnumTypeNode;
+import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.Node;
-import io.github.sandydunlop.markista.model.NodeKind;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
@@ -63,6 +63,7 @@ public class TypeWriter {
         outputSupertypes(typeNode);
         outputImplementedInterfaces(typeNode);
         outputEnclosingClass(typeNode);
+        outputAllKnownImplementingClasses(typeNode);
         outputDirectKnownSubtypes(typeNode);
         writer.write("\n----\n\n");
 
@@ -78,7 +79,7 @@ public class TypeWriter {
             outputNestedClassSummary(typeNode.getClasses());
         }
 
-        if (typeNode instanceof EnumTypeNode enumNode && !enumNode.getConstants().isEmpty()) {
+        if (typeNode instanceof EnumNode enumNode && !enumNode.getConstants().isEmpty()) {
             writer.write("\n##Enum Constants\n\n");
             outputEnumConstantsSummary(enumNode);
         }
@@ -98,7 +99,7 @@ public class TypeWriter {
 
         outputInheritedMethods(typeNode);
 
-        if (typeNode instanceof EnumTypeNode enumNode && !enumNode.getConstants().isEmpty()) {
+        if (typeNode instanceof EnumNode enumNode && !enumNode.getConstants().isEmpty()) {
             writer.write("\n## Enum Constant Details\n\n");
             outputEnumConstantDetails(enumNode.getConstants());
         }
@@ -165,12 +166,30 @@ public class TypeWriter {
     /// @param typeNode a TypeNode representing the enclosing class
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputEnclosingClass(TypeNode typeNode) throws IOException {
-        TypeNode ownerTypeNode = ctx.getApi().getTypeNode(typeNode.getOwner());
-        if (ownerTypeNode instanceof ClassTypeNode) {
+        TypeNode ownerTypeNode = ctx.getApi().getTypeNode(typeNode.getOwnerName());
+        if (ownerTypeNode instanceof ClassNode) {
             writer.write("Enclosing Class:<br/>\n");
             writer.write(NBSP.repeat(4));
             writer.write(MarkdownUtils.link(typeNode.getEnclosingClassRef(), true));
             writer.write("\n\n");
+        }
+    }
+
+    private void outputAllKnownImplementingClasses(TypeNode typeNode) throws IOException {
+        if (typeNode instanceof InterfaceNode interfaceNode) {
+            StringBuilder sb = new StringBuilder();
+            for (Link classLink : interfaceNode.getImplementingClasses()) {
+                if (!sb.isEmpty()) {
+                    sb.append(", ");
+                }
+                sb.append(MarkdownUtils.link(classLink, null, false, false));
+            }
+            if (!sb.isEmpty()) {
+                writer.write("All Known Implementing Classes:<br/>\n");
+                writer.write(NBSP.repeat(4));
+                writer.write(sb.toString());
+                writer.write("\n\n");
+            }
         }
     }
 
@@ -195,11 +214,11 @@ public class TypeWriter {
     private void outputDeclaration(TypeNode typeNode) throws IOException {
         writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = typeNode.getKind().toString().toLowerCase();
-        if (typeNode.getKind() == NodeKind.ANNOTATION) { 
+        if (typeNode.getKind() == Node.Kind.ANNOTATION) { 
             typeString = "@interface";
         }
         for (AppliedAnnotationNode annotation : typeNode.getAppliedAnnotations()) {
-            if (typeNode.getKind() == NodeKind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
+            if (typeNode.getKind() == Node.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
                 writer.write("@" + Utils.simplifyNames(annotation.getTypeName()));
                 if (!annotation.getElements().isEmpty()) {
                     writer.write("(");
@@ -231,7 +250,7 @@ public class TypeWriter {
             typeString = MarkdownUtils.formatText(field.getTypeText());
         }
         for (AppliedAnnotationNode annotation : member.getAppliedAnnotations()) {
-            if (member instanceof AnnotationTypeNode || (annotation.isCustom() && annotation.isDocumented())) {
+            if (member instanceof AnnotationNode || (annotation.isCustom() && annotation.isDocumented())) {
                 writer.write("@" + Utils.simplifyNames(annotation.getTypeName()));
                 if (!annotation.getElements().isEmpty()) {
                     writer.write("(");
@@ -285,7 +304,7 @@ public class TypeWriter {
     /// Outputs as summary of an enum's constants as Markdown
     /// @param enumNode the enum
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputEnumConstantsSummary(EnumTypeNode enumNode) throws IOException {
+    private void outputEnumConstantsSummary(EnumNode enumNode) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn("Enum Constant")
                 .addColumn(TEXT_DESCRIPTION);

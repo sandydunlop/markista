@@ -28,12 +28,22 @@ public class MethodNode extends AbstractMember {
 
     private Text returnTypeText = Text.empty();
 
+    private boolean isConstructor = false;
+
     /// Constructs a MethodNode with the specified return type and method name.
     /// @param returnType the return type of the method.
     /// @param name       the simple name of the method.
     public MethodNode(String returnType, String name) {
         this.returnTypeName = returnType;
         this.simpleName = name;
+    }
+
+    public void setConstructor(boolean b) {
+        isConstructor = b;
+    }
+
+    public boolean isConstructor() {
+        return isConstructor;
     }
 
     /// Sets the base method information that this method overrides.

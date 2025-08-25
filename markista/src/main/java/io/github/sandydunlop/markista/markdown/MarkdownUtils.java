@@ -68,15 +68,15 @@ public class MarkdownUtils {
         StringBuilder sb = new StringBuilder();
         for (Text.Segment segment : parsedSegments) {
             switch (segment.getKind()) {
-                case Text.SegmentKind.TEXT:
+                case Text.Segment.Kind.TEXT:
                     sb.append(segment);
                     break;
-                case Text.SegmentKind.CODE:
+                case Text.Segment.Kind.CODE:
                     sb.append("`");
                     sb.append(segment.getText());
                     sb.append("`");
                     break;
-                case Text.SegmentKind.LINK:
+                case Text.Segment.Kind.LINK:
                     sb.append(formatLink(segment, qualifyType, qualifyMember));
                     break;
                 default:
@@ -90,8 +90,11 @@ public class MarkdownUtils {
     /// @param segment A text segment
     /// @return Markdown formatted text with a resolved link
     public static String formatLink(Text.Segment segment, boolean qualifyType, boolean qualifyMember) {
-        if (segment.getLink().getLabel().isEmpty()) {
+        if (segment.getLink().getLabel() == null || segment.getLink().getLabel().isEmpty()) {
             segment.getLink().setLabel(segment.getText());
+        }
+        if (segment.getLink().getLabel().isEmpty()) {
+            segment.getLink().setLabel(segment.getLink().getTarget());
         }
         if (qualifyType) {
             return link(segment.getLink(), segment.getLink().getLabel(), qualifyType, qualifyMember);
@@ -109,14 +112,9 @@ public class MarkdownUtils {
     }
 
     public static String link(Link link, String label, boolean qualifyType, boolean qualifyMember) {
-        String targetName = link.getTarget();
-        if (targetName == null || targetName.isEmpty()) {
-            ctx.reportWarning("No link target supplied");
-            return link.getLabel();
-        }
         if (link.getKind() == Link.Kind.METHOD) {
             if (qualifyType) {
-                link.setLabel(link.getClassName() + "." + link.getMethodName());
+                link.setLabel(link.getQualifiedClassName() + "." + link.getMethodName());
             } else if (!qualifyMember) {
                 link.setLabel(link.getMethodName());
             } else if (label!= null && !label.isEmpty()) {
@@ -125,7 +123,7 @@ public class MarkdownUtils {
         } else if (!qualifyType && label!= null && !label.isEmpty()) {
             link.setLabel(label);
         }
-        if (!qualifyType && canBeSimplified(link)) {
+        if (!qualifyType && canBeSimplified(link) && link.getKind() != Link.Kind.METHOD) {
             link.setLabel(Utils.simplifyNames(link.getLabel()));
         }
         link.setLabel(escape(link.getLabel()));
@@ -173,7 +171,8 @@ public class MarkdownUtils {
         link.setAnchor(link.getAnchor().toLowerCase());
         String displayName = link.getLabel();
         String ctn = ctx.getTypeName();
-        if (!link.getClassName().equals(ctn)) {
+        String linkClassName = link.getQualifiedClassName();
+        if (!linkClassName.equals(ctn)) {
             return String.format("[%s](%s.md%s)", displayName, link.getUri(), link.getAnchor());
         } else {
             return String.format(FORMAT_SIMPLE_LINK, displayName, link.getAnchor());

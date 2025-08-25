@@ -7,14 +7,17 @@ import java.util.Map;
 
 /// Represents a type in the API model, including its kind (class, interface, enum, annotation),
 /// supertypes, implemented interfaces, constructors, methods, fields, ownership, and relevant metadata.
-public class TypeNode extends PackageOrTypeNode implements TypeView {
+public class TypeNode extends AbstractMember implements PackageOrTypeNode, TypeView {
 
     protected String sourcePath;
 
-    /// The owner of this type, usually another type or module.
-    private String owner = "";
+    /// The owner of this type — a type or package.
+    private String ownerName = "";
 
     private Link enclosingClassRef = null;
+
+    // store children by the interface type (no concrete TypeNode mention)
+    protected final List<TypeView> types = new ArrayList<>();
 
     /// List of references to interfaces implemented by this type and text containing links.
     private List<TypeReference> implementedInterfaces = new ArrayList<>();
@@ -42,30 +45,33 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
     /// Has the `@Documented` annotation applied
     private boolean hasDocumentedAnnotation = false;
 
-    /// Constructs a TypeNode with the specified qualified name, simple name, and package.
-    /// @param qualifiedName the fully qualified name of this type.
+    /// Constructs a TypeNode with the specified simple name and package.
     /// @param simpleName the simple name of this type.
     /// @param packageName the name of the package that contains this type.
-    public TypeNode(String qualifiedName, String simpleName, String packageName) {
-        this.qualifiedName = qualifiedName;
+    public TypeNode(String simpleName, String packageName) {
+        if (packageName != null && !packageName.isEmpty()) {
+            qualifiedName = packageName + "." + simpleName;
+        } else {
+            qualifiedName = simpleName;
+        }
         this.simpleName = simpleName;
         this.packageName = packageName;
     }
 
     @Override
-    public boolean isClass() { return kind == NodeKind.CLASS; }
+    public boolean isClass() { return kind == Node.Kind.CLASS; }
 
     @Override
-    public boolean isInterface() { return kind == NodeKind.INTERFACE; }
+    public boolean isInterface() { return kind == Node.Kind.INTERFACE; }
     
     @Override
-    public boolean isEnum() { return kind == NodeKind.ENUM; }
+    public boolean isEnum() { return kind == Node.Kind.ENUM; }
     
     @Override
-    public boolean isRecord() { return kind == NodeKind.RECORD; }
+    public boolean isRecord() { return kind == Node.Kind.RECORD; }
     
     @Override
-    public boolean isAnnotation() { return kind == NodeKind.ANNOTATION; }
+    public boolean isAnnotation() { return kind == Node.Kind.ANNOTATION; }
 
     @Override
     public String getKindName() { return kind.toString(); }
@@ -88,12 +94,6 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
     /// @return string representing array dimension brackets.
     public String getArrayBrackets() {
         return arrayBrackets;
-    }
-
-    /// Sets the list of implemented interfaces by qualified names.
-    /// @param implementedInterfaces list of qualified interface names.
-    public void setImplementedInterfaces(List<TypeReference> implementedInterfaces) {
-        this.implementedInterfaces = implementedInterfaces;
     }
 
     /// Returns the list of implemented interfaces by qualified names.
@@ -122,14 +122,14 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
 
     /// Sets the owner of this type.
     /// @param owner the TypeOwner that owns this type.
-    public void setOwner(String owner) {
-        this.owner = owner;
+    public void setOwnerName(String owner) {
+        this.ownerName = owner;
     }
 
     /// Returns the owner of this type.
     /// @return the TypeOwner that owns this type.
-    public String getOwner() {
-        return owner;
+    public String getOwnerName() {
+        return ownerName;
     }
 
     /// Returns the package name for this type.
@@ -195,6 +195,60 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         return enclosingClassRef;
     }
 
+    public void addType(TypeView typeNode) {
+        types.add(typeNode);
+    }
+
+    /// Gets the list of types *owned* by this instance.
+    public List<TypeView> getTypes() {
+        return List.copyOf(types);
+    }
+
+    /// Gets the list of classes *owned* by this instance.
+    public List<TypeView> getClasses() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isClass())
+                out.add(t);
+        return out;
+    }
+
+    /// Gets the list of interfaces *owned* by this instance.
+    public List<TypeView> getInterfaces() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isInterface())
+                out.add(t);
+        return out;
+    }
+
+    /// Gets the list of enums *owned* by this instance.
+    public List<TypeView> getEnums() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isEnum())
+                out.add(t);
+        return out;
+    }
+
+    /// Gets the list of records *owned* by this instance.
+    public List<TypeView> getRecords() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isRecord())
+                out.add(t);
+        return out;
+    }
+
+    /// Gets the list of annotations *owned* by this instance.
+    public List<TypeView> getAnnotations() {
+        List<TypeView> out = new ArrayList<>();
+        for (TypeView t : types)
+            if (t.isAnnotation())
+                out.add(t);
+        return out;
+    }
+
     /// Retrieves a field by its simple name.
     /// @param fieldName the simple name of the field.
     /// @return the FieldNode if found, otherwise null.
@@ -240,7 +294,7 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
         StringBuilder mods = new StringBuilder();
         List<Modifier> modifierList = ModifierSorter.sortModifiers(getModifiers());
         for (Modifier mod : modifierList) {
-            if ((kind != NodeKind.ANNOTATION && kind != NodeKind.INTERFACE) || mod != Modifier.ABSTRACT) {
+            if ((kind != Node.Kind.ANNOTATION && kind != Node.Kind.INTERFACE) || mod != Modifier.ABSTRACT) {
                 mods.append(mod.toString()).append(" ");
             }
         }
@@ -250,7 +304,7 @@ public class TypeNode extends PackageOrTypeNode implements TypeView {
     /// Sorts the nodes owned by this instance into alphabetical order.
     @Override
     public void sort() {
-        super.sort();
+        types.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
         fields.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
         methods.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
     }

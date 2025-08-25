@@ -1,10 +1,8 @@
 package io.github.sandydunlop.markista.markdown;
 
-import io.github.sandydunlop.markista.assembler.LinkResolver;
-import io.github.sandydunlop.markista.assembler.TextAssembler;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
@@ -12,6 +10,8 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
+import io.github.sandydunlop.markista.orchestration.LinkResolver;
+import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -40,8 +40,8 @@ class MarkdownTests {
     private PackageNode doclet;
 	private PackageNode markista;
 	private PackageNode util;
-    private ClassTypeNode node;
-    private ClassTypeNode markdownDoclet;
+    private ClassNode node;
+    private ClassNode markdownDoclet;
 
     static TestReporter reporter;
     
@@ -72,12 +72,9 @@ class MarkdownTests {
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver",
-                "LinkResolver", util.getQualifiedName()));
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet",
-                "MarkdownDoclet", doclet.getQualifiedName()));
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option",
-                "MarkdownDoclet.Option", doclet.getQualifiedName()));
+		api.addType(new ClassNode("LinkResolver", util.getName()));
+		api.addType(new ClassNode("MarkdownDoclet", doclet.getName()));
+		api.addType(new ClassNode("MarkdownDoclet.Option", doclet.getName()));
 
         module = new ModuleNode("markista");
 		api.addModule(module);
@@ -90,17 +87,15 @@ class MarkdownTests {
 		doclet.setModuleName(module.getName());
 		model.setModuleName(module.getName());
 
-        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
-                "Node", model.getQualifiedName());
+        node = new ClassNode("Node", model.getName());
         model.addType(node);
         api.addType(node);
 
-        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", 
-                "MarkdownDoclet", doclet.getQualifiedName());
+        markdownDoclet = new ClassNode("MarkdownDoclet", doclet.getName());
         model.addType(markdownDoclet);
 
         LinkResolver.init(api, ctx);
-        LinkResolver.addNativeModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
+        LinkResolver.addStandardModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
 		LinkResolver.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
@@ -117,7 +112,7 @@ class MarkdownTests {
         markdownDoclet.addMethod(method);
         api.addType(markdownDoclet);
         LinkResolver.init(api, ctx);
-        LinkResolver.addNativeModules();
+        LinkResolver.addStandardModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         String markdown = MarkdownUtils.formatParams(params);
@@ -137,7 +132,7 @@ class MarkdownTests {
     void formatText_text() {
         Text text = Text.empty();
         text.append(Segment.empty()
-                .setKind(Text.SegmentKind.TEXT)
+                .setKind(Text.Segment.Kind.TEXT)
                 .setText("hello world"));
         String formatted = MarkdownUtils.formatText(text);
         assertEquals("hello world", formatted);
@@ -147,7 +142,7 @@ class MarkdownTests {
     void formatText_code() {
         Text text = Text.empty();
         text.append(Segment.empty()
-                .setKind(Text.SegmentKind.CODE)
+                .setKind(Text.Segment.Kind.CODE)
                 .setText("#!/bin/zsh"));
         String formatted = MarkdownUtils.formatText(text);
         assertEquals("`#!/bin/zsh`", formatted);
@@ -157,7 +152,7 @@ class MarkdownTests {
     @Test
     void formatText_unhandled() {
         Text text = Text.empty();
-        text.append(Segment.empty().setText("unhandled").setKind(Text.SegmentKind.NONE));
+        text.append(Segment.empty().setText("unhandled").setKind(Text.Segment.Kind.NONE));
         reporter.stringWriter = new StringWriter();
         String formatted = MarkdownUtils.formatText(text);
         assertTrue(reporter.stringWriter.toString().contains("nhandled javadoc tag"));
@@ -169,14 +164,14 @@ class MarkdownTests {
         Link link = Link.to("http://example.com");
         Text text = Text.empty();
         text.append(Segment.empty()
-                .setKind(Text.SegmentKind.TEXT)
+                .setKind(Text.Segment.Kind.TEXT)
                 .setText("hello "));
         text.append(Segment.empty()
-                .setKind(Text.SegmentKind.LINK)
+                .setKind(Text.Segment.Kind.LINK)
                 .setText("link")
                 .setLink(link));
         text.append(Segment.empty()
-                .setKind(Text.SegmentKind.TEXT)
+                .setKind(Text.Segment.Kind.TEXT)
                 .setText(" world"));
         api.addLink(link);
         LinkResolver.init(api, ctx);
@@ -192,7 +187,7 @@ class MarkdownTests {
         markdownDoclet.addMethod(method);
         api.addType(markdownDoclet);
         LinkResolver.init(api, ctx);
-        LinkResolver.addNativeModules();
+        LinkResolver.addStandardModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
         String sig = MarkdownUtils.fullSignature(method);
         assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);

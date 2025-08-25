@@ -178,7 +178,7 @@ class ContextTests {
         ctx.setApi(api);
 
         ctx.setModuleName("");
-        ctx.setPackageName(pkg.getQualifiedName());
+        ctx.setPackageName(pkg.getName());
         File file = ctx.getPackageDirectory();
         assertEquals(outputDir + "sandydunlop/test", file.getAbsolutePath());
     }
@@ -191,7 +191,7 @@ class ContextTests {
         Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("markista");
-        ctx.setPackageName(pkg.getQualifiedName());
+        ctx.setPackageName(pkg.getName());
 
         OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInPackage();
         w.write("test createFile 1");
@@ -212,7 +212,7 @@ class ContextTests {
         Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("");
-        ctx.setPackageName(pkg.getQualifiedName());
+        ctx.setPackageName(pkg.getName());
 
         OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInPackage();
         w.write("test createFile 1");

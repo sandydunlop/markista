@@ -77,7 +77,7 @@ public class Text implements Serializable {
     public Text append(Segment segment) {
         if (!segment.getText().isEmpty() || 
                 !segment.getLink().getTarget().isEmpty() ||
-                segment.getKind() == SegmentKind.INHERIT) {
+                segment.getKind() == Segment.Kind.INHERIT) {
             segments.add(segment);
         }
         return this;
@@ -88,7 +88,7 @@ public class Text implements Serializable {
     /// @return This Text instance for chaining.
     public Text append(String text) {
         if (!text.isEmpty()) {
-            segments.add(Segment.empty().setKind(SegmentKind.TEXT).setText(text));
+            segments.add(Segment.empty().setKind(Segment.Kind.TEXT).setText(text));
         }
         return this;
     }
@@ -123,7 +123,7 @@ public class Text implements Serializable {
         private static final long serialVersionUID = 1L;
 
         /// The kind/type of this segment.
-        private SegmentKind kind = SegmentKind.NONE;
+        private Segment.Kind kind = Segment.Kind.NONE;
         /// The textual content of this segment.
         private String text = "";
         /// The associated link if the segment represents a link.
@@ -141,16 +141,16 @@ public class Text implements Serializable {
         }
 
         /// Sets the kind of this segment.
-        /// @param k The SegmentKind value.
+        /// @param k The Segment.Kind value.
         /// @return This Segment instance for chaining.
-        public Segment setKind(SegmentKind k) {
+        public Segment setKind(Segment.Kind k) {
             kind = k;
             return this;
         }
 
         /// Returns the kind of this segment.
-        /// @return The current SegmentKind.
-        public SegmentKind getKind() {
+        /// @return The current Segment.Kind.
+        public Segment.Kind getKind() {
             return kind;
         }
 
@@ -191,23 +191,23 @@ public class Text implements Serializable {
         public Link getLink() {
             return link;
         }
-    }
 
-    /// Enum class that defines different kinds of segments for Text.
-    public enum SegmentKind {
-        /// Empty segment
-        NONE,
+        /// Enum class that defines different kinds of segments for Text.
+        public enum Kind {
+            /// Empty segment
+            NONE,
 
-        /// Plain test
-        TEXT,
+            /// Plain test
+            TEXT,
 
-        /// A link
-        LINK,
+            /// A link
+            LINK,
 
-        /// Source code
-        CODE,
+            /// Source code
+            CODE,
 
-        /// Inherited documentation
-        INHERIT,
+            /// Inherited documentation
+            INHERIT,
+        }
     }
 }

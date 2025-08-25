@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.scanner;
+package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
@@ -129,7 +129,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (unnamedModule.getPackages().isEmpty()) return;
         PackageNode pkg = unnamedModule.getPackages().getFirst();
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
-        String nameAsPath = pkg.getQualifiedName().replace(".", separator);
+        String nameAsPath = pkg.getName().replace(".", separator);
         String root = pkg.getSourcePath().replace(nameAsPath, "");
         unnamedModule.setSourcePath(root);
     }
@@ -186,9 +186,9 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             PackageNode pkg = api.getPackageNode(ee.getQualifiedName().toString());
             if (pkg == null) {
                 pkg = new PackageNode(ee.getQualifiedName().toString());
-                ctx.setPackageName(pkg.getQualifiedName());
+                ctx.setPackageName(pkg.getName());
                 if (Configuration.getVerbose()) {
-                    ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getQualifiedName()));
+                    ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
                 TypeUtils.setPackageSourcePath(pkg, ee);
                 pkg.setModuleName(currentModule.getName());

@@ -4,17 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /// Represents an enum type node with its constants.
-public class EnumTypeNode extends TypeNode {
+public class EnumNode extends TypeNode {
     private final List<FieldNode> constants = new ArrayList<>();
 
-    /// Constructs an EnumNode with the specified qualified name, simple name, and package.
+    /// Constructs an EnumNode with the specified simple name and package.
     /// Sets the kind to ENUM.
-    /// @param qualifiedName The qualified name of the enum.
     /// @param simpleName The simple name of the enum.
     /// @param packageName The name of the package that contains this enum.
-    public EnumTypeNode(String qualifiedName, String simpleName, String packageName) {
-        super(qualifiedName, simpleName, packageName);
-        kind = NodeKind.ENUM;
+    public EnumNode(String simpleName, String packageName) {
+        super(simpleName, packageName);
+        kind = Node.Kind.ENUM;
     }
 
     /// Adds a constant field to this enum.

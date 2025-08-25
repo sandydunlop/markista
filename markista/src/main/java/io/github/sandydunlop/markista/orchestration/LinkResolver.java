@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.assembler;
+package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
@@ -39,16 +39,16 @@ import java.util.stream.Stream;
 /// packages and their contents.
 ///
 /// This class manages resolving references and generating links
-/// for types, packages, modules, and native Java elements.
+/// for types, packages, modules, and standard Java elements.
 ///
-/// It supports resolving primitives, void, native Java modules and packages,
+/// It supports resolving primitives, void, standard Java modules and packages,
 /// and also local API model packages and types.
 ///
 /// LinkResolver must be initialized for the current API before use via `init(Api)`.
 /// It provides multiple resolve methods for building appropriate links.
 ///
 /// The class supports relative path calculation for Markdown output.
-/// It also manages native Java documentation URLs for modules and packages.
+/// It also manages standard Java documentation URLs for modules and packages.
 public class LinkResolver {
     private static final String DOT_CLASS = ".class";
     /// The Context singleton instance providing access to the current documentation generation context,
@@ -58,8 +58,8 @@ public class LinkResolver {
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
     private static final List<String> primitives = Arrays.asList("boolean","byte","char","short","int","long","float","double");
     private static final ModuleLayer moduleLayer = ModuleLayer.boot();
-    private static HashMap<String,String> nativeModuleNames = new HashMap<>();
-    private static HashMap<String,String> nativePackageNames = new HashMap<>();
+    private static HashMap<String,String> standardModuleNames = new HashMap<>();
+    private static HashMap<String,String> standardPackageNames = new HashMap<>();
     private static HashMap<String,String> suffix = new HashMap<>();
 
     static List<String> siblingModules = new ArrayList<>();
@@ -83,8 +83,8 @@ public class LinkResolver {
     /// @param c Context for all documentation operations
     public static void init(Api a, Context c) {
         api = a;
-        nativeModuleNames = new HashMap<>();
-        nativePackageNames = new HashMap<>();
+        standardModuleNames = new HashMap<>();
+        standardPackageNames = new HashMap<>();
         suffix = new HashMap<>();
         ctx = c;
         configureSiblingModules();
@@ -96,16 +96,16 @@ public class LinkResolver {
         flattenedDirectories = sd;
     }
 
-    /// Adds a native module URL base for linking native Java modules and their packages.
-    /// @param moduleName The native module's name (e.g., java.base).
-    /// @param baseUrl The base URL for the native module's documentation.
+    /// Adds a standard module URL base for linking standard Java modules and their packages.
+    /// @param moduleName The standard module's name (e.g., java.base).
+    /// @param baseUrl The base URL for the standard module's documentation.
     /// @param s The suffix to append to URLs for this module's packages (e.g., ".html").
-    public static void addNativeModuleUrl(String moduleName, String baseUrl, String s) {
+    public static void addStandardModuleUrl(String moduleName, String baseUrl, String s) {
         Optional<Module> module = moduleLayer.findModule(moduleName);
         if (module.isPresent()) {
-            nativeModuleNames.put(moduleName, baseUrl);
+            standardModuleNames.put(moduleName, baseUrl);
             for (String packageName : module.get().getPackages()) {
-                nativePackageNames.put(packageName, baseUrl);
+                standardPackageNames.put(packageName, baseUrl);
                 suffix.put(packageName, s);
             }
         }
@@ -178,7 +178,7 @@ public class LinkResolver {
         }
 
         if (resolvePrimitiveOrVoid(link)) return link;
-        if (resolveNativePackageOrType(link)) return link;
+        if (resolveStandardPackageOrType(link)) return link;
         if (resolveLocalPackageOrType(link)) return link;
         if (resolveLocalModule(link)) return link;
         if (resolveSiblingModule(link)) return link;
@@ -207,13 +207,13 @@ public class LinkResolver {
     static boolean resolvePrimitiveOrVoid(Link link) {
         if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.PRIMITIVE || link.getKind() == Kind.VOID) {
             if ("void".equals(link.getTarget()) || "Void".equals(link.getTarget())){
-                link.setScope(Scope.NATIVE);
+                link.setScope(Scope.STANDARD);
                 link.setKind(Kind.VOID);
                 link.setResolved(true);
                 return true;
             }
             if (primitives.contains(link.getTarget())){
-                link.setScope(Scope.NATIVE);
+                link.setScope(Scope.STANDARD);
                 link.setKind(Kind.PRIMITIVE);
                 link.setResolved(true);
                 return true;
@@ -247,10 +247,10 @@ public class LinkResolver {
         return new String[] { toPackageName, toClassName };
     }
 
-    /// Resolves a native Java package or type to an external documentation URL.
+    /// Resolves a standard Java package or type to an external documentation URL.
     /// @param link The link to be resolved
-    /// @return True if the reference resolved to a native package or type.
-    static boolean resolveNativePackageOrType(Link link) {
+    /// @return True if the reference resolved to a standard package or type.
+    static boolean resolveStandardPackageOrType(Link link) {
         if (link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.PACKAGE || link.getKind() == Kind.TYPE) {
             String[] qualified = qualifyType(link.getTarget());
             String toPackageName = qualified[0];
@@ -258,16 +258,16 @@ public class LinkResolver {
             if (toPackageName.isEmpty()) {
                 return false;
             } else {
-                return resolveNativePackageTypeInternal(link, toPackageName, toClassName);
+                return resolveStandardPackageOrTypeInternal(link, toPackageName, toClassName);
             }
         }
         return false;
     }
 
-    private static boolean resolveNativePackageTypeInternal(Link link, String toPackageName, String toClassName) {
-        String baseUrl = nativePackageNames.get(toPackageName);
+    private static boolean resolveStandardPackageOrTypeInternal(Link link, String toPackageName, String toClassName) {
+        String baseUrl = standardPackageNames.get(toPackageName);
         if (baseUrl != null) {
-            link.setScope(Link.Scope.NATIVE);
+            link.setScope(Link.Scope.STANDARD);
             link.setKind(Link.Kind.URL);
             String uri = baseUrl + "/" + toPackageName.replace(".", "/");
             if (!toClassName.isEmpty()) {
@@ -276,11 +276,13 @@ public class LinkResolver {
                 if (link.getLabel() == null || link.getLabel().isEmpty()) {
                     link.setLabel(toPackageName + "." + toClassName);
                 }
-                link.setClassName(toPackageName + "." + toClassName);
+                link.setSimpleClassName(toClassName);
+                link.setQualifiedClassName(toPackageName + "." + toClassName);
             } else {
                 link.setLabel(toPackageName);
             }
             uri += suffix.get(toPackageName);
+            link.setPackageName(toPackageName);
             link.setUri(uri);
             link.setResolved(true);
             return true;
@@ -321,6 +323,7 @@ public class LinkResolver {
         
         PackageNode packageNode = api.getPackageNode(toPackageName);
         if (packageNode == null) return false;
+        link.setPackageName(toPackageName);
         link.setScope(Link.Scope.LOCAL);
         link.setKind(Link.Kind.PACKAGE);
         link.setResolved(true);
@@ -329,7 +332,7 @@ public class LinkResolver {
             if (link.getLabel() == null || link.getLabel().isEmpty()) {
                 link.setLabel(toPackageName + "." + toClassName);
             }
-            link.setClassName(toPackageName + "." + toClassName);
+            link.setQualifiedClassName(toPackageName + "." + toClassName);
             addClassToReference(toClassName, link);
         } else {
             link.setLabel(toPackageName);
@@ -348,7 +351,7 @@ public class LinkResolver {
         }
     }
 
-    /// Resolves a module reference by name to a Reference either local or native.
+    /// Resolves a module reference by name to a Reference either local or standard.
     /// @param link the link to be resolved
     /// @return True if the reference resolved to a local module.
     static boolean resolveLocalModule(Link link) {
@@ -367,9 +370,9 @@ public class LinkResolver {
                 link.setResolved(true);
                 return true;
             }
-            String baseUrl = nativeModuleNames.get(target);
+            String baseUrl = standardModuleNames.get(target);
             if (baseUrl != null) {
-                link.setScope(Scope.NATIVE);
+                link.setScope(Scope.STANDARD);
                 link.setKind(Kind.URL);
                 link.setUri(baseUrl + "/module-summary.html");
                 link.setResolved(true);
@@ -439,9 +442,9 @@ public class LinkResolver {
     /// @return The fully qualified package name or empty string if not found.
     public static String qualifyPackage(String simpleName) {
         for (PackageNode node : api.getPackages()) {
-            int p = node.getQualifiedName().lastIndexOf(".");
-            if (node.getQualifiedName().substring(p + 1).equals(simpleName)) {
-                return node.getQualifiedName();
+            int p = node.getName().lastIndexOf(".");
+            if (node.getName().substring(p + 1).equals(simpleName)) {
+                return node.getName();
             }
         }
         return "";
@@ -643,7 +646,7 @@ public class LinkResolver {
                 }
             }
         } catch (Exception _) {
-            ctx.reportError("Failed ot read class file: " + file);
+            ctx.reportError("Failed to read class file: " + file);
         }
     }
     
@@ -678,73 +681,73 @@ public class LinkResolver {
         }
     }
 
-    /// Adds a native Java module URL for linking purposes using a standard Oracle Javadoc base URL.
-    /// @param moduleName The native module name (e.g., java.base).
-    static void addNativeModule(String moduleName) {
+    /// Adds a standard Java module URL for linking purposes using a standard Oracle Javadoc base URL.
+    /// @param moduleName The standard module name (e.g., java.base).
+    static void addStandardModule(String moduleName) {
         // Tell the link resolver what web address to find docs for certain Java modules at
-        LinkResolver.addNativeModuleUrl(moduleName, JAVA_24_URL + moduleName, DOT_HTML);
+        LinkResolver.addStandardModuleUrl(moduleName, JAVA_24_URL + moduleName, DOT_HTML);
     }
 
-    /// Adds known native modules for Java SE 24 to the resolver.
-    /// This populates internal mappings for native module and package documentation URLs.
+    /// Adds known standard modules for Java SE 24 to the resolver.
+    /// This populates internal mappings for standard module and package documentation URLs.
     @SuppressWarnings("SpellCheckingInspection")
-    public static void addNativeModules() {
-        addNativeModule("java.base");
-        addNativeModule("java.compiler");
-        addNativeModule("java.desktop");
-        addNativeModule("java.instrument");
-        addNativeModule("java.logging");
-        addNativeModule("java.management");
-        addNativeModule("java.management.rmi");
-        addNativeModule("java.naming");
-        addNativeModule("java.net.http");
-        addNativeModule("java.prefs");
-        addNativeModule("java.rmi");
-        addNativeModule("java.scripting");
-        addNativeModule("java.se");
-        addNativeModule("java.security.jgss");
-        addNativeModule("java.security.sasl");
-        addNativeModule("java.smartcardio");
-        addNativeModule("java.sql");
-        addNativeModule("java.sql.rowset");
-        addNativeModule("java.transaction.xa");
-        addNativeModule("java.xml");
-        addNativeModule("java.xml.crypto");
-        addNativeModule("jdk.accessibility");
-        addNativeModule("jdk.attach");
-        addNativeModule("jdk.javadoc");
-        addNativeModule("jdk.compiler");
-        addNativeModule("jdk.crypto.cryptoki");
-        addNativeModule("jdk.dynalink");
-        addNativeModule("jdk.editpad");
-        addNativeModule("jdk.hotspot.agent");
-        addNativeModule("jdk.httpserver");
-        addNativeModule("jdk.incubator.vector");
-        addNativeModule("jdk.jartool");
-        addNativeModule("jdk.javadoc");
-        addNativeModule("jdk.jcmd");
-        addNativeModule("jdk.jconsole");
-        addNativeModule("jdk.jdeps");
-        addNativeModule("jdk.jdi");
-        addNativeModule("jdk.jdwp.agent");
-        addNativeModule("jdk.jfr");
-        addNativeModule("jdk.jlink");
-        addNativeModule("jdk.jpackage");
-        addNativeModule("jdk.jshell");
-        addNativeModule("jdk.jsobject");
-        addNativeModule("jdk.jstatd");
-        addNativeModule("jdk.localedata");
-        addNativeModule("jdk.management");
-        addNativeModule("jdk.management.agent");
-        addNativeModule("jdk.management.jfr");
-        addNativeModule("jdk.naming.dns");
-        addNativeModule("jdk.naming.rmi");
-        addNativeModule("jdk.net");
-        addNativeModule("jdk.nio.mapmode");
-        addNativeModule("jdk.sctp");
-        addNativeModule("jdk.security.auth");
-        addNativeModule("jdk.security.jgss");
-        addNativeModule("jdk.xml.dom");
-        addNativeModule("jdk.zipfs");        
+    public static void addStandardModules() {
+        addStandardModule("java.base");
+        addStandardModule("java.compiler");
+        addStandardModule("java.desktop");
+        addStandardModule("java.instrument");
+        addStandardModule("java.logging");
+        addStandardModule("java.management");
+        addStandardModule("java.management.rmi");
+        addStandardModule("java.naming");
+        addStandardModule("java.net.http");
+        addStandardModule("java.prefs");
+        addStandardModule("java.rmi");
+        addStandardModule("java.scripting");
+        addStandardModule("java.se");
+        addStandardModule("java.security.jgss");
+        addStandardModule("java.security.sasl");
+        addStandardModule("java.smartcardio");
+        addStandardModule("java.sql");
+        addStandardModule("java.sql.rowset");
+        addStandardModule("java.transaction.xa");
+        addStandardModule("java.xml");
+        addStandardModule("java.xml.crypto");
+        addStandardModule("jdk.accessibility");
+        addStandardModule("jdk.attach");
+        addStandardModule("jdk.javadoc");
+        addStandardModule("jdk.compiler");
+        addStandardModule("jdk.crypto.cryptoki");
+        addStandardModule("jdk.dynalink");
+        addStandardModule("jdk.editpad");
+        addStandardModule("jdk.hotspot.agent");
+        addStandardModule("jdk.httpserver");
+        addStandardModule("jdk.incubator.vector");
+        addStandardModule("jdk.jartool");
+        addStandardModule("jdk.javadoc");
+        addStandardModule("jdk.jcmd");
+        addStandardModule("jdk.jconsole");
+        addStandardModule("jdk.jdeps");
+        addStandardModule("jdk.jdi");
+        addStandardModule("jdk.jdwp.agent");
+        addStandardModule("jdk.jfr");
+        addStandardModule("jdk.jlink");
+        addStandardModule("jdk.jpackage");
+        addStandardModule("jdk.jshell");
+        addStandardModule("jdk.jsobject");
+        addStandardModule("jdk.jstatd");
+        addStandardModule("jdk.localedata");
+        addStandardModule("jdk.management");
+        addStandardModule("jdk.management.agent");
+        addStandardModule("jdk.management.jfr");
+        addStandardModule("jdk.naming.dns");
+        addStandardModule("jdk.naming.rmi");
+        addStandardModule("jdk.net");
+        addStandardModule("jdk.nio.mapmode");
+        addStandardModule("jdk.sctp");
+        addStandardModule("jdk.security.auth");
+        addStandardModule("jdk.security.jgss");
+        addStandardModule("jdk.xml.dom");
+        addStandardModule("jdk.zipfs");        
     }
 }

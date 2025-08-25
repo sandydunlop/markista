@@ -18,6 +18,8 @@ public class Api extends Node {
     // store children by the interface type (no concrete TypeNode mention)
     protected final List<TypeView> types = new ArrayList<>();
 
+    private List<MethodNode> methods = new ArrayList<>();
+
     /// Represents the unnamed module in the API.
     private final ModuleNode unnamedModule = new ModuleNode("");
 
@@ -49,6 +51,18 @@ public class Api extends Node {
     /// @return List of ModuleNode objects representing the modules.
     public List<ModuleNode> getModules() {
         return modules;
+    }
+
+    /// Adds a method to the API.
+    /// @param node the MethodNode instance to add.
+    public void addMethod(MethodNode node) {
+        methods.add(node);
+    }
+
+    /// Returns the list of methods in the API.
+    /// @return List of MethodNode objects representing the methods.
+    public List<MethodNode> getMethods() {
+        return methods;
     }
 
     /// Retrieves a module matching the specified qualified name.
@@ -119,7 +133,7 @@ public class Api extends Node {
     /// @return the matching PackageNode if found, or null otherwise.
     public PackageNode getPackageNode(String qualifiedName) {
         for (PackageNode packageNode : packages) {
-            if (packageNode.getQualifiedName().equals(qualifiedName)){
+            if (packageNode.getName().equals(qualifiedName)){
                 return packageNode;
             }
         }
@@ -149,7 +163,7 @@ public class Api extends Node {
 
     /// Sorts the types in descending order by qualified name and sorts all child types recursively.
     public void sort() {
-        packages.sort((o1, o2) -> o2.getQualifiedName().compareTo(o1.getQualifiedName()));
+        packages.sort((o1, o2) -> o2.getName().compareTo(o1.getName()));
         for (PackageNode pkg : getPackages()) {
             pkg.sort();
         }
@@ -167,9 +181,9 @@ public class Api extends Node {
     public String commonBase() {
         if (packages.isEmpty()) return "";
         int lastDot = 0;
-        String base = packages.getFirst().getQualifiedName();
+        String base = packages.getFirst().getName();
         for (PackageNode pkg : packages) {
-            String pkgName = pkg.getQualifiedName();
+            String pkgName = pkg.getName();
             for (int j=0; j<Math.min(base.length(), pkgName.length()); j++) {
                 if (base.charAt(j) != pkgName.charAt(j)) {
                     base = base.substring(0, lastDot);

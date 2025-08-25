@@ -1,17 +1,17 @@
 package io.github.sandydunlop.markista.markdown;
 
-import io.github.sandydunlop.markista.assembler.LinkResolver;
-import io.github.sandydunlop.markista.assembler.TextAssembler;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.AnnotationTypeNode;
+import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
-import io.github.sandydunlop.markista.model.EnumTypeNode;
-import io.github.sandydunlop.markista.model.InterfaceTypeNode;
+import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.EnumNode;
+import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.orchestration.LinkResolver;
+import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -82,10 +82,9 @@ class PackageWriterTests {
 
         Text body = Text.empty();
         body.append(Text.Segment.empty()
-                .setKind(Text.SegmentKind.TEXT)
+                .setKind(Text.Segment.Kind.TEXT)
                 .setText("This is a test class [Node](Node)."));
-        ClassTypeNode nodeClass = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", "Node", 
-                packageNode.getQualifiedName());
+        ClassNode nodeClass = new ClassNode("Node", packageNode.getName());
         nodeClass.setBody(body);
         nodeClass.setFullBody(body);
         nodeClass.setFirstSentence(body);
@@ -107,7 +106,7 @@ class PackageWriterTests {
         ctx = Context.getInstance();
         ctx.setApi(api);
         LinkResolver.init(api, ctx);
-        LinkResolver.addNativeModules();
+        LinkResolver.addStandardModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
     }
 
@@ -137,9 +136,9 @@ class PackageWriterTests {
 
     @Test
     void packagrWiter_outputsPackageMembers_withoutTabs() throws InvalidPathException, IOException {
-        EnumTypeNode enumNode = new EnumTypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", modelPackage.getModuleName());
-        InterfaceTypeNode interfaceNode = new InterfaceTypeNode("io.github.sandydunlop.markista.model.TestInterface", "TestInterface", modelPackage.getModuleName());
-        AnnotationTypeNode annotationNode = new AnnotationTypeNode("io.github.sandydunlop.markista.model.TestAnnotation", "TestAnnotation", modelPackage.getModuleName());
+        EnumNode enumNode = new EnumNode("TestEnum", modelPackage.getModuleName());
+        InterfaceNode interfaceNode = new InterfaceNode("TestInterface", modelPackage.getModuleName());
+        AnnotationNode annotationNode = new AnnotationNode("TestAnnotation", modelPackage.getModuleName());
         modelPackage.addType(enumNode);
         modelPackage.addType(interfaceNode);
         modelPackage.addType(annotationNode);
@@ -166,9 +165,9 @@ class PackageWriterTests {
 
     @Test
     void packagrWiter_outputsPackageMembers_withTabs() throws InvalidPathException, IOException {
-        EnumTypeNode enumNode = new EnumTypeNode("io.github.sandydunlop.markista.model.TestEnum", "TestEnum", modelPackage.getModuleName());
-        InterfaceTypeNode interfaceNode = new InterfaceTypeNode("io.github.sandydunlop.markista.model.TestInterface", "TestInterface", modelPackage.getModuleName());
-        AnnotationTypeNode annotationNode = new AnnotationTypeNode("io.github.sandydunlop.markista.model.TestAnnotation", "TestAnnotation", modelPackage.getModuleName());
+        EnumNode enumNode = new EnumNode("TestEnum", modelPackage.getModuleName());
+        InterfaceNode interfaceNode = new InterfaceNode("TestInterface", modelPackage.getModuleName());
+        AnnotationNode annotationNode = new AnnotationNode("TestAnnotation", modelPackage.getModuleName());
         modelPackage.addType(enumNode);
         modelPackage.addType(interfaceNode);
         modelPackage.addType(annotationNode);

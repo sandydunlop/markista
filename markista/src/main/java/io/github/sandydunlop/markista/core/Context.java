@@ -159,6 +159,8 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// Sets the current type name.
     /// @param name The type name to set.
     public void setTypeName(String name) {
+        setMethodName("");
+        setFieldName("");
         typeName = name == null ? "" : name;
     }
 

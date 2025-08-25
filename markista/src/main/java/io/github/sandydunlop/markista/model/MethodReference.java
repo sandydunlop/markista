@@ -8,6 +8,7 @@ public class MethodReference implements Serializable {
     private static final long serialVersionUID = 1L;
     private Link link;
     private Text text;
+    private String name;
 
     private MethodReference() {
         // Nothing to see here
@@ -17,6 +18,15 @@ public class MethodReference implements Serializable {
         MethodReference ref = new MethodReference();
         ref.setLink(Link.to(methodName));
         ref.setText(Text.empty());
+        ref.setName(methodName);
+        return ref;
+    }
+
+    public static MethodReference to(Link r, Text t) {
+        MethodReference ref = new MethodReference();
+        ref.setLink(r);
+        ref.setText(t);
+        ref.setName(r.getTarget());
         return ref;
     }
 
@@ -34,5 +44,13 @@ public class MethodReference implements Serializable {
 
     public Text getText() {
         return text;
+    }
+
+    public void setName(String n) {
+        name = n;
+    }
+
+    public String getName() {
+        return name;
     }
 }

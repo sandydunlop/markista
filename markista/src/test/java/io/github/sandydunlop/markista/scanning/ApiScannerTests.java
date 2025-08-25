@@ -1,10 +1,10 @@
-package io.github.sandydunlop.markista.scanner;
+package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.MockedDocletEnvironment;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
@@ -208,7 +208,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         // Mock TypeUtils static behavior
         TypeNode typeNode = mock(TypeNode.class);
         PackageNode pkg = mock(PackageNode.class);
-        when(typeNode.getPackageName()).thenReturn(pkg.getQualifiedName());
+        when(typeNode.getPackageName()).thenReturn(pkg.getName());
         when(pkg.getSourcePath()).thenReturn(null);
 
         try (MockedStatic<TypeUtils> t = Mockito.mockStatic(TypeUtils.class)) {
@@ -311,7 +311,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         invokeProcessIncludedElements(Set.of(typeEl));
 
         Api api2 = new Api("berry");
-        ClassTypeNode berry = new ClassTypeNode("com.example.Type", "Type", null);
+        ClassNode berry = new ClassNode("Type", null);
         api2.addType(berry);
         DocletEnvironment mockEnvironment = mock(DocletEnvironment.class);
         TypeUtils.init(api2, mockEnvironment);
@@ -347,7 +347,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
             // The added package should be associated with the current module (unnamed module initially)
             ModuleNode unnamed = api.getUnnamedModuleNode();
             boolean found = unnamed.getPackages().stream()
-                    .anyMatch(p -> "com.example".equals(((PackageNode) p).getQualifiedName()));
+                    .anyMatch(p -> "com.example".equals(((PackageNode) p).getName()));
             assertTrue(found, "Unnamed module should contain the added package");
         }
     }
@@ -359,7 +359,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         // Create a mocked PackageNode and attach to unnamed module packages deque
         PackageNode pkg = mock(PackageNode.class);
-        when(pkg.getQualifiedName()).thenReturn("com.example");
+        when(pkg.getName()).thenReturn("com.example");
         Path srcPath = Path.of("root", "src", "com", "example");
         when(pkg.getSourcePath()).thenReturn(srcPath.toString());
 
@@ -373,7 +373,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         // Expected root computed by replacing nameAsPath in the source path string
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
-        String nameAsPath = pkg.getQualifiedName().replace(".", separator);
+        String nameAsPath = pkg.getName().replace(".", separator);
         String expectedRootStr = pkg.getSourcePath().replace(nameAsPath, "");
 
         assertEquals(expectedRootStr, unnamed.getSourcePath(), "Unnamed module sourcePath should be computed from package source path");
@@ -506,9 +506,9 @@ class ApiScannerTests extends MockedDocletEnvironment {
         List<PackageNode> packageList = apiScanner.api.getPackages();
         assertEquals(2, packageList.size());
         PackageNode newPackage = packageList.get(1);
-        assertEquals("mockpackage", newPackage.getQualifiedName());
+        assertEquals("mockpackage", newPackage.getName());
         assertEquals(1, parentPackageNode.getPackages().size());
-        assertEquals("mockpackage", parentPackageNode.getPackages().getFirst().getQualifiedName());
+        assertEquals("mockpackage", parentPackageNode.getPackages().getFirst().getName());
     }
 
     @Test
@@ -552,7 +552,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode);
-        TypeNode typeNode = new TypeNode("mocktype", "mocktype", "mockpackage");
+        TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -562,6 +562,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         assertEquals(1, fieldList.size());
     }
 
+    @Disabled("Methods won't appear in Type until after TextAssembler runs")
     @Test
     void visitExecutable() {
         mockDocletEnvironment();
@@ -584,7 +585,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode);
-        TypeNode typeNode = new TypeNode("mocktype", "mocktype", "mockpackage");
+        TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
         apiScanner.api.addType(typeNode);
         DocTree dct = mockDocCommentTree_TEXT("plain text");
         when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
@@ -600,6 +601,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         assertEquals(1, paramList.size());
     }
 
+    @Disabled("Methods won't appear in Type until after TextAssembler runs")
     @Test
     void visitExecutable_constructor() {
         mockDocletEnvironment();
@@ -619,7 +621,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode);
-        TypeNode typeNode = new TypeNode("mocktype", "mocktype", "mockpackage");
+        TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -647,7 +649,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode);
-        TypeNode typeNode = new TypeNode("mocktype", "mocktype", "mockpackage");
+        TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);

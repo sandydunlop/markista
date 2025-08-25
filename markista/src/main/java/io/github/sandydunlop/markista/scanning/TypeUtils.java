@@ -1,38 +1,37 @@
-package io.github.sandydunlop.markista.scanner;
+package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;
-import io.github.sandydunlop.markista.model.AnnotationTypeNode;
+import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Deprecation;
 import io.github.sandydunlop.markista.model.DirectiveNode;
-import io.github.sandydunlop.markista.model.EnumTypeNode;
+import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.InterfaceTypeNode;
+import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.RecordTypeNode;
+import io.github.sandydunlop.markista.model.RecordNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
-import io.github.sandydunlop.markista.model.Text.SegmentKind;
+import io.github.sandydunlop.markista.scanning.MarkdownParser.TokenKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
 import io.github.sandydunlop.markista.model.TypeView;
-import io.github.sandydunlop.markista.scanner.MarkdownParser.TokenKind;
 
 import java.io.File;
 import java.io.Serializable;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +51,6 @@ import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 import javax.tools.JavaFileObject;
 
 import jdk.javadoc.doclet.DocletEnvironment;
@@ -60,7 +58,6 @@ import jdk.javadoc.doclet.DocletEnvironment;
 import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.DocTree.Kind;
 import com.sun.source.doctree.ErroneousTree;
 import com.sun.source.doctree.LinkTree;
 import com.sun.source.doctree.ParamTree;
@@ -136,12 +133,9 @@ public class TypeUtils {
                 return null;
             }
             PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
-            typeNode = createTypeNode(qualifiedName, simpleName, packageNode, element.getKind());
-            if (typeNode == null) {
-                ctx.reportError("Unsupported type kind: " + element.getKind());
-                return null;
-            }
-            if (typeNode instanceof EnumTypeNode enumNode) {
+            typeNode = createTypeNode(simpleName, packageNode, element.getKind());
+            typeNode.setQualifiedName(qualifiedName);
+            if (typeNode instanceof EnumNode enumNode) {
                 setEnumConstants(enumNode, element);
             }
             setTypeOwnership(typeNode, element);
@@ -160,7 +154,7 @@ public class TypeUtils {
     /// Reads enum constants from the TypeElement and adds them as FieldNodes to the EnumNode.
     /// @param enumNode The EnumNode to populate with constants.
     /// @param e The TypeElement representing the enum type.
-    public static void setEnumConstants(EnumTypeNode enumNode, TypeElement e) {
+    public static void setEnumConstants(EnumNode enumNode, TypeElement e) {
         List<? extends Element> enclosedElements = e.getEnclosedElements();
         for (Element element : enclosedElements) {
             if (element.getKind() == ElementKind.ENUM_CONSTANT) {
@@ -191,12 +185,11 @@ public class TypeUtils {
         }
         String returnTypeName = qualifiedTypeName + arrayBrackets;
         MethodNode methodNode = new MethodNode(returnTypeName, element.getSimpleName().toString());
-        PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
 
         // setMethodParams must be called before setMethodOwnerDetails as the method
         // parameters need to be present to determine if this method already exists.
         setMethodParams(methodNode, element);
-        if (!setMethodOwnerDetails(methodNode, packageNode, element)) {
+        if (!setMethodOwnerDetails(methodNode, element)) {
             return null;
         }
 
@@ -207,7 +200,6 @@ public class TypeUtils {
         setThrownTypes(methodNode, element.getThrownTypes());
         setMethodAnnotations(methodNode, element);
         setAppliedAnnotations(methodNode, element);
-        setSpecifiedBy(methodNode, element);
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
         TypeUtils.setDeprecationStatus(methodNode, element, dct);
         if (dct != null) {
@@ -253,22 +245,19 @@ public class TypeUtils {
         return null;
     }
 
-    /// Factory method to create TypeNode (ClassTypeNode, InterfaceTypeNode, RecordTypeNode,
-    /// EnumTypeNode, or AnnotationTypeNode) based on ElementKind.
-    /// @param qualifiedName Fully qualified name of the type.
+    /// Factory method to create TypeNode (ClassNode, InterfaceNode, RecordNode,
+    /// EnumNode, or AnnotationNode) based on ElementKind.
     /// @param simpleName The simple (unqualified) name of the type.
     /// @param packageNode The owning PackageNode.
     /// @param elementKind The ElementKind representing the type kind.
     /// @return A TypeNode instance corresponding to the kind, or null if unsupported.
-    public static TypeNode createTypeNode(String qualifiedName, String simpleName, PackageNode packageNode, ElementKind elementKind) {
+    public static TypeNode createTypeNode(String simpleName, PackageNode packageNode, ElementKind elementKind) {
         return switch (elementKind) {
-            case ElementKind.CLASS -> new ClassTypeNode(qualifiedName, simpleName, packageNode.getQualifiedName());
-            case ElementKind.INTERFACE -> new InterfaceTypeNode(qualifiedName, simpleName, packageNode
-                    .getQualifiedName());
-            case ElementKind.RECORD -> new RecordTypeNode(qualifiedName, simpleName, packageNode.getQualifiedName());
-            case ElementKind.ENUM -> new EnumTypeNode(qualifiedName, simpleName, packageNode.getQualifiedName());
-            case ElementKind.ANNOTATION_TYPE -> new AnnotationTypeNode(qualifiedName, simpleName, packageNode
-                    .getQualifiedName());
+            case ElementKind.CLASS -> new ClassNode(simpleName, packageNode.getName());
+            case ElementKind.INTERFACE -> new InterfaceNode(simpleName, packageNode.getName());
+            case ElementKind.RECORD -> new RecordNode(simpleName, packageNode.getName());
+            case ElementKind.ENUM -> new EnumNode(simpleName, packageNode.getName());
+            case ElementKind.ANNOTATION_TYPE -> new AnnotationNode(simpleName, packageNode.getName());
             default -> null;
         };
     }
@@ -299,7 +288,7 @@ public class TypeUtils {
                 text.append(docTree.toString());
                 break;
             case LINK:
-                segment.setKind(SegmentKind.LINK);
+                segment.setKind(Segment.Kind.LINK);
                 origin = ctx.getTypeName().isEmpty() ? ctx.getPackageName() : ctx.getTypeName();
                 Link link = Link.to(getDocTreePart(docTree, 1)).from(origin);
                 api.addLink(link);
@@ -307,7 +296,7 @@ public class TypeUtils {
                 text.append(segment);
                 break;
             case LINK_PLAIN:
-                segment.setKind(SegmentKind.LINK);
+                segment.setKind(Segment.Kind.LINK);
                 origin = ctx.getTypeName().isEmpty() ? ctx.getPackageName() : ctx.getTypeName();
                 link = Link.to(getDocTreePart(docTree, 1)).from(origin);
                 segment.setLink(link);
@@ -319,12 +308,12 @@ public class TypeUtils {
                 }
                 break;
             case CODE:
-                segment.setKind(SegmentKind.CODE);
+                segment.setKind(Segment.Kind.CODE);
                 segment.setText(getDocTreeText(docTree, 1));
                 text.append(segment);
                 break;
             case START_ELEMENT:
-                segment.setKind(SegmentKind.TEXT);
+                segment.setKind(Segment.Kind.TEXT);
                 StartElementTree se = (StartElementTree)docTree;
                 if ("p".equals(se.getName().toString())) {
                     segment.setText("\n\n");
@@ -336,7 +325,7 @@ public class TypeUtils {
             case INHERIT_DOC:
                 // Inherited docs are processed in TextAssembler as they need the
                 // full API model which is incomplete here.
-                segment.setKind(SegmentKind.INHERIT);
+                segment.setKind(Segment.Kind.INHERIT);
                 text.append(segment);
                 break;
             default:
@@ -356,19 +345,21 @@ public class TypeUtils {
             if (token.getKind() == MarkdownParser.TokenKind.BRACKETS_TAG) {
                 MarkdownParser.Token next = token.getNext();
                 if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
-                    Link ref = Link.to(next.getText());
+                    Link ref = Link.to(next.getText())
+                            .from(ctx.getPackageName());
                     ref.setLabel(token.getText());
                     Segment segment = Segment.empty()
-                            .setKind(SegmentKind.LINK)
+                            .setKind(Segment.Kind.LINK)
                             .setLink(ref)
                             .setText(token.getText());
                     text.append(segment);
                     api.addLink(ref);
                     token = next;
                 } else {
-                    Link ref = Link.to(token.getText());
+                    Link ref = Link.to(token.getText())
+                            .from(ctx.getPackageName());
                     Segment segment = Segment.empty()
-                            .setKind(SegmentKind.LINK)
+                            .setKind(Segment.Kind.LINK)
                             .setLink(ref)
                             .setText(token.getText());
                     text.append(segment);
@@ -417,36 +408,15 @@ public class TypeUtils {
         return "";
     }
 
-    public static boolean setMethodOwnerDetails(MethodNode methodNode, PackageNode packageNode, ExecutableElement element) {
+    public static boolean setMethodOwnerDetails(MethodNode methodNode, ExecutableElement element) {
         TypeElement ownerElement = getEnclosingTypeElement(element);
         if (ownerElement != null) {
-            TypeNode ownerType = api.getTypeNode(ownerElement.getQualifiedName().toString());
-            if (ownerType == null) {
-                ctx.reportError(String.format(
-                        "Unable to determine owner of method '%s' in package '%s'",
-                        methodNode.getSimpleName(), packageNode.getQualifiedName()));
-                return false;
-            }
-            methodNode.setOwnerName(ownerType.getQualifiedName());
+            methodNode.setOwnerName(ownerElement.getQualifiedName().toString());
+            api.addMethod(methodNode);
             if (element.getKind() == ElementKind.METHOD) {
-                MethodNode existingMethodNode = ownerType.getMethod(methodNode);
-                if (existingMethodNode == null) {   
-                    ownerType.getMethods().add(methodNode);
-                } else {
-                    // Method already exists in the API model.
-                    // Returning false instructs the caller not to continue.
-                    return false;
-                }
+                methodNode.setConstructor(false);
             } else if (element.getKind() == ElementKind.CONSTRUCTOR) {
-                methodNode.setSimpleName(ownerType.getSimpleName());
-                MethodNode existingMethodNode = ownerType.getConstructor(methodNode);
-                if (existingMethodNode == null) {
-                    ownerType.addConstructor(methodNode);
-                } else {
-                    // Method already exists in the API model
-                    // Returning false instructs the caller not to continue.
-                    return false;
-                }
+                methodNode.setConstructor(true);
             }
             return true;
         } else {
@@ -488,16 +458,19 @@ public class TypeUtils {
         TypeNode ownerTypeNode = owner == null ? null : api.getTypeNode(owner.getQualifiedName().toString());
         if (ownerTypeNode != null) {
             // Owner is a type (class, interface, enum, annotation)
-            typeNode.setOwner(ownerTypeNode.getQualifiedName());
+            typeNode.setOwnerName(ownerTypeNode.getQualifiedName());
             typeNode.setSimpleName(ownerTypeNode.getSimpleName() + "." + typeNode.getSimpleName());
             ownerTypeNode.addType(typeNode);
         } else {
             // Owner is a package
             PackageNode ownerPackage = api.getPackageNode(typeNode.getPackageName());
-            typeNode.setOwner(ownerPackage.getQualifiedName());
+            typeNode.setOwnerName(ownerPackage.getName());
             ownerPackage.addType(typeNode);
         }
     }
+    //
+    //
+    //
 
     /// Sets annotations on the MethodNode, in particular looks for @Override annotation to set overridden methods.
     /// @param method The MethodNode to update.
@@ -507,108 +480,11 @@ public class TypeUtils {
             DeclaredType declaredType = anno.getAnnotationType();
             Element typeElement = declaredType.asElement();
             if ("Override".equals(typeElement.getSimpleName().toString())) {
-                String nativeBaseClass = getNativeClassForInheritedMethod(method);
-                MethodReference overriddenMethod = null;
-                if (nativeBaseClass != null) {
-                    String methodName = methodElement.getSimpleName().toString();
-                    overriddenMethod = MethodReference.to(nativeBaseClass + "#" + methodName);
-                } else {
-                    overriddenMethod = MethodReference.to(getFullSignature(methodElement));
-                }
+                Link link = new Link().withKind(Link.Kind.METHOD).withMethodName(method.getSimpleName());
+                MethodReference overriddenMethod = MethodReference.to(link, Text.empty());
                 method.setBaseMethod(overriddenMethod);
             }
         }
-    }
-
-    /// Checks implemented interfaces of a method's owning type, and sets "specifiedBy" on the method if it implements an interface method.
-    /// @param methodNode The MethodNode to update.
-    /// @param methodElement The ExecutableElement representing the method.
-    public static void setSpecifiedBy(MethodNode methodNode, ExecutableElement methodElement) {
-        TypeNode ownerTypeNode = api.getTypeNode(methodNode.getOwnerName());
-        List<TypeReference> interfaces = ownerTypeNode.getImplementedInterfaces();
-        if (interfaces == null || interfaces.isEmpty()) return;
-        for (TypeReference typeRef : interfaces) {
-            Link interfaceRef = typeRef.getLink();
-            TypeElement interfaceElement = environment.getElementUtils().getTypeElement(interfaceRef.getClassName());
-            if (interfaceElement == null) continue;
-            List<? extends Element>  enclosedElements = interfaceElement.getEnclosedElements();
-            for (ExecutableElement interfaceMethod : ElementFilter.methodsIn(enclosedElements)) {
-                if (interfaceMethod.getSimpleName().toString().equals(methodElement.getSimpleName().toString())) {
-                    methodNode.setSpecifiedBy(interfaceRef);
-                    return;
-                }
-            }
-        }
-    }
-
-    static String getFullSignature(ExecutableElement element) {
-        StringBuilder signature = new StringBuilder();
-        
-        // Get method name
-        signature.append(element.getSimpleName()).append("(");
-        
-        // Get parameter types
-        List<? extends VariableElement> parameters = element.getParameters();
-        for (int i = 0; i < parameters.size(); i++) {
-            TypeMirror type = parameters.get(i).asType();
-            signature.append(type.toString());
-            if (i < parameters.size() - 1) {
-                signature.append(", ");
-            }
-        }
-        
-        signature.append(")");
-        return signature.toString();
-    }
-
-    /// Recursively searches for an overridden method matching the supplied method within the supertypes of its owner.
-    /// @param method The MethodNode for which to find an overridden method.
-    /// @return An InheritedMethodNode if a matching overriden method is found, else null.
-    public static String getNativeClassForInheritedMethod(MethodNode method) {
-        if (method.getOwnerName() == null) return null;
-
-        TypeNode ownerTypeNode = api.getTypeNode(method.getOwnerName());
-        for (int i = ownerTypeNode.getSupertypes().size() - 1; i >= 0; i--) {
-            TypeReference typeRef = ownerTypeNode.getSupertypes().get(i);
-            String canonicalName = removeGenerics(typeRef.getLink().getTarget());
-            try {
-                Class<?> cls = Class.forName(canonicalName);
-                if (cls != null && belongsToClass(cls, method)) {
-                    return canonicalName;
-                }
-            } catch (SecurityException | ClassNotFoundException _) {
-                ctx.reportWarning("Failed to read information for " + canonicalName + "." + method.getSimpleName());
-            }
-        }
-        return null;
-    }
-
-    /// Attempts to find an inherited method defined in native Java classes (e.g., from runtime classes).
-    /// @param cls The class the method belongs to
-    /// @param method The MethodNode that may override the inherited native method.
-    /// @return An InheritedMethodNode if found, or null otherwise.
-    /// @throws ClassNotFoundException 
-    public static boolean belongsToClass(Class<?> cls, MethodNode method) throws ClassNotFoundException {
-        Method[] listMethods = cls.getDeclaredMethods();
-        for (Method listMethod : listMethods) {
-            // Compare method names and parameter counts
-            if (listMethod.getName().equals(method.getSimpleName()) &&
-                listMethod.getParameterCount() == method.getParams().size()) {
-                boolean parametersMatch = true;
-                Class<?>[] listMethodParamTypes = listMethod.getParameterTypes();
-                for (int i = 0; i < listMethodParamTypes.length; i++) {
-                    Class<?> clsB = Class.forName(method.getParams().get(i).getTypeName());
-                    if (!listMethodParamTypes[i].isAssignableFrom(clsB)) {
-                        parametersMatch = false;
-                        break;
-                    }
-                }
-                if (parametersMatch) {
-                    return true;
-                }
-            }
-        }
-        return false; // No overridden method found
     }
 
     /// Adds references to constant field values from classes in the API to the provided module node.
@@ -719,10 +595,10 @@ public class TypeUtils {
             if (tagTree instanceof SeeTree seeTree) {
                 List<? extends DocTree> see = seeTree.getReference();
                 for (DocTree docRef : see) {
-                    if (docRef.getKind() == Kind.MARKDOWN) {
+                    if (docRef.getKind() == DocTree.Kind.MARKDOWN) {
                         // This is sometimes (always?!) HTML, not Markdown?
                         refs.add(Link.to(getUrl(docRef.toString())));
-                    } else if (docRef.getKind() == Kind.REFERENCE) {
+                    } else if (docRef.getKind() == DocTree.Kind.REFERENCE) {
                         refs.add(Link.to(docRef.toString()).withKind(Link.Kind.TYPE));
                     } else {
                         ctx.reportWarning("Unhandled reference type: " + docRef.getKind().toString());
@@ -804,7 +680,7 @@ public class TypeUtils {
             node.addAppliedAnnotation(appliedAnnotation);
             api.addAppliedAnnotation(appliedAnnotation);
             if (declaredTypeElement.getQualifiedName().toString().equals("java.lang.annotation.Documented") &&
-                    node instanceof AnnotationTypeNode annotationNode) {
+                    node instanceof AnnotationNode annotationNode) {
                 annotationNode.setHasDocumentedAnnotation(true);
             }
             Map<? extends ExecutableElement, ? extends AnnotationValue> values = annotationMirror.getElementValues();
@@ -820,7 +696,7 @@ public class TypeUtils {
                 PackageElement pe = TypeUtils.getEnclosingPackageElement(annotationMethod);
                 String packageName = pe == null ? "" : pe.getQualifiedName().toString();
                 PackageNode pkg = new PackageNode(packageName);
-                TypeNode paramType = new TypeNode(typeString, Utils.simplifyNames(typeString), pkg.getQualifiedName());
+                TypeNode paramType = new TypeNode(Utils.simplifyNames(typeString), pkg.getName());
 
                 String entryName = annotationMethod.getSimpleName().toString();
                 AnnotationValue value = entry.getValue();
@@ -929,83 +805,68 @@ public class TypeUtils {
         }
     }
 
-    /// Gets the field type as a TypeNode for the specified class name and field name.
-    /// @param className Fully qualified class name containing the field.
-    /// @param fieldName The field name.
-    /// @return A TypeNode representing the field's type, or null if not found.
-    public static TypeNode getFieldType(String className, String fieldName) {
-        String qualifiedTypeName = null;
-        String arrayBrackets = "";
-        TypeElement classElement = environment.getElementUtils().getTypeElement(className);
-        for (VariableElement field : ElementFilter.fieldsIn(classElement.getEnclosedElements())) {
-            if (field.getSimpleName().toString().equals(fieldName)) {
-                TypeMirror fieldType = field.asType();
-                TypeMirror typeMirror = environment.getTypeUtils().getArrayType(fieldType);
-                if (typeMirror != null && typeMirror.getKind() == TypeKind.ARRAY) {
-                    ArrayType at = environment.getTypeUtils().getArrayType(fieldType);
-                    TypeMirror componentType = at.getComponentType();
-                    qualifiedTypeName = componentType.toString();
-                    arrayBrackets = "\\[]";                    
-                } else {
-                    qualifiedTypeName = fieldType.toString();
-                }
-                break;
-            }
-        }
-        if (qualifiedTypeName == null) return null;
-
-        String simpleTypeName = Utils.simplifyNames(qualifiedTypeName);
-        String packageName = getPackageName(qualifiedTypeName);
-        PackageNode packageNode = api.getPackageNode(packageName);
-        packageName = packageNode == null ? "" : packageNode.getQualifiedName();
-        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
-        type.setArrayBrackets(arrayBrackets);
-
-        return type;
-    }
-
     /// Gets the parameter type as a TypeNode for the specified parameter name in the method.
     /// @param method The ExecutableElement representing the method.
     /// @param fieldName The parameter name.
     /// @return A TypeNode for the parameter's type, or null if not found.
     public static TypeNode getParamType(ExecutableElement method, String fieldName) {
-        String qualifiedTypeName = null;
+        String packageName = null;
+        String simpleTypeName = null;
         String arrayBrackets = "";
         for (VariableElement param : method.getParameters()) {
             if (param.getSimpleName().toString().equals(fieldName)){
                 TypeMirror typeMirror = param.asType();
                 if (typeMirror.getKind() == TypeKind.ARRAY){
-                    TypeMirror array = ((ArrayType)typeMirror).getComponentType();
-                    qualifiedTypeName = array.toString();
-                    arrayBrackets = "\\[]";
+                    TypeMirror componentType = ((ArrayType)typeMirror).getComponentType();
+                    Pair<String,String> pair = getSimpleNameAndPackageName(componentType);
+                    simpleTypeName = pair.getL();
+                    packageName = pair.getR();
+                    arrayBrackets = "[]";
                 } else {
-                    qualifiedTypeName = typeMirror.toString();
+                    Pair<String,String> pair = getSimpleNameAndPackageName(typeMirror);
+                    simpleTypeName = pair.getL();
+                    packageName = pair.getR();
                 }
                 break;
             }
         }
-        if (qualifiedTypeName == null) return null;
+        if (simpleTypeName == null) return null;
 
-        String simpleTypeName = Utils.simplifyNames(qualifiedTypeName);
-        String packageName = getPackageName(qualifiedTypeName);
-        PackageNode packageNode = api.getPackageNode(packageName);
-        packageName = packageNode == null ? "" : packageNode.getQualifiedName();
-        TypeNode type = new TypeNode(qualifiedTypeName, simpleTypeName, packageName);
+        TypeNode type = new TypeNode(simpleTypeName, packageName);
         type.setArrayBrackets(arrayBrackets);
 
         return type;
     }
 
-    /// Extracts the package name from a qualified type name.
-    /// @param qualifiedTypeName The fully qualified type name.
-    /// @return The package name portion or null if input null.
-    private static String getPackageName(String qualifiedTypeName) {
-        if (qualifiedTypeName == null) return null;
-        String packageName = qualifiedTypeName;
-        if (packageName.contains(".")) {
-            packageName = packageName.substring(0, packageName.lastIndexOf("."));
+    static Pair<String,String> getSimpleNameAndPackageName(TypeMirror typeMirror) {
+        String packageName = null;
+        String simpleTypeName = null;
+        Element typeElement = environment.getTypeUtils().asElement(typeMirror);
+        if (typeElement != null) {
+            // It's null for primitive types
+            PackageElement packageElement = environment.getElementUtils().getPackageOf(typeElement);
+            packageName = packageElement.getQualifiedName().toString();
+            simpleTypeName = typeElement.getSimpleName().toString();
+        } else {
+            // Try looking it up in JRE types
+            Class<?> type = loadClass(typeMirror.toString());
+            if (type != null) {
+                simpleTypeName = type.getSimpleName();
+                packageName = type.getPackageName();
+            } else {
+                simpleTypeName = typeMirror.toString();
+            }
+        }      
+        return Pair.of(simpleTypeName, packageName);  
+    }
+
+    static Class<?> loadClass(String qualifiedName) {
+        ClassLoader classLoader = TypeUtils.class.getClassLoader();
+        try {
+            return classLoader.loadClass(qualifiedName);
+        } catch (ClassNotFoundException _) {
+            return null;
         }
-        return packageName;
     }
 
     /// Recursively finds the enclosing PackageElement of a given element.

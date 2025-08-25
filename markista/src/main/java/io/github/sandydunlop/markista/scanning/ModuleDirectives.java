@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.scanner;
+package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.Link;
@@ -21,7 +21,7 @@ import jdk.javadoc.doclet.DocletEnvironment;
 
 /// A utility class for creating [DirectiveNode] objects which encapsulate 
 /// the information provided by [Directive](javax.lang.model.element.ModuleElement.Directive) 
-/// objects scanned by the [ApiScanner][io.github.sandydunlop.markista.scanner.ApiScanner].
+/// objects scanned by the [ApiScanner][io.github.sandydunlop.markista.scanning.ApiScanner].
 public class ModuleDirectives {
     private static DocletEnvironment environment;
 

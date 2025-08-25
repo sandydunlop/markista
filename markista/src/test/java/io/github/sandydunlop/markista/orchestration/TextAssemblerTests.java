@@ -1,115 +1,39 @@
-package io.github.sandydunlop.markista.assembler;
+package io.github.sandydunlop.markista.orchestration;
 
-import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.ModelTestEnvironment;
+import io.github.sandydunlop.markista.markdown.MarkdownUtils;
+import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.MethodReference;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.RecordTypeNode;
+import io.github.sandydunlop.markista.model.RecordNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
-import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
 
 import java.util.List;
+import java.util.Map;
 
-import javax.lang.model.element.Element;
-import javax.tools.Diagnostic.Kind;
-
-import jdk.javadoc.doclet.Reporter;
-
-import com.sun.source.util.DocTreePath;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class TextAssemblerTests {
-    private static Context ctx;
-	private Api api;
-    private ModuleNode module;
-    private PackageNode model;
-    private PackageNode doclet;
-	private PackageNode markista;
-	private PackageNode util;
-    private ClassTypeNode node;
-    private ClassTypeNode markdownDoclet;
-
-    @Mock static Reporter reporter = new Reporter() {
-        @Override
-        public void print(Kind kind, String message) {
-            System.out.println(kind + ": " + message);
-        }
-
-        @Override
-        public void print(Kind kind, DocTreePath path, String message) {
-            // Do nothing
-        }
-
-        @Override
-        public void print(Kind kind, Element element, String message) {
-            // Do nothing
-        }
-    };
-    
-    @BeforeAll
-    static void initAll() {
-		ctx = Context.getInstance();
-		ctx.setReporter(reporter);
-    }
+class TextAssemblerTests extends ModelTestEnvironment {
+    private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
 
     @BeforeEach
     void init() {
-		api = new Api("Test API");
-        api.addPackage(new PackageNode("io.github.sandydunlop"));
-        markista = new PackageNode("io.github.sandydunlop.markista");
-		util = new PackageNode("io.github.sandydunlop.markista.util");
-		doclet = new PackageNode("io.github.sandydunlop.markista.doclet");
-		model = new PackageNode("io.github.sandydunlop.markista.model");
-		api.addPackage(markista);
-		api.addPackage(util);
-		api.addPackage(doclet);
-		api.addPackage(model);
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver","LinkResolver", 
-                util.getQualifiedName()));
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet","MarkdownDoclet", 
-                doclet.getQualifiedName()));
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option","MarkdownDoclet.Option", 
-                doclet.getQualifiedName()));
-
-        module = new ModuleNode("markista");
-		api.addModule(module);
-		module.addPackage(markista);
-		module.addPackage(util);
-		module.addPackage(doclet);
-		module.addPackage(model);
-		markista.setModuleName(module.getName());
-		util.setModuleName(module.getName());
-		doclet.setModuleName(module.getName());
-		model.setModuleName(module.getName());
-
-        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
-                "Node", model.getQualifiedName());
-        model.addType(node);
-        api.addType(node);
-
-        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", 
-                "MarkdownDoclet", doclet.getQualifiedName());
-        model.addType(markdownDoclet);
-
+        setupModel();
         LinkResolver.init(api, ctx);
-        LinkResolver.addNativeModules();
+        LinkResolver.addStandardModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
         LinkResolver.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
@@ -117,11 +41,11 @@ class TextAssemblerTests {
     }
 
     static Segment text(String t) {
-        return Segment.empty().setKind(SegmentKind.TEXT).setText(t);
+        return Segment.empty().setKind(Segment.Kind.TEXT).setText(t);
     }
 
     static Segment link(String t, String u) {
-        return Segment.empty().setKind(SegmentKind.LINK).setText(t).setLink(new Link().withUri(u));
+        return Segment.empty().setKind(Segment.Kind.LINK).setText(t).setLink(new Link().withUri(u));
     }
 
     static List<Object[]> typeReferenceProvider() {
@@ -151,7 +75,7 @@ class TextAssemblerTests {
             Segment expectedSegment = expected[i];
             Segment actualSegment = text.getSegment(i);
             assertEquals(expectedSegment.getText(), actualSegment.getText());
-            if (expectedSegment.getKind() == SegmentKind.LINK) {
+            if (expectedSegment.getKind() == Segment.Kind.LINK) {
                 assertEquals(expectedSegment.getLink().getUri(), actualSegment.getLink().getUri());
             }
         }
@@ -159,9 +83,8 @@ class TextAssemblerTests {
 
     @Test
     void processModules() {
-        TextAssembler.processModules(api);
-        ModuleNode module2 = api.getModules().getFirst();
-        for (DirectiveNode directive : module2.getDirectives()) {
+        TextAssembler.processModules(api.getModules());
+        for (DirectiveNode directive : module.getDirectives()) {
             assertNotEquals("", directive.getReference().getUri());
             assertNotEquals("", directive.getReference().getUri());
 
@@ -172,7 +95,6 @@ class TextAssemblerTests {
                 assertNotEquals("", pkg.getUri());
             }
         }
-
     }
 
     @Test
@@ -183,7 +105,7 @@ class TextAssemblerTests {
         constantValue.setConstantValue("testValue");
         module.addConstantValue(constantValue);     
 
-        TextAssembler.processModules(api);
+        TextAssembler.processModules(api.getModules());
 
         Link constantReference = constantValue.getConstantValueReference();
         assertNotNull(constantReference);
@@ -193,7 +115,7 @@ class TextAssemblerTests {
 
     @Test
     void test_addJavadocToRecords() {
-        RecordTypeNode recordNode = new RecordTypeNode("io.github.sandydunlop.markista.model.RecordTest","RecordTest",model.getQualifiedName());
+        RecordNode recordNode = new RecordNode("RecordTest",model.getName());
         MethodNode equalsNode = new MethodNode("boolean","equals");
         MethodNode hashCode = new MethodNode("long","hashCode");
         MethodNode toString = new MethodNode("java.lang.String","toString");
@@ -221,16 +143,14 @@ class TextAssemblerTests {
 
     @Test
     void inheritance() {
-        TypeNode baseTypeNode = new TypeNode("io.github.sandydunlop.markista.BaseType", 
-                "BaseType", "io.github.sandydunlop.markista");
+        TypeNode baseTypeNode = new TypeNode("BaseType", "io.github.sandydunlop.markista");
         MethodNode baseTypeMethod = new MethodNode("java.lang.String","toString");
         baseTypeMethod.setOwnerName(baseTypeNode.getQualifiedName());
         baseTypeNode.addMethod(baseTypeMethod);
         markista.addType(baseTypeNode);
         api.addType(baseTypeNode);
 
-        TypeNode typeNode = new TypeNode("io.github.sandydunlop.markista.Type", 
-                "BaseType", "io.github.sandydunlop.markista");
+        TypeNode typeNode = new TypeNode("MyType", "io.github.sandydunlop.markista");
         MethodNode typeMethod = new MethodNode("java.lang.String","toString");
         typeMethod.setOwnerName(typeNode.getQualifiedName());
         typeNode.addMethod(typeMethod);
@@ -239,7 +159,7 @@ class TextAssemblerTests {
 
         // Add some javadoc
         baseTypeMethod.setFirstSentence(Text.of("BaseDoc"));
-        Text typeMethodText = Text.of(Segment.empty().setKind(SegmentKind.INHERIT));
+        Text typeMethodText = Text.of(Segment.empty().setKind(Segment.Kind.INHERIT));
         typeMethod.setFirstSentence(typeMethodText);
 
         // Set baseTypeNode as the supertype of typeNode
@@ -264,5 +184,83 @@ class TextAssemblerTests {
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         assertTrue(ref1.isResolved());
+        assertEquals("io/github/sandydunlop/markista", ref1.getUri());
+    }
+
+    @Test
+    void inheritedMethods() {
+        MethodNode test = new MethodNode("java.lang.String", "inheritedMethod");
+        test.setOwnerName(node.getQualifiedName());
+        node.addMethod(test);
+        
+        ClassNode subClass = newClass("SubClass", model);
+        subClass.getSupertypes().add(TypeReference.to("java.lang.Object"));
+        subClass.getSupertypes().add(TypeReference.to(node.getQualifiedName()));
+
+        TextAssembler.assembleTextAndLinks(api, ctx);
+
+        assertEquals(1, subClass.getInheritedMethods().size());
+        Map.Entry<TypeReference, List<MethodReference>> inheritedEntry = subClass.getInheritedMethods().entrySet().iterator().next();
+        List<MethodReference> inheritedMethods = inheritedEntry.getValue();
+        assertEquals(1, inheritedMethods.size());
+        MethodReference inheritedMethod = inheritedMethods.getFirst();
+        assertEquals("inheritedMethod", inheritedMethod.getLink().getMethodName());
+    }
+
+	@Test
+	void splitAndLink_oneArray_simplified() {
+        Text text = TextAssembler.splitAndLink("java.lang.String[]");
+        String markdown = MarkdownUtils.formatText(text);
+        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
+    }
+
+    @Test
+    void link_generics_qualified() {
+        Text text = TextAssembler.linkGenerics("java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>");
+        String markdown = MarkdownUtils.formatText(text);
+        assertEquals("[Function](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html)<[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html), [Optional](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html)<[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html)>>", markdown);
+    }
+
+    @Test
+    void link_standardMethod() {
+        LinkResolver.addStandardModules();
+        Text text = TextAssembler.link(Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
+        String markdown = MarkdownUtils.formatText(text);
+        assertEquals("[Doclet.Option.process(java.lang.String,java.util.List)](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
+    }
+
+    @Test
+    void link_localMethod() {
+        LinkResolver.addStandardModules();
+        Text text = TextAssembler.link(Link.to("Node#sort()"));
+        String markdown = MarkdownUtils.formatText(text);
+        assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
+    }
+
+	@Test
+	void splitAndLink_two() {
+        Text text = TextAssembler.splitAndLink("java.lang.String, java.util.List");
+        String markdown = MarkdownUtils.formatText(text);
+        assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html), [List](" + JAVA_24_URL + "java.base/java/util/List.html)", markdown);
+    }
+
+    @Test
+    void getStandardInterface_normal() {
+        Link link = Link.to("jdk.javadoc.doclet.Doclet")
+                .setPackageName("jdk.javadoc.doclet")
+                .setSimpleClassName("Doclet");
+        TypeReference interfaceRef = TypeReference.to(link, Text.empty());
+        InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
+        assertNotNull(interfaceNode);
+    }
+
+    @Test
+    void getStandardInterface_nested() {
+        Link link = Link.to("jdk.javadoc.doclet.Doclet.Option")
+                .setPackageName("jdk.javadoc.doclet")
+                .setSimpleClassName("Doclet.Option");
+        TypeReference interfaceRef = TypeReference.to(link, Text.empty());
+        InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
+        assertNotNull(interfaceNode);
     }
 }

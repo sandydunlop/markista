@@ -199,7 +199,8 @@ public class MockedDocletEnvironment {
     protected TypeElement mockType(String name, PackageElement mockPackageElement) {
         TypeElement mockTypeElement = mock(TypeElement.class);
         Name typeName = mockName(name);
-        when (mockTypeElement.getQualifiedName()).thenReturn(typeName);
+        Name qualifiedName = mockName(mockPackageElement.getQualifiedName().toString() + "." + name);
+        when (mockTypeElement.getQualifiedName()).thenReturn(qualifiedName);
         when (mockTypeElement.getSimpleName()).thenReturn(typeName);
         Set<Modifier> modifierSet = new HashSet<>(List.of(Modifier.PUBLIC));
         when (mockTypeElement.getModifiers()).thenReturn(modifierSet);
@@ -265,9 +266,9 @@ public class MockedDocletEnvironment {
         return mockParameterElement;
     }
 
-    protected AnnotationMirror mockMethodAnnotation(String qualifiedName, String simplifiedName, ExecutableElement mockMethod) {
+    protected AnnotationMirror mockMethodAnnotation(String qualifiedName, String simpleName, ExecutableElement mockMethod) {
         Name qName = mockName(qualifiedName);
-        Name sName = mockName(simplifiedName);
+        Name sName = mockName(simpleName);
         TypeElement element = mock(TypeElement.class);
         when (element.getQualifiedName()).thenReturn(qName);
         when (element.getSimpleName()).thenReturn(sName);

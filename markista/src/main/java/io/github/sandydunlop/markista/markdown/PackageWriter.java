@@ -46,10 +46,10 @@ public class PackageWriter {
     /// @param packageNode the package
     /// @throws java.io.IOException if there is a problem writing to the output file
     void outputPackageDoc(PackageNode packageNode) throws InvalidPathException, IOException {
-        ctx.setPackageName(packageNode.getQualifiedName());
+        ctx.setPackageName(packageNode.getName());
         writer = ctx.createFileInPackage();
         writer.write("\n");
-        writer.write("# Package " + packageNode.getQualifiedName() + "\n");
+        writer.write("# Package " + packageNode.getName() + "\n");
         writer.write("\n\n" + MarkdownUtils.formatText(packageNode.getFullBody()) + "\n\n");
         outputPackageMemberPackages("Packages", packageNode.getPackages());
         outputPackageMemberTypes("All Classes and Interfaces", packageNode.getTypes());
@@ -90,9 +90,9 @@ public class PackageWriter {
                         "Package")
                 .addColumn(TEXT_DESCRIPTION);
         for (PackageNode member : members) {
-            String name = member.getQualifiedName();
+            String name = member.getName();
             name = name.substring(name.lastIndexOf(".") + 1);
-            Link link = Link.to(member.getQualifiedName())
+            Link link = Link.to(member.getName())
                     .from(ctx.getPackageName())
                     .withKind(Link.Kind.PACKAGE)
                     .withLabel(name)

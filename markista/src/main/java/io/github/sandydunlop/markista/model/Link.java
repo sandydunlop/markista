@@ -11,7 +11,9 @@ public class Link implements Serializable {
     private Kind kind = Kind.UNKNOWN;
     private Scope scope = Scope.UNKNOWN;
     private String label = "";
-    private String className = "";
+    private String packageName = "";
+    private String simpleClassName = "";
+    private String qualifiedClassName = "";
     private String uri = "";
     private String anchor = "";
     private boolean resolved = false;
@@ -76,7 +78,7 @@ public class Link implements Serializable {
     }
 
     public Link withClassName(String className) {
-        this.className = className;
+        this.qualifiedClassName = className;
         return this;
     }
 
@@ -90,6 +92,11 @@ public class Link implements Serializable {
     /// @return the label with kind set
     public Link withKind(Kind kind) {
         this.kind = kind;
+        return this;
+    }
+
+    public Link withMethodName(String n) {
+        methodName = n;
         return this;
     }
 
@@ -142,16 +149,39 @@ public class Link implements Serializable {
         return label;
     }
 
-    /// Sets the class name associated with the reference.
-    /// @param name The class name to set.
-    public void setClassName(String name) {
-        this.className = name;
+    public Link setPackageName(String name) {
+        packageName = name;
+        return this;
     }
 
-    /// Returns the class name associated with the reference.
-    /// @return The class name.
-    public String getClassName() {
-        return className;
+    public String getPackageName() {
+        return packageName;
+    }
+
+    /// Sets the simple class name associated with the reference.
+    /// @param name The simple class name to set.
+    public Link setSimpleClassName(String name) {
+        this.simpleClassName = name;
+        return this;
+    }
+
+    /// Returns the simple class name associated with the reference.
+    /// @return The simple class name.
+    public String getSimpleClassName() {
+        return simpleClassName;
+    }
+
+    /// Sets the qualified class name associated with the reference.
+    /// @param name The qualified class name to set.
+    public Link setQualifiedClassName(String name) {
+        this.qualifiedClassName = name;
+        return this;
+    }
+
+    /// Returns the qualified class name associated with the reference.
+    /// @return The qualified class name.
+    public String getQualifiedClassName() {
+        return qualifiedClassName;
     }
 
     /// Sets the URI of the reference.
@@ -275,7 +305,7 @@ public class Link implements Serializable {
         SIBLING,
 
         /// Java built-in APIs
-        NATIVE,
+        STANDARD,
 
         /// Within an external project
         FOREIGN

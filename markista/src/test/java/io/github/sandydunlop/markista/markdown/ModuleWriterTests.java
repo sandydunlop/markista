@@ -1,13 +1,13 @@
 package io.github.sandydunlop.markista.markdown;
 
-import io.github.sandydunlop.markista.assembler.LinkResolver;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.InterfaceTypeNode;
+import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.model.Link;
 
 import java.io.IOException;
@@ -144,12 +144,12 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleProvidesDirectives_WritesTableForProvides() throws IOException {
-        InterfaceTypeNode interface0 = new InterfaceTypeNode("com.example.package.Interface", "Interface", 
-                pkg.getQualifiedName());
-        InterfaceTypeNode interface1 = new InterfaceTypeNode("com.example.package.Impl1", "Impl1",
-                pkg.getQualifiedName());
-        InterfaceTypeNode interface2 = new InterfaceTypeNode("com.example.package.Impl2", "Impl2",
-                pkg.getQualifiedName());
+        InterfaceNode interface0 = new InterfaceNode("Interface", 
+                pkg.getName());
+        InterfaceNode interface1 = new InterfaceNode("Impl1",
+                pkg.getName());
+        InterfaceNode interface2 = new InterfaceNode("Impl2",
+                pkg.getName());
         api.addType(interface0);
         api.addType(interface1);
         api.addType(interface2);

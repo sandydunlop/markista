@@ -85,9 +85,9 @@ public class ModuleWriter {
                         .addColumn(TITLE_DESCRIPTION);
                 for (PackageNode member : moduleNode.getPackages()) {
                     Link reference = Link
-                            .to(member.getQualifiedName())
+                            .to(member.getName())
                             .withKind(Link.Kind.PACKAGE)
-                            .withLabel(member.getQualifiedName());
+                            .withLabel(member.getName());
                     table.addRow(MarkdownUtils.link(reference, true), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getDescription())));
                 }
                 table.render(writer);

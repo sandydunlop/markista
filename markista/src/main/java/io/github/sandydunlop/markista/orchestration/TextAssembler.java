@@ -1,24 +1,25 @@
-package io.github.sandydunlop.markista.assembler;
+package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.RecordTypeNode;
+import io.github.sandydunlop.markista.model.RecordNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.Text.SegmentKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
 import io.github.sandydunlop.markista.model.TypeView;
 
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,16 +37,21 @@ public class TextAssembler {
     /// Generates [Text] objects for links to types and links in Javadoc text.
     /// This is where we decide if the label for those links shows qualified names or simplified names.
     /// @param a The API model
-    /// @param context The doclet context to keep track of why package and type are being processed
-    public static void assembleTextAndLinks(Api a, Context context) {
+    /// @param c The doclet context to keep track of why package and type are being processed
+    public static void assembleTextAndLinks(Api a, Context c) {
         api = a;
-        ctx = context;
+        ctx = c;
 
-        processModules(api);
+        for (MethodNode method : api.getMethods()) {
+            associateMethodWithType(method);
+        }
+
+        processModules(api.getModules());
 
         // Links from types used in methods and fields
         for (TypeView typeView : api.getTypes()) {
             processTypeNode((TypeNode) typeView);
+            associateMethodsWithImplementedInterfaces((TypeNode) typeView);
         }
 
         processJavadocComments(api);
@@ -54,7 +60,7 @@ public class TextAssembler {
 
     public static void addJavadocToRecords(Api api) {
         for (TypeView recordView : api.getRecords()) {
-            RecordTypeNode recordNode = (RecordTypeNode) recordView;
+            RecordNode recordNode = (RecordNode) recordView;
             for (MethodNode method : recordNode.getMethods()) {
                 Text text = method.getFirstSentence();
                 if (text.isEmpty()) {
@@ -83,7 +89,7 @@ public class TextAssembler {
         ctx.setTypeName(typeNode.getQualifiedName());
 
         // Types
-        TypeNode ownerTypeNode = api.getTypeNode(typeNode.getOwner());
+        TypeNode ownerTypeNode = api.getTypeNode(typeNode.getOwnerName());
         if (ownerTypeNode != null) {
             Link ref = Link.to(ownerTypeNode.getQualifiedName())
                     .from(ctx.getPackageName())
@@ -204,12 +210,7 @@ public class TextAssembler {
         if (baseMethodPair != null) {
             String baseTypeName = baseTypeName(method);
             if (baseTypeName != null) {
-                Link baseMethodRef = baseMethodPair.getLink();
-                if (baseMethodRef.getTarget().isEmpty()) {
-                    baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
-                }
-                Text linkText = link(baseMethodRef);
-                baseMethodPair.setText(linkText);
+                linkBaseMethod(baseMethodPair, baseTypeName);
             }
 
             TypeNode baseType = api.getTypeNode(baseTypeName);
@@ -225,11 +226,25 @@ public class TextAssembler {
         generateLinkTextsForReferences(method);
     }
 
+    static void linkBaseMethod(MethodReference baseMethodPair, String baseTypeName) {
+        Link baseMethodRef = baseMethodPair.getLink();
+        if (baseMethodRef.getTarget().isEmpty()) {
+            if (!baseMethodRef.getMethodSignature().isEmpty()) {
+                baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
+            } else if (!baseMethodRef.getMethodName().isEmpty()) {
+                baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodName());
+            }
+        }
+        baseMethodRef.setKind(Link.Kind.UNKNOWN);
+        Text linkText = link(baseMethodRef);
+        baseMethodPair.setText(linkText);
+    }
+
     static Text processInheritDocTags(Text baseMethodText, Text text) {
         int segmentCount = text.getSegments().size();
         for (int i = segmentCount - 1; i >= 0; i--) {
             Text.Segment segment = text.getSegments().get(i);
-            if (segment.getKind() == SegmentKind.INHERIT) {
+            if (segment.getKind() == Text.Segment.Kind.INHERIT) {
                 Text before = text.subtext(0, i - 1);
                 Text after = text.subtext(i + 1);
                 Text inherited = baseMethodText;
@@ -264,8 +279,8 @@ public class TextAssembler {
         return false;
     }
 
-    static void processModules(Api api) {
-        for (ModuleNode module : api.getModules()) {
+    static void processModules(List<ModuleNode> modules) {
+        for (ModuleNode module : modules) {
             ctx.setModuleName(module.getName());
             // Constant field values
             for (FieldNode constant : module.getConstantValues()) {
@@ -290,6 +305,92 @@ public class TextAssembler {
         }
     }
 
+    static void associateMethodWithType(MethodNode methodNode) {
+        ctx.setTypeName(methodNode.getOwnerName());
+        ctx.setMethodName(methodNode.getSimpleName());
+        TypeNode ownerType = api.getTypeNode(methodNode.getOwnerName());
+        if (ownerType == null) {
+            ctx.reportError("Unable to determine owner of method");
+            return;
+        }
+
+        if (methodNode.isConstructor()) {
+            methodNode.setSimpleName(ownerType.getSimpleName());
+            MethodNode existingMethodNode = ownerType.getConstructor(methodNode);
+            if (existingMethodNode == null) {
+                ownerType.addConstructor(methodNode);
+            }
+        } else {
+            MethodNode existingMethodNode = ownerType.getMethod(methodNode);
+            if (existingMethodNode == null) {   
+                ownerType.getMethods().add(methodNode);
+            }
+        }
+    }
+
+    static void associateMethodsWithImplementedInterfaces(TypeNode typeNode) {
+        ctx.setPackageName(typeNode.getPackageName());
+        ctx.setTypeName(typeNode.getQualifiedName());
+        List<TypeReference> interfaces = typeNode.getImplementedInterfaces();
+        for (TypeReference interfaceRef : interfaces) {
+            String interfaceName = interfaceRef.getLink().getTarget();
+            InterfaceNode interfaceType = (InterfaceNode) api.getTypeNode(interfaceName);
+            if (interfaceType == null) {
+                interfaceType = getStandardInterface(interfaceRef);
+            }
+            if (interfaceType == null) {
+                ctx.reportError("Can't find interface: " + interfaceName);
+                return;
+            }
+            associateClassWithInterface(interfaceType, typeNode);
+            associateMethodsWithInterface(interfaceType, typeNode);
+        }
+    }
+
+    static InterfaceNode getStandardInterface(TypeReference interfaceRef) {
+        String simpleName = interfaceRef.getLink().getSimpleClassName().replace(".", "$");
+        String qualifiedName = interfaceRef.getLink().getPackageName() + "." + simpleName;
+        ClassLoader classLoader = TextAssembler.class.getClassLoader();
+        try {
+            Class<?> standardClass = classLoader.loadClass(qualifiedName);
+            Method[] methods = standardClass.getMethods();
+            InterfaceNode interfaceNode = new InterfaceNode(qualifiedName, standardClass.getPackageName());
+            interfaceNode.setQualifiedName(qualifiedName);
+            for (Method method : methods) {
+                MethodNode methodNode = new MethodNode("", method.getName());
+                interfaceNode.addMethod(methodNode);
+            }
+            return interfaceNode;
+        } catch (ClassNotFoundException _) {
+            return null;
+        }
+    }
+
+    static void associateClassWithInterface(InterfaceNode interfaceNode, TypeNode typeNode) {
+        Link implementingClassLink = Link
+                .to(typeNode.getQualifiedName())
+                .from(interfaceNode.getQualifiedName())
+                .withLabel(typeNode.getSimpleName());
+        LinkResolver.resolve(implementingClassLink);
+        interfaceNode.addImplementingClass(implementingClassLink);
+    }
+
+    static void associateMethodsWithInterface(InterfaceNode interfaceNode, TypeNode typeNode) {
+        for (MethodNode methodNode : typeNode.getMethods()) {
+            for (MethodNode interfaceMethod : interfaceNode.getMethods()) {
+                if (interfaceMethod.signature().equals(methodNode.signature())) {
+                    Link specifiedByLink = Link
+                            .to(interfaceNode.getQualifiedName())
+                            .from(typeNode.getQualifiedName())
+                            .withLabel(interfaceNode.getSimpleName());
+                    LinkResolver.resolve(specifiedByLink);
+                    methodNode.setSpecifiedBy(specifiedByLink);
+                    break;
+                }
+            }
+        }
+    }
+    
     static void processJavadocComments(Api api) {
         for (Link link : api.getLinks()) {
             ctx.setPackageName(link.getOrigin());
@@ -338,7 +439,7 @@ public class TextAssembler {
             reference.setHasAnchor(true);
             reference.setAnchor(targetName.substring(pos));
             Text.Segment segment = Text.Segment.empty()
-                    .setKind(Text.SegmentKind.LINK)
+                    .setKind(Text.Segment.Kind.LINK)
                     .setLink(reference)
                     .setText(reference.getLabel());
             return Text.of(segment);
@@ -385,7 +486,7 @@ public class TextAssembler {
         setDisplayName(reference, displayName, isLocalMethod);
 
         Text.Segment link = Text.Segment.empty()
-                .setKind(Text.SegmentKind.LINK)
+                .setKind(Text.Segment.Kind.LINK)
                 .setLink(reference)
                 .setText(Utils.simplifyNames(reference.getLabel()));
         Text r = Text.empty();
@@ -403,7 +504,7 @@ public class TextAssembler {
             reference.setKind(Link.Kind.METHOD);
             String methodName = reference.getAnchor().substring(1);
             reference.setMethodName(methodName);
-            if (!reference.getClassName().equals(ctx.getTypeName())) {
+            if (!reference.getQualifiedClassName().equals(ctx.getTypeName())) {
                 reference.setLabel(reference.getLabel() + "." + methodName);
             } else {
                 reference.setLabel(methodName);
@@ -470,5 +571,20 @@ public class TextAssembler {
             text.append(link(Link.to(typeName)));
         }
         return text;
+    }
+
+    /// Removes the generic type and its surrounding <> from a string, if present
+    /// @param str The string
+    /// @return The string with the generic type and surrounding <> removed
+    public static String removeGenerics(String str) {
+        if (str == null || str.isEmpty()) return "";
+        int start = str.indexOf("<");
+        if (start > -1) {
+            int end = str.indexOf(">");
+            if (end > start) {
+                return str.substring(0, start);
+            }
+        }
+        return str;
     }
 }

@@ -59,11 +59,11 @@ class TextTests {
         Text text;
         Text.Segment seg = Text.Segment.empty();
 
-        seg.setKind(Text.SegmentKind.INHERIT);
+        seg.setKind(Text.Segment.Kind.INHERIT);
         text = Text.empty().append(seg);
         assertEquals(1, text.getSegments().size());
 
-        seg.setKind(Text.SegmentKind.TEXT);
+        seg.setKind(Text.Segment.Kind.TEXT);
         text = Text.empty().append(seg);
         assertEquals(0, text.getSegments().size());
     }

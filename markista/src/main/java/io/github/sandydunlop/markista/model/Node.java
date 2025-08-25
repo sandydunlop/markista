@@ -15,7 +15,7 @@ public class Node implements Serializable {
     protected UUID uuid = UUID.randomUUID();
 
     /// The kind of this type (e.g., class, interface, enum, annotation).
-    protected NodeKind kind = NodeKind.NONE;
+    protected Node.Kind kind = Node.Kind.NONE;
 
     /// The deprecation status of the node
     private Deprecation deprecation = Deprecation.NONE;
@@ -49,13 +49,13 @@ public class Node implements Serializable {
 
     /// Sets the kind (class, interface, enum, annotation) of this type.
     /// @param kind the Kind enum value.
-    public void setKind(NodeKind kind) {
+    public void setKind(Node.Kind kind) {
         this.kind = kind;
     }
 
     /// Returns the kind of this type.
     /// @return the Kind enum value.
-    public NodeKind getKind() {
+    public Node.Kind getKind() {
         return kind;
     }
 
@@ -142,4 +142,48 @@ public class Node implements Serializable {
     public List<Link> getReferences() {
         return references;
     }
+
+    public enum Kind {
+        /// No type has been set
+        NONE ("None"),
+
+        /// A class, including abstract class and exception class
+        CLASS ("Class"),
+
+        /// An interface
+        INTERFACE ("Interface"),
+
+        /// A record
+        RECORD ("Record Class"),
+
+        /// An enum
+        ENUM ("Enum Class"),
+
+        /// An annotation
+        ANNOTATION ("Annotation Interface"),
+
+        /// An annotation
+        FIELD ("Field"),
+
+        /// An annotation
+        METHOD ("Method"),
+
+        /// An annotation
+        PARAMETER ("Parameter");
+
+        /// The display name for the kind.
+        private final String name;
+
+        /// Constructor assigning the display name.
+        Kind(String s) {
+            name = s;
+        }
+
+        /// Returns the display name of the kind.
+        @Override
+        public String toString() {
+            return this.name;
+        }
+    }
+
 }

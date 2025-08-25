@@ -1,9 +1,9 @@
-package io.github.sandydunlop.markista.assembler;
+package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassTypeNode;
+import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Link;
@@ -63,8 +63,8 @@ class LinkResolverTests {
     private PackageNode doclet;
 	private PackageNode markista;
 	private PackageNode util;
-    private ClassTypeNode node;
-    private ClassTypeNode markdownDoclet;
+    private ClassNode node;
+    private ClassNode markdownDoclet;
 
     Link link;
     private static final String ORIGIN = "com.example";
@@ -94,12 +94,9 @@ class LinkResolverTests {
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.util.LinkResolver",
-                "LinkResolver", util.getQualifiedName()));
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet",
-                "MarkdownDoclet", doclet.getQualifiedName()));
-		api.addType(new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option",
-                "MarkdownDoclet.Option", doclet.getQualifiedName()));
+		api.addType(new ClassNode("LinkResolver", util.getName()));
+		api.addType(new ClassNode("MarkdownDoclet", doclet.getName()));
+		api.addType(new ClassNode("MarkdownDoclet.Option", doclet.getName()));
 
         module = new ModuleNode("markista");
 		api.addModule(module);
@@ -112,17 +109,15 @@ class LinkResolverTests {
 		doclet.setModuleName(module.getName());
 		model.setModuleName(module.getName());
 
-        node = new ClassTypeNode("io.github.sandydunlop.markista.model.Node", 
-                "Node", model.getQualifiedName());
+        node = new ClassNode("Node", model.getName());
         model.addType(node);
         api.addType(node);
 
-        markdownDoclet = new ClassTypeNode("io.github.sandydunlop.markista.doclet.MarkdownDoclet", 
-                "MarkdownDoclet", doclet.getQualifiedName());
+        markdownDoclet = new ClassNode("MarkdownDoclet", doclet.getName());
         model.addType(markdownDoclet);
 
 		LinkResolver.init(api, ctx);
-        LinkResolver.addNativeModuleUrl("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
+        LinkResolver.addStandardModuleUrl("java.base", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base", ".html");
 		LinkResolver.setFlattenedDirectories(null);
         LinkResolver.siblingClassNames = new java.util.HashSet<>();
 		ctx.setModuleName("markista");
@@ -135,18 +130,18 @@ class LinkResolverTests {
     }
 
 	@Test
-	void addNativeModuleUrl() {
+	void addStandardModuleUrl() {
 		LinkResolver.init(api, ctx);
 		LinkResolver.setFlattenedDirectories(null);
 
 		String moduleName = "jdk.javadoc";
-        LinkResolver.addNativeModuleUrl(moduleName, JAVA_24_URL + moduleName, ".html");
+        LinkResolver.addStandardModuleUrl(moduleName, JAVA_24_URL + moduleName, ".html");
 
 		Link ref = new Link();
 		ref.setTarget("jdk.javadoc.doclet.Doclet");
-		assertTrue(LinkResolver.resolveNativePackageOrType(ref));
+		assertTrue(LinkResolver.resolveStandardPackageOrType(ref));
 
-		assertEquals(Link.Scope.NATIVE, ref.getScope());
+		assertEquals(Link.Scope.STANDARD, ref.getScope());
 		assertEquals(Link.Kind.URL, ref.getKind());
 		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.html", ref.getUri());
     }
@@ -226,7 +221,7 @@ class LinkResolverTests {
 	}
 
 	@Test
-	void resolve_qualifiedNativeClass() {
+	void resolve_qualifiedStandardClass() {
 		link = LinkResolver.resolve(Link.to("java.util.List"));
 		link = LinkResolver.resolve(link);
 		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html", link.getUri());
@@ -361,13 +356,13 @@ class LinkResolverTests {
     }
 
     @Test
-    void tryResolveNativePackageOrType_ReturnsFalseIfNotResolved() {
+    void tryResolveStandardPackageOrType_ReturnsFalseIfNotResolved() {
         link = new Link();
         link.setKind(Link.Kind.TYPE);
         link.setTarget("unknown.Target");
 
-        boolean result = LinkResolver.resolveNativePackageOrType(link);
-        // Depending on data, resolveNativePackageOrType may not resolve, result can be false
+        boolean result = LinkResolver.resolveStandardPackageOrType(link);
+        // Depending on data, resolveStandardPackageOrType may not resolve, result can be false
         assertFalse(result); // just assert the method runs without error
     }
 

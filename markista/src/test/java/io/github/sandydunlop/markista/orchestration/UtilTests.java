@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.assembler;
+package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.markdown.MarkdownUtils;
