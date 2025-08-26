@@ -113,16 +113,16 @@ public class TypeWriter {
         }
         writer.flush();
         writer.close();
-        for (TypeView node : typeNode.getClasses()) {
+        for (TypeNode node : typeNode.getClasses()) {
             outputTypeDoc((TypeNode)node);
         }
-        for (TypeView node : typeNode.getInterfaces()) {
+        for (TypeNode node : typeNode.getInterfaces()) {
             outputTypeDoc((TypeNode)node);
         }
-        for (TypeView node : typeNode.getEnums()) {
+        for (TypeNode node : typeNode.getEnums()) {
             outputTypeDoc((TypeNode)node);
         }
-        for (TypeView node : typeNode.getAnnotations()) {
+        for (TypeNode node : typeNode.getAnnotations()) {
             outputTypeDoc((TypeNode)node);
         }
         ctx.setTypeName("");
@@ -288,12 +288,12 @@ public class TypeWriter {
     /// Outputs a summary of nested classes within this one as Markdown
     /// @param nestedClasses a list of the nested classes
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputNestedClassSummary(List<TypeView> nestedClasses) throws IOException {
+    private void outputNestedClassSummary(List<TypeNode> nestedClasses) throws IOException {
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TEXT_MODIFIER_AND_TYPE)
                 .addColumn(TEXT_CLASS)
                 .addColumn(TEXT_DESCRIPTION);
-        for (TypeView nestedClassNode : nestedClasses) {
+        for (TypeNode nestedClassNode : nestedClasses) {
             table.addRow(nestedClassNode.getModifiersString(),
                         MarkdownUtils.mdDocumentLink(nestedClassNode.getSimpleName()), 
                         MarkdownUtils.inOneLine(MarkdownUtils.formatText(nestedClassNode.getFirstSentence())));

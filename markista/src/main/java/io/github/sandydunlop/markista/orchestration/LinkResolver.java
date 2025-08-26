@@ -230,7 +230,7 @@ public class LinkResolver {
         String toClassName = getClassName(name);
         if (toPackageName.isEmpty()) {
             String qualifiedTo = "";
-            for (TypeView member : api.getTypes()) {
+            for (TypeNode member : api.getTypes()) {
                 if (member instanceof TypeNode classNode && classNode.getSimpleName().equals(toClassName)) {
                     qualifiedTo = classNode.getQualifiedName();
                     break;

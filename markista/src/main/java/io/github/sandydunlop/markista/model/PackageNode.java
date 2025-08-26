@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /// Represents a Java package
-public class PackageNode extends Node implements PackageOrTypeNode {
+public class PackageNode extends Node {
     private String name;
     private String moduleName;
     private String sourcePath;
@@ -12,7 +12,7 @@ public class PackageNode extends Node implements PackageOrTypeNode {
     private final List<PackageNode> packages = new ArrayList<>();
 
     // store children by the interface type (no concrete TypeNode mention)
-    protected final List<TypeView> types = new ArrayList<>();
+    protected final List<TypeNode> types = new ArrayList<>();
 
     /// Constructs a PackageNode with the specified qualified package name.
     /// @param name The qualified name of the package.
@@ -70,55 +70,55 @@ public class PackageNode extends Node implements PackageOrTypeNode {
         return hasPackageInfo;
     }
 
-    public void addType(TypeView typeNode) {
+    public void addType(TypeNode typeNode) {
         types.add(typeNode);
     }
 
     /// Gets the list of types *owned* by this instance.
-    public List<TypeView> getTypes() {
+    public List<TypeNode> getTypes() {
         return List.copyOf(types);
     }
 
     /// Gets the list of classes *owned* by this instance.
-    public List<TypeView> getClasses() {
-        List<TypeView> out = new ArrayList<>();
-        for (TypeView t : types)
+    public List<TypeNode> getClasses() {
+        List<TypeNode> out = new ArrayList<>();
+        for (TypeNode t : types)
             if (t.isClass())
                 out.add(t);
         return out;
     }
 
     /// Gets the list of interfaces *owned* by this instance.
-    public List<TypeView> getInterfaces() {
-        List<TypeView> out = new ArrayList<>();
-        for (TypeView t : types)
+    public List<TypeNode> getInterfaces() {
+        List<TypeNode> out = new ArrayList<>();
+        for (TypeNode t : types)
             if (t.isInterface())
                 out.add(t);
         return out;
     }
 
     /// Gets the list of enums *owned* by this instance.
-    public List<TypeView> getEnums() {
-        List<TypeView> out = new ArrayList<>();
-        for (TypeView t : types)
+    public List<TypeNode> getEnums() {
+        List<TypeNode> out = new ArrayList<>();
+        for (TypeNode t : types)
             if (t.isEnum())
                 out.add(t);
         return out;
     }
 
     /// Gets the list of records *owned* by this instance.
-    public List<TypeView> getRecords() {
-        List<TypeView> out = new ArrayList<>();
-        for (TypeView t : types)
+    public List<TypeNode> getRecords() {
+        List<TypeNode> out = new ArrayList<>();
+        for (TypeNode t : types)
             if (t.isRecord())
                 out.add(t);
         return out;
     }
 
     /// Gets the list of annotations *owned* by this instance.
-    public List<TypeView> getAnnotations() {
-        List<TypeView> out = new ArrayList<>();
-        for (TypeView t : types)
+    public List<TypeNode> getAnnotations() {
+        List<TypeNode> out = new ArrayList<>();
+        for (TypeNode t : types)
             if (t.isAnnotation())
                 out.add(t);
         return out;

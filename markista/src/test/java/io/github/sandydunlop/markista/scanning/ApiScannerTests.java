@@ -530,7 +530,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         apiScanner.visitType(typeMock, 1);
 
-        List<TypeView> moduleList = apiScanner.api.getTypes();
+        List<TypeNode> moduleList = apiScanner.api.getTypes();
         assertEquals(1, moduleList.size());
     }
 

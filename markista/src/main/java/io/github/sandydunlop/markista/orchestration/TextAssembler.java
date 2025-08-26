@@ -49,7 +49,7 @@ public class TextAssembler {
         processModules(api.getModules());
 
         // Links from types used in methods and fields
-        for (TypeView typeView : api.getTypes()) {
+        for (TypeNode typeView : api.getTypes()) {
             processTypeNode((TypeNode) typeView);
             associateMethodsWithImplementedInterfaces((TypeNode) typeView);
         }
@@ -59,7 +59,7 @@ public class TextAssembler {
     }
 
     public static void addJavadocToRecords(Api api) {
-        for (TypeView recordView : api.getRecords()) {
+        for (TypeNode recordView : api.getRecords()) {
             RecordNode recordNode = (RecordNode) recordView;
             for (MethodNode method : recordNode.getMethods()) {
                 Text text = method.getFirstSentence();
@@ -84,7 +84,7 @@ public class TextAssembler {
         }
     }
 
-    static void processTypeNode(TypeNode typeNode) {
+    public static void processTypeNode(TypeNode typeNode) {
         ctx.setPackageName(typeNode.getPackageName());
         ctx.setTypeName(typeNode.getQualifiedName());
 
@@ -125,7 +125,7 @@ public class TextAssembler {
         }
     }
 
-    static void processSubtypes(TypeNode typeNode) {
+    public static void processSubtypes(TypeNode typeNode) {
         if (typeNode.getSupertypes().size() > 1) {
             TypeReference typeRef = typeNode.getSupertypes().getLast();
             String directSupertypeName = typeRef.getLink().getTarget();
@@ -139,7 +139,7 @@ public class TextAssembler {
         }
     }
 
-    static HashMap<String,Pair<String,MethodReference>> gatherOverriddenMethods(TypeNode typeNode) {
+    public static HashMap<String,Pair<String,MethodReference>> gatherOverriddenMethods(TypeNode typeNode) {
         HashMap<String,Pair<String,MethodReference>> methodLookup1 = new HashMap<>();
         // Skip the first one (java.lang.Object)
         for (int i = 1; i < typeNode.getSupertypes().size() ; i++) {
@@ -159,7 +159,7 @@ public class TextAssembler {
         return methodLookup1;
     }
             
-    private static HashMap<String,List<MethodReference>> listBySupertypeName(HashMap<String,Pair<String,MethodReference>> methodLookup1) {
+    public static HashMap<String,List<MethodReference>> listBySupertypeName(HashMap<String,Pair<String,MethodReference>> methodLookup1) {
         HashMap<String,List<MethodReference>> methodLookup2 = new HashMap<>();
         for (Map.Entry<String,Pair<String,MethodReference>> entry : methodLookup1.entrySet()) {
             Pair<String,MethodReference> refs = entry.getValue();
@@ -178,7 +178,7 @@ public class TextAssembler {
         return methodLookup2;
     }
 
-    static void processInheritedMethods(TypeNode typeNode) {
+    public static void processInheritedMethods(TypeNode typeNode) {
         if (typeNode.getSupertypes().size() > 1) {
             HashMap<String,List<MethodReference>> methodLookup2 = listBySupertypeName(gatherOverriddenMethods(typeNode));
             // Copy methodLookup2 into typeNode's inheritedMethods hash table
@@ -192,7 +192,7 @@ public class TextAssembler {
         }
     }
 
-    static void processMethod(MethodNode method) {
+    public static void processMethod(MethodNode method) {
         Link returnTypeReference = Link.to(method.getReturnTypeName()).from(ctx.getPackageName());
         method.setReturnTypeText(link(returnTypeReference));
         generateLinkTextsForParams(method.getParams()
@@ -226,7 +226,7 @@ public class TextAssembler {
         generateLinkTextsForReferences(method);
     }
 
-    static void linkBaseMethod(MethodReference baseMethodPair, String baseTypeName) {
+    public static void linkBaseMethod(MethodReference baseMethodPair, String baseTypeName) {
         Link baseMethodRef = baseMethodPair.getLink();
         if (baseMethodRef.getTarget().isEmpty()) {
             if (!baseMethodRef.getMethodSignature().isEmpty()) {
@@ -240,7 +240,7 @@ public class TextAssembler {
         baseMethodPair.setText(linkText);
     }
 
-    static Text processInheritDocTags(Text baseMethodText, Text text) {
+    public static Text processInheritDocTags(Text baseMethodText, Text text) {
         int segmentCount = text.getSegments().size();
         for (int i = segmentCount - 1; i >= 0; i--) {
             Text.Segment segment = text.getSegments().get(i);
@@ -254,7 +254,7 @@ public class TextAssembler {
         return text;
     }
 
-    static String baseTypeName(MethodNode method){
+    public static String baseTypeName(MethodNode method){
         TypeNode type = api.getTypeNode(method.getOwnerName());
         if (type == null) {
             return null;
@@ -269,7 +269,7 @@ public class TextAssembler {
         return null;
     }
 
-    static boolean typeHasMethod(TypeNode typeNode, MethodNode methodNode) {
+    public static boolean typeHasMethod(TypeNode typeNode, MethodNode methodNode) {
         String methodSignature = methodNode.signature();
         for (MethodNode inheritedMethod : typeNode.getMethods()) {
             if (inheritedMethod.signature().equals(methodSignature)) {
@@ -279,7 +279,7 @@ public class TextAssembler {
         return false;
     }
 
-    static void processModules(List<ModuleNode> modules) {
+    public static void processModules(List<ModuleNode> modules) {
         for (ModuleNode module : modules) {
             ctx.setModuleName(module.getName());
             // Constant field values
@@ -305,7 +305,7 @@ public class TextAssembler {
         }
     }
 
-    static void associateMethodWithType(MethodNode methodNode) {
+    public static void associateMethodWithType(MethodNode methodNode) {
         ctx.setTypeName(methodNode.getOwnerName());
         ctx.setMethodName(methodNode.getSimpleName());
         TypeNode ownerType = api.getTypeNode(methodNode.getOwnerName());
@@ -328,7 +328,7 @@ public class TextAssembler {
         }
     }
 
-    static void associateMethodsWithImplementedInterfaces(TypeNode typeNode) {
+    public static void associateMethodsWithImplementedInterfaces(TypeNode typeNode) {
         ctx.setPackageName(typeNode.getPackageName());
         ctx.setTypeName(typeNode.getQualifiedName());
         List<TypeReference> interfaces = typeNode.getImplementedInterfaces();
@@ -347,7 +347,7 @@ public class TextAssembler {
         }
     }
 
-    static InterfaceNode getStandardInterface(TypeReference interfaceRef) {
+    public static InterfaceNode getStandardInterface(TypeReference interfaceRef) {
         String simpleName = interfaceRef.getLink().getSimpleClassName().replace(".", "$");
         String qualifiedName = interfaceRef.getLink().getPackageName() + "." + simpleName;
         ClassLoader classLoader = TextAssembler.class.getClassLoader();
@@ -366,7 +366,7 @@ public class TextAssembler {
         }
     }
 
-    static void associateClassWithInterface(InterfaceNode interfaceNode, TypeNode typeNode) {
+    public static void associateClassWithInterface(InterfaceNode interfaceNode, TypeNode typeNode) {
         Link implementingClassLink = Link
                 .to(typeNode.getQualifiedName())
                 .from(interfaceNode.getQualifiedName())
@@ -375,7 +375,7 @@ public class TextAssembler {
         interfaceNode.addImplementingClass(implementingClassLink);
     }
 
-    static void associateMethodsWithInterface(InterfaceNode interfaceNode, TypeNode typeNode) {
+    public static void associateMethodsWithInterface(InterfaceNode interfaceNode, TypeNode typeNode) {
         for (MethodNode methodNode : typeNode.getMethods()) {
             for (MethodNode interfaceMethod : interfaceNode.getMethods()) {
                 if (interfaceMethod.signature().equals(methodNode.signature())) {
@@ -391,7 +391,7 @@ public class TextAssembler {
         }
     }
     
-    static void processJavadocComments(Api api) {
+    public static void processJavadocComments(Api api) {
         for (Link link : api.getLinks()) {
             ctx.setPackageName(link.getOrigin());
             LinkResolver.resolve(link);
@@ -409,7 +409,7 @@ public class TextAssembler {
         }
     }
 
-    private static void generateLinkTextsForReferences(Node node) {
+    public static void generateLinkTextsForReferences(Node node) {
         for (Link reference : node.getReferences()) {
             if (reference.getKind() == Link.Kind.PAGE) {
                 String relativePath = LinkResolver.relativize("");
@@ -496,7 +496,7 @@ public class TextAssembler {
         return r;
     }
 
-    private static void setDisplayName(Link reference, String displayName, boolean isLocalMethod) {
+    public static void setDisplayName(Link reference, String displayName, boolean isLocalMethod) {
         if (reference.getLabel() == null) {
              reference.setLabel(reference.getTarget());
         }

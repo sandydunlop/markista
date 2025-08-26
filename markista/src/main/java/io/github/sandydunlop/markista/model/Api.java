@@ -16,7 +16,7 @@ public class Api extends Node {
     private final List<PackageNode> packages = new ArrayList<>();
     
     // store children by the interface type (no concrete TypeNode mention)
-    protected final List<TypeView> types = new ArrayList<>();
+    protected final List<TypeNode> types = new ArrayList<>();
 
     private List<MethodNode> methods = new ArrayList<>();
 
@@ -119,12 +119,12 @@ public class Api extends Node {
         return links;
     }
 
-    public void addType(TypeView typeNode) {
+    public void addType(TypeNode typeNode) {
         types.add(typeNode);
     }
 
     /// Gets the list of types *owned* by this instance.
-    public List<TypeView> getTypes() {
+    public List<TypeNode> getTypes() {
         return List.copyOf(types);
     }
 
@@ -141,9 +141,9 @@ public class Api extends Node {
     }
 
     /// Gets the list of records *owned* by this instance.
-    public List<TypeView> getRecords() {
-        List<TypeView> out = new ArrayList<>();
-        for (TypeView t : types)
+    public List<TypeNode> getRecords() {
+        List<TypeNode> out = new ArrayList<>();
+        for (TypeNode t : types)
             if (t.isRecord())
                 out.add(t);
         return out;
@@ -153,7 +153,7 @@ public class Api extends Node {
     /// @param qualifiedName the fully qualified name of the type.
     /// @return the matching TypeNode if found, or null otherwise.
     public TypeNode getTypeNode(String qualifiedName) {
-        for (TypeView typeNode : types) {
+        for (TypeNode typeNode : types) {
             if (typeNode.getQualifiedName().equals(qualifiedName)){
                 return (TypeNode)typeNode;
             }
@@ -167,7 +167,7 @@ public class Api extends Node {
         for (PackageNode pkg : getPackages()) {
             pkg.sort();
         }
-        for (TypeView type : getTypes()) {
+        for (TypeNode type : getTypes()) {
             type.sort();
         }
     }

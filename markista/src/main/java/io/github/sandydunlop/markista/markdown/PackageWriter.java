@@ -6,7 +6,6 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeView;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -61,19 +60,19 @@ public class PackageWriter {
         writer.flush();
         writer.close();
         TypeWriter typeWriter = new TypeWriter(ctx);
-        for (TypeView member : packageNode.getClasses()) {
+        for (TypeNode member : packageNode.getClasses()) {
             typeWriter.outputTypeDoc((TypeNode)member);
         }
-        for (TypeView member : packageNode.getInterfaces()) {
+        for (TypeNode member : packageNode.getInterfaces()) {
             typeWriter.outputTypeDoc((TypeNode)member);
         }
-        for (TypeView member : packageNode.getRecords()) {
+        for (TypeNode member : packageNode.getRecords()) {
             typeWriter.outputTypeDoc((TypeNode)member);
         }
-        for (TypeView member : packageNode.getEnums()) {
+        for (TypeNode member : packageNode.getEnums()) {
             typeWriter.outputTypeDoc((TypeNode)member);
         }
-        for (TypeView member : packageNode.getAnnotations()) {
+        for (TypeNode member : packageNode.getAnnotations()) {
             typeWriter.outputTypeDoc((TypeNode)member);
         }
         ctx.setPackageName("");
@@ -112,14 +111,14 @@ public class PackageWriter {
     /// @param title The title of this section in the Markdown document
     /// @param members The list of members of this package
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputPackageMemberTypes(String title, List<TypeView> members) throws IOException {
+    private void outputPackageMemberTypes(String title, List<TypeNode> members) throws IOException {
         if (members.isEmpty())
             return;
         MarkdownTable table = new MarkdownTable()
                 .addColumn(
                         TEXT_CLASS)
                 .addColumn(TEXT_DESCRIPTION);
-        for (TypeView member : members) {
+        for (TypeNode member : members) {
             table.addRow(MarkdownUtils.mdDocumentLink(member.getSimpleName()),
                     MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));
         }

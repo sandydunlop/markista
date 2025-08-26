@@ -490,7 +490,7 @@ public class TypeUtils {
     /// Adds references to constant field values from classes in the API to the provided module node.
     /// @param moduleNode The ModuleNode to which constant value references will be added.
     public static void addConstantFieldValuesReference(ModuleNode moduleNode) {
-        for (TypeView classNode : api.getTypes()) {
+        for (TypeNode classNode : api.getTypes()) {
             for (FieldNode fieldNode : ((TypeNode)classNode).getFields()) {
                 if (fieldNode.getConstantValue() != null) {
                     Link ref = Link.to("constant-values")
