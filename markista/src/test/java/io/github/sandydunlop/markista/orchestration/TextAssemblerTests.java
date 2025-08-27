@@ -245,20 +245,18 @@ class TextAssemblerTests extends ModelTestEnvironment {
 
     @Test
     void getStandardInterface_normal() {
-        Link link = Link.to("jdk.javadoc.doclet.Doclet")
-                .setPackageName("jdk.javadoc.doclet")
-                .setSimpleClassName("Doclet");
-        TypeReference interfaceRef = TypeReference.to(link, Text.empty());
+        TypeReference interfaceRef = TypeReference.to("jdk.javadoc.doclet.Doclet");
+        interfaceRef.getLink().setPackageName("jdk.javadoc.doclet");
+        interfaceRef.getLink().setSimpleClassName("Doclet");
         InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
         assertNotNull(interfaceNode);
     }
 
     @Test
     void getStandardInterface_nested() {
-        Link link = Link.to("jdk.javadoc.doclet.Doclet.Option")
-                .setPackageName("jdk.javadoc.doclet")
-                .setSimpleClassName("Doclet.Option");
-        TypeReference interfaceRef = TypeReference.to(link, Text.empty());
+        TypeReference interfaceRef = TypeReference.to("jdk.javadoc.doclet.Doclet.Option");
+        interfaceRef.getLink().setPackageName("jdk.javadoc.doclet");
+        interfaceRef.getLink().setSimpleClassName("Doclet.Option");
         InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
         assertNotNull(interfaceNode);
     }

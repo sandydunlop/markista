@@ -129,10 +129,11 @@ public class TextAssembler {
             String directSupertypeName = typeRef.getLink().getTarget();
             TypeNode directSupertype = api.getTypeNode(directSupertypeName);
             if (directSupertype != null) {
-                Link subtypeRef = Link.to(typeNode.getQualifiedName())
-                        .from(directSupertype.getQualifiedName() + "." + directSupertype.getPackageName());
-                Text subtypeText = link(subtypeRef);
-                directSupertype.getSubtypes().add(TypeReference.to(subtypeRef, subtypeText));
+                TypeReference subtypeRef = TypeReference.to(typeNode.getQualifiedName());
+                Text subtypeText = link(subtypeRef.getLink());
+                subtypeRef.getLink().from(directSupertype.getQualifiedName());
+                subtypeRef.setText(subtypeText);
+                directSupertype.getSubtypes().add(subtypeRef);
             }
         }
     }

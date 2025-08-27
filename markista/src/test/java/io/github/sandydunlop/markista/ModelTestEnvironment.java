@@ -74,15 +74,7 @@ public class ModelTestEnvironment {
     }
 
     protected TypeReference newTypeReference(String typeName) {
-        Link typeLink = Link.to(typeName)
-                .withUri(typeName)
-                .withKind(Link.Kind.TYPE)
-                .withLabel(typeName);
-        Text typeText = Text.empty().append(Segment.empty()
-                .setKind(Segment.Kind.LINK)
-                .setText(typeName)
-                .setLink(typeLink));
-        TypeReference typeRef = TypeReference.to(typeLink, typeText);
+        TypeReference typeRef = TypeReference.to(typeName);
         typeRef.setText(Text.of(node.getQualifiedName()));
         return typeRef;
     }

@@ -22,14 +22,6 @@ public class TypeReference implements Serializable {
         return ref;
     }
 
-    public static TypeReference to(Link r, Text t) {
-        TypeReference ref = new TypeReference();
-        ref.setLink(r);
-        ref.setText(t);
-        ref.setQualifiedName(r.getTarget());
-        return ref;
-    }
-
     public void setLink(Link ref) {
         link = ref;
     }
