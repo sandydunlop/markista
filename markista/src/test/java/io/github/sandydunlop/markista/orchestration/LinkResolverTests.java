@@ -855,10 +855,10 @@ class LinkResolverTests {
         //"io.github.sandydunlop.markista.model.Node"
         Link link2 = Link.to("unknown.package.Class")
                 .from("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option");
-        boolean r = LinkResolver.resolveLocalPackageTypeInternal(link2, "", "Class");
+        boolean r = LinkResolver.resolveLocalPackageOrTypeInternal(link2, "", "Class");
         assertFalse(r);
 
-        r = LinkResolver.resolveLocalPackageTypeInternal(link2, "unknown.package", "Class");
+        r = LinkResolver.resolveLocalPackageOrTypeInternal(link2, "unknown.package", "Class");
         assertFalse(r);
     }
 

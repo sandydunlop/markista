@@ -6,7 +6,6 @@ import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.Link;
-import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
@@ -88,7 +87,7 @@ public class ModelTestEnvironment {
         return typeRef;
     }
 
-    protected MethodReference newMethodReference(String typeName, String methodName) {
+    protected Link newMethodReference(String typeName, String methodName) {
         Link methodLink = Link.to(typeName)
                 .withUri(typeName)
                 .withKind(Link.Kind.METHOD)
@@ -97,11 +96,7 @@ public class ModelTestEnvironment {
         methodLink.setHasAnchor(true);
         methodLink.setAnchor("#" + methodName);
         methodLink.setQualifiedClassName(typeName);
-        Text methodText = Text.empty().append(Segment.empty()
-                .setKind(Segment.Kind.LINK)
-                .setText(methodName)
-                .setLink(methodLink));
-        return MethodReference.to(methodLink, methodText);
+        return methodLink;
     }
 
     protected void setupModel() {

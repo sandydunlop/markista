@@ -61,19 +61,19 @@ public class PackageWriter {
         writer.close();
         TypeWriter typeWriter = new TypeWriter(ctx);
         for (TypeNode member : packageNode.getClasses()) {
-            typeWriter.outputTypeDoc((TypeNode)member);
+            typeWriter.outputTypeDoc(member);
         }
         for (TypeNode member : packageNode.getInterfaces()) {
-            typeWriter.outputTypeDoc((TypeNode)member);
+            typeWriter.outputTypeDoc(member);
         }
         for (TypeNode member : packageNode.getRecords()) {
-            typeWriter.outputTypeDoc((TypeNode)member);
+            typeWriter.outputTypeDoc(member);
         }
         for (TypeNode member : packageNode.getEnums()) {
-            typeWriter.outputTypeDoc((TypeNode)member);
+            typeWriter.outputTypeDoc(member);
         }
         for (TypeNode member : packageNode.getAnnotations()) {
-            typeWriter.outputTypeDoc((TypeNode)member);
+            typeWriter.outputTypeDoc(member);
         }
         ctx.setPackageName("");
     }

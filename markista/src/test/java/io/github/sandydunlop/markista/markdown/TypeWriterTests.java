@@ -12,7 +12,6 @@ import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.Modifier;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
@@ -257,7 +256,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         methodNode.setReturnDescription(Text.empty().append("returnDescription"));
         methodNode.setSpecifiedBy(specifiedByRef);
         methodNode.addThrownType(thrownRef);
-        MethodReference overriddenMethod = MethodReference.to("scenario.food.berry.Avocado" + "#" + "eat");
+        Link overriddenMethod = Link.to("scenario.food.berry.Avocado" + "#" + "eat");
         methodNode.setBaseMethod(overriddenMethod);
 
         typeNode.addMethod(methodNode);
@@ -552,8 +551,8 @@ class TypeWriterTests extends ModelTestEnvironment {
         // Add a subclass
         ClassNode subClass = newClass("SubClass", model);
         TypeReference typeRef = newTypeReference("Node");
-        MethodReference methodRef = newMethodReference("Node", "inheritedMethod");
-        List<MethodReference> inheritedMethods = List.of(methodRef);
+        Link methodRef = newMethodReference("Node", "inheritedMethod");
+        List<Link> inheritedMethods = List.of(methodRef);
         subClass.getInheritedMethods().put(typeRef, inheritedMethods);
 
         typeWriter.outputTypeDoc(subClass);

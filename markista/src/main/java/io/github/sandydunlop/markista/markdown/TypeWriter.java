@@ -12,14 +12,12 @@ import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
-import io.github.sandydunlop.markista.model.TypeView;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -114,16 +112,16 @@ public class TypeWriter {
         writer.flush();
         writer.close();
         for (TypeNode node : typeNode.getClasses()) {
-            outputTypeDoc((TypeNode)node);
+            outputTypeDoc(node);
         }
         for (TypeNode node : typeNode.getInterfaces()) {
-            outputTypeDoc((TypeNode)node);
+            outputTypeDoc(node);
         }
         for (TypeNode node : typeNode.getEnums()) {
-            outputTypeDoc((TypeNode)node);
+            outputTypeDoc(node);
         }
         for (TypeNode node : typeNode.getAnnotations()) {
-            outputTypeDoc((TypeNode)node);
+            outputTypeDoc(node);
         }
         ctx.setTypeName("");
     }
@@ -478,10 +476,10 @@ public class TypeWriter {
             writer.write("\n\n");
         }
         if (method.getBaseMethod() != null) {
-            MethodReference pair = method.getBaseMethod();
-            if (!pair.getText().isEmpty()) {
+            Link link = method.getBaseMethod();
+            if (link != null) {
                 writer.write("**Overrides:**\n\n");
-                writer.write(MarkdownUtils.formatText(pair.getText()));
+                writer.write(MarkdownUtils.link(link, false));
                 writer.write("\n\n");
             }
         }        
@@ -526,14 +524,14 @@ public class TypeWriter {
     }
 
     private void outputInheritedMethods(TypeNode typeNode) throws IOException {
-        for(Map.Entry<TypeReference,List<MethodReference>> entry : typeNode.getInheritedMethods().entrySet()) {
+        for(Map.Entry<TypeReference,List<Link>> entry : typeNode.getInheritedMethods().entrySet()) {
             StringBuilder sb = new StringBuilder();
-            List<MethodReference> methodList = entry.getValue();
-            for(MethodReference methodRef : methodList) {
+            List<Link> methodList = entry.getValue();
+            for(Link methodRef : methodList) {
                 if (!sb.isEmpty()) {
                     sb.append(", ");
                 }
-                sb.append(MarkdownUtils.formatText(methodRef.getText(), false, false));
+                sb.append(MarkdownUtils.link(methodRef, false));
             }
             if (!sb.isEmpty()) {
                 writer.write("### Methods inherited from ");

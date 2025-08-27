@@ -7,7 +7,6 @@ import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.RecordNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
@@ -166,7 +165,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         TypeReference typeRef = TypeReference.to(baseTypeNode.getQualifiedName());
         typeNode.getSupertypes().add(typeRef);
 
-        MethodReference methodRef = MethodReference.to(baseTypeNode.getQualifiedName() + "#" + baseTypeMethod.getSimpleName());
+        Link methodRef = Link.to(baseTypeNode.getQualifiedName() + "#" + baseTypeMethod.getSimpleName());
         typeMethod.setBaseMethod(methodRef);
 
         TextAssembler.assembleTextAndLinks(api, ctx);
@@ -200,11 +199,11 @@ class TextAssemblerTests extends ModelTestEnvironment {
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         assertEquals(1, subClass.getInheritedMethods().size());
-        Map.Entry<TypeReference, List<MethodReference>> inheritedEntry = subClass.getInheritedMethods().entrySet().iterator().next();
-        List<MethodReference> inheritedMethods = inheritedEntry.getValue();
+        Map.Entry<TypeReference, List<Link>> inheritedEntry = subClass.getInheritedMethods().entrySet().iterator().next();
+        List<Link> inheritedMethods = inheritedEntry.getValue();
         assertEquals(1, inheritedMethods.size());
-        MethodReference inheritedMethod = inheritedMethods.getFirst();
-        assertEquals("inheritedMethod", inheritedMethod.getLink().getMethodName());
+        Link inheritedMethod = inheritedMethods.getFirst();
+        assertEquals("inheritedMethod", inheritedMethod.getMethodName());
     }
 
 	@Test

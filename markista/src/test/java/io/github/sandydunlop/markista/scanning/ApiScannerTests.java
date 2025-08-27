@@ -12,7 +12,6 @@ import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeView;
 
 import java.io.File;
 import java.lang.reflect.Method;

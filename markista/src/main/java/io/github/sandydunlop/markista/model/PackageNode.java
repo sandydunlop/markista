@@ -12,7 +12,7 @@ public class PackageNode extends Node {
     private final List<PackageNode> packages = new ArrayList<>();
 
     // store children by the interface type (no concrete TypeNode mention)
-    protected final List<TypeNode> types = new ArrayList<>();
+    private final List<TypeNode> types = new ArrayList<>();
 
     /// Constructs a PackageNode with the specified qualified package name.
     /// @param name The qualified name of the package.

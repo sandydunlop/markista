@@ -16,7 +16,7 @@ public class Api extends Node {
     private final List<PackageNode> packages = new ArrayList<>();
     
     // store children by the interface type (no concrete TypeNode mention)
-    protected final List<TypeNode> types = new ArrayList<>();
+    private final List<TypeNode> types = new ArrayList<>();
 
     private List<MethodNode> methods = new ArrayList<>();
 
@@ -155,7 +155,7 @@ public class Api extends Node {
     public TypeNode getTypeNode(String qualifiedName) {
         for (TypeNode typeNode : types) {
             if (typeNode.getQualifiedName().equals(qualifiedName)){
-                return (TypeNode)typeNode;
+                return typeNode;
             }
         }
         return null;

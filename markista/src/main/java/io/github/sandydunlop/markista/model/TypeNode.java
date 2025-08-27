@@ -17,7 +17,7 @@ public class TypeNode extends AbstractMember {
     private Link enclosingClassRef = null;
 
     // store children by the interface type (no concrete TypeNode mention)
-    protected final List<TypeNode> types = new ArrayList<>();
+    private final List<TypeNode> types = new ArrayList<>();
 
     /// List of references to interfaces implemented by this type and text containing links.
     private List<TypeReference> implementedInterfaces = new ArrayList<>();
@@ -28,7 +28,7 @@ public class TypeNode extends AbstractMember {
     /// List of references to this type's subtypes and text containing links.
     private List<TypeReference> subtypes = new ArrayList<>();
 
-    private HashMap<TypeReference,List<MethodReference>> inheritedMethods = new HashMap<>();
+    private HashMap<TypeReference,List<Link>> inheritedMethods = new HashMap<>();
 
     /// String representation of array brackets if this type is an array (e.g., `[]`).
     private String arrayBrackets = "";
@@ -110,7 +110,7 @@ public class TypeNode extends AbstractMember {
 
     /// Returns the list of inherited methods organized by the type they are defined in.
     /// @return HashMap of types containing inherited methods to inherited methods.
-    public Map<TypeReference,List<MethodReference>> getInheritedMethods() {
+    public Map<TypeReference,List<Link>> getInheritedMethods() {
         return inheritedMethods;
     }
 

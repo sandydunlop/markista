@@ -15,7 +15,6 @@ import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
@@ -28,7 +27,6 @@ import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.scanning.MarkdownParser.TokenKind;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
-import io.github.sandydunlop.markista.model.TypeView;
 
 import java.io.File;
 import java.io.Serializable;
@@ -481,8 +479,7 @@ public class TypeUtils {
             Element typeElement = declaredType.asElement();
             if ("Override".equals(typeElement.getSimpleName().toString())) {
                 Link link = new Link().withKind(Link.Kind.METHOD).withMethodName(method.getSimpleName());
-                MethodReference overriddenMethod = MethodReference.to(link, Text.empty());
-                method.setBaseMethod(overriddenMethod);
+                method.setBaseMethod(link);
             }
         }
     }
@@ -491,10 +488,10 @@ public class TypeUtils {
     /// @param moduleNode The ModuleNode to which constant value references will be added.
     public static void addConstantFieldValuesReference(ModuleNode moduleNode) {
         for (TypeNode classNode : api.getTypes()) {
-            for (FieldNode fieldNode : ((TypeNode)classNode).getFields()) {
+            for (FieldNode fieldNode : classNode.getFields()) {
                 if (fieldNode.getConstantValue() != null) {
                     Link ref = Link.to("constant-values")
-                            .from(((TypeNode) classNode).getPackageName())
+                            .from(classNode.getPackageName())
                             .withKind(Link.Kind.PAGE)
                             .withLabel("Constant Field Values");
                     fieldNode.getReferences().add(ref);

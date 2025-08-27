@@ -9,7 +9,6 @@ import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Link.Kind;
 import io.github.sandydunlop.markista.model.Link.Scope;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeView;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -301,13 +300,13 @@ public class LinkResolver {
             if (toPackageName.isEmpty()) {
                 return false;
             } else {
-                return resolveLocalPackageTypeInternal(link, toPackageName, toClassName);
+                return resolveLocalPackageOrTypeInternal(link, toPackageName, toClassName);
             }
         }
         return false;
     }
 
-    static boolean resolveLocalPackageTypeInternal(Link link, String toPackageName, String toClassName) {
+    static boolean resolveLocalPackageOrTypeInternal(Link link, String toPackageName, String toClassName) {
         String fromPackageName = getPackageName(link.getOrigin());
         if (getPackageName(toPackageName).isEmpty()) {
             return false;
@@ -333,6 +332,7 @@ public class LinkResolver {
                 link.setLabel(toPackageName + "." + toClassName);
             }
             link.setQualifiedClassName(toPackageName + "." + toClassName);
+            link.setSimpleClassName(toClassName);
             addClassToReference(toClassName, link);
         } else {
             link.setLabel(toPackageName);

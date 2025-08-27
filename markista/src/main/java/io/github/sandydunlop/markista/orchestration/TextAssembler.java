@@ -7,7 +7,6 @@ import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.Pair;
@@ -17,7 +16,6 @@ import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
-import io.github.sandydunlop.markista.model.TypeView;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -49,9 +47,9 @@ public class TextAssembler {
         processModules(api.getModules());
 
         // Links from types used in methods and fields
-        for (TypeNode typeView : api.getTypes()) {
-            processTypeNode((TypeNode) typeView);
-            associateMethodsWithImplementedInterfaces((TypeNode) typeView);
+        for (TypeNode typeNode : api.getTypes()) {
+            processTypeNode(typeNode);
+            associateMethodsWithImplementedInterfaces(typeNode);
         }
 
         processJavadocComments(api);
@@ -139,8 +137,8 @@ public class TextAssembler {
         }
     }
 
-    public static HashMap<String,Pair<String,MethodReference>> gatherOverriddenMethods(TypeNode typeNode) {
-        HashMap<String,Pair<String,MethodReference>> methodLookup1 = new HashMap<>();
+    public static Map<String,Pair<String,Link>> gatherOverriddenMethods(TypeNode typeNode) {
+        HashMap<String,Pair<String,Link>> methodLookup1 = new HashMap<>();
         // Skip the first one (java.lang.Object)
         for (int i = 1; i < typeNode.getSupertypes().size() ; i++) {
             String supertypeName = typeNode.getSupertypes().get(i).getQualifiedName();
@@ -148,9 +146,9 @@ public class TextAssembler {
             if (supertype != null) {
                 for (MethodNode baseMethod : supertype.getMethods()) {
                     if (!typeHasMethod(typeNode, baseMethod)) {
-                        MethodReference methodRef = MethodReference.to(supertypeName + "#" + baseMethod.signature());
-                        methodRef.setText(Text.of(baseMethod.getSimpleName()));
-                        Pair<String,MethodReference> refs = Pair.of(supertypeName, methodRef);
+                        Link methodRef = Link.to(supertypeName + "#" + baseMethod.signature());
+                        methodRef.setLabel(baseMethod.getSimpleName());
+                        Pair<String,Link> refs = Pair.of(supertypeName, methodRef);
                         methodLookup1.put(baseMethod.signature(), refs);
                     }
                 }
@@ -159,16 +157,16 @@ public class TextAssembler {
         return methodLookup1;
     }
             
-    public static HashMap<String,List<MethodReference>> listBySupertypeName(HashMap<String,Pair<String,MethodReference>> methodLookup1) {
-        HashMap<String,List<MethodReference>> methodLookup2 = new HashMap<>();
-        for (Map.Entry<String,Pair<String,MethodReference>> entry : methodLookup1.entrySet()) {
-            Pair<String,MethodReference> refs = entry.getValue();
+    public static Map<String,List<Link>> listBySupertypeName(Map<String,Pair<String,Link>> methodLookup1) {
+        HashMap<String,List<Link>> methodLookup2 = new HashMap<>();
+        for (Map.Entry<String,Pair<String,Link>> entry : methodLookup1.entrySet()) {
+            Pair<String,Link> refs = entry.getValue();
             String supertypeName = refs.getL();
-            MethodReference methodRef = refs.getR();
-            methodRef.setText(link(methodRef.getLink()));
-            List<MethodReference> inheritedMethods = methodLookup2.get(supertypeName);
+            Link methodRef = refs.getR();
+            link(methodRef);
+            List<Link> inheritedMethods = methodLookup2.get(supertypeName);
             if (inheritedMethods == null) {
-                List<MethodReference> newList = new ArrayList<>();
+                List<Link> newList = new ArrayList<>();
                 newList.add(methodRef);
                 methodLookup2.put(supertypeName, newList);
             } else {
@@ -180,11 +178,12 @@ public class TextAssembler {
 
     public static void processInheritedMethods(TypeNode typeNode) {
         if (typeNode.getSupertypes().size() > 1) {
-            HashMap<String,List<MethodReference>> methodLookup2 = listBySupertypeName(gatherOverriddenMethods(typeNode));
+            Map<String, Pair<String, Link>> overriddenMethods = gatherOverriddenMethods(typeNode);
+            Map<String,List<Link>> methodLookup2 = listBySupertypeName(overriddenMethods);
             // Copy methodLookup2 into typeNode's inheritedMethods hash table
             // but use a TypeReference as the key
-            for (Map.Entry<String,List<MethodReference>> entry : methodLookup2.entrySet()) {
-                List<MethodReference> methods = entry.getValue();
+            for (Map.Entry<String,List<Link>> entry : methodLookup2.entrySet()) {
+                List<Link> methods = entry.getValue();
                 TypeReference supertypeRef = TypeReference.to(entry.getKey());
                 supertypeRef.setText(link(supertypeRef.getLink()));
                 typeNode.getInheritedMethods().put(supertypeRef, methods);
@@ -206,11 +205,14 @@ public class TextAssembler {
         for (Link thrownRef : method.getThrownTypes()) {
             LinkResolver.resolve(thrownRef);
         }
-        MethodReference baseMethodPair = method.getBaseMethod();
+        Link baseMethodPair = method.getBaseMethod();
         if (baseMethodPair != null) {
             String baseTypeName = baseTypeName(method);
             if (baseTypeName != null) {
                 linkBaseMethod(baseMethodPair, baseTypeName);
+            } else {
+                //TODO: We arrive here when the base type is not in the model - eg a standard java type
+                method.setBaseMethod(null);
             }
 
             TypeNode baseType = api.getTypeNode(baseTypeName);
@@ -226,18 +228,17 @@ public class TextAssembler {
         generateLinkTextsForReferences(method);
     }
 
-    public static void linkBaseMethod(MethodReference baseMethodPair, String baseTypeName) {
-        Link baseMethodRef = baseMethodPair.getLink();
-        if (baseMethodRef.getTarget().isEmpty()) {
-            if (!baseMethodRef.getMethodSignature().isEmpty()) {
-                baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodSignature());
-            } else if (!baseMethodRef.getMethodName().isEmpty()) {
-                baseMethodRef.setTarget(baseTypeName + "#" + baseMethodRef.getMethodName());
+    public static void linkBaseMethod(Link baseMethodLink, String baseTypeName) {
+        if (baseMethodLink.getTarget().isEmpty()) {
+            if (!baseMethodLink.getMethodSignature().isEmpty()) {
+                baseMethodLink.setTarget(baseTypeName + "#" + baseMethodLink.getMethodSignature());
+            } else if (!baseMethodLink.getMethodName().isEmpty()) {
+                baseMethodLink.setTarget(baseTypeName + "#" + baseMethodLink.getMethodName());
             }
         }
-        baseMethodRef.setKind(Link.Kind.UNKNOWN);
-        Text linkText = link(baseMethodRef);
-        baseMethodPair.setText(linkText);
+        baseMethodLink.setKind(Link.Kind.UNKNOWN);
+        link(baseMethodLink);
+        baseMethodLink.setLabel(baseMethodLink.getSimpleClassName() + "." + baseMethodLink.getMethodName());
     }
 
     public static Text processInheritDocTags(Text baseMethodText, Text text) {
