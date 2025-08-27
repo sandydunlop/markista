@@ -164,7 +164,7 @@ public class TextAssembler {
             Pair<String,Link> refs = entry.getValue();
             String supertypeName = refs.getL();
             Link methodRef = refs.getR();
-            link(methodRef);
+            linkMethod(methodRef);
             List<Link> inheritedMethods = methodLookup2.get(supertypeName);
             if (inheritedMethods == null) {
                 List<Link> newList = new ArrayList<>();
@@ -238,7 +238,7 @@ public class TextAssembler {
             }
         }
         baseMethodLink.setKind(Link.Kind.UNKNOWN);
-        link(baseMethodLink);
+        linkMethod(baseMethodLink);
         baseMethodLink.setLabel(baseMethodLink.getSimpleClassName() + "." + baseMethodLink.getMethodName());
     }
 
@@ -422,6 +422,81 @@ public class TextAssembler {
         }
     }
 
+    // MFLP-85 Temporary copy of link for linking methods while link is refactored
+    // TODO: Consolidate when done refactoring
+    public static Text linkMethod(Link reference) {
+        String targetName = reference.getTarget();
+        if (targetName == null || targetName.isEmpty()) {
+            ctx.reportWarning("No link target supplied");
+            return Text.of(reference.getLabel());
+        }
+        String pre = "";
+        String post = "";
+        String anchor = "";
+        boolean isLocalMethod = false;
+        String displayName = reference.getLabel();
+        int pos = targetName.indexOf('#');
+        if (pos == 0) {
+            reference.setHasAnchor(true);
+            reference.setAnchor(targetName.substring(pos));
+            Text.Segment segment = Text.Segment.empty()
+                    .setKind(Text.Segment.Kind.LINK)
+                    .setLink(reference)
+                    .setText(reference.getLabel());
+            return Text.of(segment);
+        }
+        if (pos > 0) {
+            anchor = targetName.substring(pos);
+            targetName = targetName.substring(0, pos);
+        }
+        if (targetName.indexOf('<') > -1) {
+            // Does escaping need done here?
+            // See: https://sandydunlop.atlassian.net/browse/MFLP-57
+            return linkGenerics(targetName);
+        } else if (targetName.indexOf(',') > -1) {
+            return splitAndLink(targetName);
+        } else if (targetName.lastIndexOf(' ') > 0) {
+            int p = targetName.lastIndexOf(' ');
+            pre = targetName.substring(0, p) + " ";
+            targetName = targetName.substring(p + 1);
+        }
+
+        pos = targetName.indexOf('[');
+        if (pos > 0) {
+            post = targetName.substring(pos);
+            targetName = targetName.substring(0, pos);
+        }
+        if (targetName.contains("(")) {
+            targetName = targetName.substring(0, targetName.indexOf("("));
+        }
+        reference.setTarget(targetName);
+        reference.setAnchor(anchor);
+        if (reference.getLabel() == null || reference.getLabel().isEmpty()) {
+            reference.setLabel(reference.getTarget());
+        }
+        LinkResolver.resolve(reference);
+        if (!anchor.isEmpty() && reference.getKind() != Link.Kind.URL) {
+            isLocalMethod = true;
+            // Issue: https://github.com/sandydunlop/markista/issues/1
+            // Workaround:
+            // Remove the parentheses from after method names in anchor 
+            // links to Markdown pages for now. Anchors in the Markdown
+            // are currently headings without parameters.
+            reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
+        }
+        setDisplayName(reference, displayName, isLocalMethod);
+
+        Text.Segment link = Text.Segment.empty()
+                .setKind(Text.Segment.Kind.LINK)
+                .setLink(reference)
+                .setText(Utils.simplifyNames(reference.getLabel()));
+        Text r = Text.empty();
+        r.append(pre);
+        r.append(link);
+        r.append(post);
+        return r;
+    }
+
     /// Create a markdown link, automatically deciding what kind of link to make.
     /// @param reference a Reference object describing the link
     /// @return markdown formatted link
@@ -497,6 +572,92 @@ public class TextAssembler {
         r.append(post);
         return r;
     }
+
+    // MFLP-85 Temporary copy of link for refactoring linking types
+    // TODO: Consolidate when done refactoring
+    public static Text link2(Link reference) {
+        String targetName = reference.getTarget();
+        if (targetName == null || targetName.isEmpty()) {
+            ctx.reportWarning("No link target supplied");
+            return Text.of(reference.getLabel());
+        }
+        String pre = "";
+        String post = "";
+        String anchor = "";
+        boolean isLocalMethod = false;
+        String displayName = reference.getLabel();
+        int pos = targetName.indexOf('#');
+        if (pos == 0) {
+            reference.setHasAnchor(true);
+            reference.setAnchor(targetName.substring(pos));
+            Text.Segment segment = Text.Segment.empty()
+                    .setKind(Text.Segment.Kind.LINK)
+                    .setLink(reference)
+                    .setText(reference.getLabel());
+            return Text.of(segment);
+        }
+        if (pos > 0) {
+            anchor = targetName.substring(pos);
+            targetName = targetName.substring(0, pos);
+        }
+        //
+        //
+        //
+        if (targetName.indexOf('<') > -1) {
+            // Does escaping need done here?
+            // See: https://sandydunlop.atlassian.net/browse/MFLP-57
+
+            // TypeReference typeRef = linkGenerics2(targetName);
+
+            return linkGenerics(targetName);
+        } else if (targetName.indexOf(',') > -1) {
+            return splitAndLink(targetName);
+        } else if (targetName.lastIndexOf(' ') > 0) {
+            int p = targetName.lastIndexOf(' ');
+            pre = targetName.substring(0, p) + " ";
+            targetName = targetName.substring(p + 1);
+        }
+
+        pos = targetName.indexOf('[');
+        if (pos > 0) {
+            post = targetName.substring(pos);
+            targetName = targetName.substring(0, pos);
+        }
+        //
+        //
+        //
+        if (targetName.contains("(")) {
+            targetName = targetName.substring(0, targetName.indexOf("("));
+        }
+        reference.setTarget(targetName);
+        reference.setAnchor(anchor);
+        if (reference.getLabel() == null || reference.getLabel().isEmpty()) {
+            reference.setLabel(reference.getTarget());
+        }
+        LinkResolver.resolve(reference);
+        if (!anchor.isEmpty() && reference.getKind() != Link.Kind.URL) {
+            isLocalMethod = true;
+            // Issue: https://github.com/sandydunlop/markista/issues/1
+            // Workaround:
+            // Remove the parentheses from after method names in anchor 
+            // links to Markdown pages for now. Anchors in the Markdown
+            // are currently headings without parameters.
+            reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
+        }
+        setDisplayName(reference, displayName, isLocalMethod);
+
+        Text.Segment link = Text.Segment.empty()
+                .setKind(Text.Segment.Kind.LINK)
+                .setLink(reference)
+                .setText(Utils.simplifyNames(reference.getLabel()));
+        Text r = Text.empty();
+        r.append(pre);
+        r.append(link);
+        r.append(post);
+        return r;
+    }
+
+
 
     public static void setDisplayName(Link reference, String displayName, boolean isLocalMethod) {
         if (reference.getLabel() == null) {

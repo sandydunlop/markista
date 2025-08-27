@@ -174,7 +174,7 @@ public class TypeUtils {
         if (typeMirror.getKind() == TypeKind.ARRAY) {
             TypeMirror array = ((ArrayType)typeMirror).getComponentType();
             qualifiedTypeName = array.toString();
-            arrayBrackets = "\\[]";                    
+            arrayBrackets = "[]";                    
         }
         PackageElement packageElement = getEnclosingPackageElement(element);
         if (packageElement == null) {

@@ -223,7 +223,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Test
     void link_standardMethod() {
         LinkResolver.addStandardModules();
-        Text text = TextAssembler.link(Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
+        Text text = TextAssembler.linkMethod(Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
         String markdown = MarkdownUtils.formatText(text);
         assertEquals("[Doclet.Option.process(java.lang.String,java.util.List)](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
     }
@@ -231,7 +231,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Test
     void link_localMethod() {
         LinkResolver.addStandardModules();
-        Text text = TextAssembler.link(Link.to("Node#sort()"));
+        Text text = TextAssembler.linkMethod(Link.to("Node#sort()"));
         String markdown = MarkdownUtils.formatText(text);
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
     }
