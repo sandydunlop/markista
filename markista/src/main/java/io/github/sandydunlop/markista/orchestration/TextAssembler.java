@@ -97,12 +97,12 @@ public class TextAssembler {
             typeNode.setEnclosingClassRef(ref);
         }
         for (TypeReference typeRef : typeNode.getImplementedInterfaces()) {
-            Text text = link(typeRef.getLink());
-            typeRef.getText().append(text);
+            link(typeRef);
+            // typeRef.getText().append(text);
         }
         for (TypeReference typeRef : typeNode.getSupertypes()) {
-            Text text = link(typeRef.getLink());
-            typeRef.getText().append(text);
+            link(typeRef);
+            // typeRef.getText().append(text);
         }
         processSubtypes(typeNode);
         processInheritedMethods(typeNode);
@@ -130,9 +130,10 @@ public class TextAssembler {
             TypeNode directSupertype = api.getTypeNode(directSupertypeName);
             if (directSupertype != null) {
                 TypeReference subtypeRef = TypeReference.to(typeNode.getQualifiedName());
-                Text subtypeText = link(subtypeRef.getLink());
+                // Text subtypeText = link(subtypeRef);
                 subtypeRef.getLink().from(directSupertype.getQualifiedName());
-                subtypeRef.setText(subtypeText);
+                // subtypeRef.setText(subtypeText);
+                link(subtypeRef);
                 directSupertype.getSubtypes().add(subtypeRef);
             }
         }
@@ -186,15 +187,21 @@ public class TextAssembler {
             for (Map.Entry<String,List<Link>> entry : methodLookup2.entrySet()) {
                 List<Link> methods = entry.getValue();
                 TypeReference supertypeRef = TypeReference.to(entry.getKey());
-                supertypeRef.setText(link(supertypeRef.getLink()));
+                // supertypeRef.setText(link(supertypeRef));
+                link(supertypeRef);
                 typeNode.getInheritedMethods().put(supertypeRef, methods);
             }            
         }
     }
 
     public static void processMethod(MethodNode method) {
-        Link returnTypeReference = Link.to(method.getReturnTypeName()).from(ctx.getPackageName());
-        method.setReturnTypeText(link(returnTypeReference));
+        // TypeReference returnTypeRef = TypeReference.to(method.getReturnTypeName());
+        // Link returnTypeReference = Link.to(method.getReturnTypeName()).from(ctx.getPackageName());
+        // method.setReturnTypeText(link(returnTypeRef));
+        if (method.getSimpleName().contains("populateExtensionsWithOrder")){
+            method=method;
+        }
+        link(method.getReturnType());
         generateLinkTextsForParams(method.getParams()
                 .stream()
                 .filter(ParamNode.class::isInstance)
@@ -263,7 +270,10 @@ public class TextAssembler {
         }
         for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
             TypeReference typeRef = type.getSupertypes().get(i);
-            TypeNode supertypeNode = api.getTypeNode(typeRef.getLink().getTarget());
+            // TypeNode supertypeNode = api.getTypeNode(typeRef.getLink().getTarget());
+            String typeName = typeRef.getTypeString();
+            //TODO: Ensure this works
+            TypeNode supertypeNode = api.getTypeNode(typeName);
             if (supertypeNode != null && typeHasMethod(supertypeNode, method)) {
                 return supertypeNode.getQualifiedName();
             }
@@ -286,11 +296,12 @@ public class TextAssembler {
             ctx.setModuleName(module.getName());
             // Constant field values
             for (FieldNode constant : module.getConstantValues()) {
-                Link ref = Link.to(constant.getTypeName())
-                        .from("")
-                        .withLabel(constant.getTypeName());
-                LinkResolver.resolve(ref);
-                constant.setConstantValueReference(ref);
+                // Link ref = Link.to(constant.getTypeName())
+                //         .from("")
+                //         .withLabel(constant.getTypeName());
+                // LinkResolver.resolve(ref);
+                link(constant.getType());
+                constant.setConstantValueReference(constant.getType());
             }
 
             // Directives
@@ -335,7 +346,11 @@ public class TextAssembler {
         ctx.setTypeName(typeNode.getQualifiedName());
         List<TypeReference> interfaces = typeNode.getImplementedInterfaces();
         for (TypeReference interfaceRef : interfaces) {
-            String interfaceName = interfaceRef.getLink().getTarget();
+            if (interfaceRef.getLink() == null) {
+                typeNode=typeNode;
+            }
+            String interfaceName = interfaceRef.getTypeString();
+            //getLink().getTarget();
             InterfaceNode interfaceType = (InterfaceNode) api.getTypeNode(interfaceName);
             if (interfaceType == null) {
                 interfaceType = getStandardInterface(interfaceRef);
@@ -350,8 +365,8 @@ public class TextAssembler {
     }
 
     public static InterfaceNode getStandardInterface(TypeReference interfaceRef) {
-        String simpleName = interfaceRef.getLink().getSimpleClassName().replace(".", "$");
-        String qualifiedName = interfaceRef.getLink().getPackageName() + "." + simpleName;
+        // String simpleName = interfaceRef.getLink().getSimpleClassName().replace(".", "$");
+        String qualifiedName = interfaceRef.getTypeString(); //getLink().getPackageName() + "." + simpleName;
         ClassLoader classLoader = TextAssembler.class.getClassLoader();
         try {
             Class<?> standardClass = classLoader.loadClass(qualifiedName);
@@ -405,8 +420,14 @@ public class TextAssembler {
 
     static void generateLinkTextsForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
-            Link reference = Link.to(param.getTypeName()).from(ctx.getPackageName());
-            param.setTypeText(link(reference));
+            if (param.getType().getTypeString().contains("List")){
+                param=param;
+            }
+            // TypeReference typeRef = TypeReference.to(param.getTypeName());
+            link(param.getType());
+            //.from(ctx.getPackageName());
+            // Link reference = Link.to(param.getTypeName()).from(ctx.getPackageName());
+            // param.setType(typeRef);
             generateLinkTextsForReferences(param);
         }
     }
@@ -452,9 +473,9 @@ public class TextAssembler {
         if (targetName.indexOf('<') > -1) {
             // Does escaping need done here?
             // See: https://sandydunlop.atlassian.net/browse/MFLP-57
-            return linkGenerics(targetName);
+            return linkGenericsMethod(targetName);
         } else if (targetName.indexOf(',') > -1) {
-            return splitAndLink(targetName);
+            return splitAndLinkMethod(targetName);
         } else if (targetName.lastIndexOf(' ') > 0) {
             int p = targetName.lastIndexOf(' ');
             pre = targetName.substring(0, p) + " ";
@@ -498,166 +519,19 @@ public class TextAssembler {
     }
 
     /// Create a markdown link, automatically deciding what kind of link to make.
-    /// @param reference a Reference object describing the link
-    /// @return markdown formatted link
-    public static Text link(Link reference) {
-        String targetName = reference.getTarget();
-        if (targetName == null || targetName.isEmpty()) {
-            ctx.reportWarning("No link target supplied");
-            return Text.of(reference.getLabel());
+    /// @param typeRef a Reference object describing the link
+    public static void link(TypeReference typeRef) {
+        if (typeRef instanceof TypeReference.Generic generic) {
+            LinkResolver.resolve(typeRef.getLink());
+            link(generic.getParams());
+        } else if (typeRef instanceof TypeReference.Sequence sequence) {
+            for (TypeReference item : sequence.getItems()) {
+                link(item);
+            }
+        } else {
+            LinkResolver.resolve(typeRef.getLink());
         }
-        String pre = "";
-        String post = "";
-        String anchor = "";
-        boolean isLocalMethod = false;
-        String displayName = reference.getLabel();
-        int pos = targetName.indexOf('#');
-        if (pos == 0) {
-            reference.setHasAnchor(true);
-            reference.setAnchor(targetName.substring(pos));
-            Text.Segment segment = Text.Segment.empty()
-                    .setKind(Text.Segment.Kind.LINK)
-                    .setLink(reference)
-                    .setText(reference.getLabel());
-            return Text.of(segment);
-        }
-        if (pos > 0) {
-            anchor = targetName.substring(pos);
-            targetName = targetName.substring(0, pos);
-        }
-        if (targetName.indexOf('<') > -1) {
-            // Does escaping need done here?
-            // See: https://sandydunlop.atlassian.net/browse/MFLP-57
-            return linkGenerics(targetName);
-        } else if (targetName.indexOf(',') > -1) {
-            return splitAndLink(targetName);
-        } else if (targetName.lastIndexOf(' ') > 0) {
-            int p = targetName.lastIndexOf(' ');
-            pre = targetName.substring(0, p) + " ";
-            targetName = targetName.substring(p + 1);
-        }
-
-        pos = targetName.indexOf('[');
-        if (pos > 0) {
-            post = targetName.substring(pos);
-            targetName = targetName.substring(0, pos);
-        }
-        if (targetName.contains("(")) {
-            targetName = targetName.substring(0, targetName.indexOf("("));
-        }
-        reference.setTarget(targetName);
-        reference.setAnchor(anchor);
-        if (reference.getLabel() == null || reference.getLabel().isEmpty()) {
-            reference.setLabel(reference.getTarget());
-        }
-        LinkResolver.resolve(reference);
-        if (!anchor.isEmpty() && reference.getKind() != Link.Kind.URL) {
-            isLocalMethod = true;
-            // Issue: https://github.com/sandydunlop/markista/issues/1
-            // Workaround:
-            // Remove the parentheses from after method names in anchor 
-            // links to Markdown pages for now. Anchors in the Markdown
-            // are currently headings without parameters.
-            reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
-        }
-        setDisplayName(reference, displayName, isLocalMethod);
-
-        Text.Segment link = Text.Segment.empty()
-                .setKind(Text.Segment.Kind.LINK)
-                .setLink(reference)
-                .setText(Utils.simplifyNames(reference.getLabel()));
-        Text r = Text.empty();
-        r.append(pre);
-        r.append(link);
-        r.append(post);
-        return r;
     }
-
-    // MFLP-85 Temporary copy of link for refactoring linking types
-    // TODO: Consolidate when done refactoring
-    public static Text link2(Link reference) {
-        String targetName = reference.getTarget();
-        if (targetName == null || targetName.isEmpty()) {
-            ctx.reportWarning("No link target supplied");
-            return Text.of(reference.getLabel());
-        }
-        String pre = "";
-        String post = "";
-        String anchor = "";
-        boolean isLocalMethod = false;
-        String displayName = reference.getLabel();
-        int pos = targetName.indexOf('#');
-        if (pos == 0) {
-            reference.setHasAnchor(true);
-            reference.setAnchor(targetName.substring(pos));
-            Text.Segment segment = Text.Segment.empty()
-                    .setKind(Text.Segment.Kind.LINK)
-                    .setLink(reference)
-                    .setText(reference.getLabel());
-            return Text.of(segment);
-        }
-        if (pos > 0) {
-            anchor = targetName.substring(pos);
-            targetName = targetName.substring(0, pos);
-        }
-        //
-        //
-        //
-        if (targetName.indexOf('<') > -1) {
-            // Does escaping need done here?
-            // See: https://sandydunlop.atlassian.net/browse/MFLP-57
-
-            // TypeReference typeRef = linkGenerics2(targetName);
-
-            return linkGenerics(targetName);
-        } else if (targetName.indexOf(',') > -1) {
-            return splitAndLink(targetName);
-        } else if (targetName.lastIndexOf(' ') > 0) {
-            int p = targetName.lastIndexOf(' ');
-            pre = targetName.substring(0, p) + " ";
-            targetName = targetName.substring(p + 1);
-        }
-
-        pos = targetName.indexOf('[');
-        if (pos > 0) {
-            post = targetName.substring(pos);
-            targetName = targetName.substring(0, pos);
-        }
-        //
-        //
-        //
-        if (targetName.contains("(")) {
-            targetName = targetName.substring(0, targetName.indexOf("("));
-        }
-        reference.setTarget(targetName);
-        reference.setAnchor(anchor);
-        if (reference.getLabel() == null || reference.getLabel().isEmpty()) {
-            reference.setLabel(reference.getTarget());
-        }
-        LinkResolver.resolve(reference);
-        if (!anchor.isEmpty() && reference.getKind() != Link.Kind.URL) {
-            isLocalMethod = true;
-            // Issue: https://github.com/sandydunlop/markista/issues/1
-            // Workaround:
-            // Remove the parentheses from after method names in anchor 
-            // links to Markdown pages for now. Anchors in the Markdown
-            // are currently headings without parameters.
-            reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
-        }
-        setDisplayName(reference, displayName, isLocalMethod);
-
-        Text.Segment link = Text.Segment.empty()
-                .setKind(Text.Segment.Kind.LINK)
-                .setLink(reference)
-                .setText(Utils.simplifyNames(reference.getLabel()));
-        Text r = Text.empty();
-        r.append(pre);
-        r.append(link);
-        r.append(post);
-        return r;
-    }
-
-
 
     public static void setDisplayName(Link reference, String displayName, boolean isLocalMethod) {
         if (reference.getLabel() == null) {
@@ -694,20 +568,20 @@ public class TextAssembler {
     /// @param str A string containing a qualified generic name.
     /// @return    A Text object with the qualified names changed to unqualified
     ///            names and links to types added
-    public static Text linkGenerics(String str) {
+    public static Text linkGenericsMethod(String str) {
         if (str == null || str.isEmpty()) return Text.of(str);
         int openingChevron = str.indexOf("<");
         int closingChevron = str.lastIndexOf(">");
         String before = str.substring(0, openingChevron);
         String mid = str.substring(openingChevron + 1, closingChevron);
         String after = str.substring(closingChevron + 1);
-        Text typeLink = link(Link.to(before));
+        Text typeLink = linkMethod(Link.to(before));
 
         Text midLinks;
         if (mid.contains("<")) {
-            midLinks = linkGenerics(mid);
+            midLinks = linkGenericsMethod(mid);
         } else {
-            midLinks = splitAndLink(mid);
+            midLinks = splitAndLinkMethod(mid);
         }
 
         Text ret = Text.empty();
@@ -723,7 +597,7 @@ public class TextAssembler {
     /// containing one or more types separated by commas.
     /// @param typesString A string containing a comma-separated list of type names
     /// @return a list of links to types formatted as Markdown
-    public static Text splitAndLink(String typesString) {
+    public static Text splitAndLinkMethod(String typesString) {
         Text text = Text.empty();
         String[] types = typesString.split(",");
         for (String t : types) {
@@ -731,7 +605,7 @@ public class TextAssembler {
             if (!text.isEmpty()) {
                 text.append(", ");
             }
-            text.append(link(Link.to(typeName)));
+            text.append(linkMethod(Link.to(typeName)));
         }
         return text;
     }

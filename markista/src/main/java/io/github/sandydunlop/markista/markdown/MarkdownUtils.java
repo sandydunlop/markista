@@ -6,6 +6,8 @@ import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
+import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.util.List;
 
@@ -31,7 +33,7 @@ public class MarkdownUtils {
     /// @return Markdown formatted text representing the method's signature
     public static String fullSignature(MethodNode method ) {
         String sig = method.getModifiersString();
-        sig += formatText(method.getReturnTypeText()) + " ";
+        sig += formatTypeRef(method.getReturnType()) + " ";
         sig += method.getSimpleName() + "(" + formatParams(method.getParams()) + ")";
         return sig;
     }
@@ -44,7 +46,7 @@ public class MarkdownUtils {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(", ");
-            String typeName = formatText(param.getTypeText());
+            String typeName = formatTypeRef(param.getType());
             sb.append(typeName);
             sb.append(" ");
             sb.append(param.getSimpleName()); 
@@ -84,6 +86,36 @@ public class MarkdownUtils {
             }
         }
         return sb.toString();
+    }
+
+    public static String formatTypeRef(TypeReference typeRef) {
+        return formatTypeRef(typeRef, false);
+    }
+
+    public static String formatTypeRef(TypeReference typeRef, boolean useQualifiedName) {
+        if (typeRef instanceof TypeReference.Array array) {
+            String arrayType = link(typeRef.getLink(), useQualifiedName);
+            for (int i=0; i<array.getDimensions(); i++) {
+                arrayType += "[]";
+            }
+            return arrayType;
+        } else if (typeRef instanceof TypeReference.Generic generic) {
+            if (typeRef.getLink() == null) {
+                typeRef=typeRef;
+            }
+            return link(typeRef.getLink(), useQualifiedName) + "<" + formatTypeRef(generic.getParams(), useQualifiedName) + ">";
+        } else if (typeRef instanceof TypeReference.Sequence sequence) {
+            StringBuilder sb = new StringBuilder();
+            for (TypeReference item : sequence.getItems()) {
+                if (!sb.isEmpty()) {
+                    sb.append(", ");
+                }
+                sb.append(formatTypeRef(item, useQualifiedName));
+            }
+            return sb.toString();
+        } else {
+            return link(typeRef.getLink(), useQualifiedName);
+        }
     }
 
     /// Formats links contained in a text segment as markdown.

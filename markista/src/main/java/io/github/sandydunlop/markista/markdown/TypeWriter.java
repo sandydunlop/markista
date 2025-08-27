@@ -243,9 +243,9 @@ public class TypeWriter {
         writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = "";
         if (member instanceof MethodNode method) {
-            typeString = MarkdownUtils.formatText(method.getReturnTypeText());
+            typeString = MarkdownUtils.formatTypeRef(method.getReturnType());
         } else if (member instanceof FieldNode field) {
-            typeString = MarkdownUtils.formatText(field.getTypeText());
+            typeString = MarkdownUtils.formatTypeRef(field.getType());
         }
         for (AppliedAnnotationNode annotation : member.getAppliedAnnotations()) {
             if (member instanceof AnnotationNode || (annotation.isCustom() && annotation.isDocumented())) {
@@ -322,7 +322,7 @@ public class TypeWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = MarkdownUtils.formatText(fieldNode.getTypeText());
+            String link = MarkdownUtils.formatTypeRef(fieldNode.getType());
             table.addRow(fieldNode.getModifiersString() + link, 
                         MarkdownUtils.mdAnchorLink(fieldNode.getSimpleName()), MarkdownUtils.inOneLine(MarkdownUtils.formatText(fieldNode.getFirstSentence())));
         }
@@ -353,7 +353,10 @@ public class TypeWriter {
                 .addColumn("Method")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            String returnTypeText = MarkdownUtils.formatText(methodNode.getReturnTypeText());
+            if (methodNode.getSimpleName().contains("populateEx")) {
+                methodNode=methodNode;
+            }
+            String returnTypeText = MarkdownUtils.formatTypeRef(methodNode.getReturnType());
             table.addRow(methodNode.getModifiersString() + returnTypeText,
                         MarkdownUtils.mdAnchorLink(methodNode.getSimpleName()) + "(" + MarkdownUtils.formatParams(methodNode.getParams()) + ")",
                         MarkdownUtils.inOneLine(MarkdownUtils.formatText(methodNode.getFirstSentence())));
@@ -402,6 +405,9 @@ public class TypeWriter {
                 ctx.setMethodName(method.getSimpleName());
                 writer.write("### " + method.getSimpleName());
                 writer.write("\n\n");
+                if (method.getSimpleName().equals("getModifiersString")) {
+                    method=method;
+                }
                 outputMethodOrFieldDeclaration(method);
             } else if (node instanceof FieldNode field) {
                 ctx.setFieldName(field.getSimpleName());

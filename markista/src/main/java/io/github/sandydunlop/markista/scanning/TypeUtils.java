@@ -156,7 +156,9 @@ public class TypeUtils {
         List<? extends Element> enclosedElements = e.getEnclosedElements();
         for (Element element : enclosedElements) {
             if (element.getKind() == ElementKind.ENUM_CONSTANT) {
-                FieldNode enumConstant = new FieldNode(null, element.getSimpleName().toString());
+                TypeMirror tm = element.asType();
+                //TODO: Ensure this works
+                FieldNode enumConstant = new FieldNode(tm.toString(), element.getSimpleName().toString());
                 enumNode.getConstants().add(enumConstant);
             }
         }
@@ -777,8 +779,9 @@ public class TypeUtils {
         for (VariableElement parameter : ee.getParameters()) {
             String simpleName = parameter.getSimpleName().toString();
 
-            TypeNode paramType = getParamType(ee, simpleName);
-            String paramTypeName = paramType.getQualifiedName() + paramType.getArrayBrackets();
+            String paramTypeName = getParamType(ee, simpleName);
+            // TypeNode paramType = getParamType(ee, simpleName);
+            // String paramTypeName = paramType.getQualifiedName() + paramType.getArrayBrackets();
             ParamNode param = new ParamNode(paramTypeName, simpleName);
             
             ParamTree paramTree = getParamTree(dct, parameter);
@@ -806,33 +809,38 @@ public class TypeUtils {
     /// @param method The ExecutableElement representing the method.
     /// @param fieldName The parameter name.
     /// @return A TypeNode for the parameter's type, or null if not found.
-    public static TypeNode getParamType(ExecutableElement method, String fieldName) {
+    public static String getParamType(ExecutableElement method, String fieldName) {
         String packageName = null;
         String simpleTypeName = null;
         String arrayBrackets = "";
+        if (fieldName.contains("orderedExtensions")) {
+            fieldName=fieldName;
+        }
         for (VariableElement param : method.getParameters()) {
             if (param.getSimpleName().toString().equals(fieldName)){
                 TypeMirror typeMirror = param.asType();
-                if (typeMirror.getKind() == TypeKind.ARRAY){
-                    TypeMirror componentType = ((ArrayType)typeMirror).getComponentType();
-                    Pair<String,String> pair = getSimpleNameAndPackageName(componentType);
-                    simpleTypeName = pair.getL();
-                    packageName = pair.getR();
-                    arrayBrackets = "[]";
-                } else {
-                    Pair<String,String> pair = getSimpleNameAndPackageName(typeMirror);
-                    simpleTypeName = pair.getL();
-                    packageName = pair.getR();
-                }
-                break;
+                return typeMirror.toString();
+                // if (typeMirror.getKind() == TypeKind.ARRAY){
+                //     TypeMirror componentType = ((ArrayType)typeMirror).getComponentType();
+                //     Pair<String,String> pair = getSimpleNameAndPackageName(componentType);
+                //     simpleTypeName = pair.getL();
+                //     packageName = pair.getR();
+                //     arrayBrackets = "[]";
+                // } else {
+                //     Pair<String,String> pair = getSimpleNameAndPackageName(typeMirror);
+                //     simpleTypeName = pair.getL();
+                //     packageName = pair.getR();
+                // }
+                // break;
             }
         }
-        if (simpleTypeName == null) return null;
+        return "";
+        // if (simpleTypeName == null) return null;
 
-        TypeNode type = new TypeNode(simpleTypeName, packageName);
-        type.setArrayBrackets(arrayBrackets);
+        // TypeNode type = new TypeNode(simpleTypeName, packageName);
+        // type.setArrayBrackets(arrayBrackets);
 
-        return type;
+        // return type;
     }
 
     static Pair<String,String> getSimpleNameAndPackageName(TypeMirror typeMirror) {

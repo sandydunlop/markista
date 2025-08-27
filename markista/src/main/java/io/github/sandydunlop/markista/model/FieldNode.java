@@ -8,7 +8,7 @@ public class FieldNode extends ParamNode {
     /// The constant value assigned to this field, if any. 
     private Serializable constantValue = null;
 
-    private Link constantValueReference = null;
+    private TypeReference constantValueReference = null;
 
     /// Constructs a FieldNode with the given type and name.
     /// @param type The type of the field.
@@ -29,11 +29,11 @@ public class FieldNode extends ParamNode {
         this.constantValue = constantValue;
     }
 
-    public void setConstantValueReference(Link ref) {
+    public void setConstantValueReference(TypeReference ref) {
         constantValueReference = ref;
     }
 
-    public Link getConstantValueReference() {
+    public TypeReference getConstantValueReference() {
         return constantValueReference;
     }
 

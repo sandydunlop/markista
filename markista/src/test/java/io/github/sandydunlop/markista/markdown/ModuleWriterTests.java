@@ -7,6 +7,7 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.model.Link;
 
@@ -183,7 +184,7 @@ class ModuleWriterTests {
 
     @Test
     void outputConstantValues_WritesConstantFieldValuesPage() throws InvalidPathException, IOException {
-        Link ref = Link.to("v");
+        TypeReference ref = TypeReference.to("v");
         FieldNode fieldNode = mock(FieldNode.class);
         when(fieldNode.getModifiersString()).thenReturn("public static ");
         when(fieldNode.getSimpleName()).thenReturn("MY_CONSTANT");

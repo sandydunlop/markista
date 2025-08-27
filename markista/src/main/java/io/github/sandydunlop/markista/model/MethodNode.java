@@ -12,7 +12,8 @@ public class MethodNode extends AbstractMember {
     private Link specifiedBy;
 
     /// The return type of this method.
-    private final String returnTypeName;
+    // private final String returnTypeName;
+    private TypeReference returnType;
 
     /// Information about the method that this method overrides, if any.
     private Link baseMethod = null;
@@ -26,7 +27,7 @@ public class MethodNode extends AbstractMember {
     /// The type (class/interface) that owns this method.
     private String ownerName = null;
 
-    private Text returnTypeText = Text.empty();
+    // private Text returnTypeText = Text.empty();
 
     private boolean isConstructor = false;
 
@@ -34,7 +35,7 @@ public class MethodNode extends AbstractMember {
     /// @param returnType the return type of the method.
     /// @param name       the simple name of the method.
     public MethodNode(String returnType, String name) {
-        this.returnTypeName = returnType;
+        this.returnType = TypeReference.to(returnType);
         this.simpleName = name;
     }
 
@@ -60,8 +61,8 @@ public class MethodNode extends AbstractMember {
 
     /// Returns the return type of this method.
     /// @return the TypeNode representing the return type.
-    public String getReturnTypeName() {
-        return returnTypeName;
+    public TypeReference getReturnType() {
+        return returnType;
     }
 
     /// Adds a parameter to this method.
@@ -124,17 +125,17 @@ public class MethodNode extends AbstractMember {
         return returnDescription;
     }
 
-    /// Returns the type Text of this parameter.
-    /// @return The Text representing the parameter's type.
-    public Text getReturnTypeText() {
-        return returnTypeText;
-    }
+    // /// Returns the type Text of this parameter.
+    // /// @return The Text representing the parameter's type.
+    // public Text getReturnTypeText() {
+    //     return returnTypeText;
+    // }
 
-    /// Sets the type Text of this parameter.
-    /// @param text The Text to set as this parameter's type Text.
-    public void setReturnTypeText(Text text) {
-        this.returnTypeText = text;
-    }
+    // /// Sets the type Text of this parameter.
+    // /// @param text The Text to set as this parameter's type Text.
+    // public void setReturnTypeText(Text text) {
+    //     this.returnTypeText = text;
+    // }
 
     /// Computes and returns the method signature string, including return type, name, and parameters.
     /// Example format: "java.lang.String methodName(int,java.util.List)"
@@ -146,8 +147,8 @@ public class MethodNode extends AbstractMember {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(",");
-            String typeName = param.getTypeName();
-            if (typeName == null) typeName = param.getTypeName();
+            String typeName = param.getType().getTypeString();
+            // if (typeName == null) typeName = param.getTypeName();
             sb.append(typeName);
         }
         sb.append(")");

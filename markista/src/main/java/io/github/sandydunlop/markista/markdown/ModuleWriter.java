@@ -8,6 +8,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -198,8 +199,8 @@ public class ModuleWriter {
                     modifiersAndType.append(constantValue.getModifiersString());
                     modifiersAndType.append(" ");
                 }
-                Link reference = constantValue.getConstantValueReference();
-                modifiersAndType.append(MarkdownUtils.link(reference, true));
+                TypeReference reference = constantValue.getConstantValueReference();
+                modifiersAndType.append(MarkdownUtils.formatTypeRef(reference, true));
                 table.addRow(modifiersAndType.toString(), constantValue.getSimpleName(), escape(constantValue.getConstantValue().toString()));
             }
             table.render(writer);

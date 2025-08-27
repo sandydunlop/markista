@@ -238,10 +238,10 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         when(methodElement.getEnclosingElement()).thenReturn(typeElement);
         when(methodElement.getParameters()).thenAnswer(_ -> parameters);
 
-        TypeNode tn = TypeUtils.getParamType(methodElement, "param1");
+        String tn = TypeUtils.getParamType(methodElement, "param1");
         assertNotNull(tn);
-        assertEquals("int", tn.getSimpleName());
-        assertEquals("[]", tn.getArrayBrackets());
+        assertEquals("int[]", tn);
+        // assertEquals("[]", tn.getArrayBrackets());
     }
 
     @Test
@@ -961,7 +961,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         verify(methodDoc).addParam(captor.capture());
         ParamNode added = captor.getValue();
         assertEquals("arg", added.getSimpleName());
-        assertNotNull(added.getTypeName()); // type constructed
+        assertNotNull(added.getType().getTypeString()); // type constructed
         // Because we passed empty description, body is likely empty Text
         assertNotNull(added.getBody());
     }
