@@ -198,7 +198,7 @@ public class TextAssembler {
         // TypeReference returnTypeRef = TypeReference.to(method.getReturnTypeName());
         // Link returnTypeReference = Link.to(method.getReturnTypeName()).from(ctx.getPackageName());
         // method.setReturnTypeText(link(returnTypeRef));
-        if (method.getSimpleName().contains("populateExtensionsWithOrder")){
+        if (method.getSimpleName().contains("getSupp")){
             method=method;
         }
         link(method.getReturnType());

@@ -106,9 +106,6 @@ class TypeReferenceTests {
 
     @Test
     void generics_long() {
-
-        // TypeReference,List<Link>
-
         String code = "HashMap<TypeReference,List<Link>>";
         TypeReference typeRef = TypeReference.to(code);
         assertEquals("HashMap", typeRef.getTypeString());
@@ -136,11 +133,19 @@ class TypeReferenceTests {
         assertEquals("HashMap<TypeReference, List<Link>>", s);
     }
 
-    // java.util.HashMap<
-    //   io.github.sandydunlop.markista.model.TypeReference,
-    //   java.util.List<
-    //     io.github.sandydunlop.markista.model.Link
-    //   >
-    // >
+    @Test
+    void generics_set_of_extends() {
+        String code = "java.util.Set<? extends io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option>";
+        TypeReference typeRef = TypeReference.to(code);
+        assertEquals("java.util.Set", typeRef.getTypeString());
+        assertInstanceOf(TypeReference.Generic.class, typeRef);
+        
+        TypeReference.Generic generic = typeRef.asGeneric();
+        assertTrue(generic.hasWildcard());
 
+        TypeReference params = generic.getParams();
+        assertFalse(params instanceof TypeReference.Array);
+        assertFalse(params instanceof TypeReference.Generic);
+        assertFalse(params instanceof TypeReference.Sequence);
+    }
 }

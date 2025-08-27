@@ -144,10 +144,23 @@ public class TypeReference implements Serializable {
         if (str == null || str.isEmpty()) return TypeReference.empty();
         int openingChevron = str.indexOf("<");
         int closingChevron = str.lastIndexOf(">");
-        String before = str.substring(0, openingChevron);
-        String mid = str.substring(openingChevron + 1, closingChevron);
-        String after = str.substring(closingChevron + 1);
+        String before = str.substring(0, openingChevron).strip();
+        String mid = str.substring(openingChevron + 1, closingChevron).strip();
+        String after = str.substring(closingChevron + 1).strip();
         //TODO: after could be array brackets?
+
+        TypeReference.Generic generic = new TypeReference.Generic();
+
+        // "? extends "
+        if (mid.contains("?")) {
+            int e = mid.indexOf("extends");
+            if (e > -1) {
+                mid = mid.substring(e + 8).strip();
+                generic.extendsWildcard = true;
+            } else {
+                generic.wildcard = true;
+            }
+        }
 
         String genericType = before;
         int comma = before.lastIndexOf(",");
@@ -160,7 +173,6 @@ public class TypeReference implements Serializable {
             TypeReference part1 = parse(before);
             sequence.add(part1);
 
-            TypeReference.Generic generic = new TypeReference.Generic();
             generic.typeString = genericType;
             generic.setLink(Link.to(generic.typeString)
                     .withLabel(generic.typeString));
@@ -174,7 +186,6 @@ public class TypeReference implements Serializable {
         } else {
             // TypeReference beforeRef = parse(before);
 
-            TypeReference.Generic generic = new TypeReference.Generic();
             generic.typeString = before;
             generic.params = parse(mid);
 
@@ -215,6 +226,8 @@ public class TypeReference implements Serializable {
         // private TypeReference type;
         // private TypeReference.Sequence params;
         private TypeReference params;
+        private boolean extendsWildcard;
+        private boolean wildcard;
         // private List<TypeReference> params = new ArrayList<>();
 
         public Generic() {
@@ -230,6 +243,14 @@ public class TypeReference implements Serializable {
 
         public TypeReference getParams() {
             return params;
+        }
+
+        public boolean hasExtendsWildcard() {
+            return extendsWildcard;
+        }
+
+        public boolean hasWildcard() {
+            return wildcard;
         }
     }
 

@@ -353,7 +353,7 @@ public class TypeWriter {
                 .addColumn("Method")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            if (methodNode.getSimpleName().contains("populateEx")) {
+            if (methodNode.getSimpleName().contains("setThrownTypes")) {
                 methodNode=methodNode;
             }
             String returnTypeText = MarkdownUtils.formatTypeRef(methodNode.getReturnType());

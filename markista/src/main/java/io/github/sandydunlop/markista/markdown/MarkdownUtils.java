@@ -100,10 +100,17 @@ public class MarkdownUtils {
             }
             return arrayType;
         } else if (typeRef instanceof TypeReference.Generic generic) {
-            if (typeRef.getLink() == null) {
-                typeRef=typeRef;
+            StringBuilder sb = new StringBuilder();
+            sb.append(link(typeRef.getLink(), useQualifiedName));
+            sb.append("<");
+            if (generic.hasWildcard()) {
+                sb.append("?");
+            } else if (generic.hasExtendsWildcard()) {
+                sb.append("? extends ");
             }
-            return link(typeRef.getLink(), useQualifiedName) + "<" + formatTypeRef(generic.getParams(), useQualifiedName) + ">";
+            sb.append(formatTypeRef(generic.getParams(), useQualifiedName));
+            sb.append(">");
+            return sb.toString();
         } else if (typeRef instanceof TypeReference.Sequence sequence) {
             StringBuilder sb = new StringBuilder();
             for (TypeReference item : sequence.getItems()) {
