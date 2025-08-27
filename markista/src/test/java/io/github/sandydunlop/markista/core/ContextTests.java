@@ -456,4 +456,11 @@ class ContextTests {
         String simplified = Context.NameSimplifier.simplifyNames(name);
         assertEquals("Node", simplified);
     }
+
+    //TODO: simplifyNames is also in Utils - remove it from there
+    @Test
+    void test() {
+        String s = Context.NameSimplifier.simplifyNames("getReferences");
+        assertEquals("getReferences", s);
+    }
 }

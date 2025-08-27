@@ -366,7 +366,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
                     qualifiedStart = -1;
                 } else if (qualifiedStart == -1 && isValidQualifiedNameChar(c) && !isValidSimpleNameChar(prev)) {
                     qualifiedStart = i;
-                } else if (qualifiedStart > -1 && simpleStart == -1 && Character.isUpperCase(c)) {
+                } else if (qualifiedStart > -1 && simpleStart == -1 && Character.isUpperCase(c) && !Character.isAlphabetic(prev)) {
                     simpleStart = i;
                 } else if (qualifiedStart > -1 && simpleStart == -1 && !isValidQualifiedNameChar(c)) {
                     qualifiedStart = -1;
