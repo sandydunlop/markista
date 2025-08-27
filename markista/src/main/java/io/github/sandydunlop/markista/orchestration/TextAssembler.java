@@ -367,6 +367,7 @@ public class TextAssembler {
     public static InterfaceNode getStandardInterface(TypeReference interfaceRef) {
         // String simpleName = interfaceRef.getLink().getSimpleClassName().replace(".", "$");
         String qualifiedName = interfaceRef.getTypeString(); //getLink().getPackageName() + "." + simpleName;
+        // ClassLoader classLoader = ClassLoader.getSystemClassLoader();
         ClassLoader classLoader = TextAssembler.class.getClassLoader();
         try {
             Class<?> standardClass = classLoader.loadClass(qualifiedName);

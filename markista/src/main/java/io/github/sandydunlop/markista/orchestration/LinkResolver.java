@@ -151,7 +151,7 @@ public class LinkResolver {
     /// @return The `link` with its `uri` field set, or its `kind` field set to `UNKNOWN`
     /// if the link was not able to be resolved.
     public static Link resolve(Link link) {
-        if (link == null || link.getTarget() == null || link.getTarget().isEmpty()) {
+        if (link == null || link.getTarget() == null || link.getTarget().isEmpty() || link.isResolved()) {
             return link;
         }
 

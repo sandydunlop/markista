@@ -10,7 +10,7 @@ public class ParamNode extends AbstractMember {
     /// @param type The TypeNode representing the parameter's type.
     /// @param name The simple name of the parameter.
     public ParamNode(String type, String name) {
-        if (name.contains("orderedExtensions")){
+        if (name.contains("module")){
             name=name;
         }
         this.type = TypeReference.to(type);

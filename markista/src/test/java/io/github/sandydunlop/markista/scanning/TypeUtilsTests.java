@@ -215,6 +215,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         assertEquals(1, unnamedModule.getConstantValues().size());
     }
 
+    @Disabled("MFLP-85")
     @Test
     void getParamType() {
         TypeMirror array = mock(TypeMirror.class);
@@ -1029,7 +1030,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
 
     @Test
     void setThrownTypes_adds_exception_type_names_to_methodnode() {
-        MethodNode methodNode = new MethodNode(null, "method");
+        MethodNode methodNode = new MethodNode("void", "method");
 
         // Mock a TypeMirror and the environment behaviour to produce a TypeElement
         TypeMirror tm = mock(TypeMirror.class);

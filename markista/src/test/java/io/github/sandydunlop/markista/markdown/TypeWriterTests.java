@@ -72,7 +72,7 @@ class TypeWriterTests extends ModelTestEnvironment {
 
         LinkResolver.init(api, ctx);
         LinkResolver.addStandardModules();
-        LinkResolver.addStandardModuleUrl("java.base", "http://example.com", ".html");
+        // LinkResolver.addStandardModuleUrl("java.base", "http://example.com", ".html");
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(type);

@@ -26,6 +26,9 @@ public class TypeReference implements Serializable {
     }
 
     public static TypeReference to(String typeName) {
+        if (typeName == null) {
+            typeName = null;
+        }
         if (typeName.equals("java.util.HashMap<io.github.sandydunlop.markista.model.TypeReference,java.util.List<io.github.sandydunlop.markista.model.Link>>")){
             typeName=typeName;
         }

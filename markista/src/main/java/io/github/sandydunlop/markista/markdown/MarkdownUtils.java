@@ -7,7 +7,6 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeReference;
-import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.util.List;
 
@@ -93,36 +92,42 @@ public class MarkdownUtils {
     }
 
     public static String formatTypeRef(TypeReference typeRef, boolean useQualifiedName) {
-        if (typeRef instanceof TypeReference.Array array) {
-            String arrayType = link(typeRef.getLink(), useQualifiedName);
-            for (int i=0; i<array.getDimensions(); i++) {
-                arrayType += "[]";
-            }
-            return arrayType;
-        } else if (typeRef instanceof TypeReference.Generic generic) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(link(typeRef.getLink(), useQualifiedName));
-            sb.append("<");
-            if (generic.hasWildcard()) {
-                sb.append("?");
-            } else if (generic.hasExtendsWildcard()) {
-                sb.append("? extends ");
-            }
-            sb.append(formatTypeRef(generic.getParams(), useQualifiedName));
-            sb.append(">");
-            return sb.toString();
-        } else if (typeRef instanceof TypeReference.Sequence sequence) {
-            StringBuilder sb = new StringBuilder();
-            for (TypeReference item : sequence.getItems()) {
-                if (!sb.isEmpty()) {
-                    sb.append(", ");
+        return switch (typeRef) {
+            case TypeReference.Array array -> {
+                String arrayType = link(typeRef.getLink(), useQualifiedName);
+                for (int i = 0; i < array.getDimensions(); i++) {
+                    arrayType += "[]";
                 }
-                sb.append(formatTypeRef(item, useQualifiedName));
+                yield arrayType;
             }
-            return sb.toString();
-        } else {
-            return link(typeRef.getLink(), useQualifiedName);
-        }
+            case TypeReference.Generic generic -> {
+                StringBuilder sb = new StringBuilder();
+                sb.append(link(typeRef.getLink(), useQualifiedName));
+                sb.append("<");
+                if (generic.hasWildcard()) {
+                    sb.append("?");
+                } else if (generic.hasExtendsWildcard()) {
+                    sb.append("? extends ");
+                }
+                sb.append(formatTypeRef(generic.getParams(), useQualifiedName));
+                sb.append(">");
+                yield sb.toString();
+            }
+            case TypeReference.Sequence sequence -> {
+                StringBuilder sb = new StringBuilder();
+                for (TypeReference item : sequence.getItems()) {
+                    if (!sb.isEmpty()) {
+                        sb.append(", ");
+                    }
+                    sb.append(formatTypeRef(item, useQualifiedName));
+                }
+                yield sb.toString();
+            }
+            default -> {
+                String s = link(typeRef.getLink(), useQualifiedName);
+                yield s;
+            }
+        };
     }
 
     /// Formats links contained in a text segment as markdown.

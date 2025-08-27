@@ -156,9 +156,13 @@ public class TypeUtils {
         List<? extends Element> enclosedElements = e.getEnclosedElements();
         for (Element element : enclosedElements) {
             if (element.getKind() == ElementKind.ENUM_CONSTANT) {
+                String typeName = "var";
                 TypeMirror tm = element.asType();
+                if (tm != null) {
+                    typeName = tm.toString();
+                }
                 //TODO: Ensure this works
-                FieldNode enumConstant = new FieldNode(tm.toString(), element.getSimpleName().toString());
+                FieldNode enumConstant = new FieldNode(typeName, element.getSimpleName().toString());
                 enumNode.getConstants().add(enumConstant);
             }
         }

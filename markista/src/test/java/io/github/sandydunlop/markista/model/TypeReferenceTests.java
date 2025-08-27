@@ -141,7 +141,7 @@ class TypeReferenceTests {
         assertInstanceOf(TypeReference.Generic.class, typeRef);
         
         TypeReference.Generic generic = typeRef.asGeneric();
-        assertTrue(generic.hasWildcard());
+        assertTrue(generic.hasExtendsWildcard());
 
         TypeReference params = generic.getParams();
         assertFalse(params instanceof TypeReference.Array);

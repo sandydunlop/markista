@@ -133,7 +133,7 @@ public class TypeWriter {
         int indentation = 0;
         for (TypeReference typeRef : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(MarkdownUtils.formatText(typeRef.getText(), true, false) + BR + "\n");
+            writer.write(MarkdownUtils.formatTypeRef(typeRef, true) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -150,7 +150,7 @@ public class TypeWriter {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatText(typeRef.getText()));
+            sb.append(MarkdownUtils.formatTypeRef(typeRef));
         }
         if (!sb.isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");
@@ -322,7 +322,7 @@ public class TypeWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = MarkdownUtils.formatTypeRef(fieldNode.getType());
+            String link = MarkdownUtils.formatTypeRef(fieldNode.getType(), false);
             table.addRow(fieldNode.getModifiersString() + link, 
                         MarkdownUtils.mdAnchorLink(fieldNode.getSimpleName()), MarkdownUtils.inOneLine(MarkdownUtils.formatText(fieldNode.getFirstSentence())));
         }
