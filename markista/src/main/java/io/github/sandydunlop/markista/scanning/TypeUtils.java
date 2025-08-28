@@ -69,18 +69,18 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 
 /// Utility class providing static methods to create and manipulate TypeNodes, MethodNodes, FieldNodes, and other API model objects
 /// from language model elements and Javadoc doc trees obtained from the Java source code.
-/// 
+///
 /// This class bridges the Java language model and the internal API representation used for generating documentation.
 /// It includes methods to extract element details, ownership, modifiers, supertypes, interfaces, annotations, and documentation text.
-/// 
+///
 /// The TypeUtils class must be initialized with an Api and DocletEnvironment before usage via the init(Api, DocletEnvironment) method.
-/// 
+///
 /// It provides numerous helper methods to process types, methods, fields, annotations, and project structure metadata.
-/// 
+///
 /// Methods also support handling Javadoc comment trees to extract detailed documentation fragments such as `@deprecated`, @param, @return, @since, and @see tags.
-/// 
+///
 /// The class works internally with the Api model for cross-referencing and linking discovered elements.
-/// 
+///
 /// This class is for internal use within the documentation generator and is not thread-safe.
 @SuppressWarnings({"squid:S1123", "squid:S1133"}) // Sonar thinks this is deprecated, but it's not.
 public class TypeUtils {
@@ -161,7 +161,6 @@ public class TypeUtils {
                 if (tm != null) {
                     typeName = tm.toString();
                 }
-                //TODO: Ensure this works
                 FieldNode enumConstant = new FieldNode(typeName, element.getSimpleName().toString());
                 enumNode.getConstants().add(enumConstant);
             }
@@ -174,21 +173,13 @@ public class TypeUtils {
     /// @param element The ExecutableElement to convert.
     /// @return The constructed MethodNode, or null if errors occur.
     public static MethodNode nodeFromElement(ExecutableElement element) {
-        TypeMirror typeMirror = element.getReturnType();
-        String qualifiedTypeName = typeMirror.toString();
-        String arrayBrackets = "";
-        if (typeMirror.getKind() == TypeKind.ARRAY) {
-            TypeMirror array = ((ArrayType)typeMirror).getComponentType();
-            qualifiedTypeName = array.toString();
-            arrayBrackets = "[]";                    
-        }
+        String qualifiedTypeName = element.getReturnType().toString();
         PackageElement packageElement = getEnclosingPackageElement(element);
         if (packageElement == null) {
             ctx.reportError("No package for " + qualifiedTypeName);
             return null;
         }
-        String returnTypeName = qualifiedTypeName + arrayBrackets;
-        MethodNode methodNode = new MethodNode(returnTypeName, element.getSimpleName().toString());
+        MethodNode methodNode = new MethodNode(qualifiedTypeName, element.getSimpleName().toString());
 
         // setMethodParams must be called before setMethodOwnerDetails as the method
         // parameters need to be present to determine if this method already exists.
@@ -293,16 +284,14 @@ public class TypeUtils {
                 break;
             case LINK:
                 segment.setKind(Segment.Kind.LINK);
-                origin = ctx.getTypeName().isEmpty() ? ctx.getPackageName() : ctx.getTypeName();
-                Link link = Link.to(getDocTreePart(docTree, 1)).from(origin);
+                Link link = Link.to(getDocTreePart(docTree, 1)).from(here());
                 api.addLink(link);
                 segment.setLink(link);
                 text.append(segment);
                 break;
             case LINK_PLAIN:
                 segment.setKind(Segment.Kind.LINK);
-                origin = ctx.getTypeName().isEmpty() ? ctx.getPackageName() : ctx.getTypeName();
-                link = Link.to(getDocTreePart(docTree, 1)).from(origin);
+                link = Link.to(getDocTreePart(docTree, 1)).from(here());
                 segment.setLink(link);
                 text.append(segment);
                 api.addLink(link);
@@ -350,7 +339,7 @@ public class TypeUtils {
                 MarkdownParser.Token next = token.getNext();
                 if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
                     Link ref = Link.to(next.getText())
-                            .from(ctx.getPackageName());
+                            .from(here());
                     ref.setLabel(token.getText());
                     Segment segment = Segment.empty()
                             .setKind(Segment.Kind.LINK)
@@ -361,7 +350,7 @@ public class TypeUtils {
                     token = next;
                 } else {
                     Link ref = Link.to(token.getText())
-                            .from(ctx.getPackageName());
+                            .from(here());
                     Segment segment = Segment.empty()
                             .setKind(Segment.Kind.LINK)
                             .setLink(ref)
@@ -375,6 +364,16 @@ public class TypeUtils {
             token = token.getNext();
         }
         return text;
+    }
+
+    private static String here() {
+        if (!ctx.getTypeName().isBlank()) {
+            return ctx.getTypeName();
+        } else if (!ctx.getPackageName().isEmpty()) {
+            return ctx.getPackageName();
+        } else {
+            return ctx.getModuleName();
+        }
     }
 
     /// Extracts text from a DocTree to build a string from a part of its tokenized representation.
@@ -559,7 +558,7 @@ public class TypeUtils {
             }
         }
         return null;
-    }       
+    }
 
     /// Finds the @return tag from a Javadoc DocCommentTree if present.
     /// @param dcTree The DocCommentTree to search.
@@ -572,7 +571,7 @@ public class TypeUtils {
             }
         }
         return null;
-    }       
+    }
 
     /// Finds the @param tag in a DocCommentTree matching the specified parameter variable.
     /// @param dcTree The DocCommentTree containing block tags.
@@ -653,7 +652,7 @@ public class TypeUtils {
     /// @param modifiers The set of Modifier enums from language model.
     public static void setModifiers(AbstractMember node, Set<Modifier> modifiers) {
         for (Modifier modifier : modifiers) {
-            io.github.sandydunlop.markista.model.Modifier mod = 
+            io.github.sandydunlop.markista.model.Modifier mod =
                 io.github.sandydunlop.markista.model.Modifier.valueOf(modifier.name());
             node.addModifier(mod);
         }
@@ -699,7 +698,7 @@ public class TypeUtils {
                 PackageElement pe = TypeUtils.getEnclosingPackageElement(annotationMethod);
                 String packageName = pe == null ? "" : pe.getQualifiedName().toString();
                 PackageNode pkg = new PackageNode(packageName);
-                TypeNode paramType = new TypeNode(Utils.simplifyNames(typeString), pkg.getName());
+                TypeNode paramType = new TypeNode(Context.NameSimplifier.simplifyNames(typeString), pkg.getName());
 
                 String entryName = annotationMethod.getSimpleName().toString();
                 AnnotationValue value = entry.getValue();
@@ -787,7 +786,7 @@ public class TypeUtils {
             // TypeNode paramType = getParamType(ee, simpleName);
             // String paramTypeName = paramType.getQualifiedName() + paramType.getArrayBrackets();
             ParamNode param = new ParamNode(paramTypeName, simpleName);
-            
+
             ParamTree paramTree = getParamTree(dct, parameter);
             if (paramTree != null) {
                 param.setBody(createText(paramTree.getDescription()));
@@ -814,37 +813,12 @@ public class TypeUtils {
     /// @param fieldName The parameter name.
     /// @return A TypeNode for the parameter's type, or null if not found.
     public static String getParamType(ExecutableElement method, String fieldName) {
-        String packageName = null;
-        String simpleTypeName = null;
-        String arrayBrackets = "";
-        if (fieldName.contains("orderedExtensions")) {
-            fieldName=fieldName;
-        }
         for (VariableElement param : method.getParameters()) {
             if (param.getSimpleName().toString().equals(fieldName)){
-                TypeMirror typeMirror = param.asType();
-                return typeMirror.toString();
-                // if (typeMirror.getKind() == TypeKind.ARRAY){
-                //     TypeMirror componentType = ((ArrayType)typeMirror).getComponentType();
-                //     Pair<String,String> pair = getSimpleNameAndPackageName(componentType);
-                //     simpleTypeName = pair.getL();
-                //     packageName = pair.getR();
-                //     arrayBrackets = "[]";
-                // } else {
-                //     Pair<String,String> pair = getSimpleNameAndPackageName(typeMirror);
-                //     simpleTypeName = pair.getL();
-                //     packageName = pair.getR();
-                // }
-                // break;
+                return param.asType().toString();
             }
         }
         return "";
-        // if (simpleTypeName == null) return null;
-
-        // TypeNode type = new TypeNode(simpleTypeName, packageName);
-        // type.setArrayBrackets(arrayBrackets);
-
-        // return type;
     }
 
     static Pair<String,String> getSimpleNameAndPackageName(TypeMirror typeMirror) {
@@ -865,8 +839,8 @@ public class TypeUtils {
             } else {
                 simpleTypeName = typeMirror.toString();
             }
-        }      
-        return Pair.of(simpleTypeName, packageName);  
+        }
+        return Pair.of(simpleTypeName, packageName);
     }
 
     static Class<?> loadClass(String qualifiedName) {
@@ -918,14 +892,14 @@ public class TypeUtils {
         }
     }
 
-    /// Retrieves the `package-info.java` file associated with the specified 
-    /// [PackageElement]. This method checks if the package element has an 
+    /// Retrieves the `package-info.java` file associated with the specified
+    /// [PackageElement]. This method checks if the package element has an
     /// associated file and returns it as a [File] object.
     ///
-    /// @param packageElement the [PackageElement] for which to retrieve the 
+    /// @param packageElement the [PackageElement] for which to retrieve the
     ///                       associated `package-info.java` file
     /// @return a [File] object representing the `package-info.java`
-    ///         file if it exists; `null` if the file does not exist or is 
+    ///         file if it exists; `null` if the file does not exist or is
     ///         not associated with the given package element
     public static File getPackageInfoFile(PackageElement packageElement) {
         JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(packageElement);
@@ -934,7 +908,7 @@ public class TypeUtils {
             return new File(jfo.toUri());
         }
         return null;
-    }    
+    }
 
     /// Removes the generic type and its surrounding <> from a string, if present
     /// @param str The string

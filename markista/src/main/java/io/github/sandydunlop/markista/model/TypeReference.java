@@ -2,49 +2,33 @@ package io.github.sandydunlop.markista.model;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class TypeReference implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
-    private Link link; // = new Link();
+    private Link link;
     private Text text;
     private String qualifiedName;
-
-    //
-    //
-    //
     protected String typeString;
-
-    public String getTypeString() {
-        return typeString;
-    }
 
     private TypeReference() {
         // Nothing to see here
     }
 
     public static TypeReference to(String typeName) {
-        if (typeName == null) {
-            typeName = null;
-        }
-        if (typeName.equals("java.util.HashMap<io.github.sandydunlop.markista.model.TypeReference,java.util.List<io.github.sandydunlop.markista.model.Link>>")){
-            typeName=typeName;
-        }
         TypeReference typeRef = parse(typeName);
-        // typeRef.setLink(Link.to(typeName));
         typeRef.setQualifiedName(typeName);
         return typeRef;
-        // TypeReference ref = new TypeReference();
-        // ref.setLink(Link.to(typeName));
-        // ref.setText(Text.empty());
-        // ref.setQualifiedName(typeName);
-        // return ref;
     }
 
     public static TypeReference empty() {
         return new TypeReference();
+    }
+
+    public String getTypeString() {
+        return typeString;
     }
 
     public void setLink(Link ref) {
@@ -71,10 +55,6 @@ public class TypeReference implements Serializable {
         return qualifiedName;
     }
 
-    //
-    //
-    //
-
     public TypeReference.Array asArray() {
         if (this instanceof TypeReference.Array array) {
             return array;
@@ -97,31 +77,18 @@ public class TypeReference implements Serializable {
     }
 
     public static TypeReference parse(String targetName) {
-        if (targetName == null || targetName.isEmpty()) {
-            targetName=targetName;
-        }
-        String pre = "";
-        String post = "";
         int pos;
 
         if (targetName.indexOf('<') > -1) {
-
-            // TypeReferenceerence typeRef = linkGenerics2(targetName);
-            TypeReference typeRef = linkGenerics(targetName);
-            return typeRef;
+            return linkGenerics(targetName);
         } else if (targetName.indexOf(',') > -1) {
             return splitAndLink(targetName);
         }
-        //  else if (targetName.lastIndexOf(' ') > 0) {
-        //     int p = targetName.lastIndexOf(' ');
-        //     pre = targetName.substring(0, p) + " ";
-        //     targetName = targetName.substring(p + 1);
-        // }
 
         //TODO: Array need to happen even in generic params
         pos = targetName.indexOf('[');
         if (pos > 0) {
-            TypeReference.Array array = TypeReference.Array.empty();
+            TypeReference.Array array = new TypeReference.Array();
             array.typeString = targetName.substring(0, pos);
             array.dimensions = 0;
 
@@ -134,7 +101,6 @@ public class TypeReference implements Serializable {
             array.setLink(Link.to(array.typeString));
             return array;
         }
-
 
         TypeReference typeRef = new TypeReference();
         typeRef.typeString = targetName;
@@ -149,7 +115,7 @@ public class TypeReference implements Serializable {
         int closingChevron = str.lastIndexOf(">");
         String before = str.substring(0, openingChevron).strip();
         String mid = str.substring(openingChevron + 1, closingChevron).strip();
-        String after = str.substring(closingChevron + 1).strip();
+        // String after = str.substring(closingChevron + 1).strip();
         //TODO: after could be array brackets?
 
         TypeReference.Generic generic = new TypeReference.Generic();
@@ -165,7 +131,7 @@ public class TypeReference implements Serializable {
             }
         }
 
-        String genericType = before;
+        String genericType;
         int comma = before.lastIndexOf(",");
         if (comma > -1) {
             TypeReference.Sequence sequence = new TypeReference.Sequence();
@@ -181,36 +147,22 @@ public class TypeReference implements Serializable {
                     .withLabel(generic.typeString));
             sequence.add(generic);
 
-            // if (mid.contains("<")) {
-                generic.params = parse(mid);
-            // } 
+            generic.params = parse(mid);
 
             return sequence;
         } else {
-            // TypeReference beforeRef = parse(before);
-
             generic.typeString = before;
             generic.params = parse(mid);
-
-            // TypeReference midLinks;
-            // if (mid.contains("<")) {
-            //     generic.params = linkGenerics(mid);
-            // } 
             generic.setLink(Link.to(generic.typeString)
                     .withLabel(generic.typeString));
             return generic;
         }
-        // else {
-        //     generic.params = splitAndLink(mid);
-        // }
-
-        // genericRef.params = midLinks;
     }
 
     public static TypeReference splitAndLink(String typesString) {
         String[] types = typesString.split(",");
         if (types.length > 1) {
-            TypeReference.Sequence sequence = TypeReference.Sequence.empty();
+            TypeReference.Sequence sequence = new TypeReference.Sequence();
             for (String t : types) {
                 String typeName = t.strip();
                 TypeReference typeRef = TypeReference.to(typeName);
@@ -222,27 +174,14 @@ public class TypeReference implements Serializable {
         }
     }
 
-    //
-    //
-    //
     public static class Generic extends TypeReference {
-        // private TypeReference type;
-        // private TypeReference.Sequence params;
         private TypeReference params;
         private boolean extendsWildcard;
         private boolean wildcard;
-        // private List<TypeReference> params = new ArrayList<>();
 
         public Generic() {
+            // Nothing to see here
         }
-
-        public static Generic empty() {
-            return new Generic();
-        }
-
-        // public TypeReference getType() {
-        //     return type;
-        // }
 
         public TypeReference getParams() {
             return params;
@@ -260,11 +199,8 @@ public class TypeReference implements Serializable {
     public static class Array extends TypeReference {
         private int dimensions;
 
-        private Array() {
-        }
-
-        public static Array empty() {
-            return new Array();
+        public Array() {
+            // Nothing to see here
         }
 
         public int getDimensions() {
@@ -272,22 +208,61 @@ public class TypeReference implements Serializable {
         }
     }
 
-    public static class Sequence extends TypeReference {
-        private List<TypeReference> items = new ArrayList<>();
+    public static class Sequence extends TypeReference implements Iterable<TypeReference> {
+        private TypeReference[] elements;
+        private int size;
+        private static final int INITIAL_CAPACITY = 4;
         
         private Sequence() {
+            elements = new TypeReference[INITIAL_CAPACITY];
+            size = 0;
         }
 
-        public static Sequence empty() {
-            return new Sequence();
+        private void resize() {
+            int newCapacity = elements.length * 2; // Double the capacity
+            TypeReference[] newArray = new TypeReference[newCapacity];
+            System.arraycopy(elements, 0, newArray, 0, elements.length);
+            elements = newArray;
         }
 
-        public void add(TypeReference typeRef) {
-            items.add(typeRef);
+        public void add(TypeReference element) {
+            if (size == elements.length) {
+                resize(); // Resize the array if needed
+            }
+            elements[size++] = element;
         }
 
-        public List<TypeReference> getItems() {
-            return items;
+        public TypeReference get(int index) {
+            if (index >= size) {
+                throw new NoSuchElementException();
+            }
+            return elements[index];
+        }
+
+        public TypeReference getFirst() {
+            return get(0);
+        }
+
+        @Override
+        public Iterator<TypeReference> iterator() {
+            return new SequenceIterator();
+        }
+
+        private class SequenceIterator implements Iterator<TypeReference> {
+            private int currentIndex = 0;
+
+            @Override
+            public boolean hasNext() {
+                return currentIndex < size;
+            }
+
+            @Override
+            public TypeReference next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                return elements[currentIndex++];
+            }
         }
     }
 }

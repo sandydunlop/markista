@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 /// It supports resolving primitives, void, standard Java modules and packages,
 /// and also local API model packages and types.
 ///
-/// LinkResolver must be initialized for the current API before use via `init(Api)`.
+/// LinkResolver must be initialized for the current API before use via the [init](#init) method: `init(Api)`.
 /// It provides multiple resolve methods for building appropriate links.
 ///
 /// The class supports relative path calculation for Markdown output.
@@ -144,9 +144,9 @@ public class LinkResolver {
     }
 
     /// Resolves a link reference. The supplied `link` parameter must specify the
-    /// target of the link: a class, a module, etc. If the link can be resolved, 
+    /// target of the link: a class, a module, etc. If the link can be resolved,
     /// the details of the type of link are set in the `link` object before it is
-    /// returned. 
+    /// returned.
     /// @param link A [Link] object specifying the target of the link
     /// @return The `link` with its `uri` field set, or its `kind` field set to `UNKNOWN`
     /// if the link was not able to be resolved.
@@ -319,7 +319,7 @@ public class LinkResolver {
                 return false;
             }
         }
-        
+
         PackageNode packageNode = api.getPackageNode(toPackageName);
         if (packageNode == null) return false;
         link.setPackageName(toPackageName);
@@ -386,7 +386,7 @@ public class LinkResolver {
     /// @param link The Reference object to resolve.
     /// @return True if the reference resolved to a sibling module.
     static boolean resolveSiblingModule(Link link) {
-        if ((link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.MODULE) && 
+        if ((link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.MODULE) &&
                 siblingModules.contains(link.getTarget())) {
             String toRoot = relativize(link.getOrigin(), "");
             Path path = Path.of(toRoot, "..", link.getTarget());
@@ -596,7 +596,7 @@ public class LinkResolver {
                 } catch (IOException _) {
                     ctx.reportError("Error reading JAR file: " + file);
                 }
-            } 
+            }
             siblingModules.add(siblingModuleName);
             if (linkExternalList.contains(siblingModuleName)) {
                 for (String className : siblingClassNames) {
@@ -610,7 +610,7 @@ public class LinkResolver {
         try {
             URL url = URL.of(directory.toURI(), null);
             URL[] urls = new URL[] {url};
-            processDirectoryUrl(directory, urls);  
+            processDirectoryUrl(directory, urls);
         }catch(MalformedURLException _) {
             // Nothing to do here
         }
@@ -649,7 +649,7 @@ public class LinkResolver {
             ctx.reportError("Failed to read class file: " + file);
         }
     }
-    
+
     // SonarQube thinks this is extracting the JAR file.
     // It's only reading the list of contents and extracting enough to get the module descriptor.
     /// Processes a JAR file to extract module and package information relevant for sibling module linking.
@@ -748,6 +748,6 @@ public class LinkResolver {
         addStandardModule("jdk.security.auth");
         addStandardModule("jdk.security.jgss");
         addStandardModule("jdk.xml.dom");
-        addStandardModule("jdk.zipfs");        
+        addStandardModule("jdk.zipfs");
     }
 }

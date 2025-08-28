@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TextAssemblerTests extends ModelTestEnvironment {
-    private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
 
     @BeforeEach
     void init() {

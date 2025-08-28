@@ -4,11 +4,9 @@ import io.github.sandydunlop.markista.markdown.MarkdownUtils;
 
 import org.junit.jupiter.api.Test;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypeReferenceTests {
@@ -41,10 +39,10 @@ class TypeReferenceTests {
         assertTrue(params instanceof TypeReference.Sequence);
         TypeReference.Sequence sequence = params.asSequence();
 
-        TypeReference param0 = sequence.getItems().get(0);
+        TypeReference param0 = sequence.getFirst();
         assertEquals("String", param0.getTypeString());
 
-        TypeReference param1 = sequence.getItems().get(0);
+        TypeReference param1 = sequence.getFirst();
         assertEquals("String", param1.getTypeString());
 
     }
@@ -114,14 +112,14 @@ class TypeReferenceTests {
         TypeReference.Generic generic1 = typeRef.asGeneric();
         TypeReference params = generic1.getParams();
 
-        assertTrue(params instanceof TypeReference.Sequence);
+        assertInstanceOf(TypeReference.Sequence.class, params);
         TypeReference.Sequence sequence = params.asSequence();
 
-        TypeReference param0 = sequence.getItems().get(0);
+        TypeReference param0 = sequence.getFirst();
         assertEquals("TypeReference", param0.getTypeString());
 
-        TypeReference param1 = sequence.getItems().get(1);
-        assertTrue(param1 instanceof TypeReference.Generic);
+        TypeReference param1 = sequence.get(1);
+        assertInstanceOf(TypeReference.Generic.class, param1);
 
         TypeReference.Generic generic2 = param1.asGeneric();
         assertEquals("List", generic2.getTypeString());

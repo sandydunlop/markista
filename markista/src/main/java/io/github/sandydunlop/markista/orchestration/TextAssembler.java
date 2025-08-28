@@ -98,11 +98,9 @@ public class TextAssembler {
         }
         for (TypeReference typeRef : typeNode.getImplementedInterfaces()) {
             link(typeRef);
-            // typeRef.getText().append(text);
         }
         for (TypeReference typeRef : typeNode.getSupertypes()) {
             link(typeRef);
-            // typeRef.getText().append(text);
         }
         processSubtypes(typeNode);
         processInheritedMethods(typeNode);
@@ -130,9 +128,7 @@ public class TextAssembler {
             TypeNode directSupertype = api.getTypeNode(directSupertypeName);
             if (directSupertype != null) {
                 TypeReference subtypeRef = TypeReference.to(typeNode.getQualifiedName());
-                // Text subtypeText = link(subtypeRef);
                 subtypeRef.getLink().from(directSupertype.getQualifiedName());
-                // subtypeRef.setText(subtypeText);
                 link(subtypeRef);
                 directSupertype.getSubtypes().add(subtypeRef);
             }
@@ -158,7 +154,7 @@ public class TextAssembler {
         }
         return methodLookup1;
     }
-            
+
     public static Map<String,List<Link>> listBySupertypeName(Map<String,Pair<String,Link>> methodLookup1) {
         HashMap<String,List<Link>> methodLookup2 = new HashMap<>();
         for (Map.Entry<String,Pair<String,Link>> entry : methodLookup1.entrySet()) {
@@ -187,20 +183,13 @@ public class TextAssembler {
             for (Map.Entry<String,List<Link>> entry : methodLookup2.entrySet()) {
                 List<Link> methods = entry.getValue();
                 TypeReference supertypeRef = TypeReference.to(entry.getKey());
-                // supertypeRef.setText(link(supertypeRef));
                 link(supertypeRef);
                 typeNode.getInheritedMethods().put(supertypeRef, methods);
-            }            
+            }
         }
     }
 
     public static void processMethod(MethodNode method) {
-        // TypeReference returnTypeRef = TypeReference.to(method.getReturnTypeName());
-        // Link returnTypeReference = Link.to(method.getReturnTypeName()).from(ctx.getPackageName());
-        // method.setReturnTypeText(link(returnTypeRef));
-        if (method.getSimpleName().contains("getSupp")){
-            method=method;
-        }
         link(method.getReturnType());
         generateLinkTextsForParams(method.getParams()
                 .stream()
@@ -270,14 +259,13 @@ public class TextAssembler {
         }
         for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
             TypeReference typeRef = type.getSupertypes().get(i);
-            // TypeNode supertypeNode = api.getTypeNode(typeRef.getLink().getTarget());
             String typeName = typeRef.getTypeString();
             //TODO: Ensure this works
             TypeNode supertypeNode = api.getTypeNode(typeName);
             if (supertypeNode != null && typeHasMethod(supertypeNode, method)) {
                 return supertypeNode.getQualifiedName();
             }
-        } 
+        }
         return null;
     }
 
@@ -296,10 +284,6 @@ public class TextAssembler {
             ctx.setModuleName(module.getName());
             // Constant field values
             for (FieldNode constant : module.getConstantValues()) {
-                // Link ref = Link.to(constant.getTypeName())
-                //         .from("")
-                //         .withLabel(constant.getTypeName());
-                // LinkResolver.resolve(ref);
                 link(constant.getType());
                 constant.setConstantValueReference(constant.getType());
             }
@@ -335,7 +319,7 @@ public class TextAssembler {
             }
         } else {
             MethodNode existingMethodNode = ownerType.getMethod(methodNode);
-            if (existingMethodNode == null) {   
+            if (existingMethodNode == null) {
                 ownerType.getMethods().add(methodNode);
             }
         }
@@ -346,11 +330,7 @@ public class TextAssembler {
         ctx.setTypeName(typeNode.getQualifiedName());
         List<TypeReference> interfaces = typeNode.getImplementedInterfaces();
         for (TypeReference interfaceRef : interfaces) {
-            if (interfaceRef.getLink() == null) {
-                typeNode=typeNode;
-            }
             String interfaceName = interfaceRef.getTypeString();
-            //getLink().getTarget();
             InterfaceNode interfaceType = (InterfaceNode) api.getTypeNode(interfaceName);
             if (interfaceType == null) {
                 interfaceType = getStandardInterface(interfaceRef);
@@ -365,9 +345,7 @@ public class TextAssembler {
     }
 
     public static InterfaceNode getStandardInterface(TypeReference interfaceRef) {
-        // String simpleName = interfaceRef.getLink().getSimpleClassName().replace(".", "$");
-        String qualifiedName = interfaceRef.getTypeString(); //getLink().getPackageName() + "." + simpleName;
-        // ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+        String qualifiedName = interfaceRef.getTypeString();
         ClassLoader classLoader = TextAssembler.class.getClassLoader();
         try {
             Class<?> standardClass = classLoader.loadClass(qualifiedName);
@@ -408,27 +386,23 @@ public class TextAssembler {
             }
         }
     }
-    
+
     public static void processJavadocComments(Api api) {
         for (Link link : api.getLinks()) {
+            if (link.getTarget().contains("init")) {
+                link=link;
+            }
             ctx.setPackageName(link.getOrigin());
-            LinkResolver.resolve(link);
+            linkMethod(link);
             if (link.getLabel().contains(".")) {
-                link.setLabel(Utils.simplifyNames(link.getLabel()));
+                link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
             }
         }
     }
 
     static void generateLinkTextsForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
-            if (param.getType().getTypeString().contains("List")){
-                param=param;
-            }
-            // TypeReference typeRef = TypeReference.to(param.getTypeName());
             link(param.getType());
-            //.from(ctx.getPackageName());
-            // Link reference = Link.to(param.getTypeName()).from(ctx.getPackageName());
-            // param.setType(typeRef);
             generateLinkTextsForReferences(param);
         }
     }
@@ -501,7 +475,7 @@ public class TextAssembler {
             isLocalMethod = true;
             // Issue: https://github.com/sandydunlop/markista/issues/1
             // Workaround:
-            // Remove the parentheses from after method names in anchor 
+            // Remove the parentheses from after method names in anchor
             // links to Markdown pages for now. Anchors in the Markdown
             // are currently headings without parameters.
             reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
@@ -511,7 +485,7 @@ public class TextAssembler {
         Text.Segment link = Text.Segment.empty()
                 .setKind(Text.Segment.Kind.LINK)
                 .setLink(reference)
-                .setText(Utils.simplifyNames(reference.getLabel()));
+                .setText(Context.NameSimplifier.simplifyNames(reference.getLabel()));
         Text r = Text.empty();
         r.append(pre);
         r.append(link);
@@ -522,15 +496,19 @@ public class TextAssembler {
     /// Create a markdown link, automatically deciding what kind of link to make.
     /// @param typeRef a Reference object describing the link
     public static void link(TypeReference typeRef) {
-        if (typeRef instanceof TypeReference.Generic generic) {
-            LinkResolver.resolve(typeRef.getLink());
-            link(generic.getParams());
-        } else if (typeRef instanceof TypeReference.Sequence sequence) {
-            for (TypeReference item : sequence.getItems()) {
-                link(item);
+        switch (typeRef) {
+            case TypeReference.Generic generic -> {
+                LinkResolver.resolve(typeRef.getLink());
+                link(generic.getParams());
             }
-        } else {
-            LinkResolver.resolve(typeRef.getLink());
+            case TypeReference.Sequence sequence -> {
+                for (TypeReference element : sequence) {
+                    link(element);
+                }
+            }
+            default -> {
+                LinkResolver.resolve(typeRef.getLink());
+            }
         }
     }
 
@@ -564,7 +542,7 @@ public class TextAssembler {
                 .replace(">", "&gt;");
     }
 
-    /// Changes qualified generic type names to unqualified generic 
+    /// Changes qualified generic type names to unqualified generic
     /// type names and adds links to their API documentation.
     /// @param str A string containing a qualified generic name.
     /// @return    A Text object with the qualified names changed to unqualified

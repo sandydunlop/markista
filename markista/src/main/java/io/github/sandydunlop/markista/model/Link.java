@@ -2,7 +2,6 @@ package io.github.sandydunlop.markista.model;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.Arrays;
 
 /// `Reference` encapsulates links to web pages, markdown pages, modules, packages, types, and methods.
 public class Link implements Serializable {
@@ -236,9 +235,6 @@ public class Link implements Serializable {
     /// Sets the resolved state of this reference.
     /// @param b Whether this reference is resolved or not.
     public void setResolved(boolean b) {
-        if (b==false) {
-            System.out.println("\n\n" + Arrays.asList(Thread.currentThread().getStackTrace()));
-        }
         resolved = b;
     }
 

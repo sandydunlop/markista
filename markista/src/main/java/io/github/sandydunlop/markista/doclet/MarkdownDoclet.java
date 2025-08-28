@@ -1,5 +1,5 @@
 package io.github.sandydunlop.markista.doclet;
- 
+
 import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
@@ -30,7 +30,7 @@ import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
 
 /// A doclet that renders javadoc comments as Markdown.
-/// 
+///
 /// For more information, see the [Markista homepage](https://sandydunlop.github.io/markista).
 public class MarkdownDoclet implements Doclet {
     /// The Context singleton instance providing access to the current documentation generation context,
@@ -41,7 +41,7 @@ public class MarkdownDoclet implements Doclet {
     public static final boolean OK = true;
 
     /// Indicates failure
-    private static final boolean FAILED = false; 
+    private static final boolean FAILED = false;
 
     static String[] docletArgs = null;
     static List<String> javadocArgs = new ArrayList<>();
@@ -85,9 +85,9 @@ public class MarkdownDoclet implements Doclet {
         } else {
             docletArgs = new String[]{
                 "-doclet", MarkdownDoclet.class.getName(),
-                "-docletpath", "build/classes/java/main", 
-                "-d", "markista/build/md-docs", 
-                "-private", 
+                "-docletpath", "build/classes/java/main",
+                "-d", "markista/build/md-docs",
+                "-private",
                 "-link",
                 "-doctitle", "Markista API",
                 "--flatten-packages",
@@ -110,7 +110,7 @@ public class MarkdownDoclet implements Doclet {
         private final boolean hasArg;
         private final String description;
         private final String parameters;
- 
+
         Option(String name, boolean hasArg,
                String description, String parameters) {
             this.name = name;
@@ -118,33 +118,33 @@ public class MarkdownDoclet implements Doclet {
             this.description = description;
             this.parameters = parameters;
         }
- 
+
         @Override
         public int getArgumentCount() {
             return hasArg ? 1 : 0;
         }
- 
+
         @Override
         public String getDescription() {
             return description;
         }
- 
+
         @Override
         public Kind getKind() {
             return Kind.STANDARD;
         }
- 
+
         @Override
         public List<String> getNames() {
             return List.of(name);
         }
- 
+
         @Override
         public String getParameters() {
             return hasArg ? parameters : "";
         }
     }
- 
+
     private static final String UNUSED_OPTION_DESCRIPTION = "Unused option";
 
     private final Set<Option> options = Set.of(
@@ -307,19 +307,19 @@ public class MarkdownDoclet implements Doclet {
     public String getName() {
         return getClass().getSimpleName();
     }
- 
+
     @Override
     public Set<? extends Option> getSupportedOptions() {
         return options;
     }
- 
+
     @Override
     public SourceVersion getSupportedSourceVersion() {
         return SourceVersion.latest();
     }
- 
+
     /// The `run` method is called by the Javadoc tool to begin running the doclet.
-    /// @param environment Represents the operating environment of a single invocation of the doclet. 
+    /// @param environment Represents the operating environment of a single invocation of the doclet.
     /// @return  true if completed without errors, false if errors occurred.
     @Override
     public boolean run(DocletEnvironment environment) {
@@ -340,7 +340,7 @@ public class MarkdownDoclet implements Doclet {
         List<DocService> extensionsOrder = new ArrayList<>();
         ServiceLoader<DocService> loader = ServiceLoader.load(DocService.class);
         DocService mainDocService = getMainServiceAndExtensions(loader, new MarkdownService(), extensionsOrder);
-        
+
         if (mainDocService != null) {
             result = OK;
 
@@ -376,14 +376,14 @@ public class MarkdownDoclet implements Doclet {
         }
     }
 
-    private DocService populateExtensionsWithOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions, 
+    private DocService populateExtensionsWithOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions,
                                             DocService defaultDocService) {
         DocService mainDocService = defaultDocService;
         HashMap<String, DocService> extensions = new HashMap<>();
         for (DocService extension : loader) {
             addExtensionToMap(extensions, extension);
         }
-        
+
         String[] order = Configuration.getExtensionsOrder().split(":");
         for (String extensionName : order) {
             DocService extension = extensions.get(extensionName);
@@ -399,7 +399,7 @@ public class MarkdownDoclet implements Doclet {
         return mainDocService;
     }
 
-    private DocService populateExtensionsWithoutOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions, 
+    private DocService populateExtensionsWithoutOrder(ServiceLoader<DocService> loader, List<DocService> orderedExtensions,
                                                 DocService defaultDocService) {
         DocService mainDocService = defaultDocService;
         for (DocService extension : loader) {
@@ -413,17 +413,17 @@ public class MarkdownDoclet implements Doclet {
 
     private void addExtensionToMap(HashMap<String, DocService> extensions, DocService extension) {
         String qualifiedName = extension.getClass().getName();
-        String simpleName = Utils.simplifyNames(qualifiedName);
+        String simpleName = Context.NameSimplifier.simplifyNames(qualifiedName);
         extensions.put(qualifiedName, extension);
         extensions.put(simpleName, extension);
     }
 
-    private DocService handleExtension(DocService mainDocService, DocService defaultDocService, 
+    private DocService handleExtension(DocService mainDocService, DocService defaultDocService,
                                         List<DocService> orderedExtensions, DocService extension) {
         if (extension.replacesDefault()) {
             if (mainDocService != defaultDocService) {
-                ctx.reportError("Only one extension can replace the default DocService.\n" + 
-                                String.format("Both %s and %s are requesting to.", 
+                ctx.reportError("Only one extension can replace the default DocService.\n" +
+                                String.format("Both %s and %s are requesting to.",
                                 mainDocService.getClass().getName(), extension.getClass().getName()));
                 return null;
             }

@@ -9,7 +9,6 @@ import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
 

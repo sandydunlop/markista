@@ -1,6 +1,7 @@
 package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.common.Utils;
+import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.MarkdownUtils;
 
 import org.junit.jupiter.api.Test;
@@ -30,31 +31,31 @@ class UtilTests {
 
 	@Test
 	void simplifyName_primitive() {
-		assertEquals("int", 
-				Utils.simplifyNames("int"));
+		assertEquals("int",
+				Context.NameSimplifier.simplifyNames("int"));
 	}
 
 	@Test
 	void simplifyName_simpleName() {
-		assertEquals("PackageElement", 
-				Utils.simplifyNames("PackageElement"));
+		assertEquals("PackageElement",
+				Context.NameSimplifier.simplifyNames("PackageElement"));
 	}
 
 	@Test
 	void simplifyName_qualifiedName() {
-		assertEquals("PackageElement", 
-				Utils.simplifyNames("javax.lang.model.element.PackageElement"));
+		assertEquals("PackageElement",
+				Context.NameSimplifier.simplifyNames("javax.lang.model.element.PackageElement"));
 	}
 
 	@Test
 	void simplifyName_arrayOfQualifiedName() {
-		assertEquals("Object[]", 
-				Utils.simplifyNames("java.lang.Object[]"));
+		assertEquals("Object[]",
+				Context.NameSimplifier.simplifyNames("java.lang.Object[]"));
 	}
 
 	@Test
 	void simplifyName_setOfQualifiedName() {
-		assertEquals("Set<? extends MarkdownDoclet.Option>", Utils.simplifyNames(
+		assertEquals("Set<? extends MarkdownDoclet.Option>", Context.NameSimplifier.simplifyNames(
 					"java.util.Set<? extends io.github.sandydunlop.markdown.MarkdownDoclet.Option>"));
 	}
 }

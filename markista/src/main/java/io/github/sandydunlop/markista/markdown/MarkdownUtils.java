@@ -48,7 +48,7 @@ public class MarkdownUtils {
             String typeName = formatTypeRef(param.getType());
             sb.append(typeName);
             sb.append(" ");
-            sb.append(param.getSimpleName()); 
+            sb.append(param.getSimpleName());
         }
         return sb.toString();
     }
@@ -94,11 +94,12 @@ public class MarkdownUtils {
     public static String formatTypeRef(TypeReference typeRef, boolean useQualifiedName) {
         return switch (typeRef) {
             case TypeReference.Array array -> {
-                String arrayType = link(typeRef.getLink(), useQualifiedName);
+                StringBuilder sb = new StringBuilder();
+                sb.append(link(typeRef.getLink(), useQualifiedName));
                 for (int i = 0; i < array.getDimensions(); i++) {
-                    arrayType += "[]";
+                    sb.append("[]");
                 }
-                yield arrayType;
+                yield sb.toString();
             }
             case TypeReference.Generic generic -> {
                 StringBuilder sb = new StringBuilder();
@@ -115,11 +116,11 @@ public class MarkdownUtils {
             }
             case TypeReference.Sequence sequence -> {
                 StringBuilder sb = new StringBuilder();
-                for (TypeReference item : sequence.getItems()) {
+                for (TypeReference element : sequence) {
                     if (!sb.isEmpty()) {
                         sb.append(", ");
                     }
-                    sb.append(formatTypeRef(item, useQualifiedName));
+                    sb.append(formatTypeRef(element, useQualifiedName));
                 }
                 yield sb.toString();
             }
@@ -168,7 +169,7 @@ public class MarkdownUtils {
             link.setLabel(label);
         }
         if (!qualifyType && canBeSimplified(link) && link.getKind() != Link.Kind.METHOD) {
-            link.setLabel(Utils.simplifyNames(link.getLabel()));
+            link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
         }
         link.setLabel(escape(link.getLabel()));
         return mdRefLink(link);
@@ -241,7 +242,7 @@ public class MarkdownUtils {
         }
         // Issue: https://github.com/sandydunlop/markista/issues/1
         // Workaround:
-        // Remove the parentheses from after method names in anchor 
+        // Remove the parentheses from after method names in anchor
         // links to Markdown pages for now. Anchors in the Markdown
         // are currently headings without parameters.
         return "[" + phrase + "](#" + mdAnchor(Utils.removeParentheses(phrase)) + ")";
