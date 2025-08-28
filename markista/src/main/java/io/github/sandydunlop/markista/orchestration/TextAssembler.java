@@ -90,17 +90,17 @@ public class TextAssembler {
         TypeNode ownerTypeNode = api.getTypeNode(typeNode.getOwnerName());
         if (ownerTypeNode != null) {
             Link ref = Link.to(ownerTypeNode.getQualifiedName())
-                    .from(ctx.getPackageName())
+                    .fromPackage(ctx.getPackageName())
                     .withKind(Link.Kind.TYPE)
                     .withLabel(ownerTypeNode.getQualifiedName());
             LinkResolver.resolve(ref);
             typeNode.setEnclosingClassRef(ref);
         }
         for (TypeReference typeRef : typeNode.getImplementedInterfaces()) {
-            link(typeRef);
+            resolveTypeRererence(typeRef);
         }
         for (TypeReference typeRef : typeNode.getSupertypes()) {
-            link(typeRef);
+            resolveTypeRererence(typeRef);
         }
         processSubtypes(typeNode);
         processInheritedMethods(typeNode);
@@ -128,8 +128,8 @@ public class TextAssembler {
             TypeNode directSupertype = api.getTypeNode(directSupertypeName);
             if (directSupertype != null) {
                 TypeReference subtypeRef = TypeReference.to(typeNode.getQualifiedName());
-                subtypeRef.getLink().from(directSupertype.getQualifiedName());
-                link(subtypeRef);
+                subtypeRef.getLink().fromPackage(directSupertype.getQualifiedName());
+                resolveTypeRererence(subtypeRef);
                 directSupertype.getSubtypes().add(subtypeRef);
             }
         }
@@ -161,7 +161,7 @@ public class TextAssembler {
             Pair<String,Link> refs = entry.getValue();
             String supertypeName = refs.getL();
             Link methodRef = refs.getR();
-            linkMethod(methodRef);
+            link(methodRef);
             List<Link> inheritedMethods = methodLookup2.get(supertypeName);
             if (inheritedMethods == null) {
                 List<Link> newList = new ArrayList<>();
@@ -183,14 +183,14 @@ public class TextAssembler {
             for (Map.Entry<String,List<Link>> entry : methodLookup2.entrySet()) {
                 List<Link> methods = entry.getValue();
                 TypeReference supertypeRef = TypeReference.to(entry.getKey());
-                link(supertypeRef);
+                resolveTypeRererence(supertypeRef);
                 typeNode.getInheritedMethods().put(supertypeRef, methods);
             }
         }
     }
 
     public static void processMethod(MethodNode method) {
-        link(method.getReturnType());
+        resolveTypeRererence(method.getReturnType());
         generateLinkTextsForParams(method.getParams()
                 .stream()
                 .filter(ParamNode.class::isInstance)
@@ -234,7 +234,7 @@ public class TextAssembler {
             }
         }
         baseMethodLink.setKind(Link.Kind.UNKNOWN);
-        linkMethod(baseMethodLink);
+        link(baseMethodLink);
         baseMethodLink.setLabel(baseMethodLink.getSimpleClassName() + "." + baseMethodLink.getMethodName());
     }
 
@@ -284,7 +284,7 @@ public class TextAssembler {
             ctx.setModuleName(module.getName());
             // Constant field values
             for (FieldNode constant : module.getConstantValues()) {
-                link(constant.getType());
+                resolveTypeRererence(constant.getType());
                 constant.setConstantValueReference(constant.getType());
             }
 
@@ -365,7 +365,7 @@ public class TextAssembler {
     public static void associateClassWithInterface(InterfaceNode interfaceNode, TypeNode typeNode) {
         Link implementingClassLink = Link
                 .to(typeNode.getQualifiedName())
-                .from(interfaceNode.getQualifiedName())
+                .fromPackage(interfaceNode.getQualifiedName())
                 .withLabel(typeNode.getSimpleName());
         LinkResolver.resolve(implementingClassLink);
         interfaceNode.addImplementingClass(implementingClassLink);
@@ -377,7 +377,7 @@ public class TextAssembler {
                 if (interfaceMethod.signature().equals(methodNode.signature())) {
                     Link specifiedByLink = Link
                             .to(interfaceNode.getQualifiedName())
-                            .from(typeNode.getQualifiedName())
+                            .fromPackage(typeNode.getQualifiedName())
                             .withLabel(interfaceNode.getSimpleName());
                     LinkResolver.resolve(specifiedByLink);
                     methodNode.setSpecifiedBy(specifiedByLink);
@@ -392,8 +392,8 @@ public class TextAssembler {
             if (link.getTarget().contains("init")) {
                 link=link;
             }
-            ctx.setPackageName(link.getOrigin());
-            linkMethod(link);
+            ctx.setPackageName(link.getOriginPackage());
+            link(link);
             if (link.getLabel().contains(".")) {
                 link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
             }
@@ -402,7 +402,7 @@ public class TextAssembler {
 
     static void generateLinkTextsForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
-            link(param.getType());
+            resolveTypeRererence(param.getType());
             generateLinkTextsForReferences(param);
         }
     }
@@ -418,33 +418,53 @@ public class TextAssembler {
         }
     }
 
+    /// Resolve links to types referenced by a [TypeReference].
+    /// @param typeRef a TypeReference object describing the links
+    public static void resolveTypeRererence(TypeReference typeRef) {
+        switch (typeRef) {
+            case TypeReference.Generic generic -> {
+                LinkResolver.resolve(generic.getLink());
+                resolveTypeRererence(generic.getParams());
+            }
+            case TypeReference.Sequence sequence -> {
+                for (TypeReference element : sequence) {
+                    resolveTypeRererence(element);
+                }
+            }
+            default -> {
+                LinkResolver.resolve(typeRef.getLink());
+            }
+        }
+    }
+
     // MFLP-85 Temporary copy of link for linking methods while link is refactored
     // TODO: Consolidate when done refactoring
-    public static Text linkMethod(Link reference) {
-        String targetName = reference.getTarget();
+    public static Text link(Link link) {
+        String targetName = link.getTarget();
         if (targetName == null || targetName.isEmpty()) {
             ctx.reportWarning("No link target supplied");
-            return Text.of(reference.getLabel());
+            return Text.of(link.getLabel());
         }
         String pre = "";
         String post = "";
         String anchor = "";
         boolean isLocalMethod = false;
-        String displayName = reference.getLabel();
+        String displayName = link.getLabel();
         int pos = targetName.indexOf('#');
         if (pos == 0) {
-            reference.setHasAnchor(true);
-            reference.setAnchor(targetName.substring(pos));
+            link.setHasAnchor(true);
+            link.setAnchor(targetName.substring(pos));
             Text.Segment segment = Text.Segment.empty()
                     .setKind(Text.Segment.Kind.LINK)
-                    .setLink(reference)
-                    .setText(reference.getLabel());
+                    .setLink(link)
+                    .setText(link.getLabel());
             return Text.of(segment);
         }
         if (pos > 0) {
             anchor = targetName.substring(pos);
             targetName = targetName.substring(0, pos);
         }
+
         if (targetName.indexOf('<') > -1) {
             // Does escaping need done here?
             // See: https://sandydunlop.atlassian.net/browse/MFLP-57
@@ -465,51 +485,32 @@ public class TextAssembler {
         if (targetName.contains("(")) {
             targetName = targetName.substring(0, targetName.indexOf("("));
         }
-        reference.setTarget(targetName);
-        reference.setAnchor(anchor);
-        if (reference.getLabel() == null || reference.getLabel().isEmpty()) {
-            reference.setLabel(reference.getTarget());
+        link.setTarget(targetName);
+        link.setAnchor(anchor);
+        if (link.getLabel() == null || link.getLabel().isEmpty()) {
+            link.setLabel(link.getTarget());
         }
-        LinkResolver.resolve(reference);
-        if (!anchor.isEmpty() && reference.getKind() != Link.Kind.URL) {
+        LinkResolver.resolve(link);
+        if (!anchor.isEmpty() && link.getKind() != Link.Kind.URL) {
             isLocalMethod = true;
             // Issue: https://github.com/sandydunlop/markista/issues/1
             // Workaround:
             // Remove the parentheses from after method names in anchor
             // links to Markdown pages for now. Anchors in the Markdown
             // are currently headings without parameters.
-            reference.setAnchor(Utils.removeParentheses(reference.getAnchor()));
+            link.setAnchor(Utils.removeParentheses(link.getAnchor()));
         }
-        setDisplayName(reference, displayName, isLocalMethod);
+        setDisplayName(link, displayName, isLocalMethod);
 
-        Text.Segment link = Text.Segment.empty()
+        Text.Segment textLink = Text.Segment.empty()
                 .setKind(Text.Segment.Kind.LINK)
-                .setLink(reference)
-                .setText(Context.NameSimplifier.simplifyNames(reference.getLabel()));
+                .setLink(link)
+                .setText(Context.NameSimplifier.simplifyNames(link.getLabel()));
         Text r = Text.empty();
         r.append(pre);
-        r.append(link);
+        r.append(textLink);
         r.append(post);
         return r;
-    }
-
-    /// Create a markdown link, automatically deciding what kind of link to make.
-    /// @param typeRef a Reference object describing the link
-    public static void link(TypeReference typeRef) {
-        switch (typeRef) {
-            case TypeReference.Generic generic -> {
-                LinkResolver.resolve(typeRef.getLink());
-                link(generic.getParams());
-            }
-            case TypeReference.Sequence sequence -> {
-                for (TypeReference element : sequence) {
-                    link(element);
-                }
-            }
-            default -> {
-                LinkResolver.resolve(typeRef.getLink());
-            }
-        }
     }
 
     public static void setDisplayName(Link reference, String displayName, boolean isLocalMethod) {
@@ -554,7 +555,7 @@ public class TextAssembler {
         String before = str.substring(0, openingChevron);
         String mid = str.substring(openingChevron + 1, closingChevron);
         String after = str.substring(closingChevron + 1);
-        Text typeLink = linkMethod(Link.to(before));
+        Text typeLink = link(Link.to(before));
 
         Text midLinks;
         if (mid.contains("<")) {
@@ -584,7 +585,7 @@ public class TextAssembler {
             if (!text.isEmpty()) {
                 text.append(", ");
             }
-            text.append(linkMethod(Link.to(typeName)));
+            text.append(link(Link.to(typeName)));
         }
         return text;
     }

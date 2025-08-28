@@ -52,8 +52,8 @@ class TextAssemblerTests extends ModelTestEnvironment {
             new Object[] { "java.lang.String[]", new Segment[] {
                     link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"), text("[]") } },
             new Object[] { "java.util.List<java.lang.String[]>", new Segment[] {
-                    link("List", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html"), 
-                    text("<"), link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"), 
+                    link("List", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html"),
+                    text("<"), link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"),
                     text("[]"), text(">")} },
             new Object[] {"java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>", new Segment[] {
                     link("Function", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html"),
@@ -105,7 +105,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         node.addField(constantValue);
         module.addConstantValue(constantValue);
         constantValue.setConstantValue("testValue");
-        module.addConstantValue(constantValue);     
+        module.addConstantValue(constantValue);
 
         TextAssembler.processModules(api.getModules());
 
@@ -194,7 +194,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         MethodNode test = new MethodNode("java.lang.String", "inheritedMethod");
         test.setOwnerName(node.getQualifiedName());
         node.addMethod(test);
-        
+
         ClassNode subClass = newClass("SubClass", model);
         subClass.getSupertypes().add(TypeReference.to("java.lang.Object"));
         subClass.getSupertypes().add(TypeReference.to(node.getQualifiedName()));
@@ -227,7 +227,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Test
     void link_standardMethod() {
         LinkResolver.addStandardModules();
-        Text text = TextAssembler.linkMethod(Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
+        Text text = TextAssembler.link(Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
         String markdown = MarkdownUtils.formatText(text);
         assertEquals("[Doclet.Option.process(java.lang.String,java.util.List)](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
     }
@@ -235,7 +235,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Test
     void link_localMethod() {
         LinkResolver.addStandardModules();
-        Text text = TextAssembler.linkMethod(Link.to("Node#sort()"));
+        Text text = TextAssembler.link(Link.to("Node#sort()"));
         String markdown = MarkdownUtils.formatText(text);
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
     }

@@ -92,7 +92,7 @@ public class PackageWriter {
             String name = member.getName();
             name = name.substring(name.lastIndexOf(".") + 1);
             Link link = Link.to(member.getName())
-                    .from(ctx.getPackageName())
+                    .fromPackage(ctx.getPackageName())
                     .withKind(Link.Kind.PACKAGE)
                     .withLabel(name)
                     .withUri(name);

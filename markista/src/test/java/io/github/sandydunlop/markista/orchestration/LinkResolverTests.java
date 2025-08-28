@@ -72,7 +72,7 @@ class LinkResolverTests {
     private JarFile mockJarFile;
 
     TestReporter reporter;
-        
+
 	@BeforeAll
     static void initAll() {
 		ctx =  Context.getInstance();
@@ -124,7 +124,7 @@ class LinkResolverTests {
         ctx.setPackageName("");
 
         link = new Link();
-        link.setOrigin(ORIGIN);
+        link.setOriginPackage(ORIGIN);
         link.setTarget(TARGET);
         link.setKind(Link.Kind.UNKNOWN);
     }
@@ -208,14 +208,14 @@ class LinkResolverTests {
 
 	@Test
 	void resolve_primitive() {
-		link = Link.to("boolean").from("io.github.sandydunlop.markista.util");
+		link = Link.to("boolean").fromPackage("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals(Link.Kind.PRIMITIVE, link.getKind());
 	}
 
 	@Test
 	void resolve_qualifiedPackage_prevLevel() {
-		link = Link.to("io.github.sandydunlop.markista").from("io.github.sandydunlop.markista.util");
+		link = Link.to("io.github.sandydunlop.markista").fromPackage("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals("..", link.getUri());
 	}
@@ -244,28 +244,28 @@ class LinkResolverTests {
 
 	@Test
 	void resolve_unqualifiedPackage_nextLevelPackage() {
-		link = Link.to("doclet").from("io.github.sandydunlop.markista");
+		link = Link.to("doclet").fromPackage("io.github.sandydunlop.markista");
 		link = LinkResolver.resolve(link);
 		assertEquals("doclet", link.getUri());
 	}
 
 	@Test
 	void resolve_unqualifiedPackage_sameLevelPackage() {
-		link = Link.to("doclet").from("io.github.sandydunlop.markista.util");
+		link = Link.to("doclet").fromPackage("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals("../doclet", link.getUri());
 	}
 
 	@Test
 	void resolve_unqualifiedClass_sameLevel() {
-		link = Link.to("MarkdownDoclet").from("io.github.sandydunlop.markista.util");
+		link = Link.to("MarkdownDoclet").fromPackage("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals("../doclet/MarkdownDoclet", link.getUri());
 	}
 
 	@Test
 	void resolve_unqualifiedPackage_prevLevel() {
-		link = Link.to("markista").from("io.github.sandydunlop.markista.util");
+		link = Link.to("markista").fromPackage("io.github.sandydunlop.markista.util");
 		link = LinkResolver.resolve(link);
 		assertEquals("..", link.getUri());
 	}
@@ -300,7 +300,7 @@ class LinkResolverTests {
         LinkResolver.ctx = mockContext;
 
         Link resolvedLink = LinkResolver.resolve(linkWithoutOrigin);
-        assertEquals("default.pkg", resolvedLink.getOrigin());
+        assertEquals("default.pkg", resolvedLink.getOriginPackage());
 
         LinkResolver.ctx = originalCtx;
     }
@@ -638,7 +638,7 @@ class LinkResolverTests {
     }
 
     @Test
-    @SuppressWarnings({"unchecked", "rawtypes" }) 
+    @SuppressWarnings({"unchecked", "rawtypes" })
     void testProcessClassFile_updatesSiblingModuleNameAndClasses() throws Exception {
         setup2();
 
@@ -692,7 +692,7 @@ class LinkResolverTests {
 
         Link ref = new Link();
         ref.setTarget("com.example.Foo");
-        ref.setOrigin("com.example.other");
+        ref.setOriginPackage("com.example.other");
         ref.setKind(Link.Kind.UNKNOWN);
 
         assertTrue(LinkResolver.resolveSiblingType(ref));
@@ -711,7 +711,7 @@ class LinkResolverTests {
 
         Link ref = new Link();
         ref.setTarget("example.module");
-        ref.setOrigin("com.example.other");
+        ref.setOriginPackage("com.example.other");
         ref.setKind(Link.Kind.UNKNOWN);
 
         assertTrue(LinkResolver.resolveSiblingModule(ref));
@@ -854,7 +854,7 @@ class LinkResolverTests {
     void resolveLocalPackageTypeInternal_null () {
         //"io.github.sandydunlop.markista.model.Node"
         Link link2 = Link.to("unknown.package.Class")
-                .from("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option");
+                .fromPackage("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option");
         boolean r = LinkResolver.resolveLocalPackageOrTypeInternal(link2, "", "Class");
         assertFalse(r);
 
@@ -879,7 +879,7 @@ class LinkResolverTests {
     @Test
     void resolveSiblingType_resolvesWhenClassKnownInMap() {
         Link ref = new Link();
-        ref.setOrigin("com.example.origin");
+        ref.setOriginPackage("com.example.origin");
         ref.setTarget("com.example.Foo");
         ref.setKind(Link.Kind.UNKNOWN);
 
@@ -899,7 +899,7 @@ class LinkResolverTests {
     @Test
     void resolveSiblingModule_resolvesWhenModuleInSiblingList() {
         Link ref = new Link();
-        ref.setOrigin("com.example.origin");
+        ref.setOriginPackage("com.example.origin");
         ref.setTarget("sibling.module");
         ref.setKind(Link.Kind.UNKNOWN);
 
@@ -951,5 +951,5 @@ class LinkResolverTests {
         public void print(javax.tools.Diagnostic.Kind kind, Element element, String message) {
             stringWriter.write(message);
         }
-    }       
+    }
 }

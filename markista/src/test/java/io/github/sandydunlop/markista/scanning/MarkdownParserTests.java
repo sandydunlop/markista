@@ -1,6 +1,7 @@
 package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.model.Text;
 
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic.Kind;
@@ -33,7 +34,7 @@ class MarkdownParserTests {
             // Do nothing
         }
     };
-    
+
 	@BeforeAll
     static void initAll() {
 		ctx =  Context.getInstance();

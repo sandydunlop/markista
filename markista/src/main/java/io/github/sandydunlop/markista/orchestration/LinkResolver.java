@@ -156,8 +156,8 @@ public class LinkResolver {
         }
 
         link.setResolved(false);
-        if (link.getOrigin() == null && ctx != null) {
-            link.setOrigin(ctx.getPackageName());
+        if (link.getOriginPackage().isEmpty() && ctx != null) {
+            link.setOriginPackage(ctx.getPackageName());
         }
 
         if (link.getTarget().contains("://")) {
@@ -307,7 +307,7 @@ public class LinkResolver {
     }
 
     static boolean resolveLocalPackageOrTypeInternal(Link link, String toPackageName, String toClassName) {
-        String fromPackageName = getPackageName(link.getOrigin());
+        String fromPackageName = getPackageName(link.getOriginPackage());
         if (getPackageName(toPackageName).isEmpty()) {
             return false;
         }
@@ -360,7 +360,7 @@ public class LinkResolver {
             if (target.endsWith("/")) {
                 target = target.substring(0, target.length() - 1);
             }
-            String apiRoot = relativize(link.getOrigin(), "");
+            String apiRoot = relativize(link.getOriginPackage(), "");
             ModuleNode moduleNode = getModule(target);
             Path path = Path.of(apiRoot, "..", link.getTarget());
             if (moduleNode != null) {
@@ -388,7 +388,7 @@ public class LinkResolver {
     static boolean resolveSiblingModule(Link link) {
         if ((link.getKind() == Kind.UNKNOWN || link.getKind() == Kind.MODULE) &&
                 siblingModules.contains(link.getTarget())) {
-            String toRoot = relativize(link.getOrigin(), "");
+            String toRoot = relativize(link.getOriginPackage(), "");
             Path path = Path.of(toRoot, "..", link.getTarget());
             link.setUri(path.toString());
             link.setScope(Scope.SIBLING);
@@ -407,7 +407,7 @@ public class LinkResolver {
             String moduleName = classToModule.get(link.getTarget());
             if (moduleName != null) {
                 String qualifiedClassName = link.getTarget();
-                String path = relativizeWithSiblingModule(link.getOrigin(), qualifiedClassName, moduleName);
+                String path = relativizeWithSiblingModule(link.getOriginPackage(), qualifiedClassName, moduleName);
                 link.setUri(path);
                 link.setScope(Scope.SIBLING);
                 link.setKind(Kind.TYPE);

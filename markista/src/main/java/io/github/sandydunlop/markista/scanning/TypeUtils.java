@@ -284,14 +284,18 @@ public class TypeUtils {
                 break;
             case LINK:
                 segment.setKind(Segment.Kind.LINK);
-                Link link = Link.to(getDocTreePart(docTree, 1)).from(here());
+                Link link = Link.to(getDocTreePart(docTree, 1))
+                        .fromPackage(ctx.getPackageName())
+                        .fromType(ctx.getTypeName());
                 api.addLink(link);
                 segment.setLink(link);
                 text.append(segment);
                 break;
             case LINK_PLAIN:
                 segment.setKind(Segment.Kind.LINK);
-                link = Link.to(getDocTreePart(docTree, 1)).from(here());
+                link = Link.to(getDocTreePart(docTree, 1))
+                        .fromPackage(ctx.getPackageName())
+                        .fromType(ctx.getTypeName());
                 segment.setLink(link);
                 text.append(segment);
                 api.addLink(link);
@@ -337,27 +341,8 @@ public class TypeUtils {
         while (token.getKind() != MarkdownParser.TokenKind.END) {
             if (token.getKind() == MarkdownParser.TokenKind.BRACKETS_TAG) {
                 MarkdownParser.Token next = token.getNext();
-                if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
-                    Link ref = Link.to(next.getText())
-                            .from(here());
-                    ref.setLabel(token.getText());
-                    Segment segment = Segment.empty()
-                            .setKind(Segment.Kind.LINK)
-                            .setLink(ref)
-                            .setText(token.getText());
-                    text.append(segment);
-                    api.addLink(ref);
-                    token = next;
-                } else {
-                    Link ref = Link.to(token.getText())
-                            .from(here());
-                    Segment segment = Segment.empty()
-                            .setKind(Segment.Kind.LINK)
-                            .setLink(ref)
-                            .setText(token.getText());
-                    text.append(segment);
-                    api.addLink(ref);
-                }
+                token = handleBracketsTag(token, next, text);
+
             } else if (token.getKind() == TokenKind.TEXT) {
                 text.append(token.getText());
             }
@@ -366,15 +351,41 @@ public class TypeUtils {
         return text;
     }
 
-    private static String here() {
-        if (!ctx.getTypeName().isBlank()) {
-            return ctx.getTypeName();
-        } else if (!ctx.getPackageName().isEmpty()) {
-            return ctx.getPackageName();
+    private static MarkdownParser.Token handleBracketsTag(MarkdownParser.Token token, MarkdownParser.Token next, Text text) {
+        if (token.getText().contains(" ")) {
+            Segment segment = Segment.empty()
+                    .setKind(Segment.Kind.TEXT)
+                    .setText(token.getText());
+            text.append(segment);
+            return token;
         } else {
-            return ctx.getModuleName();
+            if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
+                Link ref = Link.to(next.getText())
+                        .fromPackage(ctx.getPackageName())
+                        .fromType(ctx.getTypeName());
+                ref.setLabel(token.getText());
+                Segment segment = Segment.empty()
+                        .setKind(Segment.Kind.LINK)
+                        .setLink(ref)
+                        .setText(token.getText());
+                text.append(segment);
+                api.addLink(ref);
+                return next;
+            } else {
+                Link ref = Link.to(token.getText())
+                        .fromPackage(ctx.getPackageName())
+                        .fromType(ctx.getTypeName());
+                Segment segment = Segment.empty()
+                        .setKind(Segment.Kind.LINK)
+                        .setLink(ref)
+                        .setText(token.getText());
+                text.append(segment);
+                api.addLink(ref);
+                return token;
+            }
         }
     }
+
 
     /// Extracts text from a DocTree to build a string from a part of its tokenized representation.
     /// @param docTree The DocTree to extract from.
@@ -496,7 +507,7 @@ public class TypeUtils {
             for (FieldNode fieldNode : classNode.getFields()) {
                 if (fieldNode.getConstantValue() != null) {
                     Link ref = Link.to("constant-values")
-                            .from(classNode.getPackageName())
+                            .fromPackage(classNode.getPackageName())
                             .withKind(Link.Kind.PAGE)
                             .withLabel("Constant Field Values");
                     fieldNode.getReferences().add(ref);
@@ -734,7 +745,7 @@ public class TypeUtils {
             if (element instanceof TypeElement typeElement) {
                 String name = typeElement.getQualifiedName().toString();
                 Link reference = Link.to(name)
-                        .from(ctx.getPackageName())
+                        .fromPackage(ctx.getPackageName())
                         .withKind(Link.Kind.TYPE)
                         .withLabel(name);
                 methodNode.addThrownType(reference);

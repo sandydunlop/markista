@@ -20,9 +20,10 @@ public class Link implements Serializable {
     private boolean hasAnchor = false;
     private String methodSignature = "";
     private String methodName = "";
-    
+
     /// The package the link is coming from. Empty string means there is no package. Null means it hasn't been set yet.
-    private String origin = null; 
+    private String originPackage = "";
+    private String originType = "";
     private String target = "";
 
     /// Default constructor creates an empty reference with kind and scope set to NONE.
@@ -62,10 +63,15 @@ public class Link implements Serializable {
     }
 
     /// Sets the origin package of the reference.
-    /// @param origin The origin package to set.
+    /// @param name The origin package to set.
     /// @return the reference with origin set
-    public Link from(String origin) {
-        this.origin = origin;
+    public Link fromPackage(String name) {
+        this.originPackage = name;
+        return this;
+    }
+
+    public Link fromType(String name) {
+        this.originType = name;
         return this;
     }
 
@@ -210,14 +216,18 @@ public class Link implements Serializable {
 
     /// Sets the origin of this reference. This is the location that is being linked from.
     /// @param origin The origin being linked from.
-    public void setOrigin(String origin) {
-        this.origin = origin;
+    public void setOriginPackage(String origin) {
+        this.originPackage = origin;
     }
 
     /// Gets the origin of this reference. This is the location that is being linked from.
     /// @return the origin
-    public String getOrigin() {
-        return origin;
+    public String getOriginPackage() {
+        return originPackage;
+    }
+
+    public String getOriginType() {
+        return originType;
     }
 
     /// Sets the target of this reference. This is the location that is being linked to.

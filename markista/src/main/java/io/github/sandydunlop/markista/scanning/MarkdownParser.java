@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /// Parses a Markdown string into a sequence of tokens representing text and special markup such as brackets and parentheses.
-/// 
+///
 /// This parser is designed to tokenize the Markdown content by identifying textual parts and tokens enclosed in brackets `[]` and parentheses `()`.
 /// It also handles inline code spans denoted by backticks (`) to avoid parsing markup inside code.
-/// 
+///
 /// The parsed tokens can be iterated in sequence starting from the firstToken() method.
 /// Each token carries its type (kind) which specifies how it should be interpreted or rendered.
-/// 
+///
 /// Token kinds include TEXT for normal text, BRACKETS_TAG for content inside square brackets,
 /// PARENS_TAG for content inside parentheses following brackets (typical Markdown link syntax),
 /// and END indicating the end of the sequence.
@@ -69,7 +69,7 @@ public class MarkdownParser {
         // No special processing needed here for now.
     }
 
-    /// Handles the open bracket '[' encountered in the markdown.
+    /// Handles the open bracket `[` encountered in the markdown.
     /// Saves any preceding text token before marking the position of the open bracket.
     private void handleOpenBracket() {
         saveText();
@@ -77,8 +77,8 @@ public class MarkdownParser {
         closeBracket = -1;
     }
 
-    /// Handles an open parenthesis '(' encountered immediately after closing bracket ']'.
-    /// @param prevChar The previous character before '(' to determine if parentheses follow brackets.
+    /// Handles an open parenthesis `(` encountered immediately after closing bracket `]`.
+    /// @param prevChar The previous character before `(` to determine if parentheses follow brackets.
     /// @return true if parentheses follow brackets, false otherwise.
     private boolean handleOpenParenthesis(char prevChar) {
         if (prevChar == ']') {
@@ -90,14 +90,14 @@ public class MarkdownParser {
         }
     }
 
-    /// Handles the close bracket ']' encountered in the markdown.
+    /// Handles the close bracket `]` encountered in the markdown.
     /// Records the position and saves a bracket-tag token.
     private void handleCloseBracket() {
         closeBracket = head;
         saveBracketsTag();
     }
 
-    /// Handles the close parenthesis ')' encountered.
+    /// Handles the close parenthesis `)` encountered.
     /// If parentheses follow brackets, saves a parentheses-tag token.
     /// @param parensFollowBrackets True if parentheses are following brackets (indicating a link).
     /// @return Always returns false to reset parsing state for parentheses.
