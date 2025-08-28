@@ -76,7 +76,7 @@ public class TypeReference implements Serializable {
         return null;
     }
 
-    public static TypeReference parse(String targetName) {
+    private static TypeReference parse(String targetName) {
         int pos;
 
         if (targetName.indexOf('<') > -1) {
@@ -109,7 +109,7 @@ public class TypeReference implements Serializable {
         return typeRef;
     }
 
-    public static TypeReference linkGenerics(String str) {
+    private static TypeReference linkGenerics(String str) {
         if (str == null || str.isEmpty()) return TypeReference.empty();
         int openingChevron = str.indexOf("<");
         int closingChevron = str.lastIndexOf(">");
@@ -138,7 +138,6 @@ public class TypeReference implements Serializable {
             genericType = str.substring(comma + 1, openingChevron);
             before = str.substring(0, comma);
 
-            // need to parse sequence then add this generic on the end
             TypeReference part1 = parse(before);
             sequence.add(part1);
 
@@ -179,7 +178,7 @@ public class TypeReference implements Serializable {
         private boolean extendsWildcard;
         private boolean wildcard;
 
-        public Generic() {
+        protected Generic() {
             // Nothing to see here
         }
 
@@ -199,7 +198,7 @@ public class TypeReference implements Serializable {
     public static class Array extends TypeReference {
         private int dimensions;
 
-        public Array() {
+        protected Array() {
             // Nothing to see here
         }
 
@@ -212,8 +211,8 @@ public class TypeReference implements Serializable {
         private TypeReference[] elements;
         private int size;
         private static final int INITIAL_CAPACITY = 4;
-        
-        private Sequence() {
+
+        protected Sequence() {
             elements = new TypeReference[INITIAL_CAPACITY];
             size = 0;
         }

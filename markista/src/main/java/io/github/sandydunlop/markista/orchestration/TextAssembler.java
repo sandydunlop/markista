@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.orchestration;
 
+import io.github.sandydunlop.markista.common.JreTools;
 import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
@@ -202,16 +203,18 @@ public class TextAssembler {
         for (Link thrownRef : method.getThrownTypes()) {
             LinkResolver.resolve(thrownRef);
         }
-        Link baseMethodPair = method.getBaseMethod();
-        if (baseMethodPair != null) {
+        Link baseMethodRef = method.getBaseMethod();
+        if (baseMethodRef != null) {
             String baseTypeName = baseTypeName(method);
             if (baseTypeName != null) {
-                linkBaseMethod(baseMethodPair, baseTypeName);
+                linkBaseMethod(baseMethodRef, baseTypeName);
             } else {
-                //TODO: We arrive here when the base type is not in the model - eg a standard java type
+                // Arriving here would indicate that the class is not in the model and not a standard java class
                 method.setBaseMethod(null);
             }
 
+            // Now process @inheritDocs
+            //TODO: Only do this if @inheritDocs is present
             TypeNode baseType = api.getTypeNode(baseTypeName);
             if (baseType != null) {
                 MethodNode baseMethod = baseType.getMethod(method);
@@ -253,6 +256,9 @@ public class TextAssembler {
     }
 
     public static String baseTypeName(MethodNode method){
+        if (method.getSimpleName().equals("visitRecordComponent")) {
+            method=method;
+        }
         TypeNode type = api.getTypeNode(method.getOwnerName());
         if (type == null) {
             return null;
@@ -260,9 +266,16 @@ public class TextAssembler {
         for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
             TypeReference typeRef = type.getSupertypes().get(i);
             String typeName = typeRef.getTypeString();
-            //TODO: Ensure this works
             TypeNode supertypeNode = api.getTypeNode(typeName);
-            if (supertypeNode != null && typeHasMethod(supertypeNode, method)) {
+            if (supertypeNode == null) {
+                // It's not in the model, try to find in JRE
+                Class<?> standardClass = JreTools.loadClass(typeName);
+                if (standardClass != null) {
+                    if (JreTools.typeHasMethod(standardClass, method.signature())) {
+                        return standardClass.getCanonicalName();
+                    }
+                }
+            } else if (typeHasMethod(supertypeNode, method)) {
                 return supertypeNode.getQualifiedName();
             }
         }
@@ -346,20 +359,18 @@ public class TextAssembler {
 
     public static InterfaceNode getStandardInterface(TypeReference interfaceRef) {
         String qualifiedName = interfaceRef.getTypeString();
-        ClassLoader classLoader = TextAssembler.class.getClassLoader();
-        try {
-            Class<?> standardClass = classLoader.loadClass(qualifiedName);
-            Method[] methods = standardClass.getMethods();
-            InterfaceNode interfaceNode = new InterfaceNode(qualifiedName, standardClass.getPackageName());
-            interfaceNode.setQualifiedName(qualifiedName);
-            for (Method method : methods) {
-                MethodNode methodNode = new MethodNode("", method.getName());
-                interfaceNode.addMethod(methodNode);
-            }
-            return interfaceNode;
-        } catch (ClassNotFoundException _) {
+        Class<?> standardClass = JreTools.loadClass(qualifiedName);
+        if (standardClass == null) {
             return null;
         }
+        Method[] methods = standardClass.getMethods();
+        InterfaceNode interfaceNode = new InterfaceNode(qualifiedName, standardClass.getPackageName());
+        interfaceNode.setQualifiedName(qualifiedName);
+        for (Method method : methods) {
+            MethodNode methodNode = new MethodNode("", method.getName());
+            interfaceNode.addMethod(methodNode);
+        }
+        return interfaceNode;
     }
 
     public static void associateClassWithInterface(InterfaceNode interfaceNode, TypeNode typeNode) {

@@ -178,6 +178,9 @@ public class TypeUtils {
         }
         MethodNode methodNode = new MethodNode(qualifiedTypeName, element.getSimpleName().toString());
 
+        if (methodNode.getSimpleName().contains("visitRecord")) {
+            methodNode=methodNode;
+        }
         // setMethodParams must be called before setMethodOwnerDetails as the method
         // parameters need to be present to determine if this method already exists.
         setMethodParams(methodNode, element);

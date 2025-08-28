@@ -430,8 +430,8 @@ class ContextTests {
         public void print(javax.tools.Diagnostic.Kind kind, Element element, String message) {
             stringWriter.write(message);
         }
-    }       
-    
+    }
+
     static List<Object> typeReferenceProvider() {
         return List.of(
             new Object[] { "java.lang.String", "String"},
@@ -457,7 +457,6 @@ class ContextTests {
         assertEquals("Node", simplified);
     }
 
-    //TODO: simplifyNames is also in Utils - remove it from there
     @Test
     void test() {
         String s = Context.NameSimplifier.simplifyNames("getReferences");
