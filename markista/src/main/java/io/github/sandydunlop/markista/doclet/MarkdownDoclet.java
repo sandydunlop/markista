@@ -1,6 +1,5 @@
 package io.github.sandydunlop.markista.doclet;
 
-import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.MarkdownService;

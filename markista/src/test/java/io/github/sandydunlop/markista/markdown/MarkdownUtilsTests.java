@@ -31,7 +31,7 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
         String markdown = MarkdownUtils.formatLink(segment, false, false);
         assertEquals("[http://example.com](http://example.com)", markdown);
     }
-    
+
     @Test
     void resolveLinks_qualifiedLocalPackage() {
         Text text = TypeUtils.markdownToText("one [model](io.github.sandydunlop.markista.model) two");

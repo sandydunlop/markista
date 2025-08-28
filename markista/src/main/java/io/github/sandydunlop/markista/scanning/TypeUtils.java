@@ -1,6 +1,5 @@
 package io.github.sandydunlop.markista.scanning;
 
-import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractMember;
@@ -45,9 +44,7 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.JavaFileObject;
 
@@ -274,7 +271,6 @@ public class TypeUtils {
     public static Text docTreeToText(DocTree docTree) {
         Text text = Text.empty();
         Text.Segment segment = Text.Segment.empty();
-        String origin;
         switch(docTree.getKind()) {
             case MARKDOWN:
                 text = markdownToText(docTree.toString());
@@ -377,8 +373,7 @@ public class TypeUtils {
                         .fromType(ctx.getTypeName());
                 Segment segment = Segment.empty()
                         .setKind(Segment.Kind.LINK)
-                        .setLink(ref)
-                        .setText(token.getText());
+                        .setLink(ref);
                 text.append(segment);
                 api.addLink(ref);
                 return token;
@@ -792,12 +787,8 @@ public class TypeUtils {
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(ee);
         for (VariableElement parameter : ee.getParameters()) {
             String simpleName = parameter.getSimpleName().toString();
-
             String paramTypeName = getParamType(ee, simpleName);
-            // TypeNode paramType = getParamType(ee, simpleName);
-            // String paramTypeName = paramType.getQualifiedName() + paramType.getArrayBrackets();
             ParamNode param = new ParamNode(paramTypeName, simpleName);
-
             ParamTree paramTree = getParamTree(dct, parameter);
             if (paramTree != null) {
                 param.setBody(createText(paramTree.getDescription()));

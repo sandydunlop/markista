@@ -1,6 +1,5 @@
 package io.github.sandydunlop.markista.markdown;
 
-import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;

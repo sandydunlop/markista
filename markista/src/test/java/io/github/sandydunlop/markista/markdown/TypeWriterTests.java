@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TypeWriterTests extends ModelTestEnvironment {
     private Writer writer;
     private TypeWriter typeWriter;
-    
+
     @BeforeEach
     void setup() {
         setupModel();
@@ -72,7 +72,6 @@ class TypeWriterTests extends ModelTestEnvironment {
 
         LinkResolver.init(api, ctx);
         LinkResolver.addStandardModules();
-        // LinkResolver.addStandardModuleUrl("java.base", "http://example.com", ".html");
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(type);
@@ -149,7 +148,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputDeclaration() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.category");
-        AnnotationNode typeNode = new AnnotationNode("SaladIngredient", 
+        AnnotationNode typeNode = new AnnotationNode("SaladIngredient",
                 pkg.getName());
 
         AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode("Target");
@@ -248,11 +247,11 @@ class TypeWriterTests extends ModelTestEnvironment {
         Link specifiedByRef = Link.to("scenario.food.berry.Specified")
                 .withKind(Link.Kind.TYPE)
                 .withLabel("scenario.food.berry.Specified");
-        ClassNode specifiedByType = new ClassNode("Specified", 
+        ClassNode specifiedByType = new ClassNode("Specified",
                 pkg.getName());
-        ClassNode thrownType = new ClassNode("Thrown", 
+        ClassNode thrownType = new ClassNode("Thrown",
                 pkg.getName());
-        
+
         methodNode.setReturnDescription(Text.empty().append("returnDescription"));
         methodNode.setSpecifiedBy(specifiedByRef);
         methodNode.addThrownType(thrownRef);
@@ -285,7 +284,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputMethodDetails_Since() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassNode typeNode = new ClassNode("Avocado", 
+        ClassNode typeNode = new ClassNode("Avocado",
                 pkg.getName());
         MethodNode methodNode = new MethodNode("java.lang.String", "eat");
 
@@ -313,7 +312,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputMethodDetails_References() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassNode typeNode = new ClassNode("Avocado", 
+        ClassNode typeNode = new ClassNode("Avocado",
                 pkg.getName());
         MethodNode methodNode = new MethodNode("java.lang.String", "eat");
 
@@ -344,7 +343,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputConstructorSummary() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassNode typeNode = new ClassNode("Avocado", 
+        ClassNode typeNode = new ClassNode("Avocado",
                 pkg.getName());
         MethodNode methodNode = new MethodNode("scenario.food.berry.Avocado", "Avocado");
         typeNode.addConstructor(methodNode);
@@ -368,7 +367,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputImplementedInterfaces() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassNode typeNode = new ClassNode("Avocado", 
+        ClassNode typeNode = new ClassNode("Avocado",
                 pkg.getName());
         typeNode.getImplementedInterfaces().add(TypeReference.to("test.interface"));
 
@@ -397,7 +396,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         EnumNode enclosedEnum = new EnumNode("Tomato.Orange", "scenario.food.berry");
         InterfaceNode enclosedInterface = new InterfaceNode("Tomato.Yellow", "scenario.food.berry");
         AnnotationNode enclosedAnnotation = new AnnotationNode("Tomato.Green", "scenario.food.berry");
-                
+
         typeNode.addType(enclosedClass);
         typeNode.addType(enclosedEnum);
         typeNode.addType(enclosedInterface);
@@ -547,7 +546,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         MethodNode test = new MethodNode("java.lang.String", "inheritedMethod");
         test.setOwnerName(node.getQualifiedName());
         node.addMethod(test);
-        
+
         // Add a subclass
         ClassNode subClass = newClass("SubClass", model);
         TypeReference typeRef = newTypeReference("Node");

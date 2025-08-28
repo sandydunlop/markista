@@ -109,7 +109,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
     private PackageElement packageElement;
 
     DocletEnvironment environment;
-      
+
     DocletEnvironment mockEnvironment;
     Api mockApi;
     Context mockContext;
@@ -136,7 +136,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
             // Do nothing
         }
     };
-    
+
 	@BeforeAll
     static void initAll() {
 		ctx =  Context.getInstance();
@@ -242,7 +242,6 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         String tn = TypeUtils.getParamType(methodElement, "param1");
         assertNotNull(tn);
         assertEquals("int[]", tn);
-        // assertEquals("[]", tn.getArrayBrackets());
     }
 
     @Test
@@ -250,13 +249,13 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         DocTree referenceTree1 = mock(DocTree.class);
         when(referenceTree1.getKind()).thenAnswer(_ -> com.sun.source.doctree.DocTree.Kind.MARKDOWN);
         when(referenceTree1.toString()).thenAnswer(_ -> "<a href=\"http://example.com\">");
-        
+
         DocTree referenceTree2 = mock(DocTree.class);
         when(referenceTree2.getKind()).thenAnswer(_ -> com.sun.source.doctree.DocTree.Kind.REFERENCE);
         when(referenceTree2.toString()).thenAnswer(_ -> "Node");
 
         List<? extends DocTree> refsList = List.of(referenceTree1, referenceTree2);
-        
+
         SeeTree seeTree = mock(SeeTree.class);
         when(seeTree.getReference()).thenAnswer(_ -> refsList);
         List<? extends DocTree> blockTags = List.of(seeTree);
@@ -367,7 +366,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
 
         DocCommentTree docTree = mock(DocCommentTree.class);
         when(treeUtils.getDocCommentTree(typeElement)).thenReturn(docTree);
-        
+
         MethodNode node = TypeUtils.nodeFromElement(methodElement);
         assertNotNull(node);
     }
@@ -621,7 +620,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
 
             // To avoid eg. infinite recursion in environment etc, we stub methods invoked
             utilsStatic.when(() -> TypeUtils.setTypeOwnership(any(), eq(typeElement))).thenCallRealMethod();
-                    
+
             utilsStatic.when(() -> TypeUtils.setModifiers(any(), any())).thenCallRealMethod();
             utilsStatic.when(() -> TypeUtils.collectAllSupertypes(any(), any())).thenCallRealMethod();
             utilsStatic.when(() -> TypeUtils.findImplementedInterfaces(eq(typeElement), any())).thenCallRealMethod();
@@ -736,7 +735,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         List<? extends AnnotationMirror> annotationMirrors = List.of(am);
         TypeElement ac = mock(TypeElement.class);
         when (ac.getAnnotationMirrors()).thenAnswer(_ -> annotationMirrors);
-        
+
         DeclaredType declaredType = mock(DeclaredType.class);
         when (am.getAnnotationType()).thenAnswer(_ -> declaredType);
 
@@ -749,7 +748,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         when (declaredElement.getQualifiedName()).thenAnswer(_ -> declaredName);
         when (declaredElement.getSimpleName()).thenAnswer(_ -> declaredName);
         when (declaredType.asElement()).thenReturn(declaredElement);
-        
+
         TypeUtils.setAppliedAnnotations(typeNode, ac);
         assertEquals(1, typeNode.getAppliedAnnotations().size());
     }

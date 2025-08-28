@@ -161,7 +161,7 @@ public class TextAssembler {
             Pair<String,Link> refs = entry.getValue();
             String supertypeName = refs.getL();
             Link methodRef = refs.getR();
-            link(methodRef);
+            resolveLink(methodRef);
             List<Link> inheritedMethods = methodLookup2.get(supertypeName);
             if (inheritedMethods == null) {
                 List<Link> newList = new ArrayList<>();
@@ -234,8 +234,8 @@ public class TextAssembler {
             }
         }
         baseMethodLink.setKind(Link.Kind.UNKNOWN);
-        link(baseMethodLink);
         baseMethodLink.setLabel(baseMethodLink.getSimpleClassName() + "." + baseMethodLink.getMethodName());
+        resolveLink(baseMethodLink);
     }
 
     public static Text processInheritDocTags(Text baseMethodText, Text text) {
@@ -389,11 +389,8 @@ public class TextAssembler {
 
     public static void processJavadocComments(Api api) {
         for (Link link : api.getLinks()) {
-            if (link.getTarget().contains("init")) {
-                link=link;
-            }
             ctx.setPackageName(link.getOriginPackage());
-            link(link);
+            resolveLink(link);
             if (link.getLabel().contains(".")) {
                 link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
             }
@@ -431,106 +428,55 @@ public class TextAssembler {
                     resolveTypeRererence(element);
                 }
             }
-            default -> {
-                LinkResolver.resolve(typeRef.getLink());
-            }
+            default -> LinkResolver.resolve(typeRef.getLink());
         }
     }
 
-    // MFLP-85 Temporary copy of link for linking methods while link is refactored
-    // TODO: Consolidate when done refactoring
-    public static Text link(Link link) {
+    public static void resolveLink(Link link) {
         String targetName = link.getTarget();
         if (targetName == null || targetName.isEmpty()) {
             ctx.reportWarning("No link target supplied");
-            return Text.of(link.getLabel());
+            return;
         }
-        String pre = "";
-        String post = "";
-        String anchor = "";
-        boolean isLocalMethod = false;
-        String displayName = link.getLabel();
+
         int pos = targetName.indexOf('#');
         if (pos == 0) {
-            link.setHasAnchor(true);
-            link.setAnchor(targetName.substring(pos));
-            Text.Segment segment = Text.Segment.empty()
-                    .setKind(Text.Segment.Kind.LINK)
-                    .setLink(link)
-                    .setText(link.getLabel());
-            return Text.of(segment);
-        }
-        if (pos > 0) {
-            anchor = targetName.substring(pos);
-            targetName = targetName.substring(0, pos);
-        }
-
-        if (targetName.indexOf('<') > -1) {
-            // Does escaping need done here?
-            // See: https://sandydunlop.atlassian.net/browse/MFLP-57
-            return linkGenericsMethod(targetName);
-        } else if (targetName.indexOf(',') > -1) {
-            return splitAndLinkMethod(targetName);
-        } else if (targetName.lastIndexOf(' ') > 0) {
-            int p = targetName.lastIndexOf(' ');
-            pre = targetName.substring(0, p) + " ";
-            targetName = targetName.substring(p + 1);
+            link.setKind(Link.Kind.METHOD);
+            link.setMethodName(targetName.substring(1));
+            link.setAnchor(targetName.substring(1));
+            return;
+        } else if (pos > 0) {
+            link.setTarget(targetName.substring(0, pos));
+            link.setMethodSignature(targetName.substring(pos + 1));
+            link.setAnchor(targetName.substring(pos + 1));
+            pos = link.getMethodSignature().indexOf("(");
+            if (pos > -1) {
+                link.setMethodName(link.getMethodSignature().substring(0, pos));
+            } else {
+                link.setMethodName(link.getMethodSignature());
+            }
         }
 
-        pos = targetName.indexOf('[');
-        if (pos > 0) {
-            post = targetName.substring(pos);
-            targetName = targetName.substring(0, pos);
+        pos = link.getTarget().indexOf("(");
+        if (pos > -1) {
+            link.setTarget(link.getTarget().substring(0, pos));
         }
-        if (targetName.contains("(")) {
-            targetName = targetName.substring(0, targetName.indexOf("("));
-        }
-        link.setTarget(targetName);
-        link.setAnchor(anchor);
+
         if (link.getLabel() == null || link.getLabel().isEmpty()) {
             link.setLabel(link.getTarget());
         }
+
         LinkResolver.resolve(link);
-        if (!anchor.isEmpty() && link.getKind() != Link.Kind.URL) {
-            isLocalMethod = true;
+
+        if (!link.getAnchor().isEmpty() && link.getKind() != Link.Kind.URL) {
             // Issue: https://github.com/sandydunlop/markista/issues/1
             // Workaround:
             // Remove the parentheses from after method names in anchor
             // links to Markdown pages for now. Anchors in the Markdown
             // are currently headings without parameters.
+            link.setKind(Link.Kind.METHOD);
             link.setAnchor(Utils.removeParentheses(link.getAnchor()));
         }
-        setDisplayName(link, displayName, isLocalMethod);
-
-        Text.Segment textLink = Text.Segment.empty()
-                .setKind(Text.Segment.Kind.LINK)
-                .setLink(link)
-                .setText(Context.NameSimplifier.simplifyNames(link.getLabel()));
-        Text r = Text.empty();
-        r.append(pre);
-        r.append(textLink);
-        r.append(post);
-        return r;
-    }
-
-    public static void setDisplayName(Link reference, String displayName, boolean isLocalMethod) {
-        if (reference.getLabel() == null) {
-             reference.setLabel(reference.getTarget());
-        }
-        if (isLocalMethod) {
-            reference.setKind(Link.Kind.METHOD);
-            String methodName = reference.getAnchor().substring(1);
-            reference.setMethodName(methodName);
-            if (!reference.getQualifiedClassName().equals(ctx.getTypeName())) {
-                reference.setLabel(reference.getLabel() + "." + methodName);
-            } else {
-                reference.setLabel(methodName);
-            }
-        }
-        if (displayName != null && !displayName.isEmpty()) {
-            reference.setLabel(displayName.replace("#","."));
-        }
-        reference.setLabel(escape(reference.getLabel()));
     }
 
     /// Escapes HTML `<` and `>` characters in a string with their corresponding
@@ -541,67 +487,5 @@ public class TextAssembler {
         return str
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
-    }
-
-    /// Changes qualified generic type names to unqualified generic
-    /// type names and adds links to their API documentation.
-    /// @param str A string containing a qualified generic name.
-    /// @return    A Text object with the qualified names changed to unqualified
-    ///            names and links to types added
-    public static Text linkGenericsMethod(String str) {
-        if (str == null || str.isEmpty()) return Text.of(str);
-        int openingChevron = str.indexOf("<");
-        int closingChevron = str.lastIndexOf(">");
-        String before = str.substring(0, openingChevron);
-        String mid = str.substring(openingChevron + 1, closingChevron);
-        String after = str.substring(closingChevron + 1);
-        Text typeLink = link(Link.to(before));
-
-        Text midLinks;
-        if (mid.contains("<")) {
-            midLinks = linkGenericsMethod(mid);
-        } else {
-            midLinks = splitAndLinkMethod(mid);
-        }
-
-        Text ret = Text.empty();
-        ret.append(typeLink);
-        ret.append("<");
-        ret.append(midLinks);
-        ret.append(">");
-        ret.append(Text.of(after));
-        return ret;
-    }
-
-    /// Creates markdown formatted text with links to types from a string.
-    /// containing one or more types separated by commas.
-    /// @param typesString A string containing a comma-separated list of type names
-    /// @return a list of links to types formatted as Markdown
-    public static Text splitAndLinkMethod(String typesString) {
-        Text text = Text.empty();
-        String[] types = typesString.split(",");
-        for (String t : types) {
-            String typeName = t.strip();
-            if (!text.isEmpty()) {
-                text.append(", ");
-            }
-            text.append(link(Link.to(typeName)));
-        }
-        return text;
-    }
-
-    /// Removes the generic type and its surrounding <> from a string, if present
-    /// @param str The string
-    /// @return The string with the generic type and surrounding <> removed
-    public static String removeGenerics(String str) {
-        if (str == null || str.isEmpty()) return "";
-        int start = str.indexOf("<");
-        if (start > -1) {
-            int end = str.indexOf(">");
-            if (end > start) {
-                return str.substring(0, start);
-            }
-        }
-        return str;
     }
 }

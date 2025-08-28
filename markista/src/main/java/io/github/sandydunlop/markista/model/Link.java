@@ -17,7 +17,6 @@ public class Link implements Serializable {
     private String uri = "";
     private String anchor = "";
     private boolean resolved = false;
-    private boolean hasAnchor = false;
     private String methodSignature = "";
     private String methodName = "";
 
@@ -242,6 +241,10 @@ public class Link implements Serializable {
         return target;
     }
 
+    public void setMethodSignature(String signature) {
+        this.methodSignature = signature;
+    }
+
     /// Sets the resolved state of this reference.
     /// @param b Whether this reference is resolved or not.
     public void setResolved(boolean b) {
@@ -252,18 +255,6 @@ public class Link implements Serializable {
     /// @return True if this reference has been resolved. False otherwise.
     public boolean isResolved() {
         return resolved;
-    }
-
-    /// Specifies if this link is to an anchor
-    /// @param b Whether this reference is to an anchor or not.
-    public void setHasAnchor(boolean b) {
-        hasAnchor = b;
-    }
-
-    /// Gets the anchor status of this reference.
-    /// @return True if this reference is to an anchor. False otherwise.
-    public boolean hasAnchor() {
-        return hasAnchor;
     }
 
     public String toString() {

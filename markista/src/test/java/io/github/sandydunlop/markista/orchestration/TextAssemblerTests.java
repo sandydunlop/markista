@@ -4,7 +4,6 @@ import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.markista.markdown.MarkdownUtils;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.DirectiveNode;
-import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.RecordNode;
@@ -39,47 +38,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }
 
-    static Segment text(String t) {
-        return Segment.empty().setKind(Segment.Kind.TEXT).setText(t);
-    }
 
-    static Segment link(String t, String u) {
-        return Segment.empty().setKind(Segment.Kind.LINK).setText(t).setLink(new Link().withUri(u));
-    }
-
-    static List<Object[]> typeReferenceProvider() {
-        return List.of(
-            new Object[] { "java.lang.String[]", new Segment[] {
-                    link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"), text("[]") } },
-            new Object[] { "java.util.List<java.lang.String[]>", new Segment[] {
-                    link("List", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html"),
-                    text("<"), link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"),
-                    text("[]"), text(">")} },
-            new Object[] {"java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>", new Segment[] {
-                    link("Function", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html"),
-                    text("<"), link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"),
-                    text(", "), link("Optional", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html"),
-                    text("<"), link("String", "https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html"),
-                    text(">"), text(">")} }
-        );
-    }
-
-    //TODO: disabled while refactoring TextAssembler
-    // @org.junit.jupiter.params.ParameterizedTest
-    // @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
-	// void link_to_text(String target, Segment[] expected) {
-    //     Link link = Link.to(target);
-    //     Text text = TextAssembler.link(link);
-    //     assertEquals(expected.length, text.getSegments().size());
-    //     for (int i=0; i<expected.length; i++) {
-    //         Segment expectedSegment = expected[i];
-    //         Segment actualSegment = text.getSegment(i);
-    //         assertEquals(expectedSegment.getText(), actualSegment.getText());
-    //         if (expectedSegment.getKind() == Segment.Kind.LINK) {
-    //             assertEquals(expectedSegment.getLink().getUri(), actualSegment.getLink().getUri());
-    //         }
-    //     }
-    // }
 
     @Test
     void processModules() {
@@ -95,24 +54,6 @@ class TextAssemblerTests extends ModelTestEnvironment {
                 assertNotEquals("", pkg.getUri());
             }
         }
-    }
-
-    //TODO: disabled while refactoring TextAssembler
-    @Disabled("WIP")
-    @Test
-    void processModules_constantValues() {
-        FieldNode constantValue = new FieldNode("java.lang.String", "fieldName");
-        node.addField(constantValue);
-        module.addConstantValue(constantValue);
-        constantValue.setConstantValue("testValue");
-        module.addConstantValue(constantValue);
-
-        TextAssembler.processModules(api.getModules());
-
-        TypeReference constantReference = constantValue.getConstantValueReference();
-        assertNotNull(constantReference);
-        // assertEquals(Link.Kind.URL, constantReference.getKind());
-        // assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html", constantReference.getUri());
     }
 
     @Test
@@ -209,44 +150,23 @@ class TextAssemblerTests extends ModelTestEnvironment {
         assertEquals("inheritedMethod", inheritedMethod.getMethodName());
     }
 
-    //TODO: disabled while refactoring TextAssembler
-	// @Test
-	// void splitAndLink_oneArray_simplified() {
-    //     Text text = TextAssembler.splitAndLink("java.lang.String[]");
-    //     String markdown = MarkdownUtils.formatText(text);
-    //     assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html)[]", markdown);
-    // }
-
-    // @Test
-    // void link_generics_qualified() {
-    //     Text text = TextAssembler.linkGenerics("java.util.function.Function<java.lang.String,java.util.Optional<java.lang.String>>");
-    //     String markdown = MarkdownUtils.formatText(text);
-    //     assertEquals("[Function](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/function/Function.html)<[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html), [Optional](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/Optional.html)<[String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html)>>", markdown);
-    // }
-
     @Test
     void link_standardMethod() {
         LinkResolver.addStandardModules();
-        Text text = TextAssembler.link(Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
-        String markdown = MarkdownUtils.formatText(text);
-        assertEquals("[Doclet.Option.process(java.lang.String,java.util.List)](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
+        Link link = Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)");
+        TextAssembler.resolveLink(link);
+        String markdown = MarkdownUtils.link(link, false, true);
+        assertEquals("[Doclet.Option.process](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
     }
 
     @Test
     void link_localMethod() {
         LinkResolver.addStandardModules();
-        Text text = TextAssembler.link(Link.to("Node#sort()"));
-        String markdown = MarkdownUtils.formatText(text);
+        Link link = Link.to("Node#sort()");
+        TextAssembler.resolveLink(link);
+        String markdown = MarkdownUtils.link(link, false);
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
     }
-
-    //TODO: disabled while refactoring TextAssembler
-	// @Test
-	// void splitAndLink_two() {
-    //     Text text = TextAssembler.splitAndLink("java.lang.String, java.util.List");
-    //     String markdown = MarkdownUtils.formatText(text);
-    //     assertEquals("[String](" + JAVA_24_URL + "java.base/java/lang/String.html), [List](" + JAVA_24_URL + "java.base/java/util/List.html)", markdown);
-    // }
 
     @Test
     void getStandardInterface_normal() {

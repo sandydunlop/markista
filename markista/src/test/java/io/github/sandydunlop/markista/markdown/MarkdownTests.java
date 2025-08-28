@@ -44,7 +44,7 @@ class MarkdownTests {
     private ClassNode markdownDoclet;
 
     static TestReporter reporter;
-    
+
     @AfterEach
     void resetSingleton() {
         Context.reset();
@@ -228,5 +228,5 @@ class MarkdownTests {
         public void print(javax.tools.Diagnostic.Kind kind, Element element, String message) {
             stringWriter.write(message);
         }
-    }       
+    }
 }

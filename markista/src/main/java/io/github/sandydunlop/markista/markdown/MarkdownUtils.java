@@ -14,6 +14,7 @@ import java.util.List;
 /// Markdown links to point to the correct file, directory, or web page.
 public class MarkdownUtils {
     private static final String FORMAT_SIMPLE_LINK = "[%s](%s)";
+    private static final String FORMAT_SIMPLE_LINK_MD = "[%s](%s.md)";
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
@@ -45,7 +46,7 @@ public class MarkdownUtils {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(", ");
-            String typeName = formatTypeRef(param.getType());
+            String typeName = formatTypeRef(param.getType(), false);
             sb.append(typeName);
             sb.append(" ");
             sb.append(param.getSimpleName());
@@ -156,23 +157,71 @@ public class MarkdownUtils {
         return link(reference, null, useQualifiedName, true);
     }
 
+    public static String link(Link reference, boolean useQualifiedName, boolean qualifyMember) {
+        return link(reference, null, useQualifiedName, qualifyMember);
+    }
+
     public static String link(Link link, String label, boolean qualifyType, boolean qualifyMember) {
         if (link.getKind() == Link.Kind.METHOD) {
-            if (qualifyType) {
-                link.setLabel(link.getQualifiedClassName() + "." + link.getMethodName());
-            } else if (!qualifyMember) {
-                link.setLabel(link.getMethodName());
-            } else if (label!= null && !label.isEmpty()) {
-                link.setLabel(label);
-            }
-        } else if (!qualifyType && label!= null && !label.isEmpty()) {
-            link.setLabel(label);
+            setLabelForMethod(link, label, qualifyType, qualifyMember);
+        } else if(link.getKind() == Link.Kind.URL) {
+            setLabelForUrl(link, qualifyType, qualifyMember);
+        } else if (link.getKind() == Link.Kind.TYPE) {
+            setLabelForType(link, qualifyType);
         }
-        if (!qualifyType && canBeSimplified(link) && link.getKind() != Link.Kind.METHOD) {
-            link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
+        if (label!= null && !label.isEmpty()) {
+            link.setLabel(label);
         }
         link.setLabel(escape(link.getLabel()));
         return mdRefLink(link);
+    }
+
+    private static void setLabelForType(Link link, boolean qualifyType) {
+        if (qualifyType) {
+            if (!link.getQualifiedClassName().isEmpty()) {
+                link.setLabel(link.getQualifiedClassName());
+            }
+        }else{
+            if (canBeSimplified(link)) {
+                link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
+            }
+        }
+    }
+
+    private static void setLabelForMethod(Link link, String label, boolean qualifyType, boolean qualifyMember) {
+        if (qualifyType && !link.getQualifiedClassName().isEmpty()) {
+            link.setLabel(link.getQualifiedClassName() + "." + link.getMethodName());
+        } else if (qualifyMember && !link.getSimpleClassName().isEmpty()) {
+            link.setLabel(link.getSimpleClassName() + "." + link.getMethodName());
+        } else if (label!= null && !label.isEmpty()) {
+            link.setLabel(label);
+        }
+    }
+
+    private static void setLabelForUrl(Link link, boolean qualifyType, boolean qualifyMember) {
+        if (link.getMethodName().isEmpty()) {
+            setLabelForUrlWithMethod(link, qualifyType);
+        } else {
+            if (qualifyMember) {
+                if (!link.getSimpleClassName().isEmpty()) {
+                    link.setLabel(link.getSimpleClassName() + "." + link.getMethodName());
+                }
+            } else {
+                link.setLabel(link.getMethodName());
+            }
+        }
+    }
+
+    private static void setLabelForUrlWithMethod(Link link, boolean qualifyType) {
+        if (qualifyType) {
+            if (!link.getQualifiedClassName().isEmpty()) {
+                link.setLabel(link.getQualifiedClassName());
+            }
+        } else {
+            if (!link.getSimpleClassName().isEmpty()) {
+                link.setLabel(link.getSimpleClassName());
+            }
+        }
     }
 
     private static boolean canBeSimplified(Link link) {
@@ -189,20 +238,19 @@ public class MarkdownUtils {
         if (link.getKind() == Link.Kind.METHOD) {
             return mdRefLinkMethod(link);
         } else if (link.getKind() == Link.Kind.TYPE) {
-            return String.format("[%s](%s.md%s)", link.getLabel(), link.getUri(), mdAnchor(link.getAnchor()));
+            return String.format(FORMAT_SIMPLE_LINK_MD, link.getLabel(), link.getUri());
         } else if (link.getKind() == Link.Kind.PACKAGE) {
-            return String.format("[%s](%s/index.md%s)", link.getLabel(), link.getUri(), mdAnchor(link.getAnchor()));
+            return String.format("[%s](%s/index.md)", link.getLabel(), link.getUri());
         } else if (link.getKind() == Link.Kind.MODULE) {
             return String.format("[%s](%s/index.md)", link.getLabel(), link.getUri());
         } else if (link.getKind() == Link.Kind.URL) {
-            String displayName = link.getLabel();
-            if (!link.getAnchor().isEmpty() && link.getAnchor().length() > 1) {
-                String anchorName = link.getAnchor().substring(1);
-                displayName += "." + anchorName;
+            if (link.getAnchor().isEmpty()) {
+                return String.format(FORMAT_SIMPLE_LINK, link.getLabel(), link.getUri());
+            } else {
+                return String.format("[%s](%s#%s)", link.getLabel(), link.getUri(), link.getAnchor());
             }
-            return String.format("[%s](%s%s)", displayName, link.getUri(), link.getAnchor());
         } else if (link.getKind() == Link.Kind.PAGE) {
-            return String.format("[%s](%s.md)", link.getLabel(), link.getUri());
+            return String.format(FORMAT_SIMPLE_LINK_MD, link.getLabel(), link.getUri());
 
         }
         return link.getLabel();
@@ -215,12 +263,10 @@ public class MarkdownUtils {
     public static String mdRefLinkMethod(Link link) {
         link.setAnchor(link.getAnchor().toLowerCase());
         String displayName = link.getLabel();
-        String ctn = ctx.getTypeName();
-        String linkClassName = link.getQualifiedClassName();
-        if (!linkClassName.equals(ctn)) {
-            return String.format("[%s](%s.md%s)", displayName, link.getUri(), link.getAnchor());
+        if (!link.getUri().isEmpty()) {
+            return String.format("[%s](%s.md#%s)", displayName, link.getUri(), link.getAnchor());
         } else {
-            return String.format(FORMAT_SIMPLE_LINK, displayName, link.getAnchor());
+            return String.format("[%s](#%s)", displayName, link.getAnchor());
         }
     }
 
@@ -255,7 +301,7 @@ public class MarkdownUtils {
         if (docName.contains("://") || docName.endsWith(".md")){
             return String.format(FORMAT_SIMPLE_LINK, docName, docName);
         }
-        return String.format("[%s](%s.md)", docName, docName);
+        return String.format(FORMAT_SIMPLE_LINK_MD, docName, docName);
     }
 
     /// Escapes HTML `<` and `>` characters in a string with their corresponding

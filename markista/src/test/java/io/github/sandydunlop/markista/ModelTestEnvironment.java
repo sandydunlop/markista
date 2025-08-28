@@ -46,7 +46,7 @@ public class ModelTestEnvironment {
         public void print(javax.tools.Diagnostic.Kind kind, Element element, String message) {
             output.write(message);
         }
-    }       
+    }
 
     protected void configureType(TypeNode typeNode, PackageNode pkg) {
         typeNode.setOwnerName(pkg.getName());
@@ -84,8 +84,7 @@ public class ModelTestEnvironment {
                 .withKind(Link.Kind.METHOD)
                 .withLabel(methodName)
                 .withMethodName(methodName);
-        methodLink.setHasAnchor(true);
-        methodLink.setAnchor("#" + methodName);
+        methodLink.setAnchor(methodName);
         methodLink.setQualifiedClassName(typeName);
         return methodLink;
     }
