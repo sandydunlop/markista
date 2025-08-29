@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Markista is a [doclet](https://docs.oracle.com/javase/8/docs/technotes/guides/javadoc/doclet/overview.html) that turns your Java documentation comments into Markdown, suitable for use with [Github](https://github.com/), [MkDocs](https://www.mkdocs.org/), etc. 
+Markista is a [doclet](https://docs.oracle.com/javase/8/docs/technotes/guides/javadoc/doclet/overview.html) that turns your Java documentation comments into Markdown, suitable for use with [Github](https://github.com/), [MkDocs](https://www.mkdocs.org/), etc.
 
 > Markista is a strong addition to the list of doclets for generating Markdown documentation from Java source code. Its focus on simplicity and readability makes it a great choice for developers looking to enhance their documentation process. If you're exploring options for Markdown generation, Markista is definitely worth considering alongside other tools like MDoclet, mddoclet, and Doxygen.
 
@@ -42,7 +42,7 @@ Markista is available in the [Maven Central](https://central.sonatype.com/artifa
 
 ```groovy
 dependencies {
-    markista("io.github.sandydunlop:markista:0.1.21")
+    markista("io.github.sandydunlop:markista:0.1.22")
 }
 ```
 
@@ -99,7 +99,7 @@ pom.xml:
         <dependency>
             <groupId>io.github.sandydunlop</groupId>
             <artifactId>markista</artifactId>
-            <version>0.1.21</version>
+            <version>0.1.22</version>
         </dependency>
     </dependencies>
 
@@ -139,7 +139,7 @@ pom.xml:
 Markista can be used from the command line with the `javadoc` command as follows:
 
 ```bash
-javadoc -docletpath libs/markista-0.1.21.jar -doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet src/main/java/my.package/Hello.java
+javadoc -docletpath libs/markista-0.1.22.jar -doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet src/main/java/my.package/Hello.java
 ```
 
 ### Parameters
@@ -161,7 +161,7 @@ javadoc -docletpath libs/markista-0.1.21.jar -doclet io.github.sandydunlop.marki
 :  Don't create package directories that contain no classes.
 
 `-link`
-:  Create links to classes defined outside of the API being 
+:  Create links to classes defined outside of the API being
    documented (eg. [java.utils.String](https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang/String.html)).
 
 `--link-modules`
@@ -171,7 +171,7 @@ javadoc -docletpath libs/markista-0.1.21.jar -doclet io.github.sandydunlop.marki
 :  Colon-separated list that specifies where to find application modules.
 
 `-private`
-:   Generate docs for private members. By default only public 
+:   Generate docs for private members. By default only public
     and abstract members are documented.
 
 `-tabs`
@@ -182,7 +182,7 @@ javadoc -docletpath libs/markista-0.1.21.jar -doclet io.github.sandydunlop.marki
 
 ## Download
 
-JAR files for version 0.1.21 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.1.21).
+JAR files for version 0.1.22 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.1.22).
 
 
 ## Source Code

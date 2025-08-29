@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'io.github.sandydunlop'
-version = '0.1.21'
+version = '0.1.22'
 
 repositories {
 	mavenCentral()
@@ -44,7 +44,7 @@ jacocoTestReport {
     dependsOn test // tests are required to run before generating the report
     reports {
         xml.required = true
-        html.required = true 
+        html.required = true
     }
 }
 
