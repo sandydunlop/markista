@@ -1,24 +1,13 @@
 package io.github.sandydunlop.markista.common;
 
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.TypeNode;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Optional;
 
 public class JreTools {
-    private JreTools() {
+    protected JreTools() {
         // Nothing to see here
-    }
-
-    public static void inspectClass(String qualifiedName) {
-        Class<?> loaded = loadClass(qualifiedName);
-        if (loaded != null) {
-            System.out.println("Found: " + loaded.getName());
-            System.out.println("       " + loaded.getSimpleName());
-            System.out.println("       " + loaded.getCanonicalName());
-        }
     }
 
     public static Class<?> loadClass(String qualifiedName) {
@@ -54,10 +43,6 @@ public class JreTools {
         Method[] methods = type.getMethods();
         for (Method m : methods) {
             String candidate = methodSignature(m);
-            if (candidate.contains("visitRecord")) {
-                candidate=candidate;
-                // But the signatures don't match
-            }
             if (candidate.equals(signature)) {
                 return true;
             }

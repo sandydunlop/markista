@@ -214,7 +214,6 @@ public class TextAssembler {
             }
 
             // Now process @inheritDocs
-            //TODO: Only do this if @inheritDocs is present
             TypeNode baseType = api.getTypeNode(baseTypeName);
             if (baseType != null) {
                 MethodNode baseMethod = baseType.getMethod(method);
@@ -256,9 +255,6 @@ public class TextAssembler {
     }
 
     public static String baseTypeName(MethodNode method){
-        if (method.getSimpleName().equals("visitRecordComponent")) {
-            method=method;
-        }
         TypeNode type = api.getTypeNode(method.getOwnerName());
         if (type == null) {
             return null;
@@ -270,10 +266,8 @@ public class TextAssembler {
             if (supertypeNode == null) {
                 // It's not in the model, try to find in JRE
                 Class<?> standardClass = JreTools.loadClass(typeName);
-                if (standardClass != null) {
-                    if (JreTools.typeHasMethod(standardClass, method.signature())) {
-                        return standardClass.getCanonicalName();
-                    }
+                if (standardClass != null && JreTools.typeHasMethod(standardClass, method.signature())) {
+                    return standardClass.getCanonicalName();
                 }
             } else if (typeHasMethod(supertypeNode, method)) {
                 return supertypeNode.getQualifiedName();

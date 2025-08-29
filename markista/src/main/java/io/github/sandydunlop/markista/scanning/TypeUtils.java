@@ -178,9 +178,6 @@ public class TypeUtils {
         }
         MethodNode methodNode = new MethodNode(qualifiedTypeName, element.getSimpleName().toString());
 
-        if (methodNode.getSimpleName().contains("visitRecord")) {
-            methodNode=methodNode;
-        }
         // setMethodParams must be called before setMethodOwnerDetails as the method
         // parameters need to be present to determine if this method already exists.
         setMethodParams(methodNode, element);
@@ -341,7 +338,6 @@ public class TypeUtils {
             if (token.getKind() == MarkdownParser.TokenKind.BRACKETS_TAG) {
                 MarkdownParser.Token next = token.getNext();
                 token = handleBracketsTag(token, next, text);
-
             } else if (token.getKind() == TokenKind.TEXT) {
                 text.append(token.getText());
             }
@@ -351,25 +347,24 @@ public class TypeUtils {
     }
 
     private static MarkdownParser.Token handleBracketsTag(MarkdownParser.Token token, MarkdownParser.Token next, Text text) {
-        if (token.getText().contains(" ")) {
+        if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
+            Link ref = Link.to(next.getText())
+                    .fromPackage(ctx.getPackageName())
+                    .fromType(ctx.getTypeName());
+            ref.setLabel(token.getText());
             Segment segment = Segment.empty()
-                    .setKind(Segment.Kind.TEXT)
+                    .setKind(Segment.Kind.LINK)
+                    .setLink(ref)
                     .setText(token.getText());
             text.append(segment);
-            return token;
+            api.addLink(ref);
+            return next;
         } else {
-            if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
-                Link ref = Link.to(next.getText())
-                        .fromPackage(ctx.getPackageName())
-                        .fromType(ctx.getTypeName());
-                ref.setLabel(token.getText());
+            if (token.getText().contains(" ")) {
                 Segment segment = Segment.empty()
-                        .setKind(Segment.Kind.LINK)
-                        .setLink(ref)
+                        .setKind(Segment.Kind.TEXT)
                         .setText(token.getText());
                 text.append(segment);
-                api.addLink(ref);
-                return next;
             } else {
                 Link ref = Link.to(token.getText())
                         .fromPackage(ctx.getPackageName())
@@ -379,8 +374,8 @@ public class TypeUtils {
                         .setLink(ref);
                 text.append(segment);
                 api.addLink(ref);
-                return token;
             }
+            return token;
         }
     }
 

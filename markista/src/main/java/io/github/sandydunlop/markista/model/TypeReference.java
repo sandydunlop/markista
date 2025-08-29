@@ -85,7 +85,7 @@ public class TypeReference implements Serializable {
             return splitAndLink(targetName);
         }
 
-        //TODO: Array need to happen even in generic params
+
         pos = targetName.indexOf('[');
         if (pos > 0) {
             TypeReference.Array array = new TypeReference.Array();
@@ -115,8 +115,6 @@ public class TypeReference implements Serializable {
         int closingChevron = str.lastIndexOf(">");
         String before = str.substring(0, openingChevron).strip();
         String mid = str.substring(openingChevron + 1, closingChevron).strip();
-        // String after = str.substring(closingChevron + 1).strip();
-        //TODO: after could be array brackets?
 
         TypeReference.Generic generic = new TypeReference.Generic();
 

@@ -1237,4 +1237,16 @@ class TypeUtilsTests extends MockedDocletEnvironment {
 		assertEquals("", TypeUtils.removeGenerics(""));
 		assertEquals("", TypeUtils.removeGenerics(null));
 	}
+
+    @Test
+    void markdownToTest_webLink() {
+        String markdown = "the [Markista homepage](https://sandydunlop.github.io/markista)";
+
+        Text text = TypeUtils.markdownToText(markdown);
+        Text.Segment segment = text.getSegments().getLast();
+        assertEquals(Text.Segment.Kind.LINK, segment.getKind());
+
+
+        assertNotNull(text);
+    }
 }
