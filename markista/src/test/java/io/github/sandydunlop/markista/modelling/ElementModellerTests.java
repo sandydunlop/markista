@@ -8,7 +8,6 @@ import io.github.sandydunlop.markista.model.Deprecation;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
@@ -133,8 +132,6 @@ class ElementModellerTests extends MockedDocletEnvironment {
     @BeforeEach
     void init() {
         dummyApi = new Api("Test API");
-        // dummyPackage = new PackageNode("com.example");
-
         environment = mock(DocletEnvironment.class);
         elementUtils = mock(Elements.class);
         typeUtils = mock(Types.class);
@@ -183,7 +180,6 @@ class ElementModellerTests extends MockedDocletEnvironment {
         when(docCommentTree.getFullBody()).thenAnswer(_ -> dtList);
 
         api = new Api("Test API");
-        // modeller.init(api, docletEnv);
         modeller = new ElementModeller(api, docletEnv);
 
         packageNode = new PackageNode("io.github.sandydunlop.markista.model");
@@ -400,7 +396,6 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void getUrl_ReturnsUrl_WhenInputContainsHref() {
-        // modeller.init(dummyApi, null);
         modeller = new ElementModeller(dummyApi, environment);// Passing null DocletEnvironment for tests that don't need it
         String href = "http://example.com";
         String input = "<a href=\"" + href + "\">link</a>";
@@ -410,7 +405,6 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void getUrl_ReturnsNull_WhenInputIsNullOrMalformed() {
-        // modeller.init(dummyApi, null);  // Passing null DocletEnvironment for tests that don't need it
         modeller = new ElementModeller(dummyApi, environment);
         assertNull(modeller.getUrl(null));
         assertNull(modeller.getUrl("no href here"));
@@ -429,7 +423,6 @@ class ElementModellerTests extends MockedDocletEnvironment {
         packageName2 = mock(Name.class);
         when(packageName2.toString()).thenReturn("com.example");
 
-        // modeller.init(mockApi, mockEnvironment);
         modeller = new ElementModeller(mockApi, mockEnvironment);
     }
 
@@ -577,10 +570,6 @@ class ElementModellerTests extends MockedDocletEnvironment {
         when (envMock.getTypeUtils()).thenReturn(typeUtils);
         TypeNode result = modeller.modelType(typeEl);
         assertNotNull(result, "nodeFromElement should return a TypeNode instance");
-
-        // // And api.addType should have been invoked with that produced node
-        // TypeNode cls = api.getTypeNode("io.github.sandydunlop.markista.model.MyClass");
-        // assertNotNull(cls);
     }
 
 
@@ -593,7 +582,6 @@ class ElementModellerTests extends MockedDocletEnvironment {
         // Case 1: Javadoc @deprecated present
         DocTrees docTrees = mock(DocTrees.class);
         when(mockEnvironment.getDocTrees()).thenReturn(docTrees);
-        // modeller.init(api, mockEnvironment);
         modeller = new ElementModeller(api, mockEnvironment);
 
         DeprecatedTree deprecatedTree = mock(DeprecatedTree.class);

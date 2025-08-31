@@ -51,9 +51,6 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
 
     private ElementModeller modeller;
 
-    /// The doclet environment used to obtain Javadoc doc trees and element utilities.
-    private final DocletEnvironment environment;
-
     /// The unnamed module node reprsenting package elements not in an explicit module.
     private final ModuleNode unnamedModule;
 
@@ -67,7 +64,6 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// The doclet environment provides tools for processing API elements, types, and documentation.
     /// @param environment Represents the operating environment of a single invocation of the doclet.
     public ApiScanner(DocletEnvironment environment) {
-        this.environment = environment;
         api = new Api(Configuration.getDocTitle());
         unnamedModule = api.getUnnamedModuleNode();
         currentModule = api.getUnnamedModuleNode();
@@ -85,7 +81,6 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// @return the fully-populated Api model
     public Api scan(Set<? extends Element> elements) {
         processIncludedElements(elements);
-        // TypeUtils.init(api, environment);
         scan(elements, 0);
         addConstantFieldValuesReference(currentModule);
         markCustomAnnotations();
@@ -248,11 +243,8 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             TypeNode typeNode = api.getTypeNode(classElement.getQualifiedName().toString());
             FieldNode fieldNode = typeNode.getField(simpleName);
             if (fieldNode == null) {
-                if (typeNode != null) {
-                    fieldNode = modeller.modelField(ve);
-
-                    typeNode.addField(fieldNode);
-                }
+                fieldNode = modeller.modelField(ve);
+                typeNode.addField(fieldNode);
             }
         }
         return super.visitVariable(ve, depth);

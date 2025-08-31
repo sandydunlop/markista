@@ -1,12 +1,10 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
-import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
-import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +17,6 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
         setupModel();
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
-        // TypeUtils.init(api, null);
         LinkResolver.init(api, ctx);
     }
 

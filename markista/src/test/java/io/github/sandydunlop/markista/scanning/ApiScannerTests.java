@@ -182,7 +182,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
 
     @Test
-    void calculateUnnamedModuleSourcePath_computes_root_and_sets_module_source_path() throws Exception {
+    void calculateUnnamedModuleSourcePath_computes_root_and_sets_module_source_path() {
         ApiScanner as = new ApiScanner(docletEnvironmentMock);
         api = as.api;
 

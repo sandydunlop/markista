@@ -65,7 +65,6 @@ import java.util.Set;
 public class ElementModeller implements Modeller<ModuleElement, PackageElement, TypeElement, VariableElement, ExecutableElement, VariableElement> {
     private Api api;
     private DocletEnvironment environment;
-    private String fromModule = "";
     private String fromPackage = "";
     private String fromType = "";
     ExecutableElement currentMethodElement;
@@ -79,7 +78,6 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     @Override
     public ModuleNode modelModule(ModuleElement m) {
         fromPackage = "";
-        fromModule = m.getQualifiedName().toString();
         ModuleNode mod = new ModuleNode(m.getQualifiedName().toString());
         File moduleInfo = getModuleInfoFile(m);
         if (moduleInfo != null) {
@@ -115,11 +113,6 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         String qualifiedName = element.getQualifiedName().toString();
         PackageElement packageElement = getEnclosingPackageElement(element);
         String simpleName = element.getSimpleName().toString();
-        if (packageElement == null) {
-            // ctx.reportError("No package for " + qualifiedName);
-            System.err.println("ERROR: No package for " + qualifiedName);
-            return null;
-        }
         PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
         TypeNode typeNode = createTypeNode(simpleName, packageNode, element.getKind());
         typeNode.setQualifiedName(qualifiedName);
@@ -150,7 +143,6 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     public FieldNode modelField(VariableElement element) {
         String simpleName = element.getSimpleName().toString();
         FieldNode fieldNode = new FieldNode(element.asType().toString(), simpleName);
-        // typeNode.addField(fieldNode);
         fieldNode.setConstantValue((Serializable) element.getConstantValue());
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
         setDocumentation(fieldNode, element);
@@ -169,12 +161,6 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     public MethodNode modelMethod(ExecutableElement element) {
         String qualifiedTypeName = element.getReturnType().toString();
         fromType = qualifiedTypeName;
-        PackageElement packageElement = getEnclosingPackageElement(element);
-        if (packageElement == null) {
-            // ctx.reportError("No package for " + qualifiedTypeName);
-            System.err.println("ERROR: No package for " + qualifiedTypeName);
-            return null;
-        }
         MethodNode methodNode = new MethodNode(qualifiedTypeName, element.getSimpleName().toString());
         // setMethodParams must be called before setMethodOwnerDetails as the method
         // parameters need to be present to determine if this method already exists.
@@ -437,7 +423,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     /// Finds the @return tag from a Javadoc DocCommentTree if present.
     /// @param dcTree The DocCommentTree to search.
     /// @return The ReturnTree if found, null otherwise.
-    public static ReturnTree getReturnTree(DocCommentTree dcTree) {
+    public ReturnTree getReturnTree(DocCommentTree dcTree) {
         if (dcTree == null) return null;
         for (DocTree docTree : dcTree.getBlockTags()) {
             if (docTree instanceof ReturnTree tree) {
@@ -557,7 +543,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     /// Recursively finds the enclosing TypeElement (class, interface, enum, record, annotation) for the given element.
     /// @param element The language model element such as a field or method.
     /// @return The enclosing TypeElement or null if none found.
-    public static TypeElement getEnclosingTypeElement(Element element) {
+    public TypeElement getEnclosingTypeElement(Element element) {
         Element enclosing = element.getEnclosingElement();
         if (enclosing == null) {
             return null;
