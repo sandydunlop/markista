@@ -111,7 +111,6 @@ public class LinkResolver {
         }
     }
 
-    //todo replace
     /// Extracts the package name part from an identifier string, assuming lowercase start for package.
     /// @param id The identifier string (e.g., "java.lang.String").
     /// @return The package name portion or empty string if not a package.
