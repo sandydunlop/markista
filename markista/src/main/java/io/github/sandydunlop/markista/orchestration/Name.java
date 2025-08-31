@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.common;
+package io.github.sandydunlop.markista.orchestration;
 
 public class Name {
     String[] components;

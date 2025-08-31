@@ -8,7 +8,6 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
 
@@ -73,9 +72,7 @@ public class ModelTestEnvironment {
     }
 
     protected TypeReference newTypeReference(String typeName) {
-        TypeReference typeRef = TypeReference.to(typeName);
-        typeRef.setText(Text.of(node.getQualifiedName()));
-        return typeRef;
+        return TypeReference.to(typeName);
     }
 
     protected Link newMethodReference(String typeName, String methodName) {

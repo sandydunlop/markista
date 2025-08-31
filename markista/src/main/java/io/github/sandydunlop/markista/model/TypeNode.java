@@ -30,9 +30,6 @@ public class TypeNode extends AbstractMember {
 
     private HashMap<TypeReference,List<Link>> inheritedMethods = new HashMap<>();
 
-    /// String representation of array brackets if this type is an array (e.g., `[]`).
-    private String arrayBrackets = "";
-
     /// List of constructor methods belonging to this type.
     private final List<MethodNode> constructors = new ArrayList<>();
 
@@ -61,11 +58,11 @@ public class TypeNode extends AbstractMember {
     public boolean isClass() { return kind == Node.Kind.CLASS; }
 
     public boolean isInterface() { return kind == Node.Kind.INTERFACE; }
-    
+
     public boolean isEnum() { return kind == Node.Kind.ENUM; }
-    
+
     public boolean isRecord() { return kind == Node.Kind.RECORD; }
-    
+
     public boolean isAnnotation() { return kind == Node.Kind.ANNOTATION; }
 
     public String getKindName() { return kind.toString(); }
@@ -76,18 +73,6 @@ public class TypeNode extends AbstractMember {
 
     public String getSourcePath() {
         return sourcePath;
-    }
-
-    /// Sets the array brackets representation for this type.
-    /// @param brackets string representing array dimension brackets (e.g., `[]`).
-    public void setArrayBrackets(String brackets) {
-        this.arrayBrackets = brackets;
-    }
-
-    /// Returns the array brackets representation for this type.
-    /// @return string representing array dimension brackets.
-    public String getArrayBrackets() {
-        return arrayBrackets;
     }
 
     /// Returns the list of implemented interfaces by qualified names.
@@ -259,9 +244,9 @@ public class TypeNode extends AbstractMember {
     /// @param method the MethodNode whose signature to match.
     /// @return the matching MethodNode if found, otherwise null.
     public MethodNode getMethod(MethodNode method) {
-        String sig = method.signature();
+        String sig = method.simplifiedSignature();
         for (MethodNode existingMethod : methods) {
-            if (existingMethod.signature().equals(sig)){
+            if (existingMethod.simplifiedSignature().equals(sig)){
                 return existingMethod;
             }
         }
@@ -272,9 +257,9 @@ public class TypeNode extends AbstractMember {
     /// @param method the MethodNode whose signature to match.
     /// @return the matching constructor MethodNode if found, otherwise null.
     public MethodNode getConstructor(MethodNode method) {
-        String sig = method.signature();
+        String sig = method.simplifiedSignature();
         for (MethodNode existingMethod : constructors) {
-            if (existingMethod.signature().equals(sig)){
+            if (existingMethod.simplifiedSignature().equals(sig)){
                 return existingMethod;
             }
         }

@@ -181,19 +181,6 @@ class MarkdownTests {
     }
 
     @Test
-    void fullSignature() {
-        MethodNode method = new MethodNode(node.getQualifiedName(), "subject");
-        method.addParam(new ParamNode("java.lang.String", "name"));
-        markdownDoclet.addMethod(method);
-        api.addType(markdownDoclet);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
-        TextAssembler.assembleTextAndLinks(api, ctx);
-        String sig = MarkdownUtils.fullSignature(method);
-        assertEquals("[Node](../model/Node.md) subject([String](" + JAVA_24_URL + "java.base/java/lang/String.html) name)", sig);
-    }
-
-    @Test
     void mdDocumentLink_doc() {
         String md = MarkdownUtils.mdDocumentLink("page");
         assertEquals("[page](page.md)", md);

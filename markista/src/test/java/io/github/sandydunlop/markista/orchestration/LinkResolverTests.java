@@ -952,4 +952,9 @@ class LinkResolverTests {
             stringWriter.write(message);
         }
     }
+
+    @Test
+	void removeParentheses() {
+		assertEquals("method", LinkResolver.removeParentheses("method(param1,param2)"));
+	}
 }

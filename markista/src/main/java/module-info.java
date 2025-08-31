@@ -5,7 +5,7 @@ import io.github.sandydunlop.markista.spi.DocService;
 /// The module-info.java file defines the module and its exports.
 module markista {
     uses DocService;
-    
+
     requires jdk.compiler;
     requires transitive jdk.javadoc;
     requires transitive java.compiler;
@@ -17,7 +17,6 @@ module markista {
 
     // These opens are needed to allow JUnit testing
     opens io.github.sandydunlop.markista.orchestration;
-    opens io.github.sandydunlop.markista.common;
     opens io.github.sandydunlop.markista.core;
     opens io.github.sandydunlop.markista.doclet;
     opens io.github.sandydunlop.markista.markdown;

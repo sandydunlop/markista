@@ -74,6 +74,14 @@ public class MethodNode extends AbstractMember {
         return params;
     }
 
+    public TypeReference[] getParamTypes() {
+        TypeReference[] paramTypes = new TypeReference[params.size()];
+        for (int i=0; i<params.size(); i++) {
+            paramTypes[i] = params.get(i).getType();
+        }
+        return paramTypes;
+    }
+
     /// Adds an exception type that this method declares it throws.
     /// @param name the fully qualified name of the exception type.
     public void addThrownType(Link name) {
@@ -125,14 +133,14 @@ public class MethodNode extends AbstractMember {
     /// Computes and returns the method signature string, including return type, name, and parameters.
     /// Example format: "java.lang.String methodName(int,java.util.List)"
     /// @return the method signature as a String.
-    public String signature(){
+    public String simplifiedSignature(){
         StringBuilder sb = new StringBuilder();
         sb.append(simpleName);
         sb.append("(");
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(",");
-            String typeName = param.getType().getTypeString();
+            String typeName = param.getType().getRawTypeName();
             sb.append(typeName);
         }
         sb.append(")");

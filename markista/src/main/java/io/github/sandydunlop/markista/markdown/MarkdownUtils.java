@@ -1,12 +1,12 @@
 package io.github.sandydunlop.markista.markdown;
 
-import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.TypeReference.TypeParameter;
 
 import java.util.List;
 
@@ -26,16 +26,6 @@ public class MarkdownUtils {
 
     public static void setContext(Context c) {
         ctx = c;
-    }
-
-    /// Formats the signature of a method as markdown.
-    /// @param method The method to be formatted as markdown
-    /// @return Markdown formatted text representing the method's signature
-    public static String fullSignature(MethodNode method ) {
-        String sig = method.getModifiersString();
-        sig += formatTypeRef(method.getReturnType()) + " ";
-        sig += method.getSimpleName() + "(" + formatParams(method.getParams()) + ")";
-        return sig;
     }
 
     /// Formats a list of `ParamNode` objects as markdown, identifying and linking type names.
@@ -93,17 +83,9 @@ public class MarkdownUtils {
     }
 
     public static String formatTypeRef(TypeReference typeRef, boolean useQualifiedName) {
-        return switch (typeRef) {
-            case TypeReference.Array array -> {
-                StringBuilder sb = new StringBuilder();
-                sb.append(link(typeRef.getLink(), useQualifiedName));
-                for (int i = 0; i < array.getDimensions(); i++) {
-                    sb.append("[]");
-                }
-                yield sb.toString();
-            }
+        StringBuilder sb = new StringBuilder();
+        switch (typeRef) {
             case TypeReference.Generic generic -> {
-                StringBuilder sb = new StringBuilder();
                 sb.append(link(typeRef.getLink(), useQualifiedName));
                 sb.append("<");
                 if (generic.hasWildcard()) {
@@ -113,23 +95,27 @@ public class MarkdownUtils {
                 }
                 sb.append(formatTypeRef(generic.getParams(), useQualifiedName));
                 sb.append(">");
-                yield sb.toString();
             }
             case TypeReference.Sequence sequence -> {
-                StringBuilder sb = new StringBuilder();
                 for (TypeReference element : sequence) {
                     if (!sb.isEmpty()) {
                         sb.append(", ");
                     }
                     sb.append(formatTypeRef(element, useQualifiedName));
                 }
-                yield sb.toString();
             }
-            default -> {
-                String s = link(typeRef.getLink(), useQualifiedName);
-                yield s;
+            case TypeParameter typeParameter -> {
+                if (typeParameter.hasExtendsWildcard()) {
+                    sb.append("? extends ");
+                }
+                sb.append(link(typeRef.getLink(), useQualifiedName));
             }
-        };
+            default -> sb.append(link(typeRef.getLink(), useQualifiedName));
+        }
+        for (int d = 0; d < typeRef.arrayDimensions(); d++) {
+            sb.append("[]");
+        }
+        return sb.toString();
     }
 
     /// Formats links contained in a text segment as markdown.
@@ -279,19 +265,19 @@ public class MarkdownUtils {
     }
 
     /// Create a markdown formatted link to an anchor within the same markdown page.
-    /// @param phrase A string to be used in an anchor link
+    /// @param anchor A string to be used in an anchor link
     /// @return Markdown formatted text containing a correctly formatted anchor link
-    public static String mdAnchorLink(String phrase){
-        if (phrase == null || phrase.isEmpty()) return "";
-        if (phrase.length() > 1 && phrase.charAt(0) == '#') {
-            phrase = phrase.substring(1);
+    public static String mdAnchorLink(String anchor){
+        if (anchor == null || anchor.isEmpty()) return "";
+        if (anchor.length() > 1 && anchor.charAt(0) == '#') {
+            anchor = anchor.substring(1);
         }
         // Issue: https://github.com/sandydunlop/markista/issues/1
         // Workaround:
         // Remove the parentheses from after method names in anchor
         // links to Markdown pages for now. Anchors in the Markdown
         // are currently headings without parameters.
-        return "[" + phrase + "](#" + mdAnchor(Utils.removeParentheses(phrase)) + ")";
+        return "[" + anchor + "](#" + mdAnchor(anchor) + ")";
     }
 
     /// Creates a Markdown link to another Markdown document

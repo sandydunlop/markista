@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -154,7 +153,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     void link_standardMethod() {
         LinkResolver.addStandardModules();
         Link link = Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)");
-        TextAssembler.resolveLink(link);
+        LinkResolver.resolveLink(link);
         String markdown = MarkdownUtils.link(link, false, true);
         assertEquals("[Doclet.Option.process](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
     }
@@ -163,36 +162,32 @@ class TextAssemblerTests extends ModelTestEnvironment {
     void link_localMethod() {
         LinkResolver.addStandardModules();
         Link link = Link.to("Node#sort()");
-        TextAssembler.resolveLink(link);
+        LinkResolver.resolveLink(link);
         String markdown = MarkdownUtils.link(link, false);
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
     }
 
-    @Test
-    void getStandardInterface_normal() {
-        TypeReference interfaceRef = TypeReference.to("jdk.javadoc.doclet.Doclet");
-        interfaceRef.getLink().setPackageName("jdk.javadoc.doclet");
-        interfaceRef.getLink().setSimpleClassName("Doclet");
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.MethodSource("standardInterfaceProvider")
+    void getStandardInterface_parameterized(String qualifiedName, String packageName, String simpleClassName) {
+        TypeReference interfaceRef = TypeReference.to(qualifiedName);
+        interfaceRef.getLink().setPackageName(packageName);
+        interfaceRef.getLink().setSimpleClassName(simpleClassName);
         InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
         assertNotNull(interfaceNode);
     }
 
-    @Disabled("This used to work. What's wrong with it now?")
-    @Test
-    void getStandardInterface_nested() {
-        TypeReference interfaceRef = TypeReference.to("jdk.javadoc.doclet.Doclet.Option");
-        interfaceRef.getLink().setPackageName("jdk.javadoc.doclet");
-        interfaceRef.getLink().setSimpleClassName("Doclet.Option");
-        InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
-        assertNotNull(interfaceNode);
-    }
-
-    @Test
-    void getStandardInterface_nested2() {
-        TypeReference interfaceRef = TypeReference.to("java.lang.Runnable");
-        interfaceRef.getLink().setPackageName("java.lang");
-        interfaceRef.getLink().setSimpleClassName("Runnable");
-        InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
-        assertNotNull(interfaceNode);
+    private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> standardInterfaceProvider() {
+        return java.util.stream.Stream.of(
+            org.junit.jupiter.params.provider.Arguments.of(
+                "jdk.javadoc.doclet.Doclet", "jdk.javadoc.doclet", "Doclet"
+            ),
+            org.junit.jupiter.params.provider.Arguments.of(
+                "jdk.javadoc.doclet.Doclet.Option", "jdk.javadoc.doclet", "Doclet.Option"
+            ),
+            org.junit.jupiter.params.provider.Arguments.of(
+                "java.lang.Runnable", "java.lang", "Runnable"
+            )
+        );
     }
 }

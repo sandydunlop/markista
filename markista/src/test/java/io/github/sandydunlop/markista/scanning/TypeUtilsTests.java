@@ -961,7 +961,7 @@ class TypeUtilsTests extends MockedDocletEnvironment {
         verify(methodDoc).addParam(captor.capture());
         ParamNode added = captor.getValue();
         assertEquals("arg", added.getSimpleName());
-        assertNotNull(added.getType().getTypeString()); // type constructed
+        assertNotNull(added.getType().getRawTypeName()); // type constructed
         // Because we passed empty description, body is likely empty Text
         assertNotNull(added.getBody());
     }

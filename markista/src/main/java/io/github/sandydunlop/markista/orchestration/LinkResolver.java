@@ -9,6 +9,7 @@ import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Link.Kind;
 import io.github.sandydunlop.markista.model.Link.Scope;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -110,6 +111,7 @@ public class LinkResolver {
         }
     }
 
+    //todo replace
     /// Extracts the package name part from an identifier string, assuming lowercase start for package.
     /// @param id The identifier string (e.g., "java.lang.String").
     /// @return The package name portion or empty string if not a package.
@@ -141,6 +143,99 @@ public class LinkResolver {
             return id.substring(dot);
         }
         return "";
+    }
+
+    /// Resolve links to types referenced by a [TypeReference].
+    /// @param typeRef a TypeReference object describing the links
+    public static void resolveTypeRererence(TypeReference typeRef) {
+        switch (typeRef) {
+            case TypeReference.Generic generic -> {
+                LinkResolver.resolve(generic.getLink());
+                resolveTypeRererence(generic.getParams());
+            }
+            case TypeReference.Sequence sequence -> {
+                for (TypeReference element : sequence) {
+                    resolveTypeRererence(element);
+                }
+            }
+            default -> LinkResolver.resolve(typeRef.getLink());
+        }
+    }
+
+    public static void resolveLink(Link link) {
+        String targetName = link.getTarget();
+        if (targetName == null || targetName.isEmpty()) {
+            ctx.reportWarning("No link target supplied");
+            return;
+        }
+
+        int pos = targetName.indexOf('#');
+        if (pos == 0) {
+            link.setKind(Link.Kind.METHOD);
+            link.setMethodName(targetName.substring(1));
+            link.setAnchor(targetName.substring(1));
+            return;
+        } else if (pos > 0) {
+            link.setTarget(targetName.substring(0, pos));
+            link.setMethodSignature(targetName.substring(pos + 1));
+            link.setAnchor(targetName.substring(pos + 1));
+            pos = link.getMethodSignature().indexOf("(");
+            if (pos > -1) {
+                link.setMethodName(link.getMethodSignature().substring(0, pos));
+            } else {
+                link.setMethodName(link.getMethodSignature());
+            }
+        }
+
+        pos = link.getTarget().indexOf("(");
+        if (pos > -1) {
+            link.setTarget(link.getTarget().substring(0, pos));
+        }
+
+        if (link.getLabel() == null || link.getLabel().isEmpty()) {
+            link.setLabel(link.getTarget());
+        }
+
+        LinkResolver.resolve(link);
+
+        if (!link.getAnchor().isEmpty() && link.getKind() != Link.Kind.URL) {
+            // Issue: https://github.com/sandydunlop/markista/issues/1
+            // Workaround:
+            // Remove the parentheses from after method names in anchor
+            // links to Markdown pages for now. Anchors in the Markdown
+            // are currently headings without parameters.
+            link.setKind(Link.Kind.METHOD);
+            link.setAnchor(removeParentheses(link.getAnchor()));
+        }
+    }
+
+    /// Removes parentheses and what they contain from an expression
+    /// @param expression An expression such as `classname.method(parameter)`.
+    /// @return The expression with the parentheses removed
+    public static String removeParentheses(String expression) {
+        int start = expression.indexOf('(');
+        if (start > -1) {
+            int end = expression.indexOf(')', start);
+            String r = "";
+            if (start > 0) {
+                r = expression.substring(0, start);
+            }
+            if (end < expression.length()) {
+                r += expression.substring(end + 1);
+            }
+            return r;
+        }
+        return expression;
+    }
+
+    /// Escapes HTML `<` and `>` characters in a string with their corresponding
+    /// HTML character entities, `&lt;` and `&gt;`.
+    /// @param str A string to be escaped
+    /// @return The escaped string
+    public static String escape(String str) {
+        return str
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
     }
 
     /// Resolves a link reference. The supplied `link` parameter must specify the

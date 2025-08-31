@@ -32,36 +32,34 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
         assertEquals("[http://example.com](http://example.com)", markdown);
     }
 
-    @Test
-    void resolveLinks_qualifiedLocalPackage() {
-        Text text = TypeUtils.markdownToText("one [model](io.github.sandydunlop.markista.model) two");
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.MethodSource("resolveLinksTestCases")
+    void resolveLinks_parameterized(String input, String expected) {
+        Text text = TypeUtils.markdownToText(input);
         TextAssembler.assembleTextAndLinks(api, ctx);
         String markdown = MarkdownUtils.formatText(text, false, false);
-        assertEquals("one [model](../model/index.md) two", markdown);
+        assertEquals(expected, markdown);
     }
 
-    @Test
-    void resolveLinks_unqualifiedLocalClass() {
-        Text text = TypeUtils.markdownToText("one [Node](Node) two");
-        TextAssembler.assembleTextAndLinks(api, ctx);
-        String markdown = MarkdownUtils.formatText(text, false, false);
-        assertEquals("one [Node](../model/Node.md) two", markdown);
-    }
-
-    @Test
-    void resolveLinks_unqualifiedLocalClass_noParentheses() {
-        Text text = TypeUtils.markdownToText("one [Node] two");
-        TextAssembler.assembleTextAndLinks(api, ctx);
-        String markdown = MarkdownUtils.formatText(text, false, false);
-        assertEquals("one [Node](../model/Node.md) two", markdown);
-    }
-
-    @Test
-    void resolveLinks_qualifiedLocalClass() {
-        Text text = TypeUtils.markdownToText("one [Node](io.github.sandydunlop.markista.model.Node) two");
-        TextAssembler.assembleTextAndLinks(api, ctx);
-        String markdown = MarkdownUtils.formatText(text, false, false);
-        assertEquals("one [Node](../model/Node.md) two", markdown);
+    private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> resolveLinksTestCases() {
+        return java.util.stream.Stream.of(
+            org.junit.jupiter.params.provider.Arguments.of(
+                "one [model](io.github.sandydunlop.markista.model) two",
+                "one [model](../model/index.md) two"
+            ),
+            org.junit.jupiter.params.provider.Arguments.of(
+                "one [Node](Node) two",
+                "one [Node](../model/Node.md) two"
+            ),
+            org.junit.jupiter.params.provider.Arguments.of(
+                "one [Node] two",
+                "one [Node](../model/Node.md) two"
+            ),
+            org.junit.jupiter.params.provider.Arguments.of(
+                "one [Node](io.github.sandydunlop.markista.model.Node) two",
+                "one [Node](../model/Node.md) two"
+            )
+        );
     }
 
     @Test

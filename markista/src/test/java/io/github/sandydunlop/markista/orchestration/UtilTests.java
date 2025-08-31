@@ -1,6 +1,5 @@
 package io.github.sandydunlop.markista.orchestration;
 
-import io.github.sandydunlop.markista.common.Utils;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.MarkdownUtils;
 
@@ -22,11 +21,6 @@ class UtilTests {
 	@Test
 	void inOneLine_null() {
 		assertEquals("", MarkdownUtils.inOneLine(null));
-	}
-
-	@Test
-	void removeParentheses() {
-		assertEquals("method", Utils.removeParentheses("method(param1,param2)"));
 	}
 
 	@Test
