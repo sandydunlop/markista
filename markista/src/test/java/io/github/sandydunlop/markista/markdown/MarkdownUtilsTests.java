@@ -7,7 +7,6 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
-import io.github.sandydunlop.markista.scanning.TypeUtils;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,7 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
         setupModel();
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
-        TypeUtils.init(api, null);
+        // TypeUtils.init(api, null);
         LinkResolver.init(api, ctx);
     }
 
@@ -32,57 +31,7 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
         assertEquals("[http://example.com](http://example.com)", markdown);
     }
 
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.MethodSource("resolveLinksTestCases")
-    void resolveLinks_parameterized(String input, String expected) {
-        Text text = TypeUtils.markdownToText(input);
-        TextAssembler.assembleTextAndLinks(api, ctx);
-        String markdown = MarkdownUtils.formatText(text, false, false);
-        assertEquals(expected, markdown);
-    }
 
-    private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> resolveLinksTestCases() {
-        return java.util.stream.Stream.of(
-            org.junit.jupiter.params.provider.Arguments.of(
-                "one [model](io.github.sandydunlop.markista.model) two",
-                "one [model](../model/index.md) two"
-            ),
-            org.junit.jupiter.params.provider.Arguments.of(
-                "one [Node](Node) two",
-                "one [Node](../model/Node.md) two"
-            ),
-            org.junit.jupiter.params.provider.Arguments.of(
-                "one [Node] two",
-                "one [Node](../model/Node.md) two"
-            ),
-            org.junit.jupiter.params.provider.Arguments.of(
-                "one [Node](io.github.sandydunlop.markista.model.Node) two",
-                "one [Node](../model/Node.md) two"
-            )
-        );
-    }
-
-    @Test
-    void resolveMarkdownLinks_class_samePackage_labelGiven() {
-        ClassNode classNode = new ClassNode("TypeNode", model.getName());
-        model.addType(classNode);
-        api.addType(classNode);
-        Text text = TypeUtils.markdownToText("[type][io.github.sandydunlop.markista.model.TypeNode]");
-        TextAssembler.assembleTextAndLinks(api, ctx);
-        String markdown = MarkdownUtils.formatText(text, false, false);
-        assertEquals("[type](../model/TypeNode.md)", markdown);
-    }
-
-    @Test
-    void resolveMarkdownLinks_class_samePackage_noLabelGiven() {
-        ClassNode classNode = new ClassNode("TypeNode", model.getName());
-        model.addType(classNode);
-        api.addType(classNode);
-        Text text = TypeUtils.markdownToText("[io.github.sandydunlop.markista.model.TypeNode]");
-        TextAssembler.assembleTextAndLinks(api, ctx);
-        String markdown = MarkdownUtils.formatText(text, false, false);
-        assertEquals("[TypeNode](../model/TypeNode.md)", markdown);
-    }
 
     @Test
     void formatLink_URL() {

@@ -1,28 +1,46 @@
-package io.github.sandydunlop.markista.modeller;
+package io.github.sandydunlop.markista.modelling;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.List;
 
+import javax.lang.model.element.ModuleElement.Directive;
+
+import io.github.sandydunlop.markista.model.AnnotationNode;
+import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.DirectiveNode;
+import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.Modifier;
+import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Node;
+import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.RecordNode;
 import io.github.sandydunlop.markista.model.TypeNode;
 
-public class StandardModeller implements Modeller<Class<?>, Field, Method, Parameter> {
+public class StandardModeller implements Modeller<Module, Package, Class<?>, Field, Method, Parameter> {
+    @Override
+    public ModuleNode modelModule(Module m) {
+        return null;
+    }
+
+    @Override
+    public PackageNode modelPackage(Package p) {
+        return null;
+    }
+
     @Override
     public TypeNode modelType(Class<?> type) {
-        TypeNode typeNode = new TypeNode(type.getSimpleName(), type.getPackageName());
-        for (Field field : type.getFields()) {
-            FieldNode node = modelField(field);
-            typeNode.addField(node);
-        }
-        for (Method method : type.getMethods()) {
-            MethodNode node = modelMethod(method);
-            typeNode.addMethod(node);
-        }
-        return typeNode;
+        return modelType(type, Node.Kind.NONE);
+    }
+
+    @Override
+    public ClassNode modelClass(Class<?> type) {
+        return (ClassNode)modelType(type, Node.Kind.CLASS);
     }
 
     @Override
@@ -45,6 +63,38 @@ public class StandardModeller implements Modeller<Class<?>, Field, Method, Param
     public ParamNode modelParam(Parameter parameter) {
         // Implement a basic modelParam method, adjust as needed
         return new ParamNode(parameter.getType().getName(), parameter.getName());
+    }
+
+    private TypeNode modelType(Class<?> type, Node.Kind kind) {
+        TypeNode typeNode;
+        switch(kind) {
+            case ANNOTATION:
+                typeNode = new AnnotationNode(type.getSimpleName(), type.getPackageName());
+                break;
+            case CLASS:
+                typeNode = new ClassNode(type.getSimpleName(), type.getPackageName());
+                break;
+            case ENUM:
+                typeNode = new EnumNode(type.getSimpleName(), type.getPackageName());
+                break;
+            case INTERFACE:
+                typeNode = new ClassNode(type.getSimpleName(), type.getPackageName());
+                break;
+            case RECORD:
+                typeNode = new RecordNode(type.getSimpleName(), type.getPackageName());
+                break;
+            default:
+                typeNode = new TypeNode(type.getSimpleName(), type.getPackageName());
+        }
+        for (Field field : type.getFields()) {
+            FieldNode node = modelField(field);
+            typeNode.addField(node);
+        }
+        for (Method method : type.getMethods()) {
+            MethodNode node = modelMethod(method);
+            typeNode.addMethod(node);
+        }
+        return typeNode;
     }
 
     private MethodNode parseMethodString(String method) {
@@ -71,7 +121,6 @@ public class StandardModeller implements Modeller<Class<?>, Field, Method, Param
                     modifiers.append(mod.name());
                 }
             }catch(IllegalArgumentException _) {
-                // Do nothing
                 returnType = modifiersAndType.substring(modifiers.length()).strip();
             }
             pos++;

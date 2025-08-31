@@ -5,6 +5,7 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.modelling.StandardModeller;
 
 public class ModelUtils {
     static Api api;
@@ -20,6 +21,7 @@ public class ModelUtils {
     }
 
     public static String baseTypeName(MethodNode methodNode){
+        StandardModeller modeller = new StandardModeller();
         TypeNode type = api.getTypeNode(methodNode.getOwnerName());
         if (type == null) {
             return null;
@@ -32,7 +34,7 @@ public class ModelUtils {
                 // It's not in the model, try to find in JRE
                 Class<?> jreClass = JreUtils.loadClass(typeName);
                 if (jreClass != null) {
-                    supertypeNode = JreUtils.model(jreClass);
+                    supertypeNode = modeller.modelClass(jreClass);
                 }
             }
             if (typeHasMethod(supertypeNode, methodNode)) {

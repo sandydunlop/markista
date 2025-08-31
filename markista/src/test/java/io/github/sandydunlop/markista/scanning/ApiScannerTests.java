@@ -1,7 +1,6 @@
 package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.MockedDocletEnvironment;
-import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
@@ -10,15 +9,12 @@ import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.model.TypeReference;
 
-import java.io.File;
 import java.lang.reflect.Method;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +39,6 @@ import jdk.javadoc.doclet.Reporter;
 
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
-import com.sun.source.doctree.ReturnTree;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import org.junit.jupiter.api.BeforeAll;
@@ -51,7 +46,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,15 +53,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ApiScannerTests extends MockedDocletEnvironment {
     private static Context ctx;
+    private PackageNode packageNode;
+    private Api api;
+    private ModuleNode unnamedModule = new ModuleNode("");
 
     @Mock static Reporter reporter = new Reporter() {
         @Override
@@ -85,7 +78,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
             // Do nothing
         }
     };
-    
+
     @BeforeAll
     static void initAll() {
         ctx = Context.getInstance();
@@ -95,7 +88,9 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
     @BeforeEach
     void init() {
-        // Nothing to see here
+        api = new Api("Test API");
+        packageNode = new PackageNode("io.github.sandydunlop.markista.model");
+        api.addPackage(packageNode);
     }
 
     @Test
@@ -117,7 +112,6 @@ class ApiScannerTests extends MockedDocletEnvironment {
         DocTrees docTrees2 = mock(DocTrees.class);
         DocletEnvironment mockEnvironment = mock(DocletEnvironment.class);
         Mockito.when(mockEnvironment.getDocTrees()).thenReturn(docTrees2);
-        TypeUtils.init(null, mockEnvironment);
 
         JavaFileObject jfo = mock(JavaFileObject.class);
         Mockito.when(jfo.getName()).thenReturn("module-info.java");
@@ -141,12 +135,12 @@ class ApiScannerTests extends MockedDocletEnvironment {
         ApiScanner scanner2 = new ApiScanner(mockEnvironment);
         scanner2.visitModule(moduleElement, Integer.valueOf(0));
 
-        Api api = scanner2.api;
-        assertEquals(1, api.getModules().size());
-        ModuleNode moduleNode = api.getModules().get(0);
+        Api api2 = scanner2.api;
+        assertEquals(1, api2.getModules().size());
+        ModuleNode moduleNode = api2.getModules().get(0);
         assertEquals(MODULE_NAME, moduleNode.getName());
     }
-    
+
     @Test
     void visitModule_unnamed() {
         Name moduleName = mock(Name.class);
@@ -157,13 +151,12 @@ class ApiScannerTests extends MockedDocletEnvironment {
         DocTrees docTrees2 = mock(DocTrees.class);
         DocletEnvironment mockEnvironment = mock(DocletEnvironment.class);
         Mockito.when(mockEnvironment.getDocTrees()).thenReturn(docTrees2);
-        TypeUtils.init(null, mockEnvironment);
 
         ApiScanner scanner2 = new ApiScanner(mockEnvironment);
         scanner2.visitModule(moduleElement, Integer.valueOf(0));
 
-        Api api = scanner2.api;
-        assertEquals(0, api.getModules().size());
+        Api api2 = scanner2.api;
+        assertEquals(0, api2.getModules().size());
     }
 
 
@@ -187,173 +180,12 @@ class ApiScannerTests extends MockedDocletEnvironment {
         scanner = new ApiScanner(env);
     }
 
-    private void invokeProcessIncludedElements(Set<? extends Element> elements) throws Exception {
-        Method proc = ApiScanner.class.getDeclaredMethod("processIncludedElements", Set.class);
-        proc.setAccessible(true);
-        proc.invoke(scanner, elements);
-    }
-
-    @Disabled("WIP")
-    @Test
-    void visitType_setsSourcePath_and_packageSourcePath_when_jfo_present() throws Exception {
-        TypeElement typeEl = mock(TypeElement.class);
-        Name qname = mock(Name.class);
-        when(qname.toString()).thenReturn("com.example.Type");
-        when(typeEl.getQualifiedName()).thenReturn(qname);
-
-        // Ensure the scanner considers this element included
-        invokeProcessIncludedElements(Set.of(typeEl));
-
-        // Mock TypeUtils static behavior
-        TypeNode typeNode = mock(TypeNode.class);
-        PackageNode pkg = mock(PackageNode.class);
-        when(typeNode.getPackageName()).thenReturn(pkg.getName());
-        when(pkg.getSourcePath()).thenReturn(null);
-
-        try (MockedStatic<TypeUtils> t = Mockito.mockStatic(TypeUtils.class)) {
-            t.when(() -> TypeUtils.isIncludedInApi(typeEl)).thenReturn(true);
-            t.when(() -> TypeUtils.nodeFromElement(typeEl)).thenReturn(typeNode);
-
-            // Make elementUtils provide a JavaFileObject for the type element
-            JavaFileObject jfo = mock(JavaFileObject.class);
-            when(elementUtils.getFileObjectOf(typeEl)).thenReturn(jfo);
-            URI uri = new File("src/com/example/Type.java").toURI();
-            when(jfo.toUri()).thenReturn(uri);
-
-            // Call visitType
-            scanner.visitType(typeEl, 0);
-
-            // Verify TypeUtils.nodeFromElement used and setDocumentation called
-            t.verify(() -> TypeUtils.nodeFromElement(typeEl));
-
-            // Verify the type node had its source path set to the JFO uri path
-            verify(typeNode).setSourcePath(uri.toString());
-
-            // Because pkg.getSourcePath returned null, package.setSourcePath should be called with parent path
-            verify(pkg).setSourcePath(Path.of(uri).getParent().toString());
-        }
-    }
-
-    @Disabled("WIP")
-    @Test
-    void visitExecutable_setsDocumentationFields_when_docComment_present() throws Exception {
-        // Setup a TypeElement and an ExecutableElement whose enclosing element is the type
-        TypeElement typeEl = mock(TypeElement.class);
-        Name qname = mock(Name.class);
-        when(qname.toString()).thenReturn("com.example.Type");
-        when(typeEl.getQualifiedName()).thenReturn(qname);
-
-        ExecutableElement exec = mock(ExecutableElement.class);
-        when(exec.getEnclosingElement()).thenReturn(typeEl);
-
-        // Ensure the scanner's includedNames contains the type's qualified name
-        invokeProcessIncludedElements(Set.of(typeEl));
-
-        MethodNode mnode = mock(MethodNode.class);
-        DocCommentTree dct = mock(DocCommentTree.class);
-        when(env.getDocTrees().getDocCommentTree(exec)).thenReturn(dct);
-
-        // Provide some dummy first sentence/body to be passed through TypeUtils.createText
-        when(dct.getFirstSentence()).thenReturn(Collections.emptyList());
-        when(dct.getBody()).thenReturn(Collections.emptyList());
-        when(dct.getFullBody()).thenReturn(Collections.emptyList());
-
-        try (MockedStatic<TypeUtils> t = Mockito.mockStatic(TypeUtils.class)) {
-            t.when(() -> TypeUtils.isIncludedInApi(exec)).thenReturn(true);
-            t.when(() -> TypeUtils.nodeFromElement(exec)).thenReturn(mnode);
-            t.when(() -> TypeUtils.setDeprecationStatus(mnode, exec, dct)).thenAnswer(_ -> null);
-            t.when(() -> TypeUtils.createText(dct.getFirstSentence())).thenReturn(Text.of("first"));
-            t.when(() -> TypeUtils.createText(dct.getBody())).thenReturn(Text.of("body"));
-            t.when(() -> TypeUtils.createText(dct.getFullBody())).thenReturn(Text.of("full"));
-            t.when(() -> TypeUtils.getReturnTree(dct)).thenReturn((ReturnTree) null);
-            t.when(() -> TypeUtils.getReferences(dct)).thenReturn(Collections.emptyList());
-            t.when(() -> TypeUtils.getSince(dct)).thenReturn(null);
-
-            scanner.visitExecutable(exec, 0);
-
-            // Verify TypeUtils methods used
-            t.verify(() -> TypeUtils.nodeFromElement(exec));
-            t.verify(() -> TypeUtils.setDeprecationStatus(mnode, exec, dct));
-            t.verify(() -> TypeUtils.createText(dct.getFirstSentence()), atLeastOnce());
-            t.verify(() -> TypeUtils.createText(dct.getBody()), atLeastOnce());
-            t.verify(() -> TypeUtils.createText(dct.getFullBody()), atLeastOnce());
-            t.verify(() -> TypeUtils.getReferences(dct));
-            t.verify(() -> TypeUtils.getSince(dct));
-
-            // Verify the method node got its textual fields set (via mock invocations)
-            verify(mnode).setFirstSentence(Text.of("first"));
-            verify(mnode).setBody(Text.of("body"));
-            verify(mnode).setFullBody(Text.of("full"));
-            verify(mnode).setReferences(Collections.emptyList());
-            verify(mnode).setSince(null);
-        }
-    }
-
-    @Disabled("WIP")
-    @Test
-    void visitVariable_setsConstant_and_documentation_and_modifiers() throws Exception {
-
-        TypeElement typeEl = mock(TypeElement.class);
-        Name qname = mock(Name.class);
-        when(qname.toString()).thenReturn("com.example.Type");
-        when(typeEl.getQualifiedName()).thenReturn(qname);
-        when(typeEl.getKind()).thenReturn(ElementKind.CLASS);
-
-        Name name = mock(Name.class);
-        when(name.toString()).thenReturn("Type");
-        VariableElement ve = mock(VariableElement.class);
-        when(ve.getEnclosingElement()).thenReturn(typeEl);
-        when(ve.getKind()).thenReturn(ElementKind.FIELD);
-        when(ve.getSimpleName()).thenReturn(name);
-
-        // ensure included
-        invokeProcessIncludedElements(Set.of(typeEl));
-
-        Api api2 = new Api("berry");
-        ClassNode berry = new ClassNode("Type", null);
-        api2.addType(berry);
-        DocletEnvironment mockEnvironment = mock(DocletEnvironment.class);
-        TypeUtils.init(api2, mockEnvironment);
-
-        Configuration.setDocumentPrivateMembers(true); 
-            TypeUtils.ctx = ctx;
-            scanner.visitVariable(ve, 0);
-
-        
-        assertNotNull(berry.getFirstSentence());
-    }
-
-    @Test
-    void visitPackage_createsPackageNode_and_setsDocumentation_and_sourcePath() throws Exception {
-        PackageElement pkgElement = mock(PackageElement.class);
-        Name qname = mock(Name.class);
-        when(qname.toString()).thenReturn("com.example");
-        when(pkgElement.getQualifiedName()).thenReturn(qname);
-        // Mark the package as included
-        invokeProcessIncludedElements(Set.of(pkgElement));
-
-        try (MockedStatic<TypeUtils> t = Mockito.mockStatic(TypeUtils.class)) {
-            t.when(() -> TypeUtils.setPackageSourcePath(any(PackageNode.class), eq(pkgElement))).thenAnswer(_ -> null);
-            t.when(() -> TypeUtils.setDocumentation(any(), eq(pkgElement))).thenAnswer(_ -> null);
-
-            // Call visitPackage
-            scanner.visitPackage(pkgElement, 0);
-
-            // After visiting, the Api inside scanner should contain the package node
-            Api api = scanner.api;
-            assertNotNull(api.getPackageNode("com.example"), "package should have been added to API model");
-
-            // The added package should be associated with the current module (unnamed module initially)
-            ModuleNode unnamed = api.getUnnamedModuleNode();
-            boolean found = unnamed.getPackages().stream()
-                    .anyMatch(p -> "com.example".equals(((PackageNode) p).getName()));
-            assertTrue(found, "Unnamed module should contain the added package");
-        }
-    }
 
     @Test
     void calculateUnnamedModuleSourcePath_computes_root_and_sets_module_source_path() throws Exception {
-        Api api = scanner.api;
+        ApiScanner as = new ApiScanner(docletEnvironmentMock);
+        api = as.api;
+
         ModuleNode unnamed = api.getUnnamedModuleNode();
 
         // Create a mocked PackageNode and attach to unnamed module packages deque
@@ -365,10 +197,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         // Add to unnamed module packages (LinkedList or similar)
         unnamed.getPackages().add(pkg);
 
-        // Call the private calculateUnnamedModuleSourcePath method via reflection
-        Method m = ApiScanner.class.getDeclaredMethod("calculateUnnamedModuleSourcePath");
-        m.setAccessible(true);
-        m.invoke(scanner);
+        as.calculateUnnamedModuleSourcePath();
 
         // Expected root computed by replacing nameAsPath in the source path string
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
@@ -417,31 +246,6 @@ class ApiScannerTests extends MockedDocletEnvironment {
         assertTrue((Boolean) isIncludedByElement.invoke(scanner, someVar));
     }
 
-    @Disabled("Needs fixing")
-    @Test
-    void scan_invokes_TypeUtils_init_and_returns_api_and_registers_included_elements() {
-        // Prepare a package element to feed into scan
-        PackageElement pkgElement = mock(PackageElement.class);
-        Name qname = mock(Name.class);
-        when(qname.toString()).thenReturn("com.scan.pkg");
-        when(pkgElement.getQualifiedName()).thenReturn(qname);
-
-        Set<Element> elements = Collections.singleton(pkgElement);
-
-        // Mock TypeUtils static methods used inside scan to be no-ops
-        try (MockedStatic<TypeUtils> t = Mockito.mockStatic(TypeUtils.class)) {
-            t.when(() -> TypeUtils.init(any(), eq(env))).thenAnswer(_ -> null);
-            t.when(() -> TypeUtils.addConstantFieldValuesReference(any())).thenAnswer(_ -> null);
-            t.verify(TypeUtils::markCustomAnnotations, times(1));
-
-            Api resultApi = scanner.scan(elements);
-
-            assertNotNull(resultApi, "scan should return an Api instance");
-            // Ensure the package got registered in the api via visitPackage
-            assertNotNull(resultApi.getPackageNode("com.scan.pkg"));
-        }
-    }
-
     @Test
     void run_withElements() {
 
@@ -454,9 +258,9 @@ class ApiScannerTests extends MockedDocletEnvironment {
         mockIncludedElements(elements);
 
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
-        Api api = apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+        Api api2 = apiScanner.scan(docletEnvironmentMock.getIncludedElements());
 
-        assertNotNull(api);
+        assertNotNull(api2);
         assertNotNull(apiScanner.includedNames);
         assertEquals(1, apiScanner.includedNames.size());
         assertTrue(apiScanner.isIncludedElement("mockpackage"));
@@ -524,8 +328,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
         apiScanner.scan(docletEnvironmentMock.getIncludedElements());
 
-        PackageNode packageNode = new PackageNode("mockpackage");
-        apiScanner.api.addPackage(packageNode);
+        PackageNode packageNode2 = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode2);
 
         apiScanner.visitType(typeMock, 1);
 
@@ -549,8 +353,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
         apiScanner.scan(docletEnvironmentMock.getIncludedElements());
 
-        PackageNode packageNode = new PackageNode("mockpackage");
-        apiScanner.api.addPackage(packageNode);
+        PackageNode packageNode2 = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode2);
         TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
         apiScanner.api.addType(typeNode);
 
@@ -582,8 +386,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
         apiScanner.scan(docletEnvironmentMock.getIncludedElements());
 
-        PackageNode packageNode = new PackageNode("mockpackage");
-        apiScanner.api.addPackage(packageNode);
+        PackageNode packageNode2 = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode2);
         TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
         apiScanner.api.addType(typeNode);
         DocTree dct = mockDocCommentTree_TEXT("plain text");
@@ -618,8 +422,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
         apiScanner.scan(docletEnvironmentMock.getIncludedElements());
 
-        PackageNode packageNode = new PackageNode("mockpackage");
-        apiScanner.api.addPackage(packageNode);
+        PackageNode packageNode2 = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode2);
         TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
         apiScanner.api.addType(typeNode);
 
@@ -646,8 +450,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
         apiScanner.scan(docletEnvironmentMock.getIncludedElements());
 
-        PackageNode packageNode = new PackageNode("mockpackage");
-        apiScanner.api.addPackage(packageNode);
+        PackageNode packageNode2 = new PackageNode("mockpackage");
+        apiScanner.api.addPackage(packageNode2);
         TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
         apiScanner.api.addType(typeNode);
 
@@ -669,6 +473,22 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         Element e = mockPackage("mockpackage");
         assertFalse(apiScanner.isIncludedElement(e));
+    }
+
+
+    @Test
+    void addConstantFieldValuesReference() {
+        ClassNode classNode2 = new ClassNode("Node", packageNode.getName());
+        TypeReference supertype = TypeReference.to("io.github.sandydunlop.markista.model.Node");
+        classNode2.getSupertypes().add(supertype);
+        api.addType(classNode2);
+        FieldNode fieldNode = new FieldNode("int", "field");
+        fieldNode.setConstantValue("1");
+        classNode2.addField(fieldNode);
+        ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
+        apiScanner.api = api;
+        apiScanner.addConstantFieldValuesReference(unnamedModule);
+        assertEquals(1, unnamedModule.getConstantValues().size());
     }
 }
 

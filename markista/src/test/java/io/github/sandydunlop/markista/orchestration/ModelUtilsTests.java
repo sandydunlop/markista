@@ -5,6 +5,7 @@ import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.modelling.StandardModeller;
 
 import java.lang.reflect.Method;
 
@@ -28,8 +29,9 @@ class ModelUtilsTests extends ModelTestEnvironment {
 
     @Test
     void subtypes() throws NoSuchMethodException {
+        StandardModeller modeller = new StandardModeller();
         Class<?> elementScannerClass = JreUtils.loadClass("javax.lang.model.util.ElementScanner6");
-        TypeNode elementScanner6 = JreUtils.model(elementScannerClass);
+        TypeNode elementScanner6 = modeller.modelType(elementScannerClass);
         TypeNode scanner = newClass("Scanner", doclet);
         api.addType(scanner);
 
@@ -37,7 +39,7 @@ class ModelUtilsTests extends ModelTestEnvironment {
         Method m = elementScannerClass.getMethod("scan",
                 javax.lang.model.element.Element.class,
                 Object.class);
-        MethodNode elementScannerMethod = JreUtils.model(m);
+        MethodNode elementScannerMethod = modeller.modelMethod(m);
         elementScanner6.addMethod(elementScannerMethod);
 
         // Set up API model version of it

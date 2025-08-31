@@ -19,8 +19,8 @@ import javax.lang.model.element.TypeElement;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
-/// A utility class for creating [DirectiveNode] objects which encapsulate 
-/// the information provided by [Directive](javax.lang.model.element.ModuleElement.Directive) 
+/// A utility class for creating [DirectiveNode] objects which encapsulate
+/// the information provided by [Directive](javax.lang.model.element.ModuleElement.Directive)
 /// objects scanned by the [ApiScanner][io.github.sandydunlop.markista.scanning.ApiScanner].
 public class ModuleDirectives {
     private static DocletEnvironment environment;
@@ -29,7 +29,7 @@ public class ModuleDirectives {
         // Utility class, no instantiation
     }
 
-    /// Sets the doclet environment where it can get access to 
+    /// Sets the doclet environment where it can get access to
     /// an [Elements][javax.lang.model.util.Elements] implementation
     /// to retrieve information about scanned elements.
     /// @param env The doclet environment
@@ -89,7 +89,7 @@ public class ModuleDirectives {
                 directiveNode.addPackage(reference);
             }
         }
-        return directiveNode; 
+        return directiveNode;
     }
 
     /// Creates a DirectiveNode representing an [opens](javax.lang.model.element.OpensDirective) directive.
@@ -114,7 +114,7 @@ public class ModuleDirectives {
                 directiveNode.addPackage(reference);
             }
         }
-        return directiveNode; 
+        return directiveNode;
     }
 
     /// Creates a DirectiveNode representing a [uses](javax.lang.model.element.UsesDirective) directive.
@@ -142,12 +142,25 @@ public class ModuleDirectives {
                 .withKind(Link.Kind.TYPE)
                 .withLabel(name);
         DirectiveNode directiveNode = new DirectiveNode(kind, ref);
-        TypeUtils.setImplementations(directiveNode, provides.getImplementations());
+        setImplementations(directiveNode, provides.getImplementations());
         String interfaceName = service.getQualifiedName().toString();
         Link reference = Link.to(interfaceName)
                 .withKind(Link.Kind.PACKAGE)
                 .withLabel(interfaceName);
         directiveNode.setInterface(reference);
         return directiveNode;
+    }
+
+    /// Adds implementation type names to a DirectiveNode.
+    /// @param directiveNode The DirectiveNode to update.
+    /// @param implementations List of TypeElements representing implementations.
+    public static void setImplementations(DirectiveNode directiveNode, List<? extends TypeElement> implementations) {
+        for (TypeElement e : implementations) {
+            String implName = e.getQualifiedName().toString();
+            Link reference = Link.to(implName)
+                    .withKind(Link.Kind.TYPE)
+                    .withLabel(implName);
+            directiveNode.addImplementation(reference);
+        }
     }
 }

@@ -14,7 +14,7 @@ public class Api extends Node {
 
     /// List of packages included in the API.
     private final List<PackageNode> packages = new ArrayList<>();
-    
+
     // store children by the interface type (no concrete TypeNode mention)
     private final List<TypeNode> types = new ArrayList<>();
 
@@ -173,10 +173,10 @@ public class Api extends Node {
     }
 
     /// Computes the longest common base package prefix shared by all packages in this API.
-    /// 
+    ///
     /// This method iterates through the list of packages and determines the common package name prefix,
     /// truncated at the nearest dot ('.') boundary. If no common base exists, returns an empty string.
-    /// 
+    ///
     /// @return The longest common base package name shared by all packages, or an empty string if none.
     public String commonBase() {
         if (packages.isEmpty()) return "";
