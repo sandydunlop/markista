@@ -19,10 +19,8 @@ class ModelUtilsTests extends ModelTestEnvironment {
     @BeforeEach
     void init() {
         setupModel();
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
-        LinkResolver.setFlattenedDirectories(null);
+        Relativizer.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }

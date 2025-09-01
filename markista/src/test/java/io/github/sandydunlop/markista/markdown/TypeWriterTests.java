@@ -70,8 +70,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         type.addField(field2);
         api.addType(type);
 
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(type);
@@ -101,8 +100,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         enumNode.addConstant(constant1);
         enumNode.addConstant(constant2);
 
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         MarkdownUtils.setContext(ctx);
 
@@ -131,9 +129,7 @@ class TypeWriterTests extends ModelTestEnvironment {
 
         enumNode.addConstant(fieldNode);
 
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
-        LinkResolver.addStandardModuleUrl("java.base", "http://example.com", ".html");
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(enumNode);
@@ -195,7 +191,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
-        LinkResolver.init(api, ctx);
+        resolver = new LinkResolver(api, ctx);
         ctx.setApi(api);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -224,8 +220,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules(); // Needed for String
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setApi(api);
 
@@ -267,10 +262,9 @@ class TypeWriterTests extends ModelTestEnvironment {
         pkg.addType(typeNode);
         api.addType(specifiedByType);
         api.addType(thrownType);
-        LinkResolver.init(api, ctx);
+        resolver = new LinkResolver(api, ctx);
         ctx.setApi(api);
 
-        LinkResolver.addStandardModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -297,10 +291,9 @@ class TypeWriterTests extends ModelTestEnvironment {
         Api api = new Api("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
-        LinkResolver.init(api, ctx);
+        resolver = new LinkResolver(api, ctx);
         ctx.setApi(api);
 
-        LinkResolver.addStandardModules();
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -327,10 +320,9 @@ class TypeWriterTests extends ModelTestEnvironment {
         Api api = new Api("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
-        LinkResolver.init(api, ctx);
         ctx.setApi(api);
 
-        LinkResolver.addStandardModules();
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -353,8 +345,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules(); // Needed for String
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setApi(api);
 
@@ -376,8 +367,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules(); // Needed for String
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setApi(api);
 
@@ -407,8 +397,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules(); // Needed for String
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setApi(api);
 
@@ -431,8 +420,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules(); // Needed for String
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setApi(api);
 
@@ -460,8 +448,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addType(typeNode);
         pkg.addType(typeNode);
         api.addType(owner);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules(); // Needed for String
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setApi(api);
 
@@ -483,8 +470,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules(); // Needed for String
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setApi(api);
 
@@ -513,8 +499,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules(); // Needed for String
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setApi(api);
 

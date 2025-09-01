@@ -234,11 +234,12 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     @Override
     public Void visitVariable(VariableElement ve, Integer depth) {
         if (isIncludedElement(ve) && isIncludedInApi(ve) && ve.getKind() == ElementKind.FIELD) {
-            TypeElement classElement = modeller.getEnclosingTypeElement(ve); //TODO
-            if (classElement == null) {
+            Element enclosingElement = ve.getEnclosingElement();
+            if (!(enclosingElement instanceof TypeElement)) {
                 ctx.reportError("No enclosing type for " + ve.getSimpleName().toString());
                 return null;
             }
+            TypeElement classElement = (TypeElement) enclosingElement;
             String simpleName = ve.getSimpleName().toString();
             TypeNode typeNode = api.getTypeNode(classElement.getQualifiedName().toString());
             FieldNode fieldNode = typeNode.getField(simpleName);

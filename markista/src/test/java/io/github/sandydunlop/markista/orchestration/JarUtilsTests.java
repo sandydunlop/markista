@@ -18,9 +18,7 @@ class JarUtilsTests extends ModelTestEnvironment {
     @BeforeEach
     void init() {
         setupModel();
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
-        LinkResolver.setFlattenedDirectories(null);
+        Relativizer.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }

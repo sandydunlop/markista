@@ -10,6 +10,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.io.StringWriter;
 import jdk.javadoc.doclet.Reporter;
@@ -22,6 +23,8 @@ public class ModelTestEnvironment {
     protected Context ctx;
     protected TestReporter reporter;
 	protected Api api;
+    protected LinkResolver resolver;
+
     protected ModuleNode module;
     protected PackageNode model;
     protected PackageNode doclet;

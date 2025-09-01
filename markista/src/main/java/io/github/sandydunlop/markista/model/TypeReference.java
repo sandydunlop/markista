@@ -12,6 +12,7 @@ public class TypeReference implements Serializable {
     protected Link link;
     protected String rawTypeName = "";
     protected int arrayDimensions = 0;
+    private String genericMethodParam = "";
 
     private TypeReference() {
         // Nothing to see here
@@ -29,7 +30,17 @@ public class TypeReference implements Serializable {
         if (fullTypeName == null || fullTypeName.isEmpty()) {
             return new TypeReference();
         }
+
+        String genericMethodParam = "";
+        fullTypeName = fullTypeName.strip();
+        if (fullTypeName.startsWith("<")) {
+            int close = fullTypeName.indexOf(">");
+            genericMethodParam = fullTypeName.substring(1, close);
+            fullTypeName = fullTypeName.substring(close + 1);
+        }
+
         TypeReference type = parse(fullTypeName);
+        type.genericMethodParam = genericMethodParam;
         if (type instanceof Generic generic) {
             generic.setFullTypeName(fullTypeName);
             return generic;
@@ -37,6 +48,7 @@ public class TypeReference implements Serializable {
         TypeReference typeRef = new TypeReference();
         typeRef.fullTypeName = fullTypeName;
         typeRef.rawTypeName = type.rawTypeName;
+        typeRef.genericMethodParam = genericMethodParam;
         return type;
     }
 
@@ -76,6 +88,11 @@ public class TypeReference implements Serializable {
 
     private String stringify(TypeReference typeReference) {
         StringBuilder sb = new StringBuilder();
+        if (!typeReference.genericMethodParam.isEmpty()) {
+            sb.append("<");
+            sb.append(typeReference.genericMethodParam);
+            sb.append("> ");
+        }
         switch (typeReference) {
             case Generic generic -> {
                 sb.append(generic.rawTypeName);

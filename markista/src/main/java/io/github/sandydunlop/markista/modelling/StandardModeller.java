@@ -81,6 +81,17 @@ public class StandardModeller implements Modeller<Module, Package, Class<?>, Fie
             default:
                 typeNode = new TypeNode(type.getSimpleName(), type.getPackageName());
         }
+
+        typeNode.setName(type.getName());
+        typeNode.setQualifiedName(type.getCanonicalName());
+        typeNode.setSimpleName(type.getSimpleName());
+        int nestedLength = type.getCanonicalName().length() - type.getPackageName().length();
+        if (nestedLength > type.getSimpleName().length()) {
+            typeNode.setNestedName(type.getCanonicalName()
+                    .substring(type.getCanonicalName().length() - nestedLength + 1));
+        }
+
+
         for (Field field : type.getFields()) {
             FieldNode node = modelField(field);
             typeNode.addField(node);

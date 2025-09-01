@@ -265,4 +265,12 @@ class TypeReferenceTests {
         String s = string.toString();
         assertEquals(code, s);
     }
+
+    @Test
+    void genericMethodReturnType() {
+        String code = "<E> java.util.List<E>";
+        TypeReference string = TypeReference.to(code);
+        String s = string.toString();
+        assertEquals(code, s);
+    }
 }

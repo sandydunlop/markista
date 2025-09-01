@@ -11,28 +11,46 @@ public abstract class AbstractMember extends Node {
     /// A list of the modifiers a node has
     private final Set<Modifier> modifiers = new HashSet<>();
 
+    /// A [PackageNode] representing the package the node belongs to
+    protected String packageName = "";
+
+    /// The simple form of the name
+    protected String name = "";
+
+    /// The qualified form of the name
+    protected String qualifiedName = "";
+
     /// The simple form of the name
     protected String simpleName = "";
 
-    /// The qualified form of the name
-    protected String qualifiedName;
-
-    /// A [PackageNode] representing the package the node belongs to
-    protected String packageName = null;
+    /// The simple form of the name
+    protected String nestedName = "";
 
     /// List of annotations applied to this type.
     private final List<AppliedAnnotationNode> appliedAnnotations = new ArrayList<>();
 
-    /// Sets the simple name of this type.
-    /// @param name the simple name to set.
-    public void setSimpleName(String name) {
-        simpleName = name;
+    /// Sets the package name of this type.
+    /// @param name the package name to set.
+    public void setPackageName(String name) {
+        packageName = name;
     }
 
-    /// Returns the simple name of this type.
-    /// @return the simple name.
-    public String getSimpleName() {
-        return simpleName;
+    /// Returns the package name of this type.
+    /// @return the package name.
+    public String getPackageName() {
+        return packageName;
+    }
+
+    /// Sets the name of this type.
+    /// @param name the name to set.
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /// Returns the name of this type.
+    /// @return the name.
+    public String getName() {
+        return name;
     }
 
     /// Sets the qualified name of this type.
@@ -47,10 +65,34 @@ public abstract class AbstractMember extends Node {
         return qualifiedName;
     }
 
+    /// Sets the simple name of this type.
+    /// @param name the simple name to set.
+    public void setSimpleName(String name) {
+        simpleName = name;
+    }
+
+    /// Returns the simple name of this type.
+    /// @return the simple name.
+    public String getSimpleName() {
+        return simpleName;
+    }
+
+    /// Sets the nested name of this type.
+    /// @param name the nested name to set.
+    public void setNestedName(String name) {
+        nestedName = name;
+    }
+
+    /// Returns the nested name of this type.
+    /// @return the nested name.
+    public String getNestedName() {
+        return nestedName;
+    }
+
     /// Adds a modifier to the set of modifiers.
     /// @param mod The modifier to add.
     public void addModifier(Modifier mod) {
-        modifiers.add(mod);    
+        modifiers.add(mod);
     }
 
     /// Returns the set of modifiers for this node.

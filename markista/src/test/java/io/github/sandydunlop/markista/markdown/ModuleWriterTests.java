@@ -32,6 +32,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ModuleWriterTests {
+    LinkResolver resolver;
     private static Context ctx;
     Api api;
     ModuleNode moduleNode;
@@ -83,7 +84,7 @@ class ModuleWriterTests {
 
         ctx.setModuleName("");
         ctx.setReporter(reporter);
-        LinkResolver.init(api, ctx);
+        resolver = new LinkResolver(api, ctx);
 
         stringWriter = new StringWriter();
     }
@@ -132,8 +133,8 @@ class ModuleWriterTests {
         Link ref = Link.to("com.example.package")
                 .withLabel("com.example.package");
         DirectiveNode exportsDirective = mock(DirectiveNode.class);
-        when(exportsDirective.getKind()).thenReturn(DirectiveNode.Kind.EXPORTS);        
-        when(exportsDirective.getReference()).thenReturn(ref);        
+        when(exportsDirective.getKind()).thenReturn(DirectiveNode.Kind.EXPORTS);
+        when(exportsDirective.getReference()).thenReturn(ref);
         moduleNode.addDirective(exportsDirective);
 
         moduleWriter.writeDocs(api);
@@ -145,7 +146,7 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleProvidesDirectives_WritesTableForProvides() throws IOException {
-        InterfaceNode interface0 = new InterfaceNode("Interface", 
+        InterfaceNode interface0 = new InterfaceNode("Interface",
                 pkg.getName());
         InterfaceNode interface1 = new InterfaceNode("Impl1",
                 pkg.getName());
@@ -163,10 +164,10 @@ class ModuleWriterTests {
         List<Link> implementations = List.of(
                 Link.to("com.example.package.Impl1")
                         .withLabel("com.example.package.Impl1")
-                        .withUri("com.example.package.Impl1"), 
+                        .withUri("com.example.package.Impl1"),
                 Link.to("com.example.package.Impl2")
                         .withLabel("com.example.package.Impl2")
-                        .withUri("com.example.package.Impl2")); 
+                        .withUri("com.example.package.Impl2"));
         when(providesDirective.getImplementations()).thenReturn(implementations);
         when(providesDirective.getKind()).thenReturn(DirectiveNode.Kind.PROVIDES);
         when(providesDirective.getName()).thenReturn("com.example.package.Interface");

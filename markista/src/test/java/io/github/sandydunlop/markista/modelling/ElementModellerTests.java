@@ -33,7 +33,6 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
-import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -55,7 +54,6 @@ import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -74,6 +72,7 @@ import static org.mockito.Mockito.when;
 class ElementModellerTests extends MockedDocletEnvironment {
     private static Context ctx;
     private Api dummyApi;
+    private LinkResolver resolver;
 
     private Api api;
     private PackageNode packageNode;
@@ -184,36 +183,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
         packageNode = new PackageNode("io.github.sandydunlop.markista.model");
         api.addPackage(packageNode);
-        LinkResolver.init(api, ctx);
-    }
-
-    @Disabled("MFLP-85")
-    @Test
-    void getParamType() {
-        TypeMirror array = mock(TypeMirror.class);
-        when(array.toString()).thenAnswer(_ -> "int");
-
-        ArrayType at = mock(ArrayType.class);
-        when(at.getKind()).thenAnswer(_ -> TypeKind.ARRAY);
-        when(at.getComponentType()).thenAnswer(_ -> array);
-
-        Name param1name = mock(Name.class);
-        when(param1name.toString()).thenReturn("param1");
-        VariableElement param1 = mock(VariableElement.class);
-        when(param1.asType()).thenAnswer(_ -> at);
-        when(param1.getSimpleName()).thenAnswer(_ -> param1name);
-        List<? extends VariableElement>  parameters = List.of(param1);
-        Name methodName = mock(Name.class);
-        when(methodName.toString()).thenReturn("method");
-        ExecutableElement methodElement = mock(ExecutableElement.class);
-        when(methodElement.getReturnType()).thenReturn(typeMirror);
-        when(methodElement.getSimpleName()).thenReturn(methodName);
-        when(methodElement.getEnclosingElement()).thenReturn(typeElement);
-        when(methodElement.getParameters()).thenAnswer(_ -> parameters);
-
-        String tn = modeller.getParamType(methodElement, "param1");
-        assertNotNull(tn);
-        assertEquals("int[]", tn);
+        resolver = new LinkResolver(api, ctx);
     }
 
     @Test
@@ -236,7 +206,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
         List<Link> refs = modeller.getReferences(docCommentTree);
         assertNotNull(refs);
         assertEquals(2, refs.size());
-        LinkResolver.resolve(refs.get(0));
+        resolver.resolve(refs.get(0));
         assertEquals(Link.Kind.URL, refs.get(0).getKind());
         assertEquals("http://example.com", refs.get(0).getUri());
         assertEquals(Link.Kind.TYPE, refs.get(1).getKind());
