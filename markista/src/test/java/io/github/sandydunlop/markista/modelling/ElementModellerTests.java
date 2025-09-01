@@ -5,6 +5,7 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Deprecation;
+import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
@@ -29,6 +30,13 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.ModuleElement;
+import javax.lang.model.element.ModuleElement.DirectiveKind;
+import javax.lang.model.element.ModuleElement.ExportsDirective;
+import javax.lang.model.element.ModuleElement.OpensDirective;
+import javax.lang.model.element.ModuleElement.ProvidesDirective;
+import javax.lang.model.element.ModuleElement.RequiresDirective;
+import javax.lang.model.element.ModuleElement.UsesDirective;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
@@ -101,6 +109,10 @@ class ElementModellerTests extends MockedDocletEnvironment {
     Name simpleName2;
     Name qualifiedName2;
     Name packageName2;
+
+    private ModuleElement aModuleElement;
+    private ModuleElement moduleElement;
+
 
     private Api apiMock;
     private DocletEnvironment envMock;
@@ -177,6 +189,11 @@ class ElementModellerTests extends MockedDocletEnvironment {
         when(docCommentTree.getFirstSentence()).thenAnswer(_ -> dtList);
         when(docCommentTree.getBody()).thenAnswer(_ -> dtList);
         when(docCommentTree.getFullBody()).thenAnswer(_ -> dtList);
+
+        aModuleElement = mock(ModuleElement.class);
+        moduleElement = mock(ModuleElement.class);
+        when(moduleElement.getQualifiedName()).thenReturn(name);
+        when(aModuleElement.getQualifiedName()).thenReturn(name);
 
         api = new Api("Test API");
         modeller = new ElementModeller(api, docletEnv);
@@ -854,4 +871,76 @@ class ElementModellerTests extends MockedDocletEnvironment {
         //"one [Node](../model/Node.md) two"
     }
 
+
+    @SuppressWarnings("unused")
+    @Test
+    void createFrom_REQUIRES() {
+        RequiresDirective directive = mock(RequiresDirective.class);
+        when(elementUtils.getModuleOf(aModuleElement)).thenReturn(moduleElement);
+        when(docletEnv.getElementUtils()).thenReturn(elementUtils);
+        when(packageElement.getQualifiedName()).thenReturn(name);
+        when(typeElement.getQualifiedName()).thenReturn(name);
+        when(name.toString()).thenReturn("sandy");
+        when(directive.getDependency()).thenReturn(aModuleElement);
+        when(directive.getKind()).thenAnswer(unused -> DirectiveKind.REQUIRES);
+
+        DirectiveNode directiveNode = modeller.createDirectiveNode(directive);
+        assertNotNull(directiveNode);
+        DirectiveNode.Kind kind = directiveNode.getKind();
+        assertEquals(DirectiveNode.Kind.REQUIRES, kind);
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    void createFrom_EXPORTS() {
+        ExportsDirective directive = mock(ExportsDirective.class);
+        List<? extends ModuleElement> targetModules = List.of(aModuleElement);
+        when(directive.getPackage()).thenReturn(packageElement);
+        when(directive.getTargetModules()).thenAnswer(unused -> targetModules);
+        when(directive.getKind()).thenAnswer(unused -> DirectiveKind.EXPORTS); //NOSONAR
+        DirectiveNode directiveNode = modeller.createDirectiveNode(directive);
+        assertNotNull(directiveNode);
+        DirectiveNode.Kind kind = directiveNode.getKind();
+        assertEquals(DirectiveNode.Kind.EXPORTS, kind);
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    void createFrom_OPENS() {
+        OpensDirective directive = mock(OpensDirective.class);
+        List<? extends ModuleElement> targetModules = List.of(aModuleElement);
+        when(directive.getPackage()).thenReturn(packageElement);
+        when(directive.getTargetModules()).thenAnswer(unused -> targetModules); //NOSONAR
+        when(directive.getKind()).thenAnswer(unused -> DirectiveKind.OPENS); //NOSONAR
+        DirectiveNode directiveNode = modeller.createDirectiveNode(directive);
+        assertNotNull(directiveNode);
+        DirectiveNode.Kind kind = directiveNode.getKind();
+        assertEquals(DirectiveNode.Kind.OPENS, kind);
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    void createFrom_USES() {
+        UsesDirective directive = mock(UsesDirective.class);
+        when(directive.getService()).thenReturn(typeElement);
+        when(directive.getKind()).thenAnswer(unused -> DirectiveKind.USES); //NOSONAR
+        DirectiveNode directiveNode = modeller.createDirectiveNode(directive);
+        assertNotNull(directiveNode);
+        DirectiveNode.Kind kind = directiveNode.getKind();
+        assertEquals(DirectiveNode.Kind.USES, kind);
+    }
+
+    @SuppressWarnings("unused")
+    @Test
+    void createFrom_PROVIDES() {
+        ProvidesDirective directive = mock(ProvidesDirective.class);
+        List<? extends TypeElement> implementations = List.of(typeElement);
+        when(directive.getService()).thenReturn(typeElement);
+        when(directive.getImplementations()).thenAnswer(unused -> implementations); //NOSONAR
+        when(directive.getKind()).thenAnswer(unused -> DirectiveKind.PROVIDES); //NOSONAR
+        DirectiveNode directiveNode = modeller.createDirectiveNode(directive);
+        assertNotNull(directiveNode);
+        DirectiveNode.Kind kind = directiveNode.getKind();
+        assertEquals(DirectiveNode.Kind.PROVIDES, kind);
+    }
 }

@@ -7,7 +7,6 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.sandydunlop.markista.scanning.ApiScanner;
-import io.github.sandydunlop.markista.scanning.ModuleDirectives;
 import io.github.sandydunlop.markista.spi.DocService;
 
 import java.io.IOException;
@@ -322,7 +321,6 @@ public class MarkdownDoclet implements Doclet {
     /// @return  true if completed without errors, false if errors occurred.
     @Override
     public boolean run(DocletEnvironment environment) {
-        ModuleDirectives.setEnvironment(environment);
         ApiScanner scanner = new ApiScanner(environment);
         Api api = scanner.scan(environment.getIncludedElements());
         ctx.setApi(api);

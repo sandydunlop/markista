@@ -1,6 +1,7 @@
-package io.github.sandydunlop.markista.scanning;
+package io.github.sandydunlop.markista.modelling;
 
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.modelling.MarkdownParser;
 
 import javax.lang.model.element.Element;
 import javax.tools.Diagnostic.Kind;
