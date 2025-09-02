@@ -11,6 +11,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
+import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ import org.mockito.Mock;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PackageWriterTests {
+    LinkResolver resolver;
     Api api;
     ModuleNode moduleNode;
     PackageNode packageNode;
@@ -64,7 +66,7 @@ class PackageWriterTests {
             // Do nothing
         }
     };
-    
+
     @BeforeEach
     void setup() {
         // Mocking Context interfered with other tests, so we're doing this the manual way
@@ -73,7 +75,7 @@ class PackageWriterTests {
         ctx.setWriterFactory(_ -> writer);
         ctx.setReporter(reporter);
         packageWriter = new PackageWriter(ctx);
-    
+
         api = new Api("Test API");
 
         moduleNode = new ModuleNode("markista");
@@ -88,7 +90,7 @@ class PackageWriterTests {
         nodeClass.setBody(body);
         nodeClass.setFullBody(body);
         nodeClass.setFirstSentence(body);
-        
+
         modelPackage.addType(nodeClass);
         packageNode.addPackage(modelPackage);
         moduleNode.addPackage(packageNode);
@@ -98,15 +100,14 @@ class PackageWriterTests {
         api.addPackage(packageNode);
         api.addPackage(modelPackage);
         api.addType(nodeClass);
-		LinkResolver.init(api, ctx);
-		LinkResolver.setFlattenedDirectories(null);
+		resolver = new LinkResolver(api, ctx);
+		Relativizer.setFlattenedDirectories(null);
     }
 
     void setupLinks() {
         ctx = Context.getInstance();
         ctx.setApi(api);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
     }
 
@@ -178,7 +179,7 @@ class PackageWriterTests {
         ctx.setApi(api);
 
         Configuration.setUseContentTabs(true);
-        
+
         packageWriter.outputPackageDoc(modelPackage);
         String output = writer.toString();
 

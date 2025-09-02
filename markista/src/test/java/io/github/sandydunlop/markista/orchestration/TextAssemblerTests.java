@@ -29,10 +29,9 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @BeforeEach
     void init() {
         setupModel();
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
+        resolver = new LinkResolver(api, ctx);
         TextAssembler.assembleTextAndLinks(api, ctx);
-        LinkResolver.setFlattenedDirectories(null);
+        Relativizer.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }
@@ -151,18 +150,16 @@ class TextAssemblerTests extends ModelTestEnvironment {
 
     @Test
     void link_standardMethod() {
-        LinkResolver.addStandardModules();
         Link link = Link.to("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)");
-        LinkResolver.resolveLink(link);
+        resolver.resolveLink(link);
         String markdown = MarkdownUtils.link(link, false, true);
         assertEquals("[Doclet.Option.process](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
     }
 
     @Test
     void link_localMethod() {
-        LinkResolver.addStandardModules();
         Link link = Link.to("Node#sort()");
-        LinkResolver.resolveLink(link);
+        resolver.resolveLink(link);
         String markdown = MarkdownUtils.link(link, false);
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
     }

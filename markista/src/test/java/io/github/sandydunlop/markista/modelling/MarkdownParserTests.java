@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.scanning;
+package io.github.sandydunlop.markista.modelling;
 
 import io.github.sandydunlop.markista.core.Context;
 

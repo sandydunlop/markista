@@ -265,4 +265,28 @@ class TypeReferenceTests {
         String s = string.toString();
         assertEquals(code, s);
     }
+
+    @Test
+    void genericMethodReturnType() {
+        String code = "<E> java.util.List<E>";
+        TypeReference string = TypeReference.to(code);
+        String s = string.toString();
+        assertEquals(code, s);
+    }
+
+    @Test
+    void genericCollection_T_extends_B() {
+        String code = "Collection<T extends B>";
+        TypeReference string = TypeReference.to(code);
+        String s = string.toString();
+        assertEquals(code, s);
+    }
+
+    @Test
+    void genericCollection_wildcard_super_B() {
+        String code = "Collection<? super B>";
+        TypeReference string = TypeReference.to(code);
+        String s = string.toString();
+        assertEquals(code, s);
+    }
 }

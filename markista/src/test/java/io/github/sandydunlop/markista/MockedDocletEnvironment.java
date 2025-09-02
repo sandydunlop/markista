@@ -6,6 +6,7 @@ import io.github.sandydunlop.markista.doclet.MarkdownDoclet;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -31,6 +32,7 @@ import javax.tools.JavaFileObject;
 import jdk.javadoc.doclet.DocletEnvironment;
 import jdk.javadoc.doclet.Reporter;
 
+import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
@@ -41,6 +43,7 @@ import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
 import org.mockito.Mock;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -180,6 +183,7 @@ public class MockedDocletEnvironment {
         ModuleElement mockModuleElement = mock(ModuleElement.class);
         Name moduleName = mockName(name);
         when (mockModuleElement.getQualifiedName()).thenReturn(moduleName);
+        when (mockModuleElement.getKind()).thenReturn(ElementKind.MODULE);
         URI mockModuleFileUri = mockUri("/module-info.java");
         JavaFileObject mockJFO = mock(JavaFileObject.class);
         when(mockJFO.getName()).thenReturn("file:///module-info.java");
@@ -235,6 +239,19 @@ public class MockedDocletEnvironment {
         return mockExecutableElement;
     }
 
+    protected ExecutableElement mockConstructor(TypeElement mockTypeElement) {
+        ExecutableElement mockExecutableElement = mock(ExecutableElement.class);
+        Name typeName = mockName("<init>");
+        Set<Modifier> modifierSet = new HashSet<>(List.of(Modifier.PUBLIC));
+        TypeMirror mockTypeMirror = mockMirror("");
+        when (mockExecutableElement.getSimpleName()).thenReturn(typeName);
+        when (mockExecutableElement.getModifiers()).thenReturn(modifierSet);
+        when (mockExecutableElement.getKind()).thenReturn(ElementKind.CONSTRUCTOR);
+        when (mockExecutableElement.getEnclosingElement()).thenReturn(mockTypeElement);
+        when (mockExecutableElement.getReturnType()).thenReturn(mockTypeMirror);
+        return mockExecutableElement;
+    }
+
     protected TypeParameterElement mockTypeParameter(String name, TypeElement mockTypeElement) {
         TypeParameterElement mockParameterElement = mock(TypeParameterElement.class);
         Name typeName = mockName(name);
@@ -255,7 +272,7 @@ public class MockedDocletEnvironment {
         TypeMirror mockTypeMirror = mockMirror("");
         when (mockParameterElement.getSimpleName()).thenReturn(typeName);
         when (mockParameterElement.getModifiers()).thenReturn(modifierSet);
-        when (mockParameterElement.getKind()).thenReturn(ElementKind.FIELD);
+        when (mockParameterElement.getKind()).thenReturn(ElementKind.PARAMETER);
         when (mockParameterElement.getEnclosingElement()).thenReturn(mockTypeElement);
         when (mockParameterElement.asType()).thenReturn(mockTypeMirror);
 
@@ -287,5 +304,29 @@ public class MockedDocletEnvironment {
     protected void mockIncludedElements(List<Element> elementsList) {
         Set<? extends Element> elementsSet = new HashSet<>(elementsList);
         when(docletEnvironmentMock.getIncludedElements()).thenAnswer(_ -> elementsSet);
+    }
+
+    protected JavaFileObject mockJavaFileObject(TypeElement typeElement) {
+        String path = "/tmp/" + typeElement.getSimpleName().toString() + ".java";
+        URI mockClassFileUri = mockUri(path);
+        JavaFileObject mockJFO = mock(JavaFileObject.class);
+        when(mockJFO.getName()).thenReturn("file://" + path);
+        when(mockJFO.toUri()).thenReturn(mockClassFileUri);
+        when (elementUtilsMock.getFileObjectOf(any())).thenAnswer(_ -> {
+            return mockJFO;
+        });
+        return mockJFO;
+    }
+
+    protected void mockDeprecation(ExecutableElement methodElement, boolean forRemoval) {
+        DeprecatedTree deprecatedTree = mock(DeprecatedTree.class);
+        when(deprecatedTree.getBody()).thenReturn(Collections.emptyList());
+        DocCommentTree dct = mock(DocCommentTree.class);
+        when(dct.getBlockTags()).thenAnswer(_ -> List.of((DocTree) deprecatedTree));
+        when(treeUtilsMock.getDocCommentTree(methodElement)).thenReturn(dct);
+
+        Deprecated deprecatedAnno = mock(Deprecated.class);
+        when(deprecatedAnno.forRemoval()).thenReturn(forRemoval);
+        when(methodElement.getAnnotation(Deprecated.class)).thenReturn(deprecatedAnno);
     }
 }

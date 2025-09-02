@@ -26,6 +26,7 @@ import java.util.Map;
 public class TextAssembler {
     private static Context ctx;
     private static Api api;
+    private static LinkResolver resolver;
 
     private TextAssembler() {
         // Nothing to see here
@@ -39,6 +40,7 @@ public class TextAssembler {
         api = a;
         ctx = c;
         ModelUtils.init(a, c);
+        resolver = new LinkResolver(a, c);
 
         for (MethodNode method : api.getMethods()) {
             associateMethodWithType(method);
@@ -61,19 +63,19 @@ public class TextAssembler {
             ctx.setModuleName(module.getName());
             // Constant field values
             for (FieldNode constant : module.getConstantValues()) {
-                LinkResolver.resolveTypeRererence(constant.getType());
+                resolver.resolveTypeRererence(constant.getType());
                 constant.setConstantValueReference(constant.getType());
             }
 
             // Directives
             for (DirectiveNode directive : module.getDirectives()) {
-                LinkResolver.resolve(directive.getReference());
-                LinkResolver.resolve(directive.getInterface());
+                resolver.resolve(directive.getReference());
+                resolver.resolve(directive.getInterface());
                 for (Link implementation : directive.getImplementations()) {
-                    LinkResolver.resolve(implementation);
+                    resolver.resolve(implementation);
                 }
                 for (Link pkg : directive.getPackages()) {
-                    LinkResolver.resolve(pkg);
+                    resolver.resolve(pkg);
                 }
             }
         }
@@ -90,14 +92,14 @@ public class TextAssembler {
                     .fromPackage(ctx.getPackageName())
                     .withKind(Link.Kind.TYPE)
                     .withLabel(ownerTypeNode.getQualifiedName());
-            LinkResolver.resolve(ref);
+            resolver.resolve(ref);
             typeNode.setEnclosingClassRef(ref);
         }
         for (TypeReference typeRef : typeNode.getImplementedInterfaces()) {
-            LinkResolver.resolveTypeRererence(typeRef);
+            resolver.resolveTypeRererence(typeRef);
         }
         for (TypeReference typeRef : typeNode.getSupertypes()) {
-            LinkResolver.resolveTypeRererence(typeRef);
+            resolver.resolveTypeRererence(typeRef);
         }
         processSubtypes(typeNode);
         processInheritedMethods(typeNode);
@@ -119,17 +121,17 @@ public class TextAssembler {
     }
 
     public static void processMethod(MethodNode method) {
-        LinkResolver.resolveTypeRererence(method.getReturnType());
+        resolver.resolveTypeRererence(method.getReturnType());
         resolveLinksForParams(method.getParams()
                 .stream()
                 .filter(ParamNode.class::isInstance)
                 .map(ParamNode.class::cast)
                 .toList());
         if (method.getSpecifiedBy() != null && !method.getSpecifiedBy().getTarget().isEmpty()) {
-            LinkResolver.resolve(method.getSpecifiedBy());
+            resolver.resolve(method.getSpecifiedBy());
         }
         for (Link thrownRef : method.getThrownTypes()) {
-            LinkResolver.resolve(thrownRef);
+            resolver.resolve(thrownRef);
         }
         Link baseMethodRef = method.getBaseMethod();
         if (baseMethodRef != null) {
@@ -166,8 +168,8 @@ public class TextAssembler {
             TypeNode directSupertype = api.getTypeNode(directSupertypeName);
             if (directSupertype != null) {
                 TypeReference subtypeRef = TypeReference.to(typeNode.getQualifiedName());
-                subtypeRef.getLink().fromPackage(directSupertype.getQualifiedName());
-                LinkResolver.resolveTypeRererence(subtypeRef);
+                subtypeRef.getLink().fromPackage(directSupertype.getPackageName());
+                resolver.resolveTypeRererence(subtypeRef);
                 directSupertype.getSubtypes().add(subtypeRef);
             }
         }
@@ -199,7 +201,7 @@ public class TextAssembler {
             Pair<String,Link> refs = entry.getValue();
             String supertypeName = refs.getL();
             Link methodRef = refs.getR();
-            LinkResolver.resolveLink(methodRef);
+            resolver.resolveLink(methodRef);
             List<Link> inheritedMethods = methodLookup2.get(supertypeName);
             if (inheritedMethods == null) {
                 List<Link> newList = new ArrayList<>();
@@ -221,7 +223,7 @@ public class TextAssembler {
             for (Map.Entry<String,List<Link>> entry : methodLookup2.entrySet()) {
                 List<Link> methods = entry.getValue();
                 TypeReference supertypeRef = TypeReference.to(entry.getKey());
-                LinkResolver.resolveTypeRererence(supertypeRef);
+                resolver.resolveTypeRererence(supertypeRef);
                 typeNode.getInheritedMethods().put(supertypeRef, methods);
             }
         }
@@ -237,7 +239,7 @@ public class TextAssembler {
         }
         baseMethodLink.setKind(Link.Kind.UNKNOWN);
         baseMethodLink.setLabel(baseMethodLink.getSimpleClassName() + "." + baseMethodLink.getMethodName());
-        LinkResolver.resolveLink(baseMethodLink);
+        resolver.resolveLink(baseMethodLink);
     }
 
     public static void associateMethodWithType(MethodNode methodNode) {
@@ -301,9 +303,9 @@ public class TextAssembler {
     public static void setImplementingClass(InterfaceNode interfaceNode, TypeNode typeNode) {
         Link implementingClassLink = Link
                 .to(typeNode.getQualifiedName())
-                .fromPackage(interfaceNode.getQualifiedName())
+                .fromPackage(interfaceNode.getPackageName())
                 .withLabel(typeNode.getSimpleName());
-        LinkResolver.resolve(implementingClassLink);
+        resolver.resolve(implementingClassLink);
         interfaceNode.addImplementingClass(implementingClassLink);
     }
 
@@ -313,9 +315,9 @@ public class TextAssembler {
                 if (interfaceMethod.simplifiedSignature().equals(methodNode.simplifiedSignature())) {
                     Link specifiedByLink = Link
                             .to(interfaceNode.getQualifiedName())
-                            .fromPackage(typeNode.getQualifiedName())
+                            .fromPackage(typeNode.getPackageName())
                             .withLabel(interfaceNode.getSimpleName());
-                    LinkResolver.resolve(specifiedByLink);
+                    resolver.resolve(specifiedByLink);
                     methodNode.setSpecifiedBy(specifiedByLink);
                     break;
                 }
@@ -325,7 +327,7 @@ public class TextAssembler {
 
     static void resolveLinksForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
-            LinkResolver.resolveTypeRererence(param.getType());
+            resolver.resolveTypeRererence(param.getType());
             resolveLinksForReferences(param);
         }
     }
@@ -333,10 +335,10 @@ public class TextAssembler {
     public static void resolveLinksForReferences(Node node) {
         for (Link reference : node.getReferences()) {
             if (reference.getKind() == Link.Kind.PAGE) {
-                String relativePath = LinkResolver.relativize("");
+                String relativePath = Relativizer.relativize(ctx.getPackageName(), "");
                 reference.setUri(Path.of(relativePath, reference.getTarget()).toString());
             } else {
-                LinkResolver.resolve(reference);
+                resolver.resolve(reference);
             }
         }
     }
@@ -362,7 +364,7 @@ public class TextAssembler {
     public static void processJavadocComments(Api api) {
         for (Link link : api.getLinks()) {
             ctx.setPackageName(link.getOriginPackage());
-            LinkResolver.resolveLink(link);
+            resolver.resolveLink(link);
             if (link.getLabel().contains(".")) {
                 link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
             }

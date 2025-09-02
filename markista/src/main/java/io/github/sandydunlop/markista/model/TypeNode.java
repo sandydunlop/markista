@@ -111,12 +111,6 @@ public class TypeNode extends AbstractMember {
         return ownerName;
     }
 
-    /// Returns the package name for this type.
-    /// @return qualified package name, or null if no package node.
-    public String getPackageName() {
-        return packageName;
-    }
-
     /// Adds a method to this type.
     /// @param method the MethodNode to add.
     public void addMethod(MethodNode method) {

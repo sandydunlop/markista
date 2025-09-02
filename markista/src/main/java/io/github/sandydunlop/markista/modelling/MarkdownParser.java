@@ -1,4 +1,4 @@
-package io.github.sandydunlop.markista.scanning;
+package io.github.sandydunlop.markista.modelling;
 
 import java.util.ArrayList;
 import java.util.List;

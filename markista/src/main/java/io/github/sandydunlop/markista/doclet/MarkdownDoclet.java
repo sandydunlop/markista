@@ -4,10 +4,9 @@ import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.MarkdownService;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.orchestration.LinkResolver;
+import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.sandydunlop.markista.scanning.ApiScanner;
-import io.github.sandydunlop.markista.scanning.ModuleDirectives;
 import io.github.sandydunlop.markista.spi.DocService;
 
 import java.io.IOException;
@@ -322,15 +321,10 @@ public class MarkdownDoclet implements Doclet {
     /// @return  true if completed without errors, false if errors occurred.
     @Override
     public boolean run(DocletEnvironment environment) {
-        ModuleDirectives.setEnvironment(environment);
         ApiScanner scanner = new ApiScanner(environment);
         Api api = scanner.scan(environment.getIncludedElements());
         ctx.setApi(api);
-        LinkResolver.setFlattenedDirectories(ctx.getFlattenedDirectories());
-        LinkResolver.init(api, ctx);
-        if (Configuration.getCreateExternalLinks()) {
-            LinkResolver.addStandardModules();
-        }
+        Relativizer.setFlattenedDirectories(ctx.getFlattenedDirectories());
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setModuleName("");
 

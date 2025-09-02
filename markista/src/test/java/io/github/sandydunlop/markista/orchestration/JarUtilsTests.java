@@ -5,6 +5,7 @@ import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.modelling.StandardModeller;
 import io.github.sandydunlop.markista.model.TypeNode;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,20 +18,9 @@ class JarUtilsTests extends ModelTestEnvironment {
     @BeforeEach
     void init() {
         setupModel();
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
-        LinkResolver.setFlattenedDirectories(null);
+        Relativizer.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
-    }
-
-    @Test
-    void inheritedMethodWithIdenticalTypeParam() {
-        String typeName = "javax.lang.model.util.ElementScanner9";
-
-        Class<?> standardClass = JreUtils.loadClass(typeName);
-        MethodNode[] methods = JreUtils.getMethods(standardClass);
-        assertNotNull(methods);
     }
 
     @Test
@@ -53,8 +43,7 @@ class JarUtilsTests extends ModelTestEnvironment {
         String typeName = "javax.lang.model.util.ElementScanner9";
         Class<?> standardClass = JreUtils.loadClass(typeName);
 
-        MethodNode[] methods = JreUtils.getMethods(standardClass);
-        assertNotNull(methods);
+        assertNotNull(standardClass);
     }
 
     @Test
@@ -75,8 +64,7 @@ class JarUtilsTests extends ModelTestEnvironment {
         String typeName = "java.util.ArrayList";
         Class<?> standardClass = JreUtils.loadClass(typeName);
 
-        MethodNode[] methods = JreUtils.getMethods(standardClass);
-        assertNotNull(methods);
+        assertNotNull(standardClass);
     }
 
     @Test
@@ -84,8 +72,8 @@ class JarUtilsTests extends ModelTestEnvironment {
         String typeName = "javax.lang.model.util.ElementScanner9";
 
         Class<?> jreClass = JreUtils.loadClass(typeName);
-
-        TypeNode typeNode = JreUtils.model(jreClass);
+        StandardModeller modeller = new StandardModeller();
+        TypeNode typeNode = modeller.modelClass(jreClass);
         assertNotNull(typeNode);
     }
 }

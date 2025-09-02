@@ -42,7 +42,7 @@ Markista is available in the [Maven Central](https://central.sonatype.com/artifa
 
 ```groovy
 dependencies {
-    markista("io.github.sandydunlop:markista:0.1.23")
+    markista("io.github.sandydunlop:markista:0.2.0")
 }
 ```
 
@@ -99,7 +99,7 @@ pom.xml:
         <dependency>
             <groupId>io.github.sandydunlop</groupId>
             <artifactId>markista</artifactId>
-            <version>0.1.23</version>
+            <version>0.2.0</version>
         </dependency>
     </dependencies>
 
@@ -139,7 +139,7 @@ pom.xml:
 Markista can be used from the command line with the `javadoc` command as follows:
 
 ```bash
-javadoc -docletpath libs/markista-0.1.23.jar -doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet src/main/java/my.package/Hello.java
+javadoc -docletpath libs/markista-0.2.0.jar -doclet io.github.sandydunlop.markista.doclet.MarkdownDoclet src/main/java/my.package/Hello.java
 ```
 
 ### Parameters
@@ -182,7 +182,7 @@ javadoc -docletpath libs/markista-0.1.23.jar -doclet io.github.sandydunlop.marki
 
 ## Download
 
-JAR files for version 0.1.23 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.1.23).
+JAR files for version 0.2.0 are available to [download here](https://github.com/sandydunlop/markista/releases/tag/r0.2.0).
 
 
 ## Source Code

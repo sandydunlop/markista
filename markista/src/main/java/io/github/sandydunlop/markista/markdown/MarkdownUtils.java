@@ -177,7 +177,11 @@ public class MarkdownUtils {
         if (qualifyType && !link.getQualifiedClassName().isEmpty()) {
             link.setLabel(link.getQualifiedClassName() + "." + link.getMethodName());
         } else if (qualifyMember && !link.getSimpleClassName().isEmpty()) {
-            link.setLabel(link.getSimpleClassName() + "." + link.getMethodName());
+            if (link.getSimpleClassName().isEmpty()) {
+                link.setLabel(link.getSimpleClassName() + "." + link.getMethodName());
+            } else {
+                link.setLabel(link.getNestedClassName() + "." + link.getMethodName());
+            }
         } else if (label!= null && !label.isEmpty()) {
             link.setLabel(label);
         }
@@ -189,7 +193,11 @@ public class MarkdownUtils {
         } else {
             if (qualifyMember) {
                 if (!link.getSimpleClassName().isEmpty()) {
-                    link.setLabel(link.getSimpleClassName() + "." + link.getMethodName());
+                    if (link.getSimpleClassName().isEmpty()) {
+                        link.setLabel(link.getSimpleClassName() + "." + link.getMethodName());
+                    } else {
+                        link.setLabel(link.getNestedClassName() + "." + link.getMethodName());
+                    }
                 }
             } else {
                 link.setLabel(link.getMethodName());

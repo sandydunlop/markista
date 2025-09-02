@@ -3,68 +3,72 @@ package io.github.sandydunlop.markista.scanning;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.DirectiveNode;
+import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
+import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.TypeNode;
+import io.github.sandydunlop.markista.modelling.ElementModeller;
 
-import java.io.File;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.ModuleElement;
-import javax.lang.model.element.ModuleElement.Directive;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
-import javax.tools.JavaFileObject;
 
+import io.github.sandydunlop.markista.model.MethodNode;
 import jdk.javadoc.doclet.DocletEnvironment;
 
-/// A scanner that walks the language model elements provided by the Javadoc doclet 
+import static javax.lang.model.element.Modifier.PROTECTED;
+import static javax.lang.model.element.Modifier.PUBLIC;
+
+/// A scanner that walks the language model elements provided by the Javadoc doclet
 /// environment and builds an Api model representing the discovered modules, packages,
 /// types, and members. The scanner delegates most element-to-model conversion logic
 /// to TypeUtils, and it records a set of included element names so filtering can be
 /// applied when only a subset of elements should be documented.
-/// 
+///
 /// This class extends ElementScanner9 so it can visit elements in source order and
 /// recursively walk nested elements. The scanner keeps track of the current ModuleNode
-/// being populated and updates the Api instance as elements are encountered. 
+/// being populated and updates the Api instance as elements are encountered.
 @java.lang.SuppressWarnings("squid:S110") // There is no way around this.
 public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// The shared Context singleton providing logging and configuration access.
     private final Context ctx;
 
-    /// The Api model being populated by this scanner. 
+    /// The Api model being populated by this scanner.
     Api api;
 
-    /// The doclet environment used to obtain Javadoc doc trees and element utilities.
-    private final DocletEnvironment environment;
+    private ElementModeller modeller;
 
-    /// The unnamed module node reprsenting package elements not in an explicit module. 
+    /// The unnamed module node reprsenting package elements not in an explicit module.
     private final ModuleNode unnamedModule;
 
     /// The module node currently being populated during a scan. private ModuleNode currentModule;
     private ModuleNode currentModule;
 
-    /// A set of fully-qualified names (packages and types) included in the scan invocation. 
+    /// A set of fully-qualified names (packages and types) included in the scan invocation.
     HashSet<String> includedNames;
 
     /// Initializes the ApiScanner with access to the doclet environment.
     /// The doclet environment provides tools for processing API elements, types, and documentation.
-    /// @param environment Represents the operating environment of a single invocation of the doclet. 
+    /// @param environment Represents the operating environment of a single invocation of the doclet.
     public ApiScanner(DocletEnvironment environment) {
-        this.environment = environment;
         api = new Api(Configuration.getDocTitle());
         unnamedModule = api.getUnnamedModuleNode();
         currentModule = api.getUnnamedModuleNode();
         ctx = Context.getInstance();
+        modeller = new ElementModeller(api, environment);
     }
 
     /// Scan the given set of top-level elements and return the built Api model.
@@ -77,10 +81,9 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// @return the fully-populated Api model
     public Api scan(Set<? extends Element> elements) {
         processIncludedElements(elements);
-        TypeUtils.init(api, environment);
         scan(elements, 0);
-        TypeUtils.addConstantFieldValuesReference(currentModule);
-        TypeUtils.markCustomAnnotations();
+        addConstantFieldValuesReference(currentModule);
+        markCustomAnnotations();
         calculateUnnamedModuleSourcePath();
         api.sort();
         return api;
@@ -125,7 +128,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// Derive an appropriate source root for the unnamed module by inspecting the
     /// source path of the first package contained in the unnamed module. If the
     /// unnamed module contains no packages this is a no-op.
-    private void calculateUnnamedModuleSourcePath() {
+    void calculateUnnamedModuleSourcePath() {
         if (unnamedModule.getPackages().isEmpty()) return;
         PackageNode pkg = unnamedModule.getPackages().getFirst();
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
@@ -155,23 +158,12 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             mod = api.getModuleNode(e.getQualifiedName().toString());
         }
         if (mod == null) {
-            mod = new ModuleNode(e.getQualifiedName().toString());
+            mod = modeller.modelModule(e);
+            api.addModule(mod);
             ctx.setModuleName(mod.getName());
             if (Configuration.getVerbose()) {
                 ctx.reportInfo(String.format("[ MODULE] %s", mod.getName()));
             }
-            File moduleInfo = getModuleInfoFile(e);
-            if (moduleInfo != null) {
-                mod.setHasModuleInfo(true);
-                mod.setSourcePath(moduleInfo.toPath().getParent().toString());
-            }
-            TypeUtils.setDocumentation(mod, e);
-            List<? extends Directive>  directives = e.getDirectives();
-            for (Directive directive : directives) {
-                DirectiveNode moduleDirective = ModuleDirectives.createFrom(directive);
-                mod.addDirective(moduleDirective);
-            }
-            api.addModule(mod);
         }
         currentModule = mod;
         return super.visitModule(e, depth);
@@ -185,15 +177,13 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (isIncludedElement(ee.getQualifiedName().toString())) {
             PackageNode pkg = api.getPackageNode(ee.getQualifiedName().toString());
             if (pkg == null) {
-                pkg = new PackageNode(ee.getQualifiedName().toString());
+                pkg = modeller.modelPackage(ee);
                 ctx.setPackageName(pkg.getName());
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
-                TypeUtils.setPackageSourcePath(pkg, ee);
                 pkg.setModuleName(currentModule.getName());
                 currentModule.addPackage(pkg);
-                TypeUtils.setDocumentation(pkg, ee);
                 api.addPackage(pkg);
                 Element enclosing = ee.getEnclosingElement();
                 if (enclosing instanceof PackageElement enclosingPackageElement) {
@@ -211,9 +201,18 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// representation if the type is included and TypeUtils considers it part of the API.
     /// This also records the source file path when available.
     @Override
-    public Void visitType(TypeElement e, Integer depth) { 
-        if (isIncludedElement(e.getQualifiedName().toString()) && TypeUtils.isIncludedInApi(e)){
-            TypeUtils.nodeFromElement(e);
+    public Void visitType(TypeElement e, Integer depth) {
+        if (isIncludedElement(e.getQualifiedName().toString()) && isIncludedInApi(e)){
+            String qualifiedName = e.getQualifiedName().toString();
+            TypeNode typeNode = api.getTypeNode(qualifiedName);
+            if (typeNode == null) {
+                ctx.setTypeName(e.getQualifiedName().toString());
+                if (Configuration.getVerbose()) {
+                    ctx.reportInfo(String.format("[   TYPE] %s", qualifiedName));
+                }
+                typeNode = modeller.modelType(e);
+                api.addType(typeNode);
+            }
         }
         return super.visitType(e, depth);
     }
@@ -223,8 +222,9 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// return description, references and since information using TypeUtils helpers.
     @Override
     public Void visitExecutable(ExecutableElement ee, Integer depth) {
-        if (isIncludedElement(ee) && TypeUtils.isIncludedInApi(ee)){
-            TypeUtils.nodeFromElement(ee);
+        if (isIncludedElement(ee) && isIncludedInApi(ee)){
+            MethodNode methodNode = modeller.modelMethod(ee);
+            api.addMethod(methodNode);
         }
         return super.visitExecutable(ee, depth);
     }
@@ -233,8 +233,20 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// to a FieldNode, record any constant value, and populate documentation and modifiers.
     @Override
     public Void visitVariable(VariableElement ve, Integer depth) {
-        if (isIncludedElement(ve) && TypeUtils.isIncludedInApi(ve) && ve.getKind() == ElementKind.FIELD) {
-            TypeUtils.nodeFromElement(ve);
+        if (isIncludedElement(ve) && isIncludedInApi(ve) && ve.getKind() == ElementKind.FIELD) {
+            Element enclosingElement = ve.getEnclosingElement();
+            if (!(enclosingElement instanceof TypeElement)) {
+                ctx.reportError("No enclosing type for " + ve.getSimpleName().toString());
+                return null;
+            }
+            TypeElement classElement = (TypeElement) enclosingElement;
+            String simpleName = ve.getSimpleName().toString();
+            TypeNode typeNode = api.getTypeNode(classElement.getQualifiedName().toString());
+            FieldNode fieldNode = typeNode.getField(simpleName);
+            if (fieldNode == null) {
+                fieldNode = modeller.modelField(ve);
+                typeNode.addField(fieldNode);
+            }
         }
         return super.visitVariable(ve, depth);
     }
@@ -252,17 +264,42 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         return null;
     }
 
-    /// Retrieve the module-info.java file for the given ModuleElement if available.
-    /// This helper inspects the JavaFileObject associated with the module and returns
-    /// a File when the file name ends with "module-info.java".
-    /// @param moduleElement the ModuleElement to inspect
-    /// @return a File pointing to the module-info.java source or null if none found
-    public File getModuleInfoFile(ModuleElement moduleElement) {
-        JavaFileObject jfo = environment.getElementUtils().getFileObjectOf(moduleElement);
-
-        if (jfo != null && jfo.getName().endsWith("module-info.java")) {
-            return new File(jfo.toUri());
+    /// Adds references to constant field values from classes in the API to the provided module node.
+    /// @param moduleNode The ModuleNode to which constant value references will be added.
+    public void addConstantFieldValuesReference(ModuleNode moduleNode) {
+        for (TypeNode classNode : api.getTypes()) {
+            for (FieldNode fieldNode : classNode.getFields()) {
+                if (fieldNode.getConstantValue() != null) {
+                    Link ref = Link.to("constant-values")
+                            .fromPackage(classNode.getPackageName())
+                            .withKind(Link.Kind.PAGE)
+                            .withLabel("Constant Field Values");
+                    fieldNode.getReferences().add(ref);
+                    moduleNode.addConstantValue(fieldNode);
+                }
+            }
         }
-        return null;
+    }
+
+    /// Iterates over all annotations in the API, identifying ones that are custom and
+    /// those that have the `@Documented` meta-annotation and marking them as such.
+    public void markCustomAnnotations() {
+        for (AppliedAnnotationNode annotation : api.getAppliedAnnotations()) {
+            TypeNode localType = api.getTypeNode(annotation.getTypeName());
+            if (localType != null) {
+                annotation.setCustom(true);
+                if (localType.hasDocumentedAnnotation()) {
+                    annotation.setDocumented(true);
+                }
+            }
+        }
+    }
+
+    /// Returns true if the element should be included in the public API documentation based on its modifiers and configuration.
+    /// @param e The language model element to test.
+    /// @return true if element is public or protected or private member documentation is configured; false otherwise.
+    public boolean isIncludedInApi(Element e) {
+        Set<Modifier> mods = e.getModifiers();
+        return Configuration.getDocumentPrivateMembers() || mods.contains(PUBLIC) || mods.contains(PROTECTED);
     }
 }

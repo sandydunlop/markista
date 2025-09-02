@@ -10,7 +10,7 @@ import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
-import io.github.sandydunlop.markista.orchestration.LinkResolver;
+import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
 import java.io.StringWriter;
@@ -35,6 +35,7 @@ class MarkdownTests {
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
     private static Context ctx;
 	private Api api;
+
     private ModuleNode module;
     private PackageNode model;
     private PackageNode doclet;
@@ -94,9 +95,7 @@ class MarkdownTests {
         markdownDoclet = new ClassNode("MarkdownDoclet", doclet.getName());
         model.addType(markdownDoclet);
 
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModuleUrl("java.base", JAVA_24_URL + "java.base", ".html");
-		LinkResolver.setFlattenedDirectories(null);
+		Relativizer.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }
@@ -111,8 +110,7 @@ class MarkdownTests {
         method.addParam(param1);
         markdownDoclet.addMethod(method);
         api.addType(markdownDoclet);
-        LinkResolver.init(api, ctx);
-        LinkResolver.addStandardModules();
+		Relativizer.setFlattenedDirectories(null);
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         String markdown = MarkdownUtils.formatParams(params);
@@ -174,7 +172,7 @@ class MarkdownTests {
                 .setKind(Text.Segment.Kind.TEXT)
                 .setText(" world"));
         api.addLink(link);
-        LinkResolver.init(api, ctx);
+		Relativizer.setFlattenedDirectories(null);
         TextAssembler.assembleTextAndLinks(api, ctx);
         String formatted = MarkdownUtils.formatText(text);
         assertEquals("hello [link](http://example.com) world", formatted);
