@@ -146,6 +146,17 @@ public class MarkdownDoclet implements Doclet {
     private static final String UNUSED_OPTION_DESCRIPTION = "Unused option";
 
     private final Set<Option> options = Set.of(
+            new Option("--add-modules", true,
+                    "Specifies a comma-separated list of modules with javadoc that can be linked to.", null) {
+                @Override
+                public boolean process(String option,
+                                    List<String> arguments) {
+                    if (arguments != null && !arguments.isEmpty()) {
+                        Configuration.setAddModules(arguments.getFirst());
+                    }
+                    return OK;
+                }
+            },
             new Option("-d", true,
                     "The directory where documentation will be written to.", null) {
                 @Override
@@ -197,23 +208,12 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
-            new Option("-link", false,
-                    "Create external links.", null) {
+            new Option("-link", true,
+                    "Creates links to existing Javadoc-generated documentation of externally referenced classes.", null) {
                 @Override
                 public boolean process(String option,
                                        List<String> arguments) {
-                    Configuration.setCreateExternalLinks(true);
-                    return OK;
-                }
-            },
-            new Option("--link-modules", true,
-                    "Specifies a colon-separated list of modules with javadoc that can be linked to.", null) {
-                @Override
-                public boolean process(String option,
-                                       List<String> arguments) {
-                    if (arguments != null && !arguments.isEmpty()) {
-                        Configuration.setLinkExternal(arguments.getFirst());
-                    }
+                    Configuration.getLinks().add(arguments.getFirst());
                     return OK;
                 }
             },
@@ -328,6 +328,10 @@ public class MarkdownDoclet implements Doclet {
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setModuleName("");
 
+        if (Configuration.getVerbose()) {
+            System.out.println("Module path: " + Configuration.getModulePaths());
+        }
+
         // Gather list of DocService providers, and decide what order they run in
         boolean result;
         List<DocService> extensionsOrder = new ArrayList<>();
@@ -374,6 +378,9 @@ public class MarkdownDoclet implements Doclet {
         DocService mainDocService = defaultDocService;
         HashMap<String, DocService> extensions = new HashMap<>();
         for (DocService extension : loader) {
+            // if (Configuration.getVerbose()) {
+                System.out.println("Extension: " + extension.toString());
+            // }
             addExtensionToMap(extensions, extension);
         }
 
@@ -396,6 +403,7 @@ public class MarkdownDoclet implements Doclet {
                                                 DocService defaultDocService) {
         DocService mainDocService = defaultDocService;
         for (DocService extension : loader) {
+            System.out.println("Extension: " + extension.toString());
             mainDocService = handleExtension(mainDocService, defaultDocService, orderedExtensions, extension);
             if (mainDocService == null) {
                 return null;

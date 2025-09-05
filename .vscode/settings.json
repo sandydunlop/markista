@@ -17,7 +17,7 @@
       "name": "MyTestConfig",
       "modulePaths": [
         "${workspaceFolder}/bin/main",
-        "${workspaceFolder}/module/"
+        "${workspaceFolder}/module/",
       ],
       "coverageReport": {
         "enabled": true,
@@ -29,7 +29,7 @@
     }
   ],
   "coverage-gutters.coverageFileNames": [
-      
+
       "markista/build/reports/jacoco/test/jacocoTestReport.xml",
       "lcov.info",
       "cov.xml",

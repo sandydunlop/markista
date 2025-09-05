@@ -120,6 +120,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
         TypeNode typeNode = createTypeNode(simpleName, packageNode, element.getKind());
         typeNode.setQualifiedName(qualifiedName);
+        fromType = qualifiedName;
         if (typeNode instanceof EnumNode enumNode) {
             setEnumConstants(enumNode, element);
         }

@@ -1,17 +1,20 @@
 package io.github.sandydunlop.markista.core;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /// Utility class holding global configuration settings for the documentation generator.
-/// 
+///
 /// This class provides static getter and setter methods for various options that control the behavior
 /// of the documentation output, such as output directory, verbosity, and which members to include.
-/// 
+///
 /// All configuration fields are static and global and the constructor is hidden to prevent instantiation.
 public class Configuration {
+    /// The list of modules that have local Javadoc that can be linked to
+    private static String addModules = null;
+
     /// The title of the API documentation being generated
     private static String docTitle = "API";
-
-    /// If true, links to types defined outside the API being documented will be generated
-    private static boolean createExternalLinks = false;
 
     /// If true, private members of packages and types will be included in the generated documentation
     private static boolean documentPrivateMembers = false;
@@ -21,6 +24,8 @@ public class Configuration {
 
     /// If true, module directories will not be created, leading to a flatter directory structure
     private static boolean flattenModules = false;
+
+    private static List<String> links = new ArrayList<>();
 
     /// If true, summary tables will be created inside Markdown content tabs.
     /// See [mkdocs-material](https://squidfunk.github.io/mkdocs-material/reference/content-tabs/) for more information.
@@ -32,9 +37,6 @@ public class Configuration {
     /// The list of module paths passed in from the Javadoc command line
     private static String modulePathList = null;
 
-    /// The list of modules that have local Javadoc that can be linked to
-    private static String linkExternal = null;
-
     private static String projectPath = null;
 
     private static String extensionsOrder = null;
@@ -42,6 +44,18 @@ public class Configuration {
     /// The default constructor
     private Configuration() {
         // Hide the public constructor
+    }
+
+    /// Sets the list of sibling modules that can be linked to
+    /// @param moduleList a comma-separated string of module names
+    public static void setAddModules(String moduleList) {
+        addModules = moduleList;
+    }
+
+    /// Gets the list of sibling modules that can be linked to
+    /// @return a list of sibling modules that can be linked to
+    public static String getAddModules() {
+        return addModules;
     }
 
     /// Sets the title used in the generated documentation
@@ -54,18 +68,6 @@ public class Configuration {
     /// @return The title to be used
     public static String getDocTitle() {
         return docTitle;
-    }
-
-    /// Sets whether to generate links to external documentation for referenced types and modules.
-    /// @param b true to create external links, false otherwise.
-    public static void setCreateExternalLinks(boolean b) {
-        createExternalLinks = b;
-    }
-
-    /// Returns whether the documentation generator creates links to external documentation.
-    /// @return true if external links should be created, false otherwise.
-    public static boolean getCreateExternalLinks() {
-        return createExternalLinks;
     }
 
     /// Sets whether private members (fields, methods) should be included in the generated documentation.
@@ -104,6 +106,10 @@ public class Configuration {
         return flattenModules;
     }
 
+    public static List<String> getLinks() {
+        return links;
+    }
+
     /// Sets whether to use content tabs in the generated documentation.
     /// @param b true to use content tabs, false otherwise.
     public static void setUseContentTabs(boolean b) {
@@ -126,18 +132,6 @@ public class Configuration {
     /// @return true if verbose output is enabled, false otherwise.
     public static boolean getVerbose() {
         return verbose;
-    }
-
-    /// Sets the list of sibling modules that can be linked to
-    /// @param moduleList a colon-separated string of module names
-    public static void setLinkExternal(String moduleList) {
-        linkExternal = moduleList;
-    }
-
-    /// Gets the list of sibling modules that can be linked to
-    /// @return a list of sibling modules that can be linked to
-    public static String getLinkExternal() {
-        return linkExternal;
     }
 
     /// Sets the directory containing modules.

@@ -125,7 +125,7 @@ class LinkResolverTests {
 		link = Link.to("");
         resolver.resolve(link);
 		assertEquals(Link.Kind.UNKNOWN, link.getKind());
-		assertEquals("", link.getUri());
+		assertEquals("", link.getPath());
 	}
 
 	@Test
@@ -133,7 +133,7 @@ class LinkResolverTests {
 		link = Link.to("java.base");
         resolver.resolve(link);
 		assertEquals(Link.Kind.URL, link.getKind());
-		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/module-summary.html", link.getUri());
+		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/module-summary.html", link.getPath());
 	}
 
 	@Test
@@ -141,7 +141,7 @@ class LinkResolverTests {
 		Relativizer.setFlattenedDirectories("io.github.sandydunlop.markista");
 		link = Link.to("io.github.sandydunlop.markista.doclet");
         resolver.resolve(link);
-		assertEquals("doclet", link.getUri());
+		assertEquals("doclet", link.getPath());
 	}
 
 	@Test
@@ -155,21 +155,21 @@ class LinkResolverTests {
 	void resolve_qualifiedPackage_prevLevel() {
 		link = Link.to("io.github.sandydunlop.markista").fromPackage("io.github.sandydunlop.markista.util");
 		resolver.resolve(link);
-		assertEquals("..", link.getUri());
+		assertEquals("..", link.getPath());
 	}
 
 	@Test
 	void resolve_qualifiedStandardClass() {
 		link = Link.to("java.util.List");
         resolver.resolve(link);
-		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html", link.getUri());
+		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/util/List.html", link.getPath());
 	}
 
 	@Test
 	void resolve_qualifiedClass_noLevel() {
 		link = Link.to("io.github.sandydunlop.markista.model.Node");
 		resolver.resolve(link);
-		assertEquals("io/github/sandydunlop/markista/model/Node", link.getUri());
+		assertEquals("io/github/sandydunlop/markista/model/Node", link.getPath());
 	}
 
 	@Test
@@ -177,7 +177,7 @@ class LinkResolverTests {
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
 		link = Link.to("io.github.sandydunlop.markista.model.Node");
 		resolver.resolve(link);
-		assertEquals("../model/Node", link.getUri());
+		assertEquals("../model/Node", link.getPath());
 	}
 
 	@Test
@@ -185,7 +185,7 @@ class LinkResolverTests {
 		// This will show a warning in the test output
 		link = Link.to("Coso");
         resolver.resolve(link);
-		assertEquals("", link.getUri());
+		assertEquals("", link.getPath());
 		assertEquals(Link.Kind.UNKNOWN, link.getKind());
 	}
 
@@ -193,7 +193,7 @@ class LinkResolverTests {
 	void resolve_standard_package() {
 		link = Link.to("java.lang");
 		resolver.resolve(link);
-		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang.html", link.getUri());
+		assertEquals("https://docs.oracle.com/en/java/javase/24/docs/api/java.base/java/lang.html", link.getPath());
 	}
 
     @Disabled("New LinkResolver")
@@ -201,7 +201,7 @@ class LinkResolverTests {
 	void resolve_unqualifiedPackage_nextLevelPackage() {
 		link = Link.to("doclet").fromPackage("io.github.sandydunlop.markista");
 		resolver.resolve(link);
-		assertEquals("doclet", link.getUri());
+		assertEquals("doclet", link.getPath());
 	}
 
     @Disabled("New LinkResolver")
@@ -209,14 +209,14 @@ class LinkResolverTests {
 	void resolve_unqualifiedPackage_sameLevelPackage() {
 		link = Link.to("doclet").fromPackage("io.github.sandydunlop.markista.util");
 		resolver.resolve(link);
-		assertEquals("../doclet", link.getUri());
+		assertEquals("../doclet", link.getPath());
 	}
 
 	@Test
 	void resolve_unqualifiedClass_sameLevel() {
 		link = Link.to("MarkdownDoclet").fromPackage("io.github.sandydunlop.markista.util");
 		resolver.resolve(link);
-		assertEquals("../doclet/MarkdownDoclet", link.getUri());
+		assertEquals("../doclet/MarkdownDoclet", link.getPath());
 	}
 
     @Disabled("New LinkResolver")
@@ -224,7 +224,7 @@ class LinkResolverTests {
 	void resolve_unqualifiedPackage_prevLevel() {
 		link = Link.to("markista").fromPackage("io.github.sandydunlop.markista.util");
 		resolver.resolve(link);
-		assertEquals("..", link.getUri());
+		assertEquals("..", link.getPath());
 	}
 
 	@Test
@@ -232,7 +232,7 @@ class LinkResolverTests {
 		link = Link.to("void");
         resolver.resolve(link);
 		assertEquals(Link.Kind.VOID, link.getKind());
-		assertEquals("", link.getUri());
+		assertEquals("", link.getPath());
 	}
 
 	@Test
@@ -240,8 +240,8 @@ class LinkResolverTests {
 		link = Link.to("markista/");
 		resolver.resolve(link);
 		assertEquals(Link.Kind.MODULE, link.getKind());
-		assertNotEquals("", link.getUri());
-		assertNotEquals(null, link.getUri());
+		assertNotEquals("", link.getPath());
+		assertNotEquals(null, link.getPath());
 	}
 
     @Test
@@ -344,14 +344,14 @@ class LinkResolverTests {
     @BeforeEach
     void setUp() {
         // Assuming Configuration is a static class with a static method getListExternal
-        Configuration.setLinkExternal("");
+        Configuration.setAddModules("");
 	}
 
 
 
     void setup2() {
         Configuration.setModulePaths("");
-        Configuration.setLinkExternal("");
+        Configuration.setAddModules("");
     }
 
     @Test

@@ -218,7 +218,7 @@ public class TypeReference implements Serializable {
             } else {
                 rawTypeName = typeName;
             }
-            link = Link.to(typeName).withLabel(typeName);
+            link = Link.to(rawTypeName).withLabel(rawTypeName);
         }
 
         public boolean hasExtendsWildcard() {

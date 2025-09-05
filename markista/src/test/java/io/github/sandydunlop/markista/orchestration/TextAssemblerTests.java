@@ -42,14 +42,14 @@ class TextAssemblerTests extends ModelTestEnvironment {
     void processModules() {
         TextAssembler.processModules(api.getModules());
         for (DirectiveNode directive : module.getDirectives()) {
-            assertNotEquals("", directive.getReference().getUri());
-            assertNotEquals("", directive.getReference().getUri());
+            assertNotEquals("", directive.getReference().getPath());
+            assertNotEquals("", directive.getReference().getPath());
 
             for (Link implementation : directive.getImplementations()) {
-                assertNotEquals("", implementation.getUri());
+                assertNotEquals("", implementation.getPath());
             }
             for (Link pkg : directive.getPackages()) {
-                assertNotEquals("", pkg.getUri());
+                assertNotEquals("", pkg.getPath());
             }
         }
     }
@@ -125,7 +125,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         assertTrue(ref1.isResolved());
-        assertEquals("io/github/sandydunlop/markista", ref1.getUri());
+        assertEquals("io/github/sandydunlop/markista", ref1.getPath());
     }
 
     @Test

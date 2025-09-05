@@ -225,7 +225,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
         assertEquals(2, refs.size());
         resolver.resolve(refs.get(0));
         assertEquals(Link.Kind.URL, refs.get(0).getKind());
-        assertEquals("http://example.com", refs.get(0).getUri());
+        assertEquals("http://example.com", refs.get(0).getPath());
         assertEquals(Link.Kind.TYPE, refs.get(1).getKind());
         assertEquals("Node", refs.get(1).getTarget());
     }

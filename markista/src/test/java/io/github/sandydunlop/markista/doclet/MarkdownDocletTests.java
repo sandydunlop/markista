@@ -41,7 +41,7 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
     @Test
     void run_withoutElements() {
         mockDocletEnvironment();
-        Configuration.setCreateExternalLinks(true);
+        // Configuration.setCreateExternalLinks(true);
         List<Element> elements = new ArrayList<>();
         mockIncludedElements(elements);
         doclet.run(docletEnvironmentMock);
@@ -128,7 +128,7 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
                     break;
                 case "--link-modules":
                     assertTrue(option.process("--link-modules", List.of("module1:module2")));
-                    assertEquals("module1:module2", Configuration.getLinkExternal());
+                    assertEquals("module1:module2", Configuration.getAddModules());
                     break;
                 case "--module-path":
                     assertTrue(option.process("--module-path", List.of("module1:module2")));
@@ -161,10 +161,10 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
                     assertTrue(option.process("--flatten-packages", null));
                     assertTrue(Configuration.getFlattenPackages());
                     break;
-                case "-link":
-                    assertTrue(option.process("-link", null));
-                    assertTrue(Configuration.getCreateExternalLinks());
-                    break;
+                // case "-link":
+                //     assertTrue(option.process("-link", null));
+                //     assertTrue(Configuration.getCreateExternalLinks());
+                //     break;
                 case "-private":
                     assertTrue(option.process("-private", null));
                     assertTrue(Configuration.getDocumentPrivateMembers());

@@ -336,7 +336,7 @@ public class TextAssembler {
         for (Link reference : node.getReferences()) {
             if (reference.getKind() == Link.Kind.PAGE) {
                 String relativePath = Relativizer.relativize(ctx.getPackageName(), "");
-                reference.setUri(Path.of(relativePath, reference.getTarget()).toString());
+                reference.setPath(Path.of(relativePath, reference.getTarget()).toString());
             } else {
                 resolver.resolve(reference);
             }
@@ -364,6 +364,7 @@ public class TextAssembler {
     public static void processJavadocComments(Api api) {
         for (Link link : api.getLinks()) {
             ctx.setPackageName(link.getOriginPackage());
+            ctx.setTypeName(link.getOriginType());
             resolver.resolveLink(link);
             if (link.getLabel().contains(".")) {
                 link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));

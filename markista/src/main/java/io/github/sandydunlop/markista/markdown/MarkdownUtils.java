@@ -167,9 +167,7 @@ public class MarkdownUtils {
                 link.setLabel(link.getQualifiedClassName());
             }
         }else{
-            if (canBeSimplified(link)) {
-                link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
-            }
+            link.setLabel(link.getClassName());
         }
     }
 
@@ -231,19 +229,19 @@ public class MarkdownUtils {
         if (link.getKind() == Link.Kind.METHOD) {
             return mdRefLinkMethod(link);
         } else if (link.getKind() == Link.Kind.TYPE) {
-            return String.format(FORMAT_SIMPLE_LINK_MD, link.getLabel(), link.getUri());
+            return String.format(FORMAT_SIMPLE_LINK_MD, link.getLabel(), link.getPath());
         } else if (link.getKind() == Link.Kind.PACKAGE) {
-            return String.format("[%s](%s/index.md)", link.getLabel(), link.getUri());
+            return String.format("[%s](%s/index.md)", link.getLabel(), link.getPath());
         } else if (link.getKind() == Link.Kind.MODULE) {
-            return String.format("[%s](%s/index.md)", link.getLabel(), link.getUri());
+            return String.format("[%s](%s/index.md)", link.getLabel(), link.getPath());
         } else if (link.getKind() == Link.Kind.URL) {
             if (link.getAnchor().isEmpty()) {
-                return String.format(FORMAT_SIMPLE_LINK, link.getLabel(), link.getUri());
+                return String.format(FORMAT_SIMPLE_LINK, link.getLabel(), link.getPath());
             } else {
-                return String.format("[%s](%s#%s)", link.getLabel(), link.getUri(), link.getAnchor());
+                return String.format("[%s](%s#%s)", link.getLabel(), link.getPath(), link.getAnchor());
             }
         } else if (link.getKind() == Link.Kind.PAGE) {
-            return String.format(FORMAT_SIMPLE_LINK_MD, link.getLabel(), link.getUri());
+            return String.format(FORMAT_SIMPLE_LINK_MD, link.getLabel(), link.getPath());
 
         }
         return link.getLabel();
@@ -256,8 +254,8 @@ public class MarkdownUtils {
     public static String mdRefLinkMethod(Link link) {
         link.setAnchor(link.getAnchor().toLowerCase());
         String displayName = link.getLabel();
-        if (!link.getUri().isEmpty()) {
-            return String.format("[%s](%s.md#%s)", displayName, link.getUri(), link.getAnchor());
+        if (!link.getPath().isEmpty()) {
+            return String.format("[%s](%s.md#%s)", displayName, link.getPath(), link.getAnchor());
         } else {
             return String.format("[%s](#%s)", displayName, link.getAnchor());
         }

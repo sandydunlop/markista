@@ -88,13 +88,13 @@ public class MockedDocletEnvironment {
     }
 
     protected void resetConfiguration() {
-        Configuration.setCreateExternalLinks(false);
+        // Configuration.setCreateExternalLinks(false);
         Configuration.setDocTitle("API");
         Configuration.setDocumentPrivateMembers(false);
         Configuration.setExtensionsOrder(null);
         Configuration.setFlattenModules(false);
         Configuration.setFlattenPackages(false);
-        Configuration.setLinkExternal("");
+        Configuration.setAddModules("");
         Configuration.setModulePaths("");
         Configuration.setProjectPath(null);
         Configuration.setUseContentTabs(false);

@@ -106,6 +106,9 @@ public class ModuleWriter {
         if (!moduleNode.getConstantValues().isEmpty()) {
             outputConstantValues(moduleNode);
         }
+        if (!moduleNode.getPackages().isEmpty()){
+            outputElementList(moduleNode);
+        }
     }
 
     /// Outputs the directives declared in a module's `module-info.java` file.
@@ -158,7 +161,7 @@ public class ModuleWriter {
                 sb.append(", ");
             }
             if (reference.isResolved()) {
-                sb.append(String.format("[%s](%s)", reference.getLabel(), reference.getUri()));
+                sb.append(String.format("[%s](%s)", reference.getLabel(), reference.getPath()));
             } else {
                 sb.append(reference.getLabel());
             }
@@ -186,7 +189,7 @@ public class ModuleWriter {
     /// @param moduleNode The API tree node representing a module.
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputConstantValues(ModuleNode moduleNode) throws InvalidPathException, IOException {
-        writer = ctx.createFileInModule("constant-values.md");    
+        writer = ctx.createFileInModule("constant-values.md");
         if (!moduleNode.getConstantValues().isEmpty()) {
             writer.write("# " + TITLE_CONSTANT_FIELD_VALUES + "\n");
             MarkdownTable table = new MarkdownTable()
@@ -204,6 +207,19 @@ public class ModuleWriter {
                 table.addRow(modifiersAndType.toString(), constantValue.getSimpleName(), escape(constantValue.getConstantValue().toString()));
             }
             table.render(writer);
+        }
+        writer.flush();
+        writer.close();
+    }
+
+    private void outputElementList(ModuleNode moduleNode) throws InvalidPathException, IOException {
+        writer = ctx.createFileInModule("element-list");
+        writer.write("module:");
+        writer.write(moduleNode.getName());
+        writer.write("\n");
+        for (PackageNode packageNode : moduleNode.getPackages()) {
+            writer.write(packageNode.getName() );
+            writer.write("\n");
         }
         writer.flush();
         writer.close();

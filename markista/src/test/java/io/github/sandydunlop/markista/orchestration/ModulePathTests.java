@@ -146,7 +146,7 @@ class ModulePathTests {
         Mockito.when(mockJarFile.getInputStream(moduleInfoEntry)).thenReturn(new ByteArrayInputStream(new byte[0]));
 
         // Make the module "external"
-        Configuration.setLinkExternal(moduleName);
+        Configuration.setAddModules(moduleName);
 
         // Act & Assert
         // Use Mockito.mockStatic to mock the static ModuleDescriptor.read() method

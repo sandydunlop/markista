@@ -159,7 +159,7 @@ class ModuleWriterTests {
         Link ref = Link.to("com.example.package.Interface");
         ref.setKind(Link.Kind.TYPE);
         ref.setLabel("com.example.package.Interface");
-        ref.setUri("com/example/package/Interface.md");
+        ref.setPath("com/example/package/Interface.md");
         DirectiveNode providesDirective = mock(DirectiveNode.class);
         List<Link> implementations = List.of(
                 Link.to("com.example.package.Impl1")

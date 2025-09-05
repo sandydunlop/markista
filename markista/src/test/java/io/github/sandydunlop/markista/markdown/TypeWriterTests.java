@@ -87,7 +87,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputEnumConstantsSummary_WritesEnumConstantsTable() throws IOException {
         EnumNode enumNode = newEnum("MyEnum", model);
         Link ref = new Link(Link.Kind.URL, "example", "http://example.com");
-        ref.setTarget(ref.getUri());
+        ref.setTarget(ref.getPath());
         List<Link> references = List.of(ref);
         FieldNode constant1 = newField("int", "CONST_ONE", node);
         constant1.setFullBody(Text.of("Constant one desc"));

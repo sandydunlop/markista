@@ -44,10 +44,6 @@ public class ModulePath {
         return moduleNames;
     }
 
-    public Set<String> getClasses() {
-        return classNames;
-    }
-
     public String getModuleForClass(String className) {
         return classToModule.get(className);
     }
@@ -114,9 +110,11 @@ public class ModulePath {
     }
 
     String processClassFile(File directory, File file, URLClassLoader classLoader, String moduleName) throws IOException{
+        String className = "";
+        String relativePath = "";
         try {
-            String relativePath = directory.toURI().relativize(file.toURI()).getPath();
-            String className = relativePath.replace(File.separatorChar, '.').replace(DOT_CLASS, "");
+            relativePath = directory.toURI().relativize(file.toURI()).getPath();
+            className = relativePath.replace(File.separatorChar, '.').replace(DOT_CLASS, "");
             if (className.equals("module-info")) {
                 InputStream is = new FileInputStream(file);
                 ModuleDescriptor descriptor = ModuleDescriptor.read(is);
@@ -128,6 +126,8 @@ public class ModulePath {
                     classNames.add(declaredClass.getName());
                 }
             }
+        } catch (java.lang.NoClassDefFoundError e) {
+            ctx.reportError("Class not found: " + className + "\n" + e.getMessage());
         } catch (Exception _) {
             ctx.reportError("Failed to read class file: " + file);
         }

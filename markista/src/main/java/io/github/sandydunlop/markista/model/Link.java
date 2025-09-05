@@ -24,7 +24,7 @@ public class Link implements Serializable {
     private String nestedClassName = "";
 
     private String label = "";
-    private String uri = "";
+    private String path = "";
     private boolean resolved = false;
 
     private String methodSignature = "";
@@ -206,14 +206,14 @@ public class Link implements Serializable {
 
     /// Sets the URI of the target.
     /// @param uri The URI to set.
-    public void setUri(String uri) {
-        this.uri = uri;
+    public void setPath(String uri) {
+        this.path = uri;
     }
 
     /// Returns the URI of the target.
     /// @return The URI string.
-    public String getUri() {
-        return uri;
+    public String getPath() {
+        return path;
     }
 
     /// Sets the resolved state of this target.
@@ -294,7 +294,7 @@ public class Link implements Serializable {
     }
 
     public Link withUri(String uri) {
-        this.uri = uri;
+        this.path = uri;
         return this;
     }
 
@@ -363,6 +363,6 @@ public class Link implements Serializable {
         STANDARD,
 
         /// Within an external project
-        FOREIGN
+        EXTERNAL
     }
 }
