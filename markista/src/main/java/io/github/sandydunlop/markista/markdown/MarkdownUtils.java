@@ -167,7 +167,10 @@ public class MarkdownUtils {
                 link.setLabel(link.getQualifiedClassName());
             }
         }else{
-            link.setLabel(link.getClassName());
+            link.setLabel(link.getSimpleClassName());
+            if (link.getLabel().isEmpty()) {
+                link.setLabel(link.getNestedClassName());
+            }
         }
     }
 
