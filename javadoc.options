@@ -1,6 +1,5 @@
-"-d", "markista/build/md-docs", 
-"-private", 
-"-link",
+"-d", "markista/build/md-docs",
+"-private",
 "--flatten-packages",
 "--project-path", "markista",
 "-sourcepath", "markista/src/main/java/",

@@ -86,7 +86,6 @@ public class MarkdownDoclet implements Doclet {
                 "-docletpath", "build/classes/java/main",
                 "-d", "markista/build/md-docs",
                 "-private",
-                "-link",
                 "-doctitle", "Markista API",
                 "--flatten-packages",
                 "-sourcepath", "markista/src/main/java/",

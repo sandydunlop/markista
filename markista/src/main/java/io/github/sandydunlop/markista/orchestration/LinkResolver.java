@@ -117,6 +117,10 @@ public class LinkResolver {
         if (link == null || link.getTarget() == null || link.getTarget().isEmpty() || link.isResolved()) {
             return false;
         }
+        if (link.getTarget().equals("jdk.javadoc.doclet.Doclet.Option.Kind")) {
+            link=link;
+
+        }
         if (preResolve(link)) return true;
         if (resolvePrimitiveOrVoid(link)) return true;
         if (resolveLocalPackageOrType(link)) return true;
@@ -126,7 +130,6 @@ public class LinkResolver {
         if (resolveJrePackageOrType(link)) return true;
         if (resolveJreModule(link)) return true;
 
-        ctx.reportWarning("Failed to resolve " + link.getTarget());
         return false;
     }
 
