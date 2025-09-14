@@ -5,9 +5,11 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
 import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.Link;
+import io.github.sandydunlop.markista.model.FileLink;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.modelling.ElementModeller;
 
@@ -166,7 +168,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             }
         }
         currentModule = mod;
-        return super.visitModule(e, depth);
+        return null;
     }
 
     /// Visit a package element and, if it was included, create a PackageNode and
@@ -194,7 +196,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 }
             }
         }
-        return super.visitPackage(ee, depth);
+        return null;
     }
 
     /// Visit a type element (class/interface/enum/annotation) and create a TypeNode
@@ -270,11 +272,11 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         for (TypeNode classNode : api.getTypes()) {
             for (FieldNode fieldNode : classNode.getFields()) {
                 if (fieldNode.getConstantValue() != null) {
-                    Link ref = Link.to("constant-values")
-                            .fromPackage(classNode.getPackageName())
-                            .withKind(Link.Kind.PAGE)
+                    Reference fromPackage = new Reference(moduleNode.getName(), new Name(null, classNode.getPackageName()));
+                    FileLink link = FileLink.to("constant-values")
+                            .from(fromPackage)
                             .withLabel("Constant Field Values");
-                    fieldNode.getReferences().add(ref);
+                    fieldNode.getReferences().add(link);
                     moduleNode.addConstantValue(fieldNode);
                 }
             }

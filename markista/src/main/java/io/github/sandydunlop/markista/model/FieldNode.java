@@ -3,12 +3,12 @@ package io.github.sandydunlop.markista.model;
 import java.io.Serializable;
 
 /// A class to hold information about fields within a class, interface, or enum.
-public class FieldNode extends ParamNode { 
+public class FieldNode extends ParamNode {
 
-    /// The constant value assigned to this field, if any. 
+    /// The constant value assigned to this field, if any.
     private Serializable constantValue = null;
 
-    private TypeReference constantValueReference = null;
+    private VariableType constantValueReference = null;
 
     /// Constructs a FieldNode with the given type and name.
     /// @param type The type of the field.
@@ -29,11 +29,11 @@ public class FieldNode extends ParamNode {
         this.constantValue = constantValue;
     }
 
-    public void setConstantValueReference(TypeReference ref) {
+    public void setConstantValueReference(VariableType ref) {
         constantValueReference = ref;
     }
 
-    public TypeReference getConstantValueReference() {
+    public VariableType getConstantValueReference() {
         return constantValueReference;
     }
 
@@ -44,7 +44,7 @@ public class FieldNode extends ParamNode {
         if (!sig.isEmpty()) {
             sig += " ";
         }
-        sig += simpleName;
+        sig += name.simpleName();
         return sig;
     }
 }

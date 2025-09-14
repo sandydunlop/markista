@@ -1,18 +1,25 @@
 package io.github.sandydunlop.markista;
 
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.model.AnnotationNode;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.RecordNode;
+import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.VariableType;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.io.StringWriter;
+import java.net.URI;
+
 import jdk.javadoc.doclet.Reporter;
 
 import com.sun.source.util.DocTreePath;
@@ -21,7 +28,7 @@ import javax.lang.model.element.Element;
 
 public class ModelTestEnvironment {
     protected Context ctx;
-    protected TestReporter reporter;
+    public TestReporter reporter;
 	protected Api api;
     protected LinkResolver resolver;
 
@@ -31,7 +38,7 @@ public class ModelTestEnvironment {
 	protected PackageNode markista;
     protected ClassNode node;
 
-    class TestReporter implements Reporter {
+    protected class TestReporter implements Reporter {
         public StringWriter output = new StringWriter();
 
         @Override
@@ -57,13 +64,31 @@ public class ModelTestEnvironment {
     }
 
     protected ClassNode newClass(String typeName, PackageNode pkg) {
-        ClassNode classNode = new ClassNode(typeName, pkg.getName());
+        ClassNode classNode = new ClassNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
         configureType(classNode, pkg);
         return classNode;
     }
 
     protected EnumNode newEnum(String typeName, PackageNode pkg) {
-        EnumNode classNode = new EnumNode(typeName, pkg.getName());
+        EnumNode classNode = new EnumNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
+        configureType(classNode, pkg);
+        return classNode;
+    }
+
+    protected InterfaceNode newInterface(String typeName, PackageNode pkg) {
+        InterfaceNode classNode = new InterfaceNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
+        configureType(classNode, pkg);
+        return classNode;
+    }
+
+    protected AnnotationNode newAnnotation(String typeName, PackageNode pkg) {
+        AnnotationNode classNode = new AnnotationNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
+        configureType(classNode, pkg);
+        return classNode;
+    }
+
+    protected RecordNode newRecord(String typeName, PackageNode pkg) {
+        RecordNode classNode = new RecordNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
         configureType(classNode, pkg);
         return classNode;
     }
@@ -74,18 +99,16 @@ public class ModelTestEnvironment {
         return fieldNode;
     }
 
-    protected TypeReference newTypeReference(String typeName) {
-        return TypeReference.to(typeName);
+    protected VariableType newVariableType(String typeName) {
+        return VariableType.parse(typeName);
     }
 
     protected Link newMethodReference(String typeName, String methodName) {
-        Link methodLink = Link.to(typeName)
-                .withUri(typeName)
+        Link methodLink = Link.to(new Reference(typeName + "#" + methodName))
                 .withKind(Link.Kind.METHOD)
-                .withLabel(methodName)
                 .withMethodName(methodName);
-        methodLink.setAnchor(methodName);
-        methodLink.setQualifiedClassName(typeName);
+        methodLink.setAnchor(methodName.toLowerCase());
+        methodLink.setUri(URI.create(typeName));
         return methodLink;
     }
 
@@ -96,7 +119,6 @@ public class ModelTestEnvironment {
 		ctx.setReporter(reporter);
 
 		api = new Api("Test API");
-        ctx.setApi(api);
         api.addPackage(new PackageNode("io.github.sandydunlop"));
         markista = new PackageNode("io.github.sandydunlop.markista");
 		doclet = new PackageNode("io.github.sandydunlop.markista.doclet");
@@ -114,9 +136,11 @@ public class ModelTestEnvironment {
 		doclet.setModuleName(module.getName());
 		model.setModuleName(module.getName());
 
-        node = new ClassNode("Node", model.getName());
+        node = newClass("Node", model);
         node.setOwnerName(model.getName());
         model.addType(node);
         api.addType(node);
+
+        ctx.setApi(api);
     }
 }

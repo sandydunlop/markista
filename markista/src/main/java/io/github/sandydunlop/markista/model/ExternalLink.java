@@ -15,21 +15,19 @@ public class ExternalLink {
     Context ctx;
     Api api;
 
-    String path = "";
+    URI uri;
     List<String> modules = new ArrayList<>();
     List<String> packages = new ArrayList<>();
     Map<String,String> packageToModule = new HashMap<>();
 
-    boolean isWebLink = false;
-
-    public ExternalLink(Context c, String p) {
+    public ExternalLink(Context c, URI u) {
         ctx = c;
-        path = p;
+        uri = u;
         api = new Api("");
     }
 
-    public String getPath() {
-        return path;
+    public URI getUri() {
+        return uri;
     }
 
     public List<String> getModules() {
@@ -44,12 +42,8 @@ public class ExternalLink {
         return packageToModule;
     }
 
-    public void setWebLink(boolean b) {
-        isWebLink = b;
-    }
-
     public boolean isWebLink() {
-        return isWebLink;
+        return uri.getScheme() != null && uri.getScheme().startsWith("http");
     }
 
     public Api getApi() {
@@ -83,17 +77,16 @@ public class ExternalLink {
     }
 
     private URI uriForFile(String fileName) {
-        URI uri = URI.create(path);
+        URI fileUri;
         if (uri.getScheme() == null || uri.getScheme().equals("file")) {
-            Path p = Path.of(ctx.getOutputDirectory(), path, fileName);
+            Path directory = Path.of(uri.toString());
+            Path p = Path.of(ctx.getOutputDirectory(), directory.toString(), fileName);
             String absolute = "file://" + p.toAbsolutePath().normalize().toString();
-            uri = URI.create(absolute);
-            isWebLink = false;
+            fileUri = URI.create(absolute);
         } else {
-            uri = URI.create(path + "/" + fileName);
-            isWebLink = true;
+            fileUri = URI.create(uri + "/" + fileName);
         }
-        return uri;
+        return fileUri;
     }
 
     private List<String> loadFileFromUri(URI uri) {
@@ -103,7 +96,7 @@ public class ExternalLink {
             while ((line = reader.readLine()) != null) {
                 content.add(line);
             }
-        } catch (Exception e) {
+        } catch (Exception _) {
             ctx.reportError("Failed to read from URI: " + uri);
         }
         return content;

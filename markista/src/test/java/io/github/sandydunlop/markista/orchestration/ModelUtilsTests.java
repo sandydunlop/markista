@@ -2,9 +2,10 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.VariableType;
 import io.github.sandydunlop.markista.modelling.StandardModeller;
 
 import java.lang.reflect.Method;
@@ -41,18 +42,19 @@ class ModelUtilsTests extends ModelTestEnvironment {
         elementScanner6.addMethod(elementScannerMethod);
 
         // Set up API model version of it
-        MethodNode scan = new MethodNode("void", "scan");
+        Name methodName = new Name("scan", scanner.getName().fullyQualifiedName(), scanner.getPackageName());
+        MethodNode scan = new MethodNode("void", methodName);
         ParamNode param1 = new ParamNode("javax.lang.model.element.Element", "p1");
         ParamNode param2 = new ParamNode("java.lang.Integer", "P");
         scan.addParam(param1);
         scan.addParam(param2);
         scanner.addMethod(scan);
-        scan.setOwnerName(scanner.getQualifiedName());
+        scan.setOwnerName(scanner.getName());
 
-        TypeReference typeB = TypeReference.to(elementScanner6.getQualifiedName());
+        VariableType typeB = VariableType.parse(elementScanner6.getName().fullyQualifiedName());
 
         // Inheritance
-        scanner.getSupertypes().add(TypeReference.to("java.lang.Object"));
+        scanner.getSupertypes().add(VariableType.parse("java.lang.Object"));
         scanner.getSupertypes().add(typeB);
 
         String bt = ModelUtils.baseTypeName(scan);

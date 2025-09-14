@@ -14,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 
 import javax.lang.model.element.Element;
 
@@ -430,36 +429,5 @@ class ContextTests {
         public void print(javax.tools.Diagnostic.Kind kind, Element element, String message) {
             stringWriter.write(message);
         }
-    }
-
-    static List<Object> typeReferenceProvider() {
-        return List.of(
-            new Object[] { "java.lang.String", "String"},
-            new Object[] { "java.util.List", "List"},
-            new Object[] { "java.util.List<java.lang.String>", "List<String>"},
-            new Object[] { "java.util.HashMap<java.lang.String, java.lang.String[]>", "HashMap<String, String[]>"},
-            new Object[] { "java.util.List<? extends java.lang.String>", "List<? extends String>"},
-            new Object[] { "java.lang.String[]", "String[]"}
-        );
-    }
-
-    @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.MethodSource("typeReferenceProvider")
-	void link_to_text(String names, String expected) {
-        String simplified = Context.NameSimplifier.simplifyNames(names);
-        assertEquals(expected, simplified);
-    }
-
-    @Test
-    void nameSimplifier() {
-        String name = "io.github.sandydunlop.markista.model.Node";
-        String simplified = Context.NameSimplifier.simplifyNames(name);
-        assertEquals("Node", simplified);
-    }
-
-    @Test
-    void test() {
-        String s = Context.NameSimplifier.simplifyNames("getReferences");
-        assertEquals("getReferences", s);
     }
 }

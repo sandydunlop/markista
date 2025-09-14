@@ -12,7 +12,7 @@ public class MethodNode extends AbstractMember {
     private Link specifiedBy;
 
     /// The return type of this method.
-    private TypeReference returnType;
+    private VariableType returnType;
 
     /// Information about the method that this method overrides, if any.
     private Link baseMethod = null;
@@ -24,16 +24,16 @@ public class MethodNode extends AbstractMember {
     private final List<Link> thrownTypes = new ArrayList<>();
 
     /// The type (class/interface) that owns this method.
-    private String ownerName = null;
+    private Name ownerName = null;
 
     private boolean isConstructor = false;
 
     /// Constructs a MethodNode with the specified return type and method name.
     /// @param returnType the return type of the method.
-    /// @param name       the simple name of the method.
-    public MethodNode(String returnType, String name) {
-        this.returnType = TypeReference.to(returnType);
-        this.simpleName = name;
+    /// @param name       the name of the method.
+    public MethodNode(String returnType, Name name) {
+        this.returnType = VariableType.parse(returnType);
+        this.name = name;
     }
 
     public void setConstructor(boolean b) {
@@ -58,7 +58,7 @@ public class MethodNode extends AbstractMember {
 
     /// Returns the return type of this method.
     /// @return the TypeNode representing the return type.
-    public TypeReference getReturnType() {
+    public VariableType getReturnType() {
         return returnType;
     }
 
@@ -74,8 +74,8 @@ public class MethodNode extends AbstractMember {
         return params;
     }
 
-    public TypeReference[] getParamTypes() {
-        TypeReference[] paramTypes = new TypeReference[params.size()];
+    public VariableType[] getParamTypes() {
+        VariableType[] paramTypes = new VariableType[params.size()];
         for (int i=0; i<params.size(); i++) {
             paramTypes[i] = params.get(i).getType();
         }
@@ -96,13 +96,13 @@ public class MethodNode extends AbstractMember {
 
     /// Sets the owning type (class/interface) of this method.
     /// @param owner the name of the TypeNode representing the owner.
-    public void setOwnerName(String owner) {
+    public void setOwnerName(Name owner) {
         this.ownerName = owner;
     }
 
     /// Returns the owning type of this method.
     /// @return the name of the TypeNode representing the owner.
-    public String getOwnerName() {
+    public Name getOwnerName() {
         return ownerName;
     }
 
@@ -135,7 +135,7 @@ public class MethodNode extends AbstractMember {
     /// @return the method signature as a String.
     public String simplifiedSignature(){
         StringBuilder sb = new StringBuilder();
-        sb.append(simpleName);
+        sb.append(name.simpleName());
         sb.append("(");
         int paramCount = 0;
         for (ParamNode param : params) {

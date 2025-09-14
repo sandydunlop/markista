@@ -26,14 +26,11 @@ public class Node implements Serializable {
     /// Text showing when this node was added to the API
     private Text since = Text.empty();
 
+    /// The body of the Javadoc for this node, not including the first sentence
+    private Text body = Text.empty();
+
     /// The first sentence of the Javadoc for this node
-    protected Text firstSentence = Text.empty();
-
-    /// The body text of the Javadoc for this node
-    private final Text body = Text.empty();
-
-    /// The full text of the Javadoc for this node
-    private final Text fullBody = Text.empty();
+    private Text firstSentence = Text.empty();
 
     /// A list of references specified in this node's Javadoc
     private List<Link> references = new ArrayList<>();
@@ -95,10 +92,10 @@ public class Node implements Serializable {
         return since;
     }
 
-    /// Sets the first sentence of the documentation.
-    /// @param text The first sentence text.
-    public void setFirstSentence(Text text) {
-        firstSentence.set(text);
+    /// Sets the full body documentation text including tags.
+    /// @param t The full body text.
+    public void setFirstSentence(Text t) {
+        firstSentence = t;
     }
 
     /// Returns the first sentence of the documentation.
@@ -107,27 +104,24 @@ public class Node implements Serializable {
         return firstSentence;
     }
 
-    /// Sets the main body documentation text.
-    /// @param text The body text.
-    public void setBody(Text text) {
-        body.set(text);
+    /// Sets the body documentation text including tags.
+    /// @param t The body text.
+    public void setBody(Text t) {
+        body = t;
     }
 
-    /// Returns the main body documentation text.
+    /// Returns the body documentation text including tags.
     /// @return The body text.
     public Text getBody() {
         return body;
     }
 
-    /// Sets the full body documentation text including tags.
-    /// @param text The full body text.
-    public void setFullBody(Text text) {
-        fullBody.set(text);
-    }
-
-    /// Returns the full body documentation text including tags.
+    /// Gets the full body documentation text including tags.
     /// @return The full body text.
     public Text getFullBody() {
+        Text fullBody = Text.empty();
+        fullBody.append(firstSentence);
+        fullBody.append(body);
         return fullBody;
     }
 

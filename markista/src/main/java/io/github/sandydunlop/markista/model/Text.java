@@ -14,6 +14,8 @@ public class Text implements Serializable {
     /// List of text segments composing this Text instance.
     private List<Segment> segments = new ArrayList<>();
 
+    private SourceCodeLocation source = SourceCodeLocation.undefined();
+
     /// Creates an empty Text instance.
     /// @return A new empty Text object.
     public static Text empty() {
@@ -37,6 +39,14 @@ public class Text implements Serializable {
     /// Private constructor to prevent external instantiation.
     private Text() {
         // Nothing to see here
+    }
+
+    public void setSourceCodeLocation(SourceCodeLocation source) {
+        this.source = source;
+    }
+
+    public SourceCodeLocation getSourceCodeLocation() {
+        return source;
     }
 
     /// Returns the combined string representation of all segments.
@@ -75,8 +85,8 @@ public class Text implements Serializable {
     /// @param segment The segment to add.
     /// @return This Text instance for chaining.
     public Text append(Segment segment) {
-        if (!segment.getText().isEmpty() || 
-                !segment.getLink().getTarget().isEmpty() ||
+        if (!segment.getText().isEmpty() ||
+                segment.getLink().getTarget() != null ||
                 segment.getKind() == Segment.Kind.INHERIT) {
             segments.add(segment);
         }
@@ -158,9 +168,6 @@ public class Text implements Serializable {
         /// If text is null or empty, returns the link value.
         /// @return The text or link of this segment.
         public String toString() {
-            if (text == null || text.isEmpty()) {
-                return link.getLabel();
-            }
             return text;
         }
 
@@ -202,6 +209,9 @@ public class Text implements Serializable {
 
             /// A link
             LINK,
+
+            /// A link to a program element
+            REFERENCE,
 
             /// Source code
             CODE,

@@ -33,3 +33,4 @@ markista/.settings/org.eclipse.jdt.core.prefs
 markista.code-workspace
 /options
 .vscode/launch.json
+*.options

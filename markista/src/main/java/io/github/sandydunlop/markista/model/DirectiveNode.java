@@ -18,7 +18,7 @@ public class DirectiveNode implements Serializable {
     /// The name associated with this directive.
     private String name = "";
 
-    private Link reference;
+    private Link link;
 
     /// Indicates whether this directive is transitive.
     private boolean transitive;
@@ -38,7 +38,7 @@ public class DirectiveNode implements Serializable {
     /// @param transitive true if the directive is transitive; false otherwise.
     public DirectiveNode(Kind kind, Link reference, boolean transitive) {
         this.kind = kind;
-        this.reference = reference;
+        this.link = reference;
         this.transitive = transitive;
     }
 
@@ -48,7 +48,7 @@ public class DirectiveNode implements Serializable {
     /// @param reference the name associated with the directive.
     public DirectiveNode(Kind kind, Link reference) {
         this.kind = kind;
-        this.reference = reference;
+        this.link = reference;
     }
 
     /// Returns the kind of this directive.
@@ -63,8 +63,8 @@ public class DirectiveNode implements Serializable {
         return name;
     }
 
-    public Link getReference() {
-        return reference;
+    public Link getLink() {
+        return link;
     }
 
     /// Indicates if this directive is transitive.

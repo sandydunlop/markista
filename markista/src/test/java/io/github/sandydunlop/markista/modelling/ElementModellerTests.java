@@ -13,6 +13,7 @@ import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.SourceCodeLocation;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
@@ -20,6 +21,7 @@ import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.sandydunlop.markista.model.TypeNode;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -134,7 +136,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
         }
     };
 
-	@BeforeAll
+    @BeforeAll
     static void initAll() {
 		ctx =  Context.getInstance();
 		ctx.setReporter(reporter);
@@ -186,9 +188,8 @@ class ElementModellerTests extends MockedDocletEnvironment {
         when(treeUtils.getDocCommentTree(typeElement)).thenReturn(docCommentTree);
         when(docCommentTree.getKind()).thenReturn(com.sun.source.doctree.DocTree.Kind.END_ELEMENT);
         when(docCommentTree.toString()).thenReturn("");
-        when(docCommentTree.getFirstSentence()).thenAnswer(_ -> dtList);
-        when(docCommentTree.getBody()).thenAnswer(_ -> dtList);
         when(docCommentTree.getFullBody()).thenAnswer(_ -> dtList);
+        when(docCommentTree.getFirstSentence()).thenAnswer(_ -> dtList);
 
         aModuleElement = mock(ModuleElement.class);
         moduleElement = mock(ModuleElement.class);
@@ -223,17 +224,17 @@ class ElementModellerTests extends MockedDocletEnvironment {
         List<Link> refs = modeller.getReferences(docCommentTree);
         assertNotNull(refs);
         assertEquals(2, refs.size());
-        resolver.resolve(refs.get(0));
-        assertEquals(Link.Kind.URL, refs.get(0).getKind());
-        assertEquals("http://example.com", refs.get(0).getPath());
+        resolver.resolveLink(refs.get(0));
+        assertEquals(Link.Kind.WEB, refs.get(0).getKind());
+        assertEquals("http://example.com", refs.get(0).getUri().toString());
         assertEquals(Link.Kind.TYPE, refs.get(1).getKind());
-        assertEquals("Node", refs.get(1).getTarget());
+        assertEquals("Node", refs.get(1).getTarget().getName().fullyQualifiedName());
     }
 
     @Test
     void getUrl() {
-        String url = modeller.getUrl("<a href=\"http://example.com\">text</a>");
-        assertEquals("http://example.com", url);
+        URI url = modeller.getUrl("<a href=\"http://example.com\">text</a>");
+        assertEquals("http://example.com", url.toString());
     }
 
     @Test
@@ -241,8 +242,8 @@ class ElementModellerTests extends MockedDocletEnvironment {
         //getTypeUtils().directSupertypes(t))
         TypeNode node = modeller.modelType(typeElement);
         assertNotNull(node);
-        assertEquals("Node", node.getSimpleName());
-        assertEquals("io.github.sandydunlop.markista.model.Node", node.getQualifiedName());
+        assertEquals("Node", node.getName().simpleName());
+        assertEquals("io.github.sandydunlop.markista.model.Node", node.getName().fullyQualifiedName());
         assertEquals(Node.Kind.CLASS, node.getKind());
     }
 
@@ -263,8 +264,8 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
         TypeNode node = modeller.modelType(interfaceTypeElement);
         assertNotNull(node);
-        assertEquals("PackageMember", node.getSimpleName());
-        assertEquals("io.github.sandydunlop.markista.model.PackageMember", node.getQualifiedName());
+        assertEquals("PackageMember", node.getName().simpleName());
+        assertEquals("io.github.sandydunlop.markista.model.PackageMember", node.getName().fullyQualifiedName());
         assertEquals(Node.Kind.INTERFACE, node.getKind());
     }
 
@@ -285,8 +286,8 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
         TypeNode node = modeller.modelType(enumTypeElement);
         assertNotNull(node);
-        assertEquals("Deprecation", node.getSimpleName());
-        assertEquals("io.github.sandydunlop.markista.model.Deprecation", node.getQualifiedName());
+        assertEquals("Deprecation", node.getName().simpleName());
+        assertEquals("io.github.sandydunlop.markista.model.Deprecation", node.getName().fullyQualifiedName());
         assertEquals(Node.Kind.ENUM, node.getKind());
     }
 
@@ -307,16 +308,16 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
         TypeNode node = modeller.modelType(annotationTypeElement);
         assertNotNull(node);
-        assertEquals("Overrides", node.getSimpleName());
-        assertEquals("io.github.sandydunlop.markista.model.Overrides", node.getQualifiedName());
+        assertEquals("Overrides", node.getName().simpleName());
+        assertEquals("io.github.sandydunlop.markista.model.Overrides", node.getName().fullyQualifiedName());
         assertEquals(Node.Kind.ANNOTATION, node.getKind());
     }
 
     @Test
     void testGetUrl() {
         String html = "<a href=\"http://example.com\">link</a>";
-        String url = modeller.getUrl(html);
-        assertEquals("http://example.com", url);
+        URI url = modeller.getUrl(html);
+        assertEquals("http://example.com", url.toString());
 
         url = modeller.getUrl("noQuotes");
         assertNull(url);
@@ -343,8 +344,8 @@ class ElementModellerTests extends MockedDocletEnvironment {
         modeller = new ElementModeller(dummyApi, environment);// Passing null DocletEnvironment for tests that don't need it
         String href = "http://example.com";
         String input = "<a href=\"" + href + "\">link</a>";
-        String result = modeller.getUrl(input);
-        assertEquals(href, result);
+        URI result = modeller.getUrl(input);
+        assertEquals(href, result.toString());
     }
 
     @Test
@@ -359,6 +360,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
         mockEnvironment = mock(DocletEnvironment.class);
         DocTrees dct = mock(DocTrees.class);
         when(mockEnvironment.getDocTrees()).thenReturn(dct);
+        when(mockEnvironment.getElementUtils()).thenReturn(elementUtils);
 
         simpleName2 = mock(Name.class);
         when(simpleName2.toString()).thenReturn("Foo");
@@ -373,7 +375,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
     @Test
     void setEnumConstants_AddsEnumConstants() {
         setup2();
-        EnumNode enumNode = new EnumNode("Color", null);
+        EnumNode enumNode = new EnumNode(new io.github.sandydunlop.markista.model.Name("com.example.Color", "com.example"));
         typeElement = mock(TypeElement.class);
         Element enumConstant = mock(Element.class);
         when(enumConstant.getKind()).thenReturn(ElementKind.ENUM_CONSTANT);
@@ -385,7 +387,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
         modeller.setEnumConstants(enumNode, typeElement);
 
         assertEquals(1, enumNode.getConstants().size());
-        assertEquals("RED", enumNode.getConstants().get(0).getSimpleName());
+        assertEquals("RED", enumNode.getConstants().get(0).getName().simpleName());
     }
 
     @Test
@@ -398,7 +400,8 @@ class ElementModellerTests extends MockedDocletEnvironment {
         when(classElement.getQualifiedName()).thenReturn(qualifiedName2);
         when(classElement.getKind()).thenReturn(ElementKind.CLASS);
         TypeMirror tm = mock(TypeMirror.class);
-        TypeNode typeNode = new ClassNode("Foo", null);
+        TypeNode typeNode = new ClassNode(new io.github.sandydunlop.markista.model.Name("com.example.Foo", "com.example"));
+        when(classElement.asType()).thenReturn(tm);
 
         when(mockApi.getTypeNode("com.example.Foo")).thenReturn(typeNode);
 
@@ -410,13 +413,13 @@ class ElementModellerTests extends MockedDocletEnvironment {
         FieldNode resultNode = modeller.modelField(fieldElement);
 
         assertNotNull(resultNode);
-        assertEquals("fieldName", resultNode.getSimpleName());
+        assertEquals("fieldName", resultNode.getName().simpleName());
     }
 
     @Test
     void setAppliedAnnotations() {
         setup2();
-        TypeNode typeNode = new TypeNode("Foo", packageNode.getName());
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name(packageNode.getName()+".Foo", packageNode.getName()));
 
 
         AnnotationMirror am = mock(AnnotationMirror.class);
@@ -432,10 +435,13 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
         TypeElement declaredElement = mock(TypeElement.class);
         Name declaredName = mock(Name.class);
-        when (declaredName.toString()).thenReturn("NewAnnotation");
+        when (declaredName.toString()).thenReturn(packageNode.getName()+".NewAnnotation");
         when (declaredElement.getQualifiedName()).thenAnswer(_ -> declaredName);
         when (declaredElement.getSimpleName()).thenAnswer(_ -> declaredName);
         when (declaredType.asElement()).thenReturn(declaredElement);
+
+        PackageElement pkgElement = mockPackage("io.github.sandydunlop.markista.model");
+        when(elementUtils.getPackageOf(any())).thenAnswer(_ -> pkgElement);
 
         modeller.setAppliedAnnotations(typeNode, ac);
         assertEquals(1, typeNode.getAppliedAnnotations().size());
@@ -443,7 +449,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     void setUp2() {
         envMock = mock(DocletEnvironment.class);
-        when(envMock.getElementUtils()).thenReturn(mock(javax.lang.model.util.Elements.class));
+        when(envMock.getElementUtils()).thenReturn(elementUtils);
         when(envMock.getDocTrees()).thenReturn(mock(DocTrees.class));
 
         modeller = new ElementModeller(api, envMock);
@@ -453,9 +459,10 @@ class ElementModellerTests extends MockedDocletEnvironment {
     void setAppliedAnnotation_adds_applied_annotation_and_marks_documented() {
         setUp2();
         // Initialize TypeUtils static context
-        TypeNode targetType = new TypeNode("MyClass", packageNode.getName());
+        TypeNode targetType = new TypeNode(new io.github.sandydunlop.markista.model.Name(packageNode.getName()+".MyClass", packageNode.getName()));
 
         // Build an AnnotationMirror mock representing @MyAnno(value="x")
+        PackageElement pkgElement = mockPackage("io.github.sandydunlop.markista.model");
         AnnotationMirror annotationMirror = mock(AnnotationMirror.class);
         DeclaredType declaredType = mock(DeclaredType.class);
         TypeElement declaredElement = mock(TypeElement.class);
@@ -482,6 +489,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
         values.put(annotationMethod, avalue);
         when(annotationMirror.getElementValues()).thenAnswer(_ -> values);
 
+        when(elementUtils.getPackageOf(any())).thenAnswer(_ -> pkgElement);
         // Call method
         modeller.setAppliedAnnotation(targetType, annotationMirror);
 
@@ -566,13 +574,19 @@ class ElementModellerTests extends MockedDocletEnvironment {
         when(sinceTree.getBody()).thenReturn(Collections.emptyList());
         when(dct.getBlockTags()).thenAnswer(_ -> List.of((DocTree) sinceTree));
 
-        Text got = modeller.getSince(dct);
+        ExecutableElement methodMockThree = mockExecutable(METHOD_ONE, typeMockOne);
+        when (treeUtils.getDocCommentTree(methodMockThree)).thenReturn(dct);
+
+        Text got = modeller.getSince(methodMockThree);
         assertNotNull(got);
 
         // Without since tags
         com.sun.source.doctree.DocCommentTree empty = mock(com.sun.source.doctree.DocCommentTree.class);
         when(empty.getBlockTags()).thenReturn(Collections.emptyList());
-        Text none = modeller.getSince(empty);
+        ExecutableElement methodMockOne2 = mockExecutable(METHOD_ONE, typeMockOne);
+        when (treeUtils.getDocCommentTree(methodMockOne2)).thenReturn(empty);
+
+        Text none = modeller.getSince(methodMockOne2);
         assertNotNull(none); // should be Text.empty(), not null
     }
 
@@ -646,10 +660,10 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
         verify(methodDoc).addParam(captor.capture());
         ParamNode added = captor.getValue();
-        assertEquals("arg", added.getSimpleName());
+        assertEquals("arg", added.getName().simpleName());
         assertNotNull(added.getType().getRawTypeName()); // type constructed
         // Because we passed empty description, body is likely empty Text
-        assertNotNull(added.getBody());
+        assertNotNull(added.getFullBody());
     }
 
 
@@ -670,7 +684,10 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void setThrownTypes_adds_exception_type_names_to_methodnode() {
-        methodNode = new MethodNode("void", "method");
+        String packageName = "com.example";
+        io.github.sandydunlop.markista.model.Name methodName = new
+                io.github.sandydunlop.markista.model.Name("method", packageName + ".Type", packageName);
+        methodNode = new MethodNode("void", methodName);
 
         // Mock a TypeMirror and the environment behaviour to produce a TypeElement
         TypeMirror tm = mock(TypeMirror.class);
@@ -702,93 +719,114 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void docTreeToText_TEXT() {
+        mockDocletEnvironment();
         modeller = new ElementModeller(api, docletEnvironmentMock);
-        DocTree docTreeMock = mockDocCommentTree_TEXT("plain text");
-        Text text = modeller.docTreeToText(docTreeMock);
+        DocCommentTree docTreeMock = mockDocCommentTree_TEXT("plain text");
+
+        ExecutableElement methodMockThree = mockExecutable(METHOD_ONE, typeMockOne);
+        when (treeUtils.getDocCommentTree(methodMockThree)).thenReturn(docTreeMock);
+
+        Text text = modeller.docTreeToText(methodMockThree, docTreeMock);
         assertEquals("plain text", text.toString());
     }
 
     @Test
     void docTreeToText_MARKDOWN() {
+        mockDocletEnvironment();
         modeller = new ElementModeller(api, docletEnvironmentMock);
-        DocTree docTreeMock = mockDocCommentTree_MARKDOWN("markdown text");
-        Text text = modeller.docTreeToText(docTreeMock);
+        DocCommentTree docTreeMock = mockDocCommentTree_MARKDOWN("markdown text");
+        ExecutableElement methodMockThree = mockExecutable(METHOD_ONE, typeMockOne);
+        when (treeUtils.getDocCommentTree(methodMockThree)).thenReturn(docTreeMock);
+
+        Text text = modeller.docTreeToText(methodMockThree, docTreeMock);
         assertEquals("markdown text", text.toString());
     }
 
     @Test
     void docTreeToText_LINK() {
+        mockDocletEnvironment();
         ctx.setTypeName("Mocktype");
         modeller = new ElementModeller(api, docletEnvironmentMock);
         DocTree docTreeMock = mockDocCommentTree_LINK();
-        Text text = modeller.docTreeToText(docTreeMock);
+        ExecutableElement methodMockThree = mockExecutable(METHOD_ONE, typeMockOne);
+        when (treeUtils.getDocCommentTree(methodMockThree)).thenAnswer(_->docTreeMock);
+
+        Text text = modeller.docTreeToText(methodMockThree, docTreeMock);
         assertNotNull(text);
         assertEquals(1, text.getSegments().size());
         Segment segment = text.getSegment(0);
         assertEquals(Segment.Kind.LINK, segment.getKind());
         Link link = segment.getLink();
         assertNotNull(link);
-        assertEquals("https://example.com", link.getTarget());
+        assertEquals("io.github.sandydunlop.markista.model.Node", link.getTarget().getName().fullyQualifiedName());
     }
 
     @Test
     void docTreeToText_LINK_PLAIN() {
+        mockDocletEnvironment();
         ctx.setTypeName("Mocktype");
         modeller = new ElementModeller(api, docletEnvironmentMock);
         DocTree docTreeMock = mockDocCommentTree_LINK_PLAIN();
-        Text text = modeller.docTreeToText(docTreeMock);
+        ExecutableElement methodMockThree = mockExecutable(METHOD_ONE, typeMockOne);
+        when (treeUtils.getDocCommentTree(methodMockThree)).thenAnswer(_->docTreeMock);
+
+        Text text = modeller.docTreeToText(methodMockThree, docTreeMock);
         assertNotNull(text);
         assertEquals(1, text.getSegments().size());
         Segment segment = text.getSegment(0);
         assertEquals(Segment.Kind.LINK, segment.getKind());
         Link link = segment.getLink();
         assertNotNull(link);
-        assertEquals("https://example.com", link.getTarget());
-        assertEquals("link text", link.getLabel());
+        assertEquals("io.github.sandydunlop.markista.model.Node", link.getTarget().getName().fullyQualifiedName());
     }
 
     @Test
     void docTreeToText_START_ELEMENT() {
+        mockDocletEnvironment();
         modeller = new ElementModeller(api, docletEnvironmentMock);
         DocTree docTreeMock = mockDocCommentTree_START_ELEMENT();
-        Text text = modeller.docTreeToText(docTreeMock);
+        when (treeUtils.getDocCommentTree(methodMockOne)).thenAnswer(_->docTreeMock);
+        Text text = modeller.docTreeToText(methodMockOne, docTreeMock);
         assertEquals("\n\n", text.toString());
     }
 
     @Test
     void docTreeToText_END_ELEMENT() {
+        mockDocletEnvironment();
         modeller = new ElementModeller(api, docletEnvironmentMock);
         DocTree docTreeMock = mockDocCommentTree_END_ELEMENT();
-        Text text = modeller.docTreeToText(docTreeMock);
+        ExecutableElement methodMockThree = mockExecutable(METHOD_ONE, typeMockOne);
+        when (treeUtils.getDocCommentTree(methodMockThree)).thenAnswer(_->docTreeMock);
+
+        Text text = modeller.docTreeToText(methodMockThree, docTreeMock);
         assertEquals("", text.toString());
     }
 
     @Test
     void markdownToText_link_with_parens() {
         String markdown = "onverts Markdown text into a [Text](https://example.com) object";
-        Text text = modeller.markdownToText(markdown);
+        Text text = modeller.markdownToText(markdown, SourceCodeLocation.undefined());
         assertNotNull(text);
         assertEquals(3, text.getSegments().size());
         assertEquals(Segment.Kind.LINK, text.getSegment(1).getKind());
-        assertEquals("https://example.com", text.getSegment(1).getLink().getTarget());
-        assertEquals("Text", text.getSegment(1).getLink().getLabel());
+        assertEquals("https://example.com", text.getSegment(1).getLink().getUri().toString());
     }
 
     @Test
     void markdownToText_link_without_parens() {
         String markdown = "onverts Markdown text into a [Text] object";
-        Text text = modeller.markdownToText(markdown);
+        Text text = modeller.markdownToText(markdown, SourceCodeLocation.undefined());
         assertNotNull(text);
         assertEquals(3, text.getSegments().size());
         assertEquals(Segment.Kind.LINK, text.getSegment(1).getKind());
-        assertEquals("Text", text.getSegment(1).getLink().getTarget());
+        assertEquals("Text", text.getSegment(1).getLink().getTarget().getName().fullyQualifiedName());
     }
 
     @Test
     void markdownToTest_webLink() {
         String markdown = "the [Markista homepage](https://sandydunlop.github.io/markista)";
 
-        Text text = modeller.markdownToText(markdown);
+        Text text = modeller.markdownToText(markdown, SourceCodeLocation.undefined());
         Text.Segment segment = text.getSegments().getLast();
         assertEquals(Text.Segment.Kind.LINK, segment.getKind());
 
@@ -799,7 +837,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
     @Test
     void markdownText1() {
         String md = "one [model](io.github.sandydunlop.markista.model) two";
-        Text text = modeller.markdownToText(md);
+        Text text = modeller.markdownToText(md, SourceCodeLocation.undefined());
         assertNotNull(text);
         // "one [model](../model/index.md) two"
     }
@@ -807,7 +845,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
     @Test
     void markdownText2() {
         String md = "one [Node](Node) two";
-        Text text = modeller.markdownToText(md);
+        Text text = modeller.markdownToText(md, SourceCodeLocation.undefined());
         assertNotNull(text);
         //"one [Node](../model/Node.md) two"
     }
@@ -815,7 +853,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
     @Test
     void markdownText3() {
         String md = "one [Node] two";
-        Text text = modeller.markdownToText(md);
+        Text text = modeller.markdownToText(md, SourceCodeLocation.undefined());
         assertNotNull(text);
         //"one [Node](../model/Node.md) two"
     }
@@ -823,7 +861,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
     @Test
     void markdownText4() {
         String md = "one [Node](io.github.sandydunlop.markista.model.Node) two";
-        Text text = modeller.markdownToText(md);
+        Text text = modeller.markdownToText(md, SourceCodeLocation.undefined());
         assertNotNull(text);
         //"one [Node](../model/Node.md) two"
     }
@@ -962,12 +1000,12 @@ class ElementModellerTests extends MockedDocletEnvironment {
     ExecutableElement methodMockTwo;
 
     List<Element> buildClassOne() {
-        mockDocletEnvironment();
         List<Element> elements = new ArrayList<>();
         elements.add(mockModule(MODULE));
         PackageElement packageMockOne = mockPackage(PACKAGE_ONE);
         elements.add(packageMockOne);
         typeMockOne = mockType(TYPE_ONE, packageMockOne);
+
         elements.add(typeMockOne);
 
         ExecutableElement constructorMockOne = mockConstructor(typeMockOne);
@@ -986,7 +1024,6 @@ class ElementModellerTests extends MockedDocletEnvironment {
     }
 
     List<Element> buildClassTwo() {
-        mockDocletEnvironment();
         List<Element> elements = new ArrayList<>();
         elements.add(mockModule(MODULE));
         PackageElement packageMockTwo = mockPackage(PACKAGE_ONE);
@@ -1009,7 +1046,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
     private MethodNode getMethod(TypeNode typeNode, String methodName) {
         MethodNode method = null;
         for (MethodNode m : typeNode.getMethods()) {
-            if (m.getSimpleName().equals(methodName)) {
+            if (m.getName().simpleName().equals(methodName)) {
                 method = m;
                 break;
             }
@@ -1019,6 +1056,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void test0() {
+        mockDocletEnvironment();
         List<Element> elements = buildClassOne();
         mockIncludedElements(elements);
         Api a = visitElements(elements);
@@ -1036,6 +1074,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void test1_type_doc() {
+        mockDocletEnvironment();
         List<Element> elements = buildClassOne();
         mockIncludedElements(elements);
 
@@ -1044,6 +1083,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
         DocTree methodMockOneText = mockDocCommentTree_TEXT("methodMockOneText");
         List<DocTree> baseMethodDoc = List.of(methodMockOneText);
         when(methodMockOneDocTree.getFirstSentence()).thenAnswer(_ -> baseMethodDoc);
+        when(methodMockOneDocTree.getFullBody()).thenAnswer(_ -> baseMethodDoc);
         when(treeUtilsMock.getDocCommentTree(methodMockOne)).thenReturn(methodMockOneDocTree);
 
         Api a = visitElements(elements);
@@ -1063,6 +1103,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void test2_type_sourceFile() {
+        mockDocletEnvironment();
         List<Element> elements = buildClassOne();
         mockIncludedElements(elements);
         mockJavaFileObject(typeElement);
@@ -1075,6 +1116,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void deprecation_forRemoval() {
+        mockDocletEnvironment();
         List<Element> elements = buildClassOne();
         mockIncludedElements(elements);
         mockDeprecation(methodMockOne, true);
@@ -1089,6 +1131,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void deprecation_deprecated() {
+        mockDocletEnvironment();
         List<Element> elements = buildClassOne();
         mockIncludedElements(elements);
         mockDeprecation(methodMockOne, false);
@@ -1103,6 +1146,7 @@ class ElementModellerTests extends MockedDocletEnvironment {
 
     @Test
     void nestedClass_ownership() {
+        mockDocletEnvironment();
         List<Element> elements = buildClassOne();
         elements.addAll(buildClassTwo());
         when (typeMockTwo.getEnclosingElement()).thenReturn(typeMockOne);

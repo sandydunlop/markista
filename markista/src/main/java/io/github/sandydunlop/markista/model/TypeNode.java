@@ -11,6 +11,8 @@ public class TypeNode extends AbstractMember {
 
     protected String sourcePath;
 
+    private String moduleName;
+
     /// The owner of this type — a type or package.
     private String ownerName = "";
 
@@ -20,15 +22,15 @@ public class TypeNode extends AbstractMember {
     private final List<TypeNode> types = new ArrayList<>();
 
     /// List of references to interfaces implemented by this type and text containing links.
-    private List<TypeReference> implementedInterfaces = new ArrayList<>();
+    private List<VariableType> implementedInterfaces = new ArrayList<>();
 
     /// List of references to this type's supertypes and text containing links.
-    private List<TypeReference> supertypes = new ArrayList<>();
+    private List<VariableType> supertypes = new ArrayList<>();
 
     /// List of references to this type's subtypes and text containing links.
-    private List<TypeReference> subtypes = new ArrayList<>();
+    private List<VariableType> subtypes = new ArrayList<>();
 
-    private HashMap<TypeReference,List<Link>> inheritedMethods = new HashMap<>();
+    private HashMap<VariableType,List<MethodReference>> inheritedMethods = new HashMap<>();
 
     /// List of constructor methods belonging to this type.
     private final List<MethodNode> constructors = new ArrayList<>();
@@ -43,16 +45,10 @@ public class TypeNode extends AbstractMember {
     private boolean hasDocumentedAnnotation = false;
 
     /// Constructs a TypeNode with the specified simple name and package.
-    /// @param simpleName the simple name of this type.
-    /// @param packageName the name of the package that contains this type.
-    public TypeNode(String simpleName, String packageName) {
-        if (packageName != null && !packageName.isEmpty()) {
-            qualifiedName = packageName + "." + simpleName;
-        } else {
-            qualifiedName = simpleName;
-        }
-        this.simpleName = simpleName;
-        this.packageName = packageName;
+    /// @param name the name of this type.
+    public TypeNode(Name name) {
+        this.name = name;
+        packageName = name.packageName().toString();
     }
 
     public boolean isClass() { return kind == Node.Kind.CLASS; }
@@ -75,27 +71,39 @@ public class TypeNode extends AbstractMember {
         return sourcePath;
     }
 
+    /// Sets the module for this type.
+    /// @param module The ModuleNode that owns this type.
+    public void setModuleName(String module) {
+        this.moduleName = module;
+    }
+
+    /// Returns the module that owns this package.
+    /// @return The ModuleNode instance.
+    public String getModuleName() {
+        return moduleName;
+    }
+
     /// Returns the list of implemented interfaces by qualified names.
     /// @return list of qualified interface names.
-    public List<TypeReference> getImplementedInterfaces() {
+    public List<VariableType> getImplementedInterfaces() {
         return implementedInterfaces;
     }
 
     /// Returns the list of supertype references and text.
     /// @return list of supertype references and text.
-    public List<TypeReference> getSupertypes() {
+    public List<VariableType> getSupertypes() {
         return supertypes;
     }
 
     /// Returns the list of subtype references and text.
     /// @return list of subtype references and text.
-    public List<TypeReference> getSubtypes() {
+    public List<VariableType> getSubtypes() {
         return subtypes;
     }
 
     /// Returns the list of inherited methods organized by the type they are defined in.
     /// @return HashMap of types containing inherited methods to inherited methods.
-    public Map<TypeReference,List<Link>> getInheritedMethods() {
+    public Map<VariableType,List<MethodReference>> getInheritedMethods() {
         return inheritedMethods;
     }
 
@@ -227,7 +235,7 @@ public class TypeNode extends AbstractMember {
     /// @return the FieldNode if found, otherwise null.
     public FieldNode getField(String fieldName) {
         for (FieldNode fieldNode : fields) {
-            if (fieldNode.getSimpleName().equals(fieldName)){
+            if (fieldNode.getName().simpleName().equals(fieldName)){
                 return fieldNode;
             }
         }
@@ -276,8 +284,8 @@ public class TypeNode extends AbstractMember {
 
     /// Sorts the nodes owned by this instance into alphabetical order.
     public void sort() {
-        types.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
-        fields.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
-        methods.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
+        types.sort((a, b) -> a.getName().simpleName().compareTo(b.getName().simpleName()));
+        fields.sort((a, b) -> a.getName().simpleName().compareTo(b.getName().simpleName()));
+        methods.sort((a, b) -> a.getName().simpleName().compareTo(b.getName().simpleName()));
     }
 }

@@ -2,9 +2,9 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.model.FileLink;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.TypeNode;
 
 import java.io.IOException;
@@ -91,12 +91,8 @@ public class PackageWriter {
         for (PackageNode member : members) {
             String name = member.getName();
             name = name.substring(name.lastIndexOf(".") + 1);
-            Link link = Link.to(member.getName())
-                    .fromPackage(ctx.getPackageName())
-                    .withKind(Link.Kind.PACKAGE)
-                    .withLabel(name)
-                    .withUri(name);
-            table.addRow(MarkdownUtils.link(link, false), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));
+            FileLink link = FileLink.to(name + "/index.md").withLabel(name);
+            table.addRow(MarkdownUtils.formatFileLink(link), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));
         }
         if (Configuration.getUseContentTabs()) {
             writer.write("=== \"" + title + "\"\n\n");
@@ -119,7 +115,8 @@ public class PackageWriter {
                         TEXT_CLASS)
                 .addColumn(TEXT_DESCRIPTION);
         for (TypeNode member : members) {
-            table.addRow(MarkdownUtils.mdDocumentLink(member.getSimpleName()),
+            FileLink link = FileLink.to(member.getName().simpleName()).withLabel(member.getName().simpleName());
+            table.addRow(MarkdownUtils.formatFileLink(link),
                     MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));
         }
         if (Configuration.getUseContentTabs()) {

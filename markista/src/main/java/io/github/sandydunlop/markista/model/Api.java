@@ -140,6 +140,19 @@ public class Api extends Node {
         return null;
     }
 
+    /// Retrieves a package matching the specified qualified name.
+    /// @param name the fully qualified name of the package.
+    /// @return the matching PackageNode if found, or null otherwise.
+    public PackageNode getPackageNode(Name name) {
+        String fqn = name.fullyQualifiedName();
+        for (PackageNode packageNode : packages) {
+            if (packageNode.getName().equals(fqn)){
+                return packageNode;
+            }
+        }
+        return null;
+    }
+
     /// Gets the list of records *owned* by this instance.
     public List<TypeNode> getRecords() {
         List<TypeNode> out = new ArrayList<>();
@@ -154,7 +167,20 @@ public class Api extends Node {
     /// @return the matching TypeNode if found, or null otherwise.
     public TypeNode getTypeNode(String qualifiedName) {
         for (TypeNode typeNode : types) {
-            if (typeNode.getQualifiedName().equals(qualifiedName)){
+            if (typeNode.getName().fullyQualifiedName().equals(qualifiedName)){
+                return typeNode;
+            }
+        }
+        return null;
+    }
+
+    /// Retrieves a TypeNode based on its fully qualified name.
+    /// @param name the fully qualified name of the type.
+    /// @return the matching TypeNode if found, or null otherwise.
+    public TypeNode getTypeNode(Name name) {
+        String fqn = name.fullyQualifiedName();
+        for (TypeNode typeNode : types) {
+            if (typeNode.getName().fullyQualifiedName().equals(fqn)){
                 return typeNode;
             }
         }

@@ -7,14 +7,14 @@ public class AnnotationElement extends Node {
     /// The simple form of the name
     protected String simpleName = "";
 
-    protected String typeName = "";
+    protected VariableType type;
 
     /// Constructs an annotation element
-    /// @param typeName The type of the annotation element
+    /// @param type The type of the annotation element
     /// @param name The name of the annotation element
     /// @param value The value of the annotation element
-    public AnnotationElement(String typeName, String name, String value) {
-        this.typeName = typeName;
+    public AnnotationElement(VariableType type, String name, String value) {
+        this.type = type;
         this.simpleName = name;
         this.value = value;
     }
@@ -36,16 +36,16 @@ public class AnnotationElement extends Node {
     public String getValue() {
         return this.value;
     }
-    
+
     /// Returns the type of this element.
     /// @return The name of the element's type.
-    public String getTypeName() {
-        return typeName;
+    public VariableType getTypeName() {
+        return type;
     }
 
     /// Sets the type of this element.
     /// @param type The name of this element's type.
-    public void setTypeName(String type) {
-        this.typeName = type;
+    public void setTypeName(VariableType type) {
+        this.type = type;
     }
 }

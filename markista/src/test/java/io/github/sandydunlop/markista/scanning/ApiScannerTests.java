@@ -13,7 +13,7 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.VariableType;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -358,7 +358,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name("mockpackage.mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -391,7 +391,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name("mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
         DocTree dct = mockDocCommentTree_TEXT("plain text");
         when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
@@ -427,7 +427,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name("mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -455,7 +455,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode("mocktype", "mockpackage");
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name("mockpackage.mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -481,8 +481,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
     @Test
     void addConstantFieldValuesReference() {
-        ClassNode classNode2 = new ClassNode("Node", packageNode.getName());
-        TypeReference supertype = TypeReference.to("io.github.sandydunlop.markista.model.Node");
+        ClassNode classNode2 = new ClassNode(new io.github.sandydunlop.markista.model.Name(packageNode.getName() + "." + "Node", packageNode.getName()));
+        VariableType supertype = VariableType.parse("io.github.sandydunlop.markista.model.Node");
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
         FieldNode fieldNode = new FieldNode("int", "field");
@@ -544,6 +544,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         DocCommentTree baseMethodDocTree = mockDocCommentTree();
         DocTree baseMethodText = mockDocCommentTree_TEXT("supertypeMethodText");
         List<DocTree> baseMethodDoc = List.of(baseMethodText);
+        when(baseMethodDocTree.getFullBody()).thenAnswer(_ -> baseMethodDoc);
         when(baseMethodDocTree.getFirstSentence()).thenAnswer(_ -> baseMethodDoc);
         when(treeUtilsMock.getDocCommentTree(baseExecutableMock)).thenReturn(baseMethodDocTree);
 
@@ -551,9 +552,13 @@ class ApiScannerTests extends MockedDocletEnvironment {
         DocCommentTree typeMethodDocTree = mockDocCommentTree();
         DocTree typeMethodText = mockDocCommentTree_INHERIT_DOC();
         List<DocTree> typeMethodDoc = List.of(typeMethodText);
+        when(typeMethodDocTree.getFullBody()).thenAnswer(_ -> typeMethodDoc);
         when(typeMethodDocTree.getFirstSentence()).thenAnswer(_ -> typeMethodDoc);
         when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn(typeMethodDocTree);
         mockMethodAnnotation("java.lang.Override", "Override", executableMock);
+
+
+        when(elementUtilsMock.getPackageOf(any())).thenReturn(packageMock);
 
         // Run the code we're testing
         apiScanner.visitType(supertypeMock, 1);

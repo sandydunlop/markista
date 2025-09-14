@@ -6,13 +6,16 @@ import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.VariableType;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.model.Link;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.net.URI;
 import java.nio.file.InvalidPathException;
 import java.util.List;
 
@@ -130,11 +133,10 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleDirectives_WritesTableForDirectiveNodes() throws IOException {
-        Link ref = Link.to("com.example.package")
-                .withLabel("com.example.package");
+        Link ref = Link.to(new Reference("com.example.package"));
         DirectiveNode exportsDirective = mock(DirectiveNode.class);
         when(exportsDirective.getKind()).thenReturn(DirectiveNode.Kind.EXPORTS);
-        when(exportsDirective.getReference()).thenReturn(ref);
+        when(exportsDirective.getLink()).thenReturn(ref);
         moduleNode.addDirective(exportsDirective);
 
         moduleWriter.writeDocs(api);
@@ -146,32 +148,30 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleProvidesDirectives_WritesTableForProvides() throws IOException {
-        InterfaceNode interface0 = new InterfaceNode("Interface",
-                pkg.getName());
-        InterfaceNode interface1 = new InterfaceNode("Impl1",
-                pkg.getName());
-        InterfaceNode interface2 = new InterfaceNode("Impl2",
-                pkg.getName());
+        InterfaceNode interface0 = new InterfaceNode(new Name(pkg.getName()+".Interface",
+                pkg.getName()));
+        InterfaceNode interface1 = new InterfaceNode(new Name(pkg.getName()+".Impl1",
+                pkg.getName()));
+        InterfaceNode interface2 = new InterfaceNode(new Name(pkg.getName()+".Impl2",
+                pkg.getName()));
         api.addType(interface0);
         api.addType(interface1);
         api.addType(interface2);
 
-        Link ref = Link.to("com.example.package.Interface");
+        Link ref = Link.to(new Reference("com.example.package.Interface"));
         ref.setKind(Link.Kind.TYPE);
-        ref.setLabel("com.example.package.Interface");
-        ref.setPath("com/example/package/Interface.md");
+        ref.setUri(URI.create("com/example/package/Interface.md"));
         DirectiveNode providesDirective = mock(DirectiveNode.class);
         List<Link> implementations = List.of(
-                Link.to("com.example.package.Impl1")
-                        .withLabel("com.example.package.Impl1")
-                        .withUri("com.example.package.Impl1"),
-                Link.to("com.example.package.Impl2")
-                        .withLabel("com.example.package.Impl2")
-                        .withUri("com.example.package.Impl2"));
+                Link.to(new Reference("com.example.package.Impl1")),
+                Link.to(new Reference("com.example.package.Impl2")));
+        implementations.get(0).setUri(URI.create("com.example.package.Impl1"));
+        implementations.get(1).setUri(URI.create("com.example.package.Impl2"));
+
         when(providesDirective.getImplementations()).thenReturn(implementations);
         when(providesDirective.getKind()).thenReturn(DirectiveNode.Kind.PROVIDES);
         when(providesDirective.getName()).thenReturn("com.example.package.Interface");
-        when(providesDirective.getReference()).thenReturn(ref);
+        when(providesDirective.getLink()).thenReturn(ref);
         moduleNode.addDirective(providesDirective);
 
         moduleWriter.writeDocs(api);
@@ -185,12 +185,12 @@ class ModuleWriterTests {
 
     @Test
     void outputConstantValues_WritesConstantFieldValuesPage() throws InvalidPathException, IOException {
-        TypeReference ref = TypeReference.to("v");
-        FieldNode fieldNode = mock(FieldNode.class);
-        when(fieldNode.getModifiersString()).thenReturn("public static ");
-        when(fieldNode.getSimpleName()).thenReturn("MY_CONSTANT");
-        when(fieldNode.getConstantValue()).thenReturn("42");
-        when(fieldNode.getConstantValueReference()).thenReturn(ref);
+        VariableType ref = VariableType.parse("v");
+        FieldNode fieldNode = new FieldNode("int", "MY_CONSTANT");
+        fieldNode.setConstantValue(42);
+        fieldNode.setConstantValueReference(ref);
+        fieldNode.addModifier(io.github.sandydunlop.markista.model.Modifier.PUBLIC);
+        fieldNode.addModifier(io.github.sandydunlop.markista.model.Modifier.STATIC);
 
         moduleNode.addConstantValue(fieldNode);
 

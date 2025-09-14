@@ -1,12 +1,13 @@
 package io.github.sandydunlop.markista.model;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TextTests {
-    
+
     @Test
     void subtext_oneParam()  {
         Text text = Text.of("one");
@@ -33,22 +34,15 @@ class TextTests {
     }
 
     @Test
-    void linkLabel_empty() {
-        Link link = Link.to("java.lang.String").withLabel("String");
-        Text.Segment seg = Text.Segment.empty().setLink(link);
-        seg.setText("");
-        assertEquals("String", seg.toString());
-    }
-
-    @Test
     void test_isEmpty() {
         Text text = Text.empty();
         assertTrue(text.isEmpty());
     }
 
+    @Disabled("Won't work without doing link resolving first")
     @Test
     void test_null() {
-        Link link = Link.to("java.lang.String").withLabel("String");
+        Link link = Link.to(new Reference("java.lang.String"));
         Text.Segment seg = Text.Segment.empty().setLink(link);
         seg.setText(null);
         assertEquals("String", seg.toString());

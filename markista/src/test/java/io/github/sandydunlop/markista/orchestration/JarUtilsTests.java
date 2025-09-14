@@ -3,8 +3,9 @@ package io.github.sandydunlop.markista.orchestration;
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.VariableType;
 import io.github.sandydunlop.markista.modelling.StandardModeller;
 import io.github.sandydunlop.markista.model.TypeNode;
 
@@ -26,11 +27,12 @@ class JarUtilsTests extends ModelTestEnvironment {
     @Test
     void getMethod_compatibleParams1() {
         ClassNode subClass = newClass("SubClass", model);
-        subClass.getSupertypes().add(TypeReference.to("java.lang.Object"));
-        subClass.getSupertypes().add(TypeReference.to("javax.lang.model.util.ElementScanner9"));
+        subClass.getSupertypes().add(VariableType.parse("java.lang.Object"));
+        subClass.getSupertypes().add(VariableType.parse("javax.lang.model.util.ElementScanner9"));
 
-        MethodNode scanMethod = new MethodNode("void", "scan");
-        scanMethod.setOwnerName(node.getQualifiedName());
+        Name methodName = new Name("scan", subClass.getName().fullyQualifiedName(), model.getName());
+        MethodNode scanMethod = new MethodNode("void", methodName);
+        scanMethod.setOwnerName(node.getName());
         subClass.addMethod(scanMethod);
 
         ParamNode param1 = new ParamNode("javax.lang.model.element.Element", "param1");
@@ -49,11 +51,12 @@ class JarUtilsTests extends ModelTestEnvironment {
     @Test
     void getMethod_compatibleParams2() {
         ClassNode subClass = newClass("SubClass", model);
-        subClass.getSupertypes().add(TypeReference.to("java.lang.Object"));
-        subClass.getSupertypes().add(TypeReference.to("java.util.ArrayList"));
+        subClass.getSupertypes().add(VariableType.parse("java.lang.Object"));
+        subClass.getSupertypes().add(VariableType.parse("java.util.ArrayList"));
 
-        MethodNode addAllMethod = new MethodNode("void", "addAll");
-        addAllMethod.setOwnerName(node.getQualifiedName());
+        Name methodName = new Name("addAll", subClass.getName().fullyQualifiedName(), model.getName());
+        MethodNode addAllMethod = new MethodNode("void", methodName);
+        addAllMethod.setOwnerName(node.getName());
         subClass.addMethod(addAllMethod);
 
         ParamNode param1 = new ParamNode("java.util.Collection<? extends String>", "c");

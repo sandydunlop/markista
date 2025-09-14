@@ -38,6 +38,7 @@ import com.sun.source.doctree.DocTree;
 import com.sun.source.doctree.DocTree.Kind;
 import com.sun.source.doctree.InheritDocTree;
 import com.sun.source.doctree.LinkTree;
+import com.sun.source.doctree.ReferenceTree;
 import com.sun.source.doctree.StartElementTree;
 import com.sun.source.util.DocTreePath;
 import com.sun.source.util.DocTrees;
@@ -88,7 +89,6 @@ public class MockedDocletEnvironment {
     }
 
     protected void resetConfiguration() {
-        // Configuration.setCreateExternalLinks(false);
         Configuration.setDocTitle("API");
         Configuration.setDocumentPrivateMembers(false);
         Configuration.setExtensionsOrder(null);
@@ -119,33 +119,39 @@ public class MockedDocletEnvironment {
         return dct;
     }
 
-    protected DocTree mockDocCommentTree_MARKDOWN(String string) {
-        DocTree dct = mock(DocCommentTree.class);
+    protected DocCommentTree mockDocCommentTree_MARKDOWN(String string) {
+        DocCommentTree dct = mock(DocCommentTree.class);
         when(dct.getKind()).thenReturn(Kind.MARKDOWN);
         when(dct.toString()).thenReturn(string);
         return dct;
     }
 
-    protected DocTree mockDocCommentTree_TEXT(String string) {
+    protected DocCommentTree mockDocCommentTree_TEXT(String string) {
         DocCommentTree dct = mock(DocCommentTree.class);
         when(dct.getKind()).thenReturn(Kind.TEXT);
         when(dct.toString()).thenReturn(string);
         return dct;
     }
 
-    protected DocTree mockDocCommentTree_LINK() {
-        DocTree dct = mock(DocCommentTree.class);
+    protected LinkTree mockDocCommentTree_LINK() {
+        ReferenceTree rt = mock(ReferenceTree.class);
+        when (rt.getSignature()).thenReturn("io.github.sandydunlop.markista.model.Node");
+        LinkTree dct = mock(LinkTree.class);
+        when (dct.getReference()).thenReturn(rt);
         when(dct.getKind()).thenReturn(Kind.LINK);
-        when(dct.toString()).thenReturn("{@link https://example.com}");
+        when(dct.toString()).thenReturn("{@link io.github.sandydunlop.markista.model.Node}");
         return dct;
     }
 
     protected DocTree mockDocCommentTree_LINK_PLAIN() {
+        ReferenceTree rt = mock(ReferenceTree.class);
+        when (rt.getSignature()).thenReturn("io.github.sandydunlop.markista.model.Node");
         DocTree linkText = mockDocCommentTree_MARKDOWN("link text");
         LinkTree dct = mock(LinkTree.class);
+        when (dct.getReference()).thenReturn(rt);
         List<DocTree> list = List.of(linkText);
         when(dct.getKind()).thenReturn(Kind.LINK_PLAIN);
-        when(dct.toString()).thenReturn("{@link https://example.com link text}");
+        when(dct.toString()).thenReturn("{@link io.github.sandydunlop.markista.model.Node link text}");
         when(dct.getLabel()).thenAnswer(_ -> list);
         return dct;
     }
@@ -210,6 +216,12 @@ public class MockedDocletEnvironment {
         when (mockTypeElement.getModifiers()).thenReturn(modifierSet);
         when (mockTypeElement.getEnclosingElement()).thenReturn(mockPackageElement);
         when (mockTypeElement.getKind()).thenReturn(ElementKind.CLASS);
+        when (elementUtilsMock.getPackageOf(mockTypeElement)).thenReturn(mockPackageElement);
+
+        TypeMirror tm = mock(TypeMirror.class);
+        when(tm.toString()).thenReturn(name);
+        when(mockTypeElement.asType()).thenReturn(tm);
+
         return mockTypeElement;
     }
 

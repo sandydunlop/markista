@@ -1,6 +1,8 @@
 package io.github.sandydunlop.markista.core;
 
 import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.markista.model.Name;
+import io.github.sandydunlop.markista.model.SourceCodeLocation;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -16,13 +18,13 @@ import javax.tools.Diagnostic;
 import jdk.javadoc.doclet.Reporter;
 
 /// Singleton class that maintains the current context during documentation generation.
-/// 
+///
 /// This class tracks the current API model, output directory, current module, package, type, method, and field names,
 /// as well as the reporter used for reporting messages such as INFO, WARNING, and ERROR.
-/// 
+///
 /// It provides utilities to create directories and files for output, report errors or warnings with location information,
 /// and manage the structure of output paths in relation to package and module names.
-/// 
+///
 /// The Context instance should be obtained via getInstance(), and its fields configured as the documentation generation progresses.
 /// This class is not thread-safe.
 public class Context { //NOSONAR - This works best as a singleton but Sonar shows that as a warning
@@ -32,7 +34,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// The instance of this class that is returned to callers of getInstance()
     private static Context instance;
 
-    /// The [Reporter] used for logging messages
+    /// The [Reporter][jdk.javadoc.doclet.Reporter] used for logging messages
     private Reporter reporter;
 
     /// The Api model representing the entire documented API structure,
@@ -42,7 +44,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     /// The directory the documentation is being generated in
     private String outputDirectory = "";
 
-    /// The base section of the directory structure that contains no 
+    /// The base section of the directory structure that contains no
     /// documentation and can be skipped when creating directories.
     private String flattenedDirectories = "";
 
@@ -60,6 +62,8 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
 
     /// The name of the field currently being documented
     private String fieldName = "";
+
+    private SourceCodeLocation source = SourceCodeLocation.undefined();
 
     private WriterFactory writerFactory;
 
@@ -108,10 +112,24 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         return api;
     }
 
+    public void setSourceCodeLocation(SourceCodeLocation source) {
+        this.source = source;
+    }
+
+    public SourceCodeLocation getSourceCodeLocation() {
+        return source;
+    }
+
     /// Sets the output directory path where documentation files will be written.
     /// @param outputDirectory The output directory path as a String.
     public void setOutputDirectory(String outputDirectory) {
-        this.outputDirectory = outputDirectory == null ? "" : outputDirectory;
+        // if (outputDirectory == null || outputDirectory.isEmpty()) {
+        //     throw new IllegalArgumentException("Directory path cannot be null or empty");
+        // }
+        if (outputDirectory == null) {
+            outputDirectory = "";
+        }
+        this.outputDirectory = outputDirectory;
     }
 
     public String getOutputDirectory() {
@@ -161,6 +179,8 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     public void setTypeName(String name) {
         setMethodName("");
         setFieldName("");
+        source.setFileName("");
+        source.setLineNumber(0);
         typeName = name == null ? "" : name;
     }
 
@@ -211,12 +231,16 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     public void reportError(String message) {
         reporter.print(Diagnostic.Kind.ERROR, message + location());
     }
-    
+
     /// Returns a string describing the current location context in module, package, type, method, and field.
     /// Used to append context details to diagnostic messages.
     /// @return A formatted multi-line string describing the current location, or empty if no location info.
     private String location() {
         StringBuilder sb = new StringBuilder();
+        if (!source.isEmpty()) {
+            sb.append("    [   File] " + source.getFileName() + ":" + source.getLineNumber());
+            sb.append("\n");
+        }
         if (!moduleName.isEmpty()) {
             sb.append("    [ Module] ");
             sb.append(moduleName);
@@ -294,8 +318,11 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         if (outputDirectory.isEmpty()) outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
         File containingDir = getPackageDirectory();
         if (!containingDir.exists()) containingDir.mkdirs();
-        if (typeName.isEmpty()) typeName = "index";
-        String fileName = NameSimplifier.simplifyNames(typeName);
+        String fileName = "index";
+        if (!typeName.isEmpty()) {
+            Name name = new Name(typeName, packageName);
+            fileName = name.typeName().toString();
+        }
         return new File(containingDir, fileName + ".md");
     }
 
@@ -334,76 +361,6 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
             FileOutputStream fileOutputStream = new FileOutputStream(file);
             BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
             return new OutputStreamWriter(bufferedOutputStream);
-        }
-    }
-
-    public class NameSimplifier {
-        private NameSimplifier() {
-            // Nothing to see here
-        }
-
-        /// Changes all qualified names in a string into unqualified names.
-        /// @param  str A string that may contain one or more qualified names.
-        /// @return The input string, with all qualified names changed to unqualified names.
-        public static String simplifyNames(String str) {
-            if (str == null || str.isEmpty())
-                return "";
-            return simplifyNamesLoop(str);
-        }
-
-        private static String simplifyNamesLoop(String input) {
-            String simplified = input;
-            int qualifiedStart = -1;
-            int simpleStart = -1;
-            char prev = (char) 0;
-            int i = 0;
-            while (i <= simplified.length()) {
-                char c = i < simplified.length() ? simplified.charAt(i) : ' ';
-                if (shouldReplaceQualifiedWithSimple(qualifiedStart, simpleStart, i, simplified.length(), c)) {
-                    simplified = replaceQualifiedWithSimple(simplified, qualifiedStart, simpleStart, i);
-                    i = qualifiedStart + (i - simpleStart);
-                    simpleStart = -1;
-                    qualifiedStart = -1;
-                } else if (qualifiedStart == -1 && isValidQualifiedNameChar(c) && !isValidSimpleNameChar(prev)) {
-                    qualifiedStart = i;
-                } else if (qualifiedStart > -1 && simpleStart == -1 && Character.isUpperCase(c) && !Character.isAlphabetic(prev)) {
-                    simpleStart = i;
-                } else if (qualifiedStart > -1 && simpleStart == -1 && !isValidQualifiedNameChar(c)) {
-                    qualifiedStart = -1;
-                }
-                prev = c;
-                i++;
-            }
-            return simplified;
-        }
-
-        private static boolean shouldReplaceQualifiedWithSimple(int qualifiedStart, int simpleStart, int i, int length,
-                char c) {
-            return qualifiedStart > -1 && simpleStart > -1 && (i == length || !isValidSimpleNameChar(c));
-        }
-
-        private static String replaceQualifiedWithSimple(String simplified, int qualifiedStart, int simpleStart, int i) {
-            StringBuilder tmp = new StringBuilder();
-            if (qualifiedStart > 0)
-                tmp.append(simplified, 0, qualifiedStart);
-            tmp.append(simplified.substring(simpleStart, i));
-            if (i < simplified.length())
-                tmp.append(simplified.substring(i));
-            return tmp.toString();
-        }
-
-        /// Checks if the given character is valid in an unqualified name.
-        /// @param c The character to check.
-        /// @return  Whether or not the character is valid in an unqualified name.
-        public static boolean isValidSimpleNameChar(char c) {
-            return Character.isAlphabetic(c) || c == '.';
-        }
-
-        /// Checks if the given character is valid in a qualified name.
-        /// @param c The character to check.
-        /// @return  Whether or not the character is valid in a qualified name.
-        public static boolean isValidQualifiedNameChar(char c) {
-            return (Character.isAlphabetic(c) && Character.isLowerCase(c)) || c == '.';
         }
     }
 }

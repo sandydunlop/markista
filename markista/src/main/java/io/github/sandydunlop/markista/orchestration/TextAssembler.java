@@ -4,19 +4,24 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.DirectiveNode;
 import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.FileLink;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.RecordNode;
+import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.VariableType;
 
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,24 +63,42 @@ public class TextAssembler {
         addJavadocToRecords(api);
     }
 
+    static void reportFailure(Link link) {
+        Reference target = link.getTarget();
+        String name = "";
+        String kind = "unknown";
+        if (target.getName() == null) {
+            name = target.getModuleName();
+            kind = "module";
+        } else {
+            name = target.getName().toString();
+            if (target.getName().isPackage()) kind = "package";
+            if (target.getName().isType()) kind = "type";
+            if (target.getName().isMember()) kind = "member";
+        }
+        // This is usually a type parameter
+        ctx.setSourceCodeLocation(link.getSourceCodeLocation());
+        ctx.reportWarning("Failed to resolve " + kind + ": \"" + name + "\"");
+    }
+
     public static void processModules(List<ModuleNode> modules) {
         for (ModuleNode module : modules) {
             ctx.setModuleName(module.getName());
             // Constant field values
             for (FieldNode constant : module.getConstantValues()) {
-                resolver.resolveTypeRererence(constant.getType());
+                resolver.resolveVariableType(constant.getType());
                 constant.setConstantValueReference(constant.getType());
             }
 
             // Directives
             for (DirectiveNode directive : module.getDirectives()) {
-                resolver.resolve(directive.getReference());
-                resolver.resolve(directive.getInterface());
+                resolver.resolveLink(directive.getLink());
+                resolver.resolveLink(directive.getInterface());
                 for (Link implementation : directive.getImplementations()) {
-                    resolver.resolve(implementation);
+                    resolver.resolveLink(implementation);
                 }
                 for (Link pkg : directive.getPackages()) {
-                    resolver.resolve(pkg);
+                    resolver.resolveLink(pkg);
                 }
             }
         }
@@ -83,23 +106,21 @@ public class TextAssembler {
 
     public static void processTypeNode(TypeNode typeNode) {
         ctx.setPackageName(typeNode.getPackageName());
-        ctx.setTypeName(typeNode.getQualifiedName());
+        ctx.setTypeName(typeNode.getName().fullyQualifiedName());
 
         // Types
         TypeNode ownerTypeNode = api.getTypeNode(typeNode.getOwnerName());
         if (ownerTypeNode != null) {
-            Link ref = Link.to(ownerTypeNode.getQualifiedName())
-                    .fromPackage(ctx.getPackageName())
-                    .withKind(Link.Kind.TYPE)
-                    .withLabel(ownerTypeNode.getQualifiedName());
-            resolver.resolve(ref);
-            typeNode.setEnclosingClassRef(ref);
+            Reference ref = new Reference(ownerTypeNode.getName().fullyQualifiedName());
+            Link link = Link.to(ref).from(here());
+            resolver.resolveLink(link);
+            typeNode.setEnclosingClassRef(link);
         }
-        for (TypeReference typeRef : typeNode.getImplementedInterfaces()) {
-            resolver.resolveTypeRererence(typeRef);
+        for (VariableType typeRef : typeNode.getImplementedInterfaces()) {
+            resolver.resolveVariableType(typeRef);
         }
-        for (TypeReference typeRef : typeNode.getSupertypes()) {
-            resolver.resolveTypeRererence(typeRef);
+        for (VariableType typeRef : typeNode.getSupertypes()) {
+            resolver.resolveVariableType(typeRef);
         }
         processSubtypes(typeNode);
         processInheritedMethods(typeNode);
@@ -121,23 +142,26 @@ public class TextAssembler {
     }
 
     public static void processMethod(MethodNode method) {
-        resolver.resolveTypeRererence(method.getReturnType());
+        resolver.resolveVariableType(method.getReturnType());
         resolveLinksForParams(method.getParams()
                 .stream()
                 .filter(ParamNode.class::isInstance)
                 .map(ParamNode.class::cast)
                 .toList());
-        if (method.getSpecifiedBy() != null && !method.getSpecifiedBy().getTarget().isEmpty()) {
-            resolver.resolve(method.getSpecifiedBy());
+        if (method.getSpecifiedBy() != null && method.getSpecifiedBy().getTarget() !=null) {
+            resolver.resolveLink(method.getSpecifiedBy());
         }
         for (Link thrownRef : method.getThrownTypes()) {
-            resolver.resolve(thrownRef);
+            resolver.resolveLink(thrownRef);
         }
-        Link baseMethodRef = method.getBaseMethod();
-        if (baseMethodRef != null) {
+        Link baseMethodLink = method.getBaseMethod();
+        if (baseMethodLink != null) {
+            Name name = new Name(method.getName().simpleName());
+            name.setIsMember(true);
+            baseMethodLink.getTarget().setName(name);
             String baseTypeName = ModelUtils.baseTypeName(method);
             if (baseTypeName != null) {
-                linkBaseMethod(baseMethodRef, baseTypeName);
+                linkBaseMethod(baseMethodLink, baseTypeName);
             } else {
                 // Arriving here would indicate that the class is not in the model and not a standard java class
                 method.setBaseMethod(null);
@@ -150,7 +174,6 @@ public class TextAssembler {
                 if (baseMethod != null) {
                     method.setFirstSentence(processInheritDocTags(baseMethod.getFirstSentence(), method.getFirstSentence()));
                     method.setBody(processInheritDocTags(baseMethod.getBody(), method.getBody()));
-                    method.setFullBody(processInheritDocTags(baseMethod.getFullBody(), method.getFullBody()));
                 }
             }
         }
@@ -163,20 +186,25 @@ public class TextAssembler {
 
     public static void processSubtypes(TypeNode typeNode) {
         if (typeNode.getSupertypes().size() > 1) {
-            TypeReference typeRef = typeNode.getSupertypes().getLast();
-            String directSupertypeName = typeRef.getLink().getTarget();
-            TypeNode directSupertype = api.getTypeNode(directSupertypeName);
-            if (directSupertype != null) {
-                TypeReference subtypeRef = TypeReference.to(typeNode.getQualifiedName());
-                subtypeRef.getLink().fromPackage(directSupertype.getPackageName());
-                resolver.resolveTypeRererence(subtypeRef);
-                directSupertype.getSubtypes().add(subtypeRef);
+            VariableType typeRef = typeNode.getSupertypes().getLast();
+            Link link = typeRef.getLink();
+            if (link != null) {
+                String directSupertypeName = link.getTarget().getName().fullyQualifiedName();
+                TypeNode directSupertype = api.getTypeNode(directSupertypeName);
+                if (directSupertype != null) {
+                    VariableType subtypeRef = VariableType.parse(typeNode.getName().fullyQualifiedName());
+                    Name fromPackageName = new Name(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
+                    subtypeRef.getLink().from(new Reference("", fromPackageName));
+                    resolver.resolveVariableType(subtypeRef);
+                    directSupertype.getSubtypes().add(subtypeRef);
+                }
             }
         }
     }
 
-    public static Map<String,Pair<String,Link>> gatherOverriddenMethods(TypeNode typeNode) {
-        HashMap<String,Pair<String,Link>> methodLookup1 = new HashMap<>();
+    public static Map<String,Pair<String,MethodReference>> gatherOverriddenMethods(TypeNode typeNode) {
+        // This is realted to ElementModeller#setMethodAnnotations and TextAssembler#linkBaseMethod
+        HashMap<String,Pair<String,MethodReference>> methodLookup1 = new HashMap<>();
         // Skip the first one (java.lang.Object)
         for (int i = 1; i < typeNode.getSupertypes().size() ; i++) {
             String supertypeName = typeNode.getSupertypes().get(i).getRawTypeName();
@@ -184,9 +212,14 @@ public class TextAssembler {
             if (supertype != null) {
                 for (MethodNode baseMethod : supertype.getMethods()) {
                     if (!ModelUtils.typeHasMethod(typeNode, baseMethod)) {
-                        Link methodRef = Link.to(supertypeName + "#" + baseMethod.simplifiedSignature());
-                        methodRef.setLabel(baseMethod.getSimpleName());
-                        Pair<String,Link> refs = Pair.of(supertypeName, methodRef);
+                        Name methodName = new Name(baseMethod.getName().simpleName(), supertypeName, supertype.getPackageName());
+                        Link link = Link.to(new Reference("", methodName));
+                        link.setMethodName(baseMethod.getName().simpleName());
+                        link.setAnchor(baseMethod.getName().simpleName().toLowerCase());
+                        MethodReference mr = new MethodReference();
+                        mr.setSignature(baseMethod.simplifiedSignature());
+                        mr.setLink(link);
+                        Pair<String,MethodReference> refs = Pair.of(supertypeName, mr);
                         methodLookup1.put(baseMethod.simplifiedSignature(), refs);
                     }
                 }
@@ -195,20 +228,20 @@ public class TextAssembler {
         return methodLookup1;
     }
 
-    public static Map<String,List<Link>> listBySupertypeName(Map<String,Pair<String,Link>> methodLookup1) {
-        HashMap<String,List<Link>> methodLookup2 = new HashMap<>();
-        for (Map.Entry<String,Pair<String,Link>> entry : methodLookup1.entrySet()) {
-            Pair<String,Link> refs = entry.getValue();
+    public static Map<String,List<MethodReference>> listBySupertypeName(Map<String,Pair<String,MethodReference>> methodLookup1) {
+        HashMap<String,List<MethodReference>> methodLookup2 = new HashMap<>();
+        for (Map.Entry<String,Pair<String,MethodReference>> entry : methodLookup1.entrySet()) {
+            Pair<String,MethodReference> refs = entry.getValue();
             String supertypeName = refs.getL();
-            Link methodRef = refs.getR();
-            resolver.resolveLink(methodRef);
-            List<Link> inheritedMethods = methodLookup2.get(supertypeName);
+            MethodReference methodLink = refs.getR();
+            resolver.resolveLink(methodLink.getLink());
+            List<MethodReference> inheritedMethods = methodLookup2.get(supertypeName);
             if (inheritedMethods == null) {
-                List<Link> newList = new ArrayList<>();
-                newList.add(methodRef);
+                List<MethodReference> newList = new ArrayList<>();
+                newList.add(methodLink);
                 methodLookup2.put(supertypeName, newList);
             } else {
-                methodLookup2.get(supertypeName).add(methodRef);
+                methodLookup2.get(supertypeName).add(methodLink);
             }
         }
         return methodLookup2;
@@ -216,35 +249,35 @@ public class TextAssembler {
 
     public static void processInheritedMethods(TypeNode typeNode) {
         if (typeNode.getSupertypes().size() > 1) {
-            Map<String, Pair<String, Link>> overriddenMethods = gatherOverriddenMethods(typeNode);
-            Map<String,List<Link>> methodLookup2 = listBySupertypeName(overriddenMethods);
+            Map<String, Pair<String, MethodReference>> overriddenMethods = gatherOverriddenMethods(typeNode);
+            Map<String,List<MethodReference>> methodLookup2 = listBySupertypeName(overriddenMethods);
             // Copy methodLookup2 into typeNode's inheritedMethods hash table
-            // but use a TypeReference as the key
-            for (Map.Entry<String,List<Link>> entry : methodLookup2.entrySet()) {
-                List<Link> methods = entry.getValue();
-                TypeReference supertypeRef = TypeReference.to(entry.getKey());
-                resolver.resolveTypeRererence(supertypeRef);
+            // but use a VariableType as the key
+            for (Map.Entry<String,List<MethodReference>> entry : methodLookup2.entrySet()) {
+                List<MethodReference> methods = entry.getValue();
+                VariableType supertypeRef = VariableType.parse(entry.getKey());
+                resolver.resolveVariableType(supertypeRef);
                 typeNode.getInheritedMethods().put(supertypeRef, methods);
             }
         }
     }
 
+    // This is related to TextAssembler#gatherOverriddenMethods and ElementModeller#setMethodAnnotations
     public static void linkBaseMethod(Link baseMethodLink, String baseTypeName) {
-        if (baseMethodLink.getTarget().isEmpty()) {
-            if (!baseMethodLink.getMethodSignature().isEmpty()) {
-                baseMethodLink.setTarget(baseTypeName + "#" + baseMethodLink.getMethodSignature());
-            } else if (!baseMethodLink.getMethodName().isEmpty()) {
-                baseMethodLink.setTarget(baseTypeName + "#" + baseMethodLink.getMethodName());
-            }
+        if (baseMethodLink.getTarget().getName().isMember()) {
+            String methodName = baseMethodLink.getTarget().getName().simpleName();
+            Name typeName = new Name(baseTypeName, null);
+            baseMethodLink.getTarget().setName(typeName);
+            baseMethodLink.setKind(Link.Kind.UNRESOLVED);
+            resolver.resolveLink(baseMethodLink);
+            baseMethodLink.setAnchor(methodName.toLowerCase());
+            baseMethodLink.setKind(Link.Kind.METHOD);
         }
-        baseMethodLink.setKind(Link.Kind.UNKNOWN);
-        baseMethodLink.setLabel(baseMethodLink.getSimpleClassName() + "." + baseMethodLink.getMethodName());
-        resolver.resolveLink(baseMethodLink);
     }
 
     public static void associateMethodWithType(MethodNode methodNode) {
-        ctx.setTypeName(methodNode.getOwnerName());
-        ctx.setMethodName(methodNode.getSimpleName());
+        ctx.setTypeName(methodNode.getOwnerName().fullyQualifiedName());
+        ctx.setMethodName(methodNode.getName().simpleName());
         TypeNode ownerType = api.getTypeNode(methodNode.getOwnerName());
         if (ownerType == null) {
             ctx.reportError("Unable to determine owner of method");
@@ -252,7 +285,7 @@ public class TextAssembler {
         }
 
         if (methodNode.isConstructor()) {
-            methodNode.setSimpleName(ownerType.getSimpleName());
+            methodNode.setName(ownerType.getName());
             MethodNode existingMethodNode = ownerType.getConstructor(methodNode);
             if (existingMethodNode == null) {
                 ownerType.addConstructor(methodNode);
@@ -267,10 +300,10 @@ public class TextAssembler {
 
     public static void associateMethodsWithImplementedInterfaces(TypeNode typeNode) {
         ctx.setPackageName(typeNode.getPackageName());
-        ctx.setTypeName(typeNode.getQualifiedName());
-        List<TypeReference> interfaces = typeNode.getImplementedInterfaces();
-        for (TypeReference interfaceRef : interfaces) {
-            String interfaceName = interfaceRef.getRawTypeName();
+        ctx.setTypeName(typeNode.getName().fullyQualifiedName());
+        List<VariableType> interfaces = typeNode.getImplementedInterfaces();
+        for (VariableType interfaceRef : interfaces) {
+            String interfaceName = interfaceRef.getRawTypeName().toString();
             InterfaceNode interfaceType = (InterfaceNode) api.getTypeNode(interfaceName);
             if (interfaceType == null) {
                 interfaceType = getStandardInterface(interfaceRef);
@@ -284,28 +317,29 @@ public class TextAssembler {
         }
     }
 
-    public static InterfaceNode getStandardInterface(TypeReference interfaceRef) {
-        String qualifiedName = interfaceRef.getRawTypeName();
-        Class<?> standardClass = JreUtils.loadClass(qualifiedName);
+    public static InterfaceNode getStandardInterface(VariableType interfaceRef) {
+        String qualifiedInterfaceName = interfaceRef.getRawTypeName().toString();
+        Class<?> standardClass = JreUtils.loadClass(qualifiedInterfaceName);
         if (standardClass == null) {
             return null;
         }
+        String packageName = standardClass.getPackageName();
         Method[] methods = standardClass.getMethods();
-        InterfaceNode interfaceNode = new InterfaceNode(qualifiedName, standardClass.getPackageName());
-        interfaceNode.setQualifiedName(qualifiedName);
+        Name interfaceName = new Name(qualifiedInterfaceName, standardClass.getPackageName());
+        InterfaceNode interfaceNode = new InterfaceNode(interfaceName);
         for (Method method : methods) {
-            MethodNode methodNode = new MethodNode("", method.getName());
+            Name methodName = new Name(method.getName(), qualifiedInterfaceName, packageName);
+            MethodNode methodNode = new MethodNode("", methodName);
             interfaceNode.addMethod(methodNode);
         }
         return interfaceNode;
     }
 
     public static void setImplementingClass(InterfaceNode interfaceNode, TypeNode typeNode) {
-        Link implementingClassLink = Link
-                .to(typeNode.getQualifiedName())
-                .fromPackage(interfaceNode.getPackageName())
-                .withLabel(typeNode.getSimpleName());
-        resolver.resolve(implementingClassLink);
+        Reference toType = new Reference("", typeNode.getName());
+        Reference fromPackage = new Reference("",new Name(null, interfaceNode.getPackageName()));
+        Link implementingClassLink = Link.to(toType).from(fromPackage);
+        resolver.resolveLink(implementingClassLink);
         interfaceNode.addImplementingClass(implementingClassLink);
     }
 
@@ -313,11 +347,11 @@ public class TextAssembler {
         for (MethodNode methodNode : typeNode.getMethods()) {
             for (MethodNode interfaceMethod : interfaceNode.getMethods()) {
                 if (interfaceMethod.simplifiedSignature().equals(methodNode.simplifiedSignature())) {
+                    Reference toType = new Reference("", interfaceNode.getName());
+                    Reference fromPackage = new Reference("", new Name(null, typeNode.getPackageName()));
                     Link specifiedByLink = Link
-                            .to(interfaceNode.getQualifiedName())
-                            .fromPackage(typeNode.getPackageName())
-                            .withLabel(interfaceNode.getSimpleName());
-                    resolver.resolve(specifiedByLink);
+                            .to(toType).from(fromPackage);
+                    resolver.resolveLink(specifiedByLink);
                     methodNode.setSpecifiedBy(specifiedByLink);
                     break;
                 }
@@ -327,18 +361,23 @@ public class TextAssembler {
 
     static void resolveLinksForParams(List<ParamNode> params) {
         for (ParamNode param : params) {
-            resolver.resolveTypeRererence(param.getType());
+            resolver.resolveVariableType(param.getType());
             resolveLinksForReferences(param);
         }
     }
 
     public static void resolveLinksForReferences(Node node) {
-        for (Link reference : node.getReferences()) {
-            if (reference.getKind() == Link.Kind.PAGE) {
-                String relativePath = Relativizer.relativize(ctx.getPackageName(), "");
-                reference.setPath(Path.of(relativePath, reference.getTarget()).toString());
+        for (Link link : node.getReferences()) {
+            if (link instanceof FileLink fileLink) {
+                String docRoot = resolver.resolveRoot();
+                String target = fileLink.getFileName();
+                Path path = Path.of(docRoot, target);
+                URI uri = URI.create(path.toString());
+                fileLink.setUri(uri);
             } else {
-                resolver.resolve(reference);
+                if (!resolver.resolveLink(link)) {
+                    reportFailure(link);
+                }
             }
         }
     }
@@ -363,11 +402,13 @@ public class TextAssembler {
 
     public static void processJavadocComments(Api api) {
         for (Link link : api.getLinks()) {
-            ctx.setPackageName(link.getOriginPackage());
-            ctx.setTypeName(link.getOriginType());
-            resolver.resolveLink(link);
-            if (link.getLabel().contains(".")) {
-                link.setLabel(Context.NameSimplifier.simplifyNames(link.getLabel()));
+            if (link.getOrigin() != null) {
+                Name origin = link.getOrigin().getName();
+                ctx.setPackageName(origin.packageName().toString());
+                ctx.setTypeName(origin.typeName().toString());
+                if (!resolver.resolveLink(link)) {
+                    reportFailure(link);
+                }
             }
         }
     }
@@ -378,7 +419,7 @@ public class TextAssembler {
             for (MethodNode method : recordNode.getMethods()) {
                 Text text = method.getFirstSentence();
                 if (text.isEmpty()) {
-                    switch(method.getSimpleName()) {
+                    switch(method.getName().simpleName()) {
                         case "equals":
                             text = Text.of("Indicates whether some other object is \"equal to\" this one.");
                             break;
@@ -389,12 +430,17 @@ public class TextAssembler {
                             text = Text.of("Returns a string representation of this record class.");
                             break;
                         default:
-                            text = Text.of(String.format("Returns the value of the `%s` record component.", method.getSimpleName()));
+                            text = Text.of(String.format("Returns the value of the `%s` record component.", method.getName().simpleName()));
                             break;
                     }
                     method.setFirstSentence(text);
                 }
             }
         }
+    }
+
+    private static Reference here() {
+        Name name = new Name(ctx.getTypeName(), ctx.getPackageName());
+        return new Reference(ctx.getModuleName(), name);
     }
 }

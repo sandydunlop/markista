@@ -5,10 +5,9 @@ package io.github.sandydunlop.markista.model;
 /// It inherits properties from TypeNode and specifies its own kind.
 public class ClassNode extends TypeNode {
     /// Constructs a new ClassNode.
-    /// @param simpleName The simple name of the class.
-    /// @param packageName The name of the package this class belongs to.
-    public ClassNode(String simpleName, String packageName) {
-        super(simpleName, packageName);
+    /// @param name The name of the class.
+    public ClassNode(Name name) {
+        super(name);
         kind = Node.Kind.CLASS;
     }
 }

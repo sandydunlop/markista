@@ -2,6 +2,7 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.modelling.StandardModeller;
 
 import java.lang.reflect.Method;
@@ -20,10 +21,9 @@ public class JreUtils {
             return candidate.get();
         }
         Name name = new Name(qualifiedName);
-        for (int split = name.size() - 1; split>0; split--) {
-            String start = name.first(split);
-            String end = name.last(name.size() - split);
-            qualifiedName = start + "$" + end;
+        for (int split = name.componentCount() - 1; split>0; split--) {
+            name.setPackageComponentCount(split);
+            qualifiedName = name.fullyQualifiedBinaryName();
             candidate = tryLoadClass(qualifiedName);
             if (candidate.isPresent()) {
                 return candidate.get();

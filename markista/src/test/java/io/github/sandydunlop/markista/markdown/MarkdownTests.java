@@ -3,8 +3,10 @@ package io.github.sandydunlop.markista.markdown;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ClassNode;
+import io.github.sandydunlop.markista.model.FileLink;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
@@ -14,6 +16,7 @@ import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
 import java.io.StringWriter;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -73,9 +76,9 @@ class MarkdownTests {
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-		api.addType(new ClassNode("LinkResolver", util.getName()));
-		api.addType(new ClassNode("MarkdownDoclet", doclet.getName()));
-		api.addType(new ClassNode("MarkdownDoclet.Option", doclet.getName()));
+		api.addType(new ClassNode(new Name("io.github.sandydunlop.markista.util.LinkResolver", util.getName())));
+		api.addType(new ClassNode(new Name("io.github.sandydunlop.markista.doclet.MarkdownDoclet", doclet.getName())));
+		api.addType(new ClassNode(new Name("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option", doclet.getName())));
 
         module = new ModuleNode("markista");
 		api.addModule(module);
@@ -88,11 +91,11 @@ class MarkdownTests {
 		doclet.setModuleName(module.getName());
 		model.setModuleName(module.getName());
 
-        node = new ClassNode("Node", model.getName());
+        node = new ClassNode(new Name(model.getName()+".Node", model.getName()));
         model.addType(node);
         api.addType(node);
 
-        markdownDoclet = new ClassNode("MarkdownDoclet", doclet.getName());
+        markdownDoclet = new ClassNode(new Name(doclet.getName()+".MarkdownDoclet", doclet.getName()));
         model.addType(markdownDoclet);
 
 		Relativizer.setFlattenedDirectories(null);
@@ -106,7 +109,8 @@ class MarkdownTests {
         ParamNode param1 = new ParamNode("java.lang.String", "name");
         params.add(param1);
 
-        MethodNode method = new MethodNode(node.getQualifiedName(), "subject");
+        Name methodName = new Name("subject", markdownDoclet.getName().fullyQualifiedName(), markdownDoclet.getPackageName());
+        MethodNode method = new MethodNode(node.getName().fullyQualifiedName(), methodName);
         method.addParam(param1);
         markdownDoclet.addMethod(method);
         api.addType(markdownDoclet);
@@ -159,7 +163,7 @@ class MarkdownTests {
 
     @Test
     void formatText_text_link_text() {
-        Link link = Link.to("http://example.com");
+        Link link = Link.toWeb(URI.create("http://example.com"));
         Text text = Text.empty();
         text.append(Segment.empty()
                 .setKind(Text.Segment.Kind.TEXT)
@@ -180,19 +184,22 @@ class MarkdownTests {
 
     @Test
     void mdDocumentLink_doc() {
-        String md = MarkdownUtils.mdDocumentLink("page");
+        FileLink link = FileLink.to("page").withLabel("page");
+        String md = MarkdownUtils.formatFileLink(link);
         assertEquals("[page](page.md)", md);
     }
 
     @Test
     void mdDocumentLink_doc2() {
-        String md = MarkdownUtils.mdDocumentLink("page.md");
+        FileLink link = FileLink.to("page.md").withLabel("page.md");
+        String md = MarkdownUtils.formatFileLink(link);
         assertEquals("[page.md](page.md)", md);
     }
 
     @Test
     void mdDocumentLink_url() {
-        String md = MarkdownUtils.mdDocumentLink("https://example.com");
+        FileLink link = FileLink.to("https://example.com").withLabel("https://example.com");
+        String md = MarkdownUtils.formatFileLink(link);
         assertEquals("[https://example.com](https://example.com)", md);
     }
 

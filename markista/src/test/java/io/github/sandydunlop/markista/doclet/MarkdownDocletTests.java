@@ -41,7 +41,6 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
     @Test
     void run_withoutElements() {
         mockDocletEnvironment();
-        // Configuration.setCreateExternalLinks(true);
         List<Element> elements = new ArrayList<>();
         mockIncludedElements(elements);
         doclet.run(docletEnvironmentMock);
@@ -69,7 +68,7 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
     @Test
     void extensions_withOrder() {
         mockDocletEnvironment();
-        Configuration.setExtensionsOrder("MarkdownDocletTests$TestDocService");
+        Configuration.setExtensionsOrder("TestDocService");
         DocService service = mock(TestDocService.class);
         @SuppressWarnings("unchecked")
         ServiceLoader<DocService> loader = mock(ServiceLoader.class);
@@ -161,10 +160,6 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
                     assertTrue(option.process("--flatten-packages", null));
                     assertTrue(Configuration.getFlattenPackages());
                     break;
-                // case "-link":
-                //     assertTrue(option.process("-link", null));
-                //     assertTrue(Configuration.getCreateExternalLinks());
-                //     break;
                 case "-private":
                     assertTrue(option.process("-private", null));
                     assertTrue(Configuration.getDocumentPrivateMembers());

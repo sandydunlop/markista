@@ -2,10 +2,13 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.ParamNode;
+import io.github.sandydunlop.markista.model.FileLink;
 import io.github.sandydunlop.markista.model.Link;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.TypeReference;
-import io.github.sandydunlop.markista.model.TypeReference.TypeParameter;
+import io.github.sandydunlop.markista.model.VariableType;
+import io.github.sandydunlop.markista.model.VariableType.BoundingKind;
+import io.github.sandydunlop.markista.model.VariableType.TypeParameter;
 
 import java.util.List;
 
@@ -27,6 +30,26 @@ public class MarkdownUtils {
         ctx = c;
     }
 
+    /// Create a markdown formatted link
+    /// @param link a Link object describing the link
+    /// @param useQualifiedName If true, qualified names will be used in the link label
+    /// @return markdown formatted link
+    public static String link(Link link, boolean useQualifiedName) {
+        if (link.getTarget() == null || link.getTarget().getName() == null) {
+            if (link instanceof FileLink fileLink) {
+                return formatLink(fileLink, fileLink.getLabel());
+            } else {
+                // Only web links should reach here
+                return formatLink(link, link.getUri().toString());
+            }
+        }
+        if (useQualifiedName) {
+            return formatLink(link, link.getTarget().getName().fullyQualifiedName());
+        } else {
+            return formatLink(link, link.getTarget().getName().simpleName());
+        }
+    }
+
     /// Formats a list of `ParamNode` objects as markdown, identifying and linking type names.
     /// @param params a `Reference` object specifying a link
     /// @return Markdown formatted text containing a link
@@ -35,10 +58,10 @@ public class MarkdownUtils {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(", ");
-            String typeName = formatTypeRef(param.getType(), false);
+            String typeName = formatVariableType(param.getType(), false);
             sb.append(typeName);
             sb.append(" ");
-            sb.append(param.getSimpleName());
+            sb.append(param.getName().simpleName());
         }
         return sb.toString();
     }
@@ -68,7 +91,8 @@ public class MarkdownUtils {
                     sb.append("`");
                     break;
                 case Text.Segment.Kind.LINK:
-                    sb.append(formatLink(segment, qualifyType, qualifyMember));
+                    String label = formatLinkLabel(segment, qualifyType, qualifyMember);
+                    sb.append(formatLink(segment.getLink(), label));
                     break;
                 default:
                     ctx.reportWarning("Unhandled javadoc tag:\n  " + segment.getKind().toString() + "\n  " + segment);
@@ -77,187 +101,141 @@ public class MarkdownUtils {
         return sb.toString();
     }
 
-    public static String formatTypeRef(TypeReference typeRef) {
-        return formatTypeRef(typeRef, false);
+    public static String formatVariableType(VariableType typeRef) {
+        return formatVariableType(typeRef, false);
     }
 
-    public static String formatTypeRef(TypeReference typeRef, boolean useQualifiedName) {
+    public static String formatVariableType(VariableType variableType, boolean useQualifiedName) {
         StringBuilder sb = new StringBuilder();
-        switch (typeRef) {
-            case TypeReference.Generic generic -> {
-                sb.append(link(typeRef.getLink(), useQualifiedName));
+        if (variableType.getTypeParameterDeclaration() != null) {
+            sb.append(variableType.getTypeParameterDeclaration());
+            sb.append(" ");
+        }
+        switch (variableType) {
+            case VariableType.Generic generic -> {
+                sb.append(formatVariableTypeLink(variableType, useQualifiedName));
                 sb.append("<");
-                if (generic.hasWildcard()) {
-                    sb.append("?");
-                } else if (generic.hasExtendsWildcard()) {
-                    sb.append("? extends ");
-                }
-                sb.append(formatTypeRef(generic.getParams(), useQualifiedName));
+                sb.append(boundingConstraint(generic));
+                sb.append(formatVariableType(generic.getParams(), useQualifiedName));
                 sb.append(">");
             }
-            case TypeReference.Sequence sequence -> {
-                for (TypeReference element : sequence) {
+            case VariableType.Sequence sequence -> {
+                for (VariableType element : sequence) {
                     if (!sb.isEmpty()) {
                         sb.append(", ");
                     }
-                    sb.append(formatTypeRef(element, useQualifiedName));
+                    sb.append(formatVariableType(element, useQualifiedName));
                 }
             }
             case TypeParameter typeParameter -> {
-                if (typeParameter.hasExtendsWildcard()) {
-                    sb.append("? extends ");
-                }
-                sb.append(link(typeRef.getLink(), useQualifiedName));
+                sb.append(boundingConstraint(typeParameter));
+                sb.append(formatVariableTypeLink(variableType, useQualifiedName));
             }
-            default -> sb.append(link(typeRef.getLink(), useQualifiedName));
+            default -> sb.append(formatVariableTypeLink(variableType, useQualifiedName));
         }
-        for (int d = 0; d < typeRef.arrayDimensions(); d++) {
+        for (int d = 0; d < variableType.arrayDimensions(); d++) {
             sb.append("[]");
         }
         return sb.toString();
     }
 
-    /// Formats links contained in a text segment as markdown.
-    /// @param segment A text segment
+    private static String boundingConstraint(TypeParameter type) {
+        if (type.getBoundingKind() == BoundingKind.UPPER) {
+            return type.getBoundingParameter() + " extends ";
+        } else if (type.getBoundingKind() == BoundingKind.LOWER) {
+            return type.getBoundingParameter() + " super ";
+        }
+        return "";
+    }
+
+    public static String formatVariableTypeLink(VariableType variableType, boolean useQualifiedName) {
+        if (variableType.getLink() != null) {
+            return link(variableType.getLink(), useQualifiedName);
+        } else {
+            return variableType.getRawTypeName();
+        }
+    }
+
+    /// Formats links as markdown.
+    /// @param link The link object containing information about the link
+    /// @param label The text that will be displayed for the link
     /// @return Markdown formatted text with a resolved link
-    public static String formatLink(Text.Segment segment, boolean qualifyType, boolean qualifyMember) {
-        if (segment.getLink().getLabel() == null || segment.getLink().getLabel().isEmpty()) {
-            segment.getLink().setLabel(segment.getText());
-        }
-        if (segment.getLink().getLabel().isEmpty()) {
-            segment.getLink().setLabel(segment.getLink().getTarget());
-        }
-        if (qualifyType) {
-            return link(segment.getLink(), segment.getLink().getLabel(), qualifyType, qualifyMember);
-        } else {
-            return link(segment.getLink(), segment.getText(), qualifyType, qualifyMember);
-        }
-    }
-
-    /// Create a markdown formatted link
-    /// @param reference a Reference object describing the link
-    /// @param useQualifiedName If true, qualified names will be used in the link label
-    /// @return markdown formatted link
-    public static String link(Link reference, boolean useQualifiedName) {
-        return link(reference, null, useQualifiedName, true);
-    }
-
-    public static String link(Link reference, boolean useQualifiedName, boolean qualifyMember) {
-        return link(reference, null, useQualifiedName, qualifyMember);
-    }
-
-    public static String link(Link link, String label, boolean qualifyType, boolean qualifyMember) {
-        if (link.getKind() == Link.Kind.METHOD) {
-            setLabelForMethod(link, label, qualifyType, qualifyMember);
-        } else if(link.getKind() == Link.Kind.URL) {
-            setLabelForUrl(link, qualifyType, qualifyMember);
-        } else if (link.getKind() == Link.Kind.TYPE) {
-            setLabelForType(link, qualifyType);
-        }
-        if (label!= null && !label.isEmpty()) {
-            link.setLabel(label);
-        }
-        link.setLabel(escape(link.getLabel()));
-        return mdRefLink(link);
-    }
-
-    private static void setLabelForType(Link link, boolean qualifyType) {
-        if (qualifyType) {
-            if (!link.getQualifiedClassName().isEmpty()) {
-                link.setLabel(link.getQualifiedClassName());
-            }
-        }else{
-            link.setLabel(link.getClassName());
-        }
-    }
-
-    private static void setLabelForMethod(Link link, String label, boolean qualifyType, boolean qualifyMember) {
-        if (qualifyType && !link.getQualifiedClassName().isEmpty()) {
-            link.setLabel(link.getQualifiedClassName() + "." + link.getMethodName());
-        } else if (qualifyMember && !link.getSimpleClassName().isEmpty()) {
-            if (link.getSimpleClassName().isEmpty()) {
-                link.setLabel(link.getSimpleClassName() + "." + link.getMethodName());
+    public static String formatLink(Link link, String label) {
+        if (link.getUri() != null && link.getUri().getScheme() != null && link.getUri().getScheme().startsWith("http")) {
+            if (link.getAnchor() != null && !link.getAnchor().isEmpty()) {
+                return String.format("[%s](%s#%s)", label, link.getUri(), link.getAnchor());
             } else {
-                link.setLabel(link.getNestedClassName() + "." + link.getMethodName());
-            }
-        } else if (label!= null && !label.isEmpty()) {
-            link.setLabel(label);
-        }
-    }
-
-    private static void setLabelForUrl(Link link, boolean qualifyType, boolean qualifyMember) {
-        if (link.getMethodName().isEmpty()) {
-            setLabelForUrlWithMethod(link, qualifyType);
-        } else {
-            if (qualifyMember) {
-                if (!link.getSimpleClassName().isEmpty()) {
-                    if (link.getSimpleClassName().isEmpty()) {
-                        link.setLabel(link.getSimpleClassName() + "." + link.getMethodName());
-                    } else {
-                        link.setLabel(link.getNestedClassName() + "." + link.getMethodName());
-                    }
-                }
-            } else {
-                link.setLabel(link.getMethodName());
-            }
-        }
-    }
-
-    private static void setLabelForUrlWithMethod(Link link, boolean qualifyType) {
-        if (qualifyType) {
-            if (!link.getQualifiedClassName().isEmpty()) {
-                link.setLabel(link.getQualifiedClassName());
+                return String.format(FORMAT_SIMPLE_LINK, label, link.getUri());
             }
         } else {
-            if (!link.getSimpleClassName().isEmpty()) {
-                link.setLabel(link.getSimpleClassName());
-            }
+            return formatLocalLink(link, label);
         }
     }
 
-    private static boolean canBeSimplified(Link link) {
-        boolean originIsInPackage = !ctx.getPackageName().isEmpty();
-        boolean kindCanBeSimplified = link.getKind() == Link.Kind.TYPE || link.getKind() == Link.Kind.METHOD || link.getKind() == Link.Kind.URL;
-        return kindCanBeSimplified && originIsInPackage;
-    }
-
-
-    /// Creates a markdown formatted link from a [Link] object.
-    /// @param link The reference object
-    /// @return a markdown formatted link
-    public static String mdRefLink(Link link) {
+    public static String formatLocalLink(Link link, String label) {
         if (link.getKind() == Link.Kind.METHOD) {
-            return mdRefLinkMethod(link);
+            return formatLocalMethodLink(link, label);
         } else if (link.getKind() == Link.Kind.TYPE) {
-            return String.format(FORMAT_SIMPLE_LINK_MD, link.getLabel(), link.getPath());
+            return String.format(FORMAT_SIMPLE_LINK_MD, label, link.getUri());
         } else if (link.getKind() == Link.Kind.PACKAGE) {
-            return String.format("[%s](%s/index.md)", link.getLabel(), link.getPath());
+            return String.format("[%s](%sindex.md)", label, link.getUri());
         } else if (link.getKind() == Link.Kind.MODULE) {
-            return String.format("[%s](%s/index.md)", link.getLabel(), link.getPath());
-        } else if (link.getKind() == Link.Kind.URL) {
-            if (link.getAnchor().isEmpty()) {
-                return String.format(FORMAT_SIMPLE_LINK, link.getLabel(), link.getPath());
-            } else {
-                return String.format("[%s](%s#%s)", link.getLabel(), link.getPath(), link.getAnchor());
-            }
-        } else if (link.getKind() == Link.Kind.PAGE) {
-            return String.format(FORMAT_SIMPLE_LINK_MD, link.getLabel(), link.getPath());
-
+            return String.format("[%s](%sindex.md)", label, link.getUri());
+        } else if (link.getKind() == Link.Kind.FILE) {
+            return String.format(FORMAT_SIMPLE_LINK_MD, label, link.getUri());
         }
-        return link.getLabel();
+        return label;
     }
 
     /// Creates a markdown formatted link from a [Link] object.
     /// with the option of simplifying qualified type names.
     /// @param link The reference object
     /// @return a markdown formatted link
-    public static String mdRefLinkMethod(Link link) {
-        link.setAnchor(link.getAnchor().toLowerCase());
-        String displayName = link.getLabel();
-        if (!link.getPath().isEmpty()) {
-            return String.format("[%s](%s.md#%s)", displayName, link.getPath(), link.getAnchor());
+    public static String formatLocalMethodLink(Link link, String label) {
+        if (link.getUri() == null) {
+            return String.format("[%s](#%s)", label, link.getAnchor());
         } else {
-            return String.format("[%s](#%s)", displayName, link.getAnchor());
+            return String.format("[%s](%s.md#%s)", label, link.getUri(), link.getAnchor());
+        }
+    }
+
+    /// Formats links contained in a text segment as markdown.
+    /// @param segment A text segment
+    /// @return Markdown formatted text with a resolved link
+    public static String formatLinkLabel(Text.Segment segment, boolean qualifyType, boolean qualifyMember) {
+        Link link = segment.getLink();
+        String label = segment.getText();
+        if (link.getKind() == Link.Kind.METHOD) {
+            label = getLabelForMethod(link, qualifyMember);
+        } else if(link.getKind() == Link.Kind.WEB) {
+            if (segment.getText().isEmpty()) {
+                label = link.getUri().toString();
+            } else {
+                label = segment.getText();
+            }
+        } else if (link.getKind() == Link.Kind.TYPE) {
+            label = getLabelForType(link, qualifyType);
+        }
+        return label;
+    }
+
+    private static String getLabelForType(Link link, boolean qualifyType) {
+        Name name = link.getTarget().getName();
+        if (qualifyType) {
+            return name.fullyQualifiedName();
+        } else {
+            return name.simpleName();
+        }
+    }
+
+    private static String getLabelForMethod(Link link, boolean qualifyMember) {
+        Name name = link.getTarget().getName();
+        if (qualifyMember) {
+            Name typeName = name.typeName();
+            Name methodName = name.lastComponents(1);
+            return typeName.toString() + "." + methodName.toString();
+        } else {
+            return name.lastComponents(1).toString();
         }
     }
 
@@ -286,13 +264,21 @@ public class MarkdownUtils {
     }
 
     /// Creates a Markdown link to another Markdown document
-    /// @param docName The filename of the document being linked to
+    /// @param link MarkdownLink object
     /// @return The Markdown formatted link
-    public static String mdDocumentLink(String docName) {
-        if (docName.contains("://") || docName.endsWith(".md")){
-            return String.format(FORMAT_SIMPLE_LINK, docName, docName);
+    public static String formatFileLink(FileLink link) {
+        if (link.getFileName() == null) {
+            ctx.reportWarning("No path specified");
+            return "";
+        } else {
+            String uriString = link.getFileName();
+            String label = link.getLabel();
+            if (uriString.contains("://") || uriString.endsWith(".md")){
+                return String.format(FORMAT_SIMPLE_LINK, label, uriString);
+            } else {
+                return String.format(FORMAT_SIMPLE_LINK_MD, label, uriString);
+            }
         }
-        return String.format(FORMAT_SIMPLE_LINK_MD, docName, docName);
     }
 
     /// Escapes HTML `<` and `>` characters in a string with their corresponding

@@ -2,96 +2,76 @@ package io.github.sandydunlop.markista.model;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.net.URI;
 
 /// `target` encapsulates links to web pages, markdown pages, modules, packages, types, and methods.
 public class Link implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    /// The package the link is coming from. Empty string means there is no package. Null means it hasn't been set yet.
-    private String originPackage = "";
-    private String originType = "";
-    private String target = "";
-
-    private Kind kind = Kind.UNKNOWN;
-    private Scope scope = Scope.UNKNOWN;
-    private String moduleName = "";
-    private String packageName = "";
-
-    private String className = "";
-    private String qualifiedClassName = "";
-    private String simpleClassName = "";
-    private String nestedClassName = "";
-
-    private String label = "";
-    private String path = "";
     private boolean resolved = false;
+    protected Kind kind = Kind.UNRESOLVED;
+    protected Scope scope = Scope.UNKNOWN;
+    protected URI uri;
+
+    protected Reference origin = null;
+    protected Reference target = null;
 
     private String methodSignature = "";
     private String methodName = "";
     private String anchor = "";
 
+    private SourceCodeLocation source = SourceCodeLocation.undefined();
+
     /// Default constructor creates an empty target with kind and scope set to NONE.
     public Link() {
+        // Nothing to see here
     }
 
-    /// Constructs a target with given kind, name, and URI. Scope defaults to LOCAL.
-    /// @param kind The kind of the target.
-    /// @param label The display name for the target.
-    /// @param target What the refrence links to
-    public Link(Kind kind, String label, String target) {
-        this.scope = Scope.LOCAL;
-        this.kind = kind;
-        this.target = target;
-        this.label = label;
+    /// Sets the target of the link to the provided URL.
+    /// @param url The URL to use
+    /// @return the link with its target set
+    public static Link toWeb(URI url) {
+        Link link = new Link();
+        link.setUri(url);
+        link.setResolved(true);
+        link.setKind(Link.Kind.WEB);
+        link.setScope(Scope.UNKNOWN);
+        return link;
     }
 
-    /// Sets the target of the target.
-    /// @param target The target to set.
-    /// @return the target with target set
-    public static Link to(String target) {
-        Link ref = new Link();
-        ref.setScope(Scope.UNKNOWN);
-        ref.setTarget(target);
-        return ref;
+    /// Sets the target of the link to the provided reference.
+    /// @param ref The reference to use
+    /// @return the link with its target set
+    public static Link to(Reference ref) {
+        Link link = new Link();
+        link.target = ref;
+        link.setScope(Scope.UNKNOWN);
+        return link;
     }
 
-    public static Link toMethod(String signature) {
-        Link ref = new Link();
-        ref.setScope(Scope.UNKNOWN);
-        ref.methodSignature = signature;
-        return ref;
+    public Link from(Reference ref) {
+        this.origin = ref;
+        return this;
     }
 
-    /// Sets the origin of this target. This is the location that is being linked from.
-    /// @param name The origin being linked from.
-    public void setOriginPackage(String name) {
-        this.originPackage = name;
+    public void setSourceCodeLocation(SourceCodeLocation source) {
+        this.source = source;
     }
 
-    /// Gets the origin of this target. This is the location that is being linked from.
-    /// @return the origin
-    public String getOriginPackage() {
-        return originPackage;
+    public SourceCodeLocation getSourceCodeLocation() {
+        return source;
     }
 
-    public void setOriginType(String name) {
-        originType = name;
+    public void setOrigin(Reference ref) {
+        origin = ref;
     }
 
-    public String getOriginType() {
-        return originType;
+    public Reference getOrigin() {
+        return origin;
     }
 
-    /// Sets the target of this target. This is the location that is being linked to.
-    /// @param target The target being linked to.
-    public void setTarget(String target) {
-        this.target = target;
-    }
-
-    /// Gets the target of this target. This is the location that is being linked from.
-    /// @return the target
-    public String getTarget() {
+    public Reference getTarget() {
         return target;
     }
 
@@ -119,101 +99,16 @@ public class Link implements Serializable {
         return scope;
     }
 
-    public Link setModuleName(String name) {
-        moduleName = name;
-        return this;
-    }
-
-    public String getModuleName() {
-        return moduleName;
-    }
-
-    public Link setPackageName(String name) {
-        packageName = name;
-        return this;
-    }
-
-    public String getPackageName() {
-        return packageName;
-    }
-
-    /// Sets the class name associated with the target.
-    /// @param name The class name to set.
-    public Link setClassName(String name) {
-        this.className = name;
-        return this;
-    }
-
-    /// Returns the class name associated with the target.
-    /// @return The class name.
-    public String getClassName() {
-        return className;
-    }
-
-    /// Sets the qualified class name associated with the target.
-    /// @param name The qualified class name to set.
-    public Link setQualifiedClassName(String name) {
-        this.qualifiedClassName = name;
-        return this;
-    }
-
-    /// Returns the qualified class name associated with the target.
-    /// @return The qualified class name.
-    public String getQualifiedClassName() {
-        return qualifiedClassName;
-    }
-
-    /// Sets the simple class name associated with the target.
-    /// @param name The simple class name to set.
-    public Link setSimpleClassName(String name) {
-        this.simpleClassName = name;
-        return this;
-    }
-
-    /// Returns the simple class name associated with the target.
-    /// @return The simple class name.
-    public String getSimpleClassName() {
-        return simpleClassName;
-    }
-
-    /// Sets the nested class name associated with the target.
-    /// @param name The nested class name to set.
-    public Link setNestedClassName(String name) {
-        this.nestedClassName = name;
-        return this;
-    }
-
-    /// Returns the nested class name associated with the target.
-    /// @return The nested class name.
-    public String getNestedClassName() {
-        return nestedClassName;
-    }
-
-
-
-
-    /// Sets the display name of the target.
-    /// @param label The display name to set.
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    /// Returns the display name of the target.
-    /// @return The display name.
-    public String getLabel() {
-        return label;
-    }
-
     /// Sets the URI of the target.
     /// @param uri The URI to set.
-    public void setPath(String uri) {
-        this.path = uri;
+    public void setUri(URI uri) {
+        this.uri = uri;
     }
 
     /// Returns the URI of the target.
-    /// @return The URI string.
-    public String getPath() {
-        return path;
+    /// @return The URI.
+    public URI getUri() {
+        return uri;
     }
 
     /// Sets the resolved state of this target.
@@ -228,11 +123,8 @@ public class Link implements Serializable {
         return resolved;
     }
 
-
-
-
-    public void setMethodSignature(String signature) {
-        methodSignature = signature;
+    public void setMethodSignature(String sig) {
+        methodSignature = sig;
     }
 
     public String getMethodSignature() {
@@ -264,40 +156,6 @@ public class Link implements Serializable {
         return anchor;
     }
 
-
-
-
-    /// Sets the origin package of the target.
-    /// @param name The origin package to set.
-    /// @return the target with origin set
-    public Link fromPackage(String name) {
-        this.originPackage = name;
-        return this;
-    }
-
-    public Link fromType(String name) {
-        this.originType = name;
-        return this;
-    }
-
-    /// Sets the display name of the target.
-    /// @param label The display name to set.
-    /// @return the target with label set
-    public Link withLabel(String label) {
-        this.label = label;
-        return this;
-    }
-
-    public Link withClassName(String className) {
-        this.qualifiedClassName = className;
-        return this;
-    }
-
-    public Link withUri(String uri) {
-        this.path = uri;
-        return this;
-    }
-
     /// Sets the kind/type of the target.
     /// @param kind The kind to set.
     /// @return the label with kind set
@@ -311,23 +169,50 @@ public class Link implements Serializable {
         return this;
     }
 
+
+
+
     public String toString() {
-        return kind.toString() + " (" + target + ")";
+        StringBuilder sb = new StringBuilder();
+        sb.append(kind.toString().toLowerCase());
+        if (target != null) {
+            Name name = target.getName();
+            if (name != null) {
+                if (name.isPackage()) {
+                    sb.append(":package");
+                } else if (name.isType()) {
+                    sb.append(":type");
+                } else if (name.isMember()) {
+                    sb.append(":member");
+                } else {
+                    sb.append(":unknown");
+                }
+            } else {
+                if (target.getModuleName() != null && !target.getModuleName().isEmpty()) {
+                    sb.append(":module");
+                } else {
+                    sb.append(":unknown");
+                }
+            }
+            sb.append(":");
+            sb.append(target);
+        }
+        return sb.toString();
     }
 
     /// Enum representing different kinds/types of targets.
     public enum Kind {
         /// Kind hasn't been set. Will possibly be resolved.
-        UNKNOWN,
+        UNRESOLVED,
 
         /// The target is not recognized and won't be resolved
         UNSUPPORTED,
 
         /// A link to a webpage
-        URL,
+        WEB,
 
-        /// A link to a Markdown page
-        PAGE,
+        /// A link to a Markdown file
+        FILE,
 
         /// A link to a Java module
         MODULE,

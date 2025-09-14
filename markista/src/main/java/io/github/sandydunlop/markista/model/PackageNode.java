@@ -56,12 +56,6 @@ public class PackageNode extends Node {
         packages.add(packageNode);
     }
 
-    /// Returns the description text for this package, typically the first sentence.
-    /// @return The Text object representing the description.
-    public Text getDescription() {
-        return firstSentence;
-    }
-
     public void setHasPackageInfo(boolean b) {
         hasPackageInfo = b;
     }
@@ -126,6 +120,6 @@ public class PackageNode extends Node {
 
     /// Sorts the nodes owned by this instance into alphabetical order.
     public void sort() {
-        types.sort((a, b) -> a.getSimpleName().compareTo(b.getSimpleName()));
+        types.sort((a, b) -> a.getName().simpleName().compareTo(b.getName().simpleName()));
     }
 }

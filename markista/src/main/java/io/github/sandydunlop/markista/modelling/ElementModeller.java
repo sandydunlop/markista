@@ -23,17 +23,21 @@ import javax.tools.JavaFileObject;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
+import com.sun.source.util.TreePath;
 import com.sun.source.doctree.DeprecatedTree;
 import com.sun.source.doctree.DocCommentTree;
 import com.sun.source.doctree.DocTree;
+import com.sun.source.doctree.DocTree.Kind;
 import com.sun.source.doctree.LinkTree;
 import com.sun.source.doctree.ParamTree;
 import com.sun.source.doctree.StartElementTree;
+import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.util.DocSourcePositions;
+import com.sun.source.util.DocTrees;
 import com.sun.source.doctree.ReturnTree;
 import com.sun.source.doctree.SeeTree;
 import com.sun.source.doctree.SinceTree;
 
-import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.AbstractMember;
 import io.github.sandydunlop.markista.model.AnnotationElement;
 import io.github.sandydunlop.markista.model.AnnotationNode;
@@ -42,12 +46,15 @@ import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
 import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Deprecation;
 import io.github.sandydunlop.markista.model.DirectiveNode;
+import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.markista.model.SourceCodeLocation;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
@@ -56,10 +63,11 @@ import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.modelling.MarkdownParser.TokenKind;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.VariableType;
 
 import java.io.File;
 import java.io.Serializable;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,10 +77,14 @@ import java.util.Set;
 public class ElementModeller implements Modeller<ModuleElement, PackageElement, TypeElement, VariableElement, ExecutableElement, VariableElement> {
     private Api api;
     private DocletEnvironment environment;
+
+    private String fromModule = "";
     private String fromPackage = "";
     private String fromType = "";
+
     ExecutableElement currentMethodElement;
     MethodNode currentMethodNode;
+    int lastKnownLineNumber = 0;
 
     public ElementModeller(Api a, DocletEnvironment e) {
         api = a;
@@ -83,6 +95,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     public ModuleNode modelModule(ModuleElement m) {
         fromPackage = "";
         ModuleNode mod = new ModuleNode(m.getQualifiedName().toString());
+        fromModule = mod.getName();
         File moduleInfo = getModuleInfoFile(m);
         if (moduleInfo != null) {
             mod.setHasModuleInfo(true);
@@ -116,10 +129,9 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     public TypeNode modelType(TypeElement element) {
         String qualifiedName = element.getQualifiedName().toString();
         PackageElement packageElement = getEnclosingPackageElement(element);
-        String simpleName = element.getSimpleName().toString();
         PackageNode packageNode = api.getPackageNode(packageElement.getQualifiedName().toString());
-        TypeNode typeNode = createTypeNode(simpleName, packageNode, element.getKind());
-        typeNode.setQualifiedName(qualifiedName);
+        TypeNode typeNode = createTypeNode(qualifiedName, packageNode, element.getKind());
+        typeNode.setModuleName(fromModule);
         fromType = qualifiedName;
         if (typeNode instanceof EnumNode enumNode) {
             setEnumConstants(enumNode, element);
@@ -128,7 +140,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         setModifiers(typeNode, element.getModifiers());
         setAppliedAnnotations(typeNode, element);
         collectAllSupertypes(element.asType(), typeNode.getSupertypes());
-        typeNode.getSupertypes().addFirst(TypeReference.to("java.lang.Object"));
+        typeNode.getSupertypes().addFirst(VariableType.parse("java.lang.Object"));
         findImplementedInterfaces(element, typeNode.getImplementedInterfaces());
         setDocumentation(typeNode, element);
         setSourcePath(typeNode, element);
@@ -146,6 +158,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     /// @return The FieldNode, or null if errors occur.
     @Override
     public FieldNode modelField(VariableElement element) {
+        fromType = element.getEnclosingElement().asType().toString();
         String simpleName = element.getSimpleName().toString();
         FieldNode fieldNode = new FieldNode(element.asType().toString(), simpleName);
         fieldNode.setConstantValue((Serializable) element.getConstantValue());
@@ -164,9 +177,19 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     /// @return The constructed MethodNode, or null if errors occur.
     @Override
     public MethodNode modelMethod(ExecutableElement element) {
-        String qualifiedTypeName = element.getReturnType().toString();
-        fromType = qualifiedTypeName;
-        MethodNode methodNode = new MethodNode(qualifiedTypeName, element.getSimpleName().toString());
+        String returnTypeName = element.getReturnType().toString();
+        String packageName = environment.getElementUtils().getPackageOf(element.getEnclosingElement()).toString();
+
+        TypeElement ownerElement = (TypeElement) element.getEnclosingElement();
+        String qualifiedClassName = ownerElement.getQualifiedName().toString();
+        String simpleClassName = element.getEnclosingElement().getSimpleName().toString();
+        String methodName = element.getSimpleName().toString();
+        if (methodName.equals("<init>")) {
+            methodName = simpleClassName;
+        }
+        fromType = qualifiedClassName;
+        Name name = new Name(methodName, qualifiedClassName, packageName);
+        MethodNode methodNode = new MethodNode(returnTypeName, name);
         // setMethodParams must be called before setMethodOwnerDetails as the method
         // parameters need to be present to determine if this method already exists.
         setMethodParams(methodNode, element);
@@ -184,15 +207,13 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(element);
         setDeprecationStatus(methodNode, element, dct);
         if (dct != null) {
-            methodNode.setFirstSentence(createText(dct.getFirstSentence()));
-            methodNode.setBody(createText(dct.getBody()));
-            methodNode.setFullBody(createText(dct.getFullBody()));
+            setDocumentation(methodNode, element);
             ReturnTree returnTree = getReturnTree(dct);
             if (returnTree != null) {
-                methodNode.setReturnDescription(createText(returnTree.getDescription()));
+                methodNode.setReturnDescription(createText(element, returnTree.getDescription()));
             }
             methodNode.setReferences(getReferences(dct));
-            methodNode.setSince(getSince(dct));
+            methodNode.setSince(getSince(element));
         }
         return methodNode;
     }
@@ -204,17 +225,18 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
 
     /// Factory method to create TypeNode (ClassNode, InterfaceNode, RecordNode,
     /// EnumNode, or AnnotationNode) based on ElementKind.
-    /// @param simpleName The simple (unqualified) name of the type.
+    /// @param qualifiedName The qualified name of the type.
     /// @param packageNode The owning PackageNode.
     /// @param elementKind The ElementKind representing the type kind.
     /// @return A TypeNode instance corresponding to the kind, or null if unsupported.
-    private TypeNode createTypeNode(String simpleName, PackageNode packageNode, ElementKind elementKind) {
+    private TypeNode createTypeNode(String qualifiedName, PackageNode packageNode, ElementKind elementKind) {
+        Name name = new Name(qualifiedName, packageNode.getName());
         return switch (elementKind) {
-            case ElementKind.CLASS -> new ClassNode(simpleName, packageNode.getName());
-            case ElementKind.INTERFACE -> new InterfaceNode(simpleName, packageNode.getName());
-            case ElementKind.RECORD -> new RecordNode(simpleName, packageNode.getName());
-            case ElementKind.ENUM -> new EnumNode(simpleName, packageNode.getName());
-            case ElementKind.ANNOTATION_TYPE -> new AnnotationNode(simpleName, packageNode.getName());
+            case ElementKind.CLASS -> new ClassNode(name);
+            case ElementKind.INTERFACE -> new InterfaceNode(name);
+            case ElementKind.RECORD -> new RecordNode(name);
+            case ElementKind.ENUM -> new EnumNode(name);
+            case ElementKind.ANNOTATION_TYPE -> new AnnotationNode(name);
             default -> null;
         };
     }
@@ -247,8 +269,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         TypeNode ownerTypeNode = owner == null ? null : api.getTypeNode(owner.getQualifiedName().toString());
         if (ownerTypeNode != null) {
             // Owner is a type (class, interface, enum, annotation)
-            typeNode.setOwnerName(ownerTypeNode.getQualifiedName());
-            typeNode.setSimpleName(ownerTypeNode.getSimpleName() + "." + typeNode.getSimpleName());
+            typeNode.setOwnerName(ownerTypeNode.getName().fullyQualifiedName());
             ownerTypeNode.addType(typeNode);
         } else {
             // Owner is a package
@@ -289,8 +310,10 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         DeclaredType declaredType = annotationMirror.getAnnotationType();
         Element declaredElement = declaredType.asElement();
         if (declaredElement instanceof TypeElement declaredTypeElement) {
+            PackageElement pkgElement = environment.getElementUtils().getPackageOf(declaredTypeElement);
+            String packageName = pkgElement.toString();
             AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode(
-                    declaredTypeElement.getQualifiedName().toString());
+                    declaredTypeElement.getQualifiedName().toString(), packageName);
             node.addAppliedAnnotation(appliedAnnotation);
             api.addAppliedAnnotation(appliedAnnotation);
             if (declaredTypeElement.getQualifiedName().toString().equals("java.lang.annotation.Documented") &&
@@ -307,15 +330,12 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
                     typeString = typeString.substring(2);
                 }
 
-                PackageElement pe = getEnclosingPackageElement(annotationMethod);
-                String packageName = pe == null ? "" : pe.getQualifiedName().toString();
-                PackageNode pkg = new PackageNode(packageName);
-                TypeNode paramType = new TypeNode(Context.NameSimplifier.simplifyNames(typeString), pkg.getName());
+                VariableType typeRef = VariableType.parse(typeString);
 
                 String entryName = annotationMethod.getSimpleName().toString();
                 AnnotationValue value = entry.getValue();
                 Object entryValue = value.getValue();
-                AnnotationElement parameter = new AnnotationElement(paramType.getQualifiedName(), entryName, entryValue.toString());
+                AnnotationElement parameter = new AnnotationElement(typeRef, entryName, entryValue.toString());
                 appliedAnnotation.addElement(parameter);
             }
         }
@@ -344,7 +364,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
             ParamNode param = new ParamNode(paramTypeName, simpleName);
             ParamTree paramTree = getParamTree(dct, parameter);
             if (paramTree != null) {
-                param.setBody(createText(paramTree.getDescription()));
+                param.setFirstSentence(createText(ee, paramTree.getDescription()));
             }
             methodNode.addParam(param);
         }
@@ -353,7 +373,9 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     public boolean setMethodOwnerDetails(MethodNode methodNode, ExecutableElement element) {
         TypeElement ownerElement = getEnclosingTypeElement(element);
         if (ownerElement != null) {
-            methodNode.setOwnerName(ownerElement.getQualifiedName().toString());
+            String packageName = getEnclosingPackageElement(ownerElement).toString();
+            Name name = new Name(ownerElement.getQualifiedName().toString(), packageName);
+            methodNode.setOwnerName(name);
             api.addMethod(methodNode);
             if (element.getKind() == ElementKind.METHOD) {
                 methodNode.setConstructor(false);
@@ -378,7 +400,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         node.setDeprecation(Deprecation.NONE);
         if (deprecatedTree != null) {
             node.setDeprecation(Deprecation.DEPRECATED);
-            node.setDeprecationText(createText(deprecatedTree.getBody()));
+            node.setDeprecationText(createText(e, deprecatedTree.getBody()));
         }
         if (deprecatedAnnotation != null) {
             if (deprecatedAnnotation.forRemoval()) {
@@ -397,10 +419,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
             Element element = environment.getTypeUtils().asElement(typeMirror);
             if (element instanceof TypeElement typeElement) {
                 String name = typeElement.getQualifiedName().toString();
-                Link reference = Link.to(name)
-                        .fromPackage(fromPackage)
-                        .withKind(Link.Kind.TYPE)
-                        .withLabel(name);
+                Link reference = Link.to(new Reference(name)).from(here());
                 methodNode.addThrownType(reference);
             }
         }
@@ -414,8 +433,9 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
             DeclaredType declaredType = anno.getAnnotationType();
             Element typeElement = declaredType.asElement();
             if ("Override".equals(typeElement.getSimpleName().toString())) {
-                Link link = new Link().withKind(Link.Kind.METHOD).withMethodName(method.getSimpleName());
-                method.setBaseMethod(link);
+                // This is related to TextAssembler#gatherOverriddenMethods and TextAssembler#linkBaseMethod
+                Reference reference = new Reference("#" + method.getName().simpleName().toLowerCase());
+                method.setBaseMethod(Link.to(reference));
             }
         }
     }
@@ -450,9 +470,9 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
                 for (DocTree docRef : see) {
                     if (docRef.getKind() == DocTree.Kind.MARKDOWN) {
                         // This is sometimes (always?!) HTML, not Markdown?
-                        refs.add(Link.to(getUrl(docRef.toString())));
+                        refs.add(Link.toWeb(getUrl(docRef.toString())));
                     } else if (docRef.getKind() == DocTree.Kind.REFERENCE) {
-                        refs.add(Link.to(docRef.toString()).withKind(Link.Kind.TYPE));
+                        refs.add(Link.to(new Reference(docRef.toString())).withKind(Link.Kind.TYPE));
                     }
                 }
             }
@@ -463,7 +483,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     /// Extracts a URL string from html-like text, e.g., from an href attribute inside double-quotes.
     /// @param html The input HTML-like string.
     /// @return The extracted URL inside quotes or null if none found.
-    public String getUrl(String html) {
+    public URI getUrl(String html) {
         if (html == null) return null;
         int start = -1;
         int end = -1;
@@ -472,7 +492,7 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
                 if (start == -1) {
                     start = end;
                 } else {
-                    return html.substring(start + 1, end);
+                    return URI.create(html.substring(start + 1, end));
                 }
             }
         }
@@ -480,13 +500,14 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     }
 
     /// Extracts the @since tag content from a DocCommentTree, if present.
-    /// @param dcTree The DocCommentTree containing tags.
+    /// @param element The element
     /// @return A Text object representing @since content or an empty Text if none present.
-    public Text getSince(DocCommentTree dcTree) {
+    public Text getSince(Element element) {
+        DocCommentTree dcTree = environment.getDocTrees().getDocCommentTree(element);
         if (dcTree == null) return null;
         for (DocTree tagTree : dcTree.getBlockTags()) {
             if (tagTree instanceof SinceTree sinceTree) {
-                return createText(sinceTree.getBody());
+                return createText(element, sinceTree.getBody());
             }
         }
         return Text.empty();
@@ -587,12 +608,12 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     }
 
     /// Retrieves the `package-info.java` file associated with the specified
-    /// [PackageElement]. This method checks if the package element has an
-    /// associated file and returns it as a [File] object.
+    /// [PackageElement][io.github.sandydunlop.markista.model.PackageElement]. This method checks if the package element has an
+    /// associated file and returns it as a [java.io.File] object.
     ///
-    /// @param packageElement the [PackageElement] for which to retrieve the
+    /// @param packageElement the [PackageElement][javax.lang.model.element.PackageElement] for which to retrieve the
     ///                       associated `package-info.java` file
-    /// @return a [File] object representing the `package-info.java`
+    /// @return a [java.io.File] object representing the `package-info.java`
     ///         file if it exists; `null` if the file does not exist or is
     ///         not associated with the given package element
     private File getPackageInfoFile(PackageElement packageElement) {
@@ -611,57 +632,87 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     private void setDocumentation(Node node, Element e) {
         DocCommentTree dct = environment.getDocTrees().getDocCommentTree(e);
         if (dct != null) {
-            node.setFirstSentence(createText(dct.getFirstSentence()));
-            node.setBody(createText(dct.getBody()));
-            node.setFullBody(createText(dct.getFullBody()));
+            node.setFirstSentence(createText(e, dct.getFirstSentence()));
+            node.setBody(createText(e, dct.getBody()));
         }
     }
 
+    SourceCodeLocation commentLocation(Element element, DocTree docTree) {
+        DocTrees docTrees = environment.getDocTrees();
+        TreePath treePath = docTrees.getPath(element);
+        DocCommentTree dct = docTrees.getDocCommentTree(treePath);
+        if (dct != null && treePath != null) {
+            DocSourcePositions positions = docTrees.getSourcePositions();
+            CompilationUnitTree compilationUnit = treePath.getCompilationUnit();
+            Path filePath = Path.of(compilationUnit.getSourceFile().toUri());
+            long startPos = positions.getStartPosition(compilationUnit, dct, docTree);
+            long endPos = positions.getEndPosition(compilationUnit, dct, docTree);
+            int lineNumber = (int) compilationUnit.getLineMap().getLineNumber(startPos);
+            int endLineNumber = (int) compilationUnit.getLineMap().getLineNumber(endPos);
+            // `DocSourcePositions.getStartPosition` isn't always able to get the source position
+            // for some DocTree objects, like @link tags it's having problems with. To be able to
+            // report the error location, we keep track of the end position of a previous DocTree
+            // object and use that when we're unable to get the current line number.
+            if (lineNumber > 0) {
+                lastKnownLineNumber = endLineNumber;
+            } else {
+                lineNumber = lastKnownLineNumber;
+            }
+            return new SourceCodeLocation(filePath.toString(), lineNumber, endLineNumber);
+        }
+        return SourceCodeLocation.undefined();
+    }
+
     /// Creates a complete Text object by traversing a list of DocTree nodes from the Javadoc comment.
+    /// @param dct doc comment tree
+    /// @param element The program element this comment is associated with
     /// @param dtList List of DocTree nodes representing a part of a Javadoc comment.
     /// @return A Text object composed of segments derived from each DocTree node.
-    private Text createText(List<? extends DocTree> dtList) {
+    private Text createText(Element element, List<? extends DocTree> dtList) {
         Text text = Text.empty();
         for (DocTree docTree : dtList) {
-            text.append(docTreeToText(docTree));
+            text.append(docTreeToText(element, docTree));
         }
         return text;
+    }
+
+    private Reference here() {
+        Name name = new Name(fromType, fromPackage);
+        return new Reference(fromModule, name);
     }
 
     /// Creates a [Text] object from a DocTree node, setting the appropriate kind and content.
     /// @param docTree The DocTree node to convert.
     /// @return A [Text] object representing the content and kind of the provided DocTree.
-    Text docTreeToText(DocTree docTree) {
+    Text docTreeToText(Element element, DocTree docTree) {
+        Link link;
+        LinkTree linkTree;
         Text text = Text.empty();
         Text.Segment segment = Text.Segment.empty();
+        SourceCodeLocation sourceLocation = commentLocation(element, docTree);
+        text.setSourceCodeLocation(sourceLocation);
+
         switch(docTree.getKind()) {
             case MARKDOWN:
-                text = markdownToText(docTree.toString());
+                text = markdownToText(docTree.toString(), sourceLocation);
                 break;
             case TEXT:
                 text.append(docTree.toString());
                 break;
-            case LINK:
+            case LINK, LINK_PLAIN:
+                linkTree = (LinkTree)docTree;
                 segment.setKind(Segment.Kind.LINK);
-                Link link = Link.to(getDocTreePart(docTree, 1))
-                        .fromPackage(fromPackage)
-                        .fromType(fromType);
+                String cleanLink = removeParentheses(getDocTreePart(docTree, 1));
+                link = Link.to(new Reference(cleanLink)).from(here());
+                link.setSourceCodeLocation(sourceLocation);
                 api.addLink(link);
                 segment.setLink(link);
-                text.append(segment);
-                break;
-            case LINK_PLAIN:
-                segment.setKind(Segment.Kind.LINK);
-                link = Link.to(getDocTreePart(docTree, 1))
-                        .fromPackage(fromPackage)
-                        .fromType(fromType);
-                segment.setLink(link);
-                text.append(segment);
-                api.addLink(link);
-                if (docTree instanceof LinkTree linkTree) {
-                    segment.setText(createText(linkTree.getLabel()).toString());
-                    link.setLabel(createText(linkTree.getLabel()).toString());
+                if (docTree.getKind() == Kind.LINK_PLAIN) {
+                    segment.setText(createText(element, linkTree.getLabel()).toString());
+                } else {
+                    segment.setText(linkTree.getReference().getSignature());
                 }
+                text.append(segment);
                 break;
             case CODE:
                 segment.setKind(Segment.Kind.CODE);
@@ -693,14 +744,14 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     /// Converts Markdown text into a [Text] object
     /// @param markdown Markdown formatted text possibly containing links
     /// @return [Text] version of the Markdown
-    Text markdownToText(String markdown) {
+    Text markdownToText(String markdown, SourceCodeLocation sourceLocation) {
         Text text = Text.empty();
         MarkdownParser parser = new MarkdownParser(markdown);
         MarkdownParser.Token token = parser.firstToken();
         while (token.getKind() != MarkdownParser.TokenKind.END) {
             if (token.getKind() == MarkdownParser.TokenKind.BRACKETS_TAG) {
                 MarkdownParser.Token next = token.getNext();
-                token = handleBracketsTag(token, next, text);
+                token = handleBracketsTag(token, next, text, sourceLocation);
             } else if (token.getKind() == TokenKind.TEXT) {
                 text.append(token.getText());
             }
@@ -709,18 +760,22 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         return text;
     }
 
-    private MarkdownParser.Token handleBracketsTag(MarkdownParser.Token token, MarkdownParser.Token next, Text text) {
+    private MarkdownParser.Token handleBracketsTag(MarkdownParser.Token token, MarkdownParser.Token next, Text text, SourceCodeLocation sourceLoction) {
         if (next.getKind() == TokenKind.BRACKETS_TAG || next.getKind() == TokenKind.PARENS_TAG) {
-            Link ref = Link.to(next.getText())
-                    .fromPackage(fromPackage)
-                    .fromType(fromType);
-            ref.setLabel(token.getText());
+            String uri = next.getText();
+            Link link;
+            if (uri.contains("://")) {
+                link = Link.toWeb(URI.create(uri)).from(here());
+            } else {
+                link = Link.to(new Reference(next.getText())).from(here());
+            }
+            link.setSourceCodeLocation(sourceLoction);
             Segment segment = Segment.empty()
                     .setKind(Segment.Kind.LINK)
-                    .setLink(ref)
+                    .setLink(link)
                     .setText(token.getText());
             text.append(segment);
-            api.addLink(ref);
+            api.addLink(link);
             return next;
         } else {
             if (token.getText().contains(" ")) {
@@ -729,14 +784,20 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
                         .setText(token.getText());
                 text.append(segment);
             } else {
-                Link ref = Link.to(token.getText())
-                        .fromPackage(fromPackage)
-                        .fromType(fromType);
+                String uri = token.getText();
+                Link link;
+                if (uri.contains("://")) {
+                    link = Link.toWeb(URI.create(uri)).from(here());
+                } else {
+                    link = Link.to(new Reference(token.getText())).from(here());
+                }
+                link.setSourceCodeLocation(sourceLoction);
                 Segment segment = Segment.empty()
                         .setKind(Segment.Kind.LINK)
-                        .setLink(ref);
+                        .setLink(link)
+                        .setText(token.getText());
                 text.append(segment);
-                api.addLink(ref);
+                api.addLink(link);
             }
             return token;
         }
@@ -781,13 +842,13 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     /// java.lang.Object is excluded.
     /// @param t The type to examine.
     /// @param result The list to receive supertypes.
-    public void collectAllSupertypes(TypeMirror t, List<TypeReference> result) {
+    public void collectAllSupertypes(TypeMirror t, List<VariableType> result) {
         for (TypeMirror s : environment.getTypeUtils().directSupertypes(t)) {
             if (result != null) {
                 String name = s.toString();
                 if (!"java.lang.Object".equals(name)) {
                     if (!isInterface(s)){
-                        result.addFirst(TypeReference.to(name));
+                        result.addFirst(VariableType.parse(name));
                     }
                     collectAllSupertypes(s, result);
                 }
@@ -811,10 +872,10 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     /// Finds all interfaces implemented directly by the given TypeElement and adds their names to the result list.
     /// @param typeElement The type to examine.
     /// @param result The list to receive the qualified interface names.
-    public void findImplementedInterfaces(TypeElement typeElement, List<TypeReference> result) {
+    public void findImplementedInterfaces(TypeElement typeElement, List<VariableType> result) {
         List<? extends TypeMirror> interfaces = typeElement.getInterfaces();
         for (TypeMirror interfaceType : interfaces) {
-            result.add(TypeReference.to(interfaceType.toString()));
+            result.add(VariableType.parse(interfaceType.toString()));
         }
     }
 
@@ -840,16 +901,14 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         RequiresDirective requires = (RequiresDirective) directive;
         Element dependency = requires.getDependency();
         ModuleElement directiveModuleElement = environment.getElementUtils().getModuleOf(dependency);
-        String name = directiveModuleElement.getQualifiedName().toString();
+        String moduleName = directiveModuleElement.getQualifiedName().toString();
         boolean transitive = requires.isTransitive();
-        Link reference = Link.to(name)
-                .withKind(Link.Kind.MODULE)
-                .withLabel(name);
+        Link reference = Link.to(new Reference(moduleName, null));
         return new DirectiveNode(kind, reference, transitive);
     }
 
-    /// Creates a DirectiveNode representing an [exports](javax.lang.model.element.ExportsDirective) directive.
-    /// @param directive a scanned [ExportsDirective](javax.lang.model.element.ExportsDirective) element.
+    /// Creates a DirectiveNode representing an [exports](javax.lang.model.element.ModuleElement.ExportsDirective) directive.
+    /// @param directive a scanned [ExportsDirective](javax.lang.model.element.ModuleElement.ExportsDirective) element.
     /// @return A DirectiveNode representing the scanned directive element.
     public DirectiveNode createExportsDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.EXPORTS;
@@ -857,24 +916,20 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         PackageElement directivePackageElement = exports.getPackage();
         String name = directivePackageElement.getQualifiedName().toString();
         List<? extends ModuleElement> modules = exports.getTargetModules();
-        Link ref = Link.to(name)
-                .withKind(Link.Kind.PACKAGE)
-                .withLabel(name);
+        Link ref = Link.to(new Reference(name));
         DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         if (modules != null) {
             for (ModuleElement moduleElement : modules) {
                 String packageName = moduleElement.getQualifiedName().toString();
-                Link reference = Link.to(packageName)
-                        .withKind(Link.Kind.PACKAGE)
-                        .withLabel(packageName);
+                Link reference = Link.to(new Reference(packageName));
                 directiveNode.addPackage(reference);
             }
         }
         return directiveNode;
     }
 
-    /// Creates a DirectiveNode representing an [opens](javax.lang.model.element.OpensDirective) directive.
-    /// @param directive a scanned [OpensDirective](javax.lang.model.element.OpensDirective) element.
+    /// Creates a DirectiveNode representing an [opens](javax.lang.model.element.ModuleElement.OpensDirective) directive.
+    /// @param directive a scanned [OpensDirective](javax.lang.model.element.ModuleElement.OpensDirective) element.
     /// @return A DirectiveNode representing the scanned directive element.
     public DirectiveNode createOpensDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.OPENS;
@@ -882,52 +937,42 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
         PackageElement directivePackageElement = opens.getPackage();
         String name = directivePackageElement.getQualifiedName().toString();
         List<? extends ModuleElement> modules = opens.getTargetModules();
-        Link ref = Link.to(name)
-                .withKind(Link.Kind.PACKAGE)
-                .withLabel(name);
+        Link ref = Link.to(new Reference(name));
         DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         if (modules != null) {
             for (ModuleElement moduleElement : modules) {
                 String moduleName = moduleElement.getQualifiedName().toString();
-                Link reference = Link.to(moduleName)
-                        .withKind(Link.Kind.PACKAGE)
-                        .withLabel(moduleName);
+                Link reference = Link.to(new Reference(moduleName));
                 directiveNode.addPackage(reference);
             }
         }
         return directiveNode;
     }
 
-    /// Creates a DirectiveNode representing a [uses](javax.lang.model.element.UsesDirective) directive.
-    /// @param directive a scanned [UsesDirective](javax.lang.model.element.UsesDirective) element.
+    /// Creates a DirectiveNode representing a [uses](javax.lang.model.element.ModuleElement.UsesDirective) directive.
+    /// @param directive a scanned [UsesDirective](javax.lang.model.element.ModuleElement.UsesDirective) element.
     /// @return A DirectiveNode representing the scanned directive element.
     public DirectiveNode createUsesDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.USES;
         UsesDirective uses = (UsesDirective) directive;
         String name = uses.getService().getQualifiedName().toString();
-        Link ref = Link.to(name)
-                .withKind(Link.Kind.TYPE)
-                .withLabel(name);
+        Link ref = Link.to(new Reference(name));
         return new DirectiveNode(kind, ref);
     }
 
-    /// Creates a DirectiveNode representing a [provides](javax.lang.model.element.ProvidesDirective) directive.
-    /// @param directive a scanned [ProvidesDirective](javax.lang.model.element.ProvidesDirective) element.
+    /// Creates a DirectiveNode representing a [provides](javax.lang.model.element.ModuleElement.ProvidesDirective) directive.
+    /// @param directive a scanned [ProvidesDirective](javax.lang.model.element.ModuleElement.ProvidesDirective) element.
     /// @return A DirectiveNode representing the scanned directive element.
     public DirectiveNode createProvidesDirective(Directive directive) {
         DirectiveNode.Kind kind = DirectiveNode.Kind.PROVIDES;
         ProvidesDirective provides = (ProvidesDirective) directive;
         TypeElement service = provides.getService();
         String name = service.getQualifiedName().toString();
-        Link ref = Link.to(name)
-                .withKind(Link.Kind.TYPE)
-                .withLabel(name);
+        Link ref = Link.to(new Reference(name));
         DirectiveNode directiveNode = new DirectiveNode(kind, ref);
         setImplementations(directiveNode, provides.getImplementations());
         String interfaceName = service.getQualifiedName().toString();
-        Link reference = Link.to(interfaceName)
-                .withKind(Link.Kind.PACKAGE)
-                .withLabel(interfaceName);
+        Link reference = Link.to(new Reference(interfaceName));
         directiveNode.setInterface(reference);
         return directiveNode;
     }
@@ -938,10 +983,27 @@ public class ElementModeller implements Modeller<ModuleElement, PackageElement, 
     public void setImplementations(DirectiveNode directiveNode, List<? extends TypeElement> implementations) {
         for (TypeElement e : implementations) {
             String implName = e.getQualifiedName().toString();
-            Link reference = Link.to(implName)
-                    .withKind(Link.Kind.TYPE)
-                    .withLabel(implName);
+            Link reference = Link.to(new Reference(implName));
             directiveNode.addImplementation(reference);
         }
+    }
+
+    /// Removes parentheses and what they contain from an expression
+    /// @param expression An expression such as `classname.method(parameter)`.
+    /// @return The expression with the parentheses removed
+    public String removeParentheses(String expression) {
+        int start = expression.indexOf('(');
+        if (start > -1) {
+            int end = expression.indexOf(')', start);
+            String r = "";
+            if (start > 0) {
+                r = expression.substring(0, start);
+            }
+            if (end < expression.length()) {
+                r += expression.substring(end + 1);
+            }
+            return r;
+        }
+        return expression;
     }
 }

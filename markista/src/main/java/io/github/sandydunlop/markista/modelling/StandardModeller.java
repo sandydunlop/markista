@@ -11,6 +11,7 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.Modifier;
 import io.github.sandydunlop.markista.model.ModuleNode;
+import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.PackageNode;
 import io.github.sandydunlop.markista.model.ParamNode;
@@ -40,13 +41,12 @@ public class StandardModeller implements Modeller<Module, Package, Class<?>, Fie
 
     @Override
     public FieldNode modelField(Field field) {
-        // Implement a basic modelField method, adjust as needed
-        return new FieldNode(field.getType().getName(), field.getName());
+        return new FieldNode(field.getType().getTypeName(), field.getName());
     }
 
     @Override
     public MethodNode modelMethod(Method method) {
-        MethodNode methodNode = parseMethodString(method.toGenericString());
+        MethodNode methodNode = createMethodNode(method.toGenericString(), method.getDeclaringClass());
         for (Parameter param : method.getParameters()) {
             ParamNode paramNode = modelParam(param);
             methodNode.addParam(paramNode);
@@ -56,41 +56,34 @@ public class StandardModeller implements Modeller<Module, Package, Class<?>, Fie
 
     @Override
     public ParamNode modelParam(Parameter parameter) {
-        // Implement a basic modelParam method, adjust as needed
-        return new ParamNode(parameter.getType().getName(), parameter.getName());
+        return new ParamNode(parameter.getType().getTypeName(), parameter.getName());
     }
 
     private TypeNode modelType(Class<?> type, Node.Kind kind) {
         TypeNode typeNode;
+        Name name = new Name(type.getCanonicalName(), type.getPackageName());
         switch(kind) {
             case ANNOTATION:
-                typeNode = new AnnotationNode(type.getSimpleName(), type.getPackageName());
+                typeNode = new AnnotationNode(name);
                 break;
             case CLASS:
-                typeNode = new ClassNode(type.getSimpleName(), type.getPackageName());
+                typeNode = new ClassNode(name);
                 break;
             case ENUM:
-                typeNode = new EnumNode(type.getSimpleName(), type.getPackageName());
+                typeNode = new EnumNode(name);
                 break;
             case INTERFACE:
-                typeNode = new ClassNode(type.getSimpleName(), type.getPackageName());
+                typeNode = new ClassNode(name);
                 break;
             case RECORD:
-                typeNode = new RecordNode(type.getSimpleName(), type.getPackageName());
+                typeNode = new RecordNode(name);
                 break;
             default:
-                typeNode = new TypeNode(type.getSimpleName(), type.getPackageName());
+                typeNode = new TypeNode(name);
         }
 
-        typeNode.setName(type.getName());
-        typeNode.setQualifiedName(type.getCanonicalName());
-        typeNode.setSimpleName(type.getSimpleName());
-        int nestedLength = type.getCanonicalName().length() - type.getPackageName().length();
-        if (nestedLength > type.getSimpleName().length()) {
-            typeNode.setNestedName(type.getCanonicalName()
-                    .substring(type.getCanonicalName().length() - nestedLength + 1));
-        }
-
+        typeNode.setName(new Name(type.getCanonicalName(), type.getPackageName()));
+        typeNode.setModuleName(type.getModule().getName());
 
         for (Field field : type.getFields()) {
             FieldNode node = modelField(field);
@@ -103,11 +96,11 @@ public class StandardModeller implements Modeller<Module, Package, Class<?>, Fie
         return typeNode;
     }
 
-    private MethodNode parseMethodString(String method) {
+    private MethodNode createMethodNode(String method, Class<?> owner) {
         int openParenthesis = method.indexOf("(");
         String modifiersTypeAndName = method.substring(0, openParenthesis);
         int pos = modifiersTypeAndName.lastIndexOf(" ");
-        String qualifiedName = modifiersTypeAndName.substring(pos);
+        String qualifiedName = modifiersTypeAndName.substring(pos + 1);
         String modifiersAndType = modifiersTypeAndName.substring(0, pos);
         pos = qualifiedName.lastIndexOf(".");
         String simpleName = qualifiedName.substring(pos + 1);
@@ -120,18 +113,17 @@ public class StandardModeller implements Modeller<Module, Package, Class<?>, Fie
             Modifier mod = Modifier.DEFAULT;
             try{
                 mod = Modifier.valueOf(part.toUpperCase());
-                if (mod != Modifier.DEFAULT) {
-                    if (!modifiers.isEmpty()) {
-                        modifiers.append(" ");
-                    }
-                    modifiers.append(mod.name());
+                if (!modifiers.isEmpty()) {
+                    modifiers.append(" ");
                 }
+                modifiers.append(mod.name());
             }catch(IllegalArgumentException _) {
                 returnType = modifiersAndType.substring(modifiers.length()).strip();
             }
             pos++;
         }
-        MethodNode methodNode = new MethodNode(returnType, simpleName);
+        Name name = new Name(simpleName, owner.getCanonicalName(), owner.getPackageName());
+        MethodNode methodNode = new MethodNode(returnType, name);
         parts = modifiers.toString().split(" ");
         for (String part : parts) {
             methodNode.addModifier(Modifier.valueOf(part));

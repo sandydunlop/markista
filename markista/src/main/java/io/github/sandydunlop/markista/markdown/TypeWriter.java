@@ -9,14 +9,16 @@ import io.github.sandydunlop.markista.model.ClassNode;
 import io.github.sandydunlop.markista.model.Deprecation;
 import io.github.sandydunlop.markista.model.EnumNode;
 import io.github.sandydunlop.markista.model.FieldNode;
+import io.github.sandydunlop.markista.model.FileLink;
 import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.Node;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.TypeReference;
+import io.github.sandydunlop.markista.model.VariableType;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -52,10 +54,10 @@ public class TypeWriter {
     /// @param typeNode the type
     /// @throws java.io.IOException if there is a problem writing to the output file
     public void outputTypeDoc(TypeNode typeNode) throws InvalidPathException, IOException {
-        ctx.setTypeName(typeNode.getQualifiedName());
+        ctx.setTypeName(typeNode.getName().fullyQualifiedName());
         writer = ctx.createFileInPackage();
         writer.write("Package [" + typeNode.getPackageName() + "](index.md)\n\n");
-        writer.write("# " + typeNode.getKindName() + " " + typeNode.getSimpleName() + "\n");
+        writer.write("# " + typeNode.getKindName() + " " + typeNode.getName().simpleName() + "\n");
 
         outputSupertypes(typeNode);
         outputImplementedInterfaces(typeNode);
@@ -67,7 +69,7 @@ public class TypeWriter {
         outputDeclaration(typeNode);
 
         if (!typeNode.getFullBody().isEmpty()) {
-            writer.write(MarkdownUtils.formatText(typeNode.getFullBody()));
+            writer.write(MarkdownUtils.formatText(typeNode.getFullBody(), false, false));
             writer.write("\n\n");
         }
 
@@ -130,13 +132,13 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputSupertypes(TypeNode typeNode) throws IOException {
         int indentation = 0;
-        for (TypeReference typeRef : typeNode.getSupertypes()) {
+        for (VariableType typeRef : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(MarkdownUtils.formatTypeRef(typeRef, true) + BR + "\n");
+            writer.write(MarkdownUtils.formatVariableType(typeRef, true) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
-        writer.write(typeNode.getQualifiedName() + BR + "\n");
+        writer.write(typeNode.getName().fullyQualifiedName() + BR + "\n");
         writer.write(BR + "\n");
     }
 
@@ -145,11 +147,11 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputImplementedInterfaces(TypeNode typeNode) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for (TypeReference typeRef : typeNode.getImplementedInterfaces()) {
+        for (VariableType typeRef : typeNode.getImplementedInterfaces()) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatTypeRef(typeRef));
+            sb.append(MarkdownUtils.formatVariableType(typeRef, true));
         }
         if (!sb.isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");
@@ -179,7 +181,7 @@ public class TypeWriter {
                 if (!sb.isEmpty()) {
                     sb.append(", ");
                 }
-                sb.append(MarkdownUtils.link(classLink, null, false, false));
+                sb.append(MarkdownUtils.link(classLink, false));
             }
             if (!sb.isEmpty()) {
                 writer.write("All Known Implementing Classes:<br/>\n");
@@ -192,11 +194,11 @@ public class TypeWriter {
 
     private void outputDirectKnownSubtypes(TypeNode typeNode) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for (TypeReference typeRef : typeNode.getSubtypes()) {
+        for (VariableType typeRef : typeNode.getSubtypes()) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatTypeRef(typeRef));
+            sb.append(MarkdownUtils.formatVariableType(typeRef));
         }
         if (!sb.isEmpty()) {
             writer.write("Direct Known Subtypes:<br/>\n");
@@ -216,7 +218,7 @@ public class TypeWriter {
         }
         for (AppliedAnnotationNode annotation : typeNode.getAppliedAnnotations()) {
             if (typeNode.getKind() == Node.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
-                writer.write("@" + Context.NameSimplifier.simplifyNames(annotation.getTypeName()));
+                writer.write("@" + annotation.getTypeName().typeName().toString());
                 if (!annotation.getElements().isEmpty()) {
                     writer.write("(");
                     writer.write(createAnnotationString(annotation));
@@ -225,12 +227,12 @@ public class TypeWriter {
                 writer.write(BR + "\n");
             }
         }
-        writer.write(typeNode.getModifiersString() + typeString + " __" + typeNode.getSimpleName() + "__");
+        writer.write(typeNode.getModifiersString() + typeString + " __" + typeNode.getName().simpleName() + "__");
         if (typeNode.getSupertypes().size() > 1) {
-            TypeReference typeRef = typeNode.getSupertypes().getLast();
+            VariableType typeRef = typeNode.getSupertypes().getLast();
             writer.write(BR);
             writer.write("extends ");
-            writer.write(MarkdownUtils.formatTypeRef(typeRef));
+            writer.write(MarkdownUtils.formatVariableType(typeRef));
             writer.write("\n");
         }
         writer.write("</span>\n\n");
@@ -242,13 +244,13 @@ public class TypeWriter {
         writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = "";
         if (member instanceof MethodNode method) {
-            typeString = MarkdownUtils.formatTypeRef(method.getReturnType());
+            typeString = MarkdownUtils.formatVariableType(method.getReturnType());
         } else if (member instanceof FieldNode field) {
-            typeString = MarkdownUtils.formatTypeRef(field.getType());
+            typeString = MarkdownUtils.formatVariableType(field.getType());
         }
         for (AppliedAnnotationNode annotation : member.getAppliedAnnotations()) {
             if (member instanceof AnnotationNode || (annotation.isCustom() && annotation.isDocumented())) {
-                writer.write("@" + Context.NameSimplifier.simplifyNames(annotation.getTypeName()));
+                writer.write("@" + annotation.getTypeName().typeName().toString());
                 if (!annotation.getElements().isEmpty()) {
                     writer.write("(");
                     writer.write(createAnnotationString(annotation));
@@ -258,7 +260,7 @@ public class TypeWriter {
             }
         }
         String modifiers = member.getModifiersString();
-        writer.write(modifiers + typeString + " __" + member.getSimpleName() + "__");
+        writer.write(modifiers + typeString + " __" + member.getName().simpleName() + "__");
         if (member instanceof MethodNode method) {
             writer.write("(");
             writer.write(MarkdownUtils.formatParams(method.getParams()));
@@ -291,8 +293,9 @@ public class TypeWriter {
                 .addColumn(TEXT_CLASS)
                 .addColumn(TEXT_DESCRIPTION);
         for (TypeNode nestedClassNode : nestedClasses) {
+            FileLink link = FileLink.to(nestedClassNode.getName().typeName().toString()).withLabel(nestedClassNode.getName().typeName().toString());
             table.addRow(nestedClassNode.getModifiersString(),
-                        MarkdownUtils.mdDocumentLink(nestedClassNode.getSimpleName()),
+                        MarkdownUtils.formatFileLink(link),
                         MarkdownUtils.inOneLine(MarkdownUtils.formatText(nestedClassNode.getFirstSentence())));
         }
         table.render(writer);
@@ -306,7 +309,7 @@ public class TypeWriter {
                 .addColumn("Enum Constant")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode constantNode : enumNode.getConstants()) {
-            String link = MarkdownUtils.mdAnchorLink(constantNode.getSimpleName());
+            String link = MarkdownUtils.mdAnchorLink(constantNode.getName().simpleName());
             table.addRow(link, MarkdownUtils.inOneLine(MarkdownUtils.formatText(constantNode.getFirstSentence())));
         }
         table.render(writer);
@@ -321,9 +324,9 @@ public class TypeWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = MarkdownUtils.formatTypeRef(fieldNode.getType(), false);
+            String link = MarkdownUtils.formatVariableType(fieldNode.getType(), false);
             table.addRow(fieldNode.getModifiersString() + link,
-                        MarkdownUtils.mdAnchorLink(fieldNode.getSimpleName()), MarkdownUtils.inOneLine(MarkdownUtils.formatText(fieldNode.getFirstSentence())));
+                        MarkdownUtils.mdAnchorLink(fieldNode.getName().simpleName()), MarkdownUtils.inOneLine(MarkdownUtils.formatText(fieldNode.getFirstSentence())));
         }
         table.render(writer);
     }
@@ -337,7 +340,7 @@ public class TypeWriter {
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
             String params = MarkdownUtils.formatParams(methodNode.getParams());
-            table.addRow(methodNode.getSimpleName() + "(" + params + ")",
+            table.addRow(methodNode.getName().simpleName() + "(" + params + ")",
                         MarkdownUtils.inOneLine(MarkdownUtils.formatText(methodNode.getFirstSentence())));
         }
         table.render(writer);
@@ -352,9 +355,9 @@ public class TypeWriter {
                 .addColumn("Method")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            String returnTypeText = MarkdownUtils.formatTypeRef(methodNode.getReturnType());
+            String returnTypeText = MarkdownUtils.formatVariableType(methodNode.getReturnType());
             table.addRow(methodNode.getModifiersString() + returnTypeText,
-                        MarkdownUtils.mdAnchorLink(methodNode.getSimpleName()) + "(" + MarkdownUtils.formatParams(methodNode.getParams()) + ")",
+                        MarkdownUtils.mdAnchorLink(methodNode.getName().simpleName()) + "(" + MarkdownUtils.formatParams(methodNode.getParams()) + ")",
                         MarkdownUtils.inOneLine(MarkdownUtils.formatText(methodNode.getFirstSentence())));
         }
         table.render(writer);
@@ -365,7 +368,7 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputEnumConstantDetails(List<FieldNode> constants) throws IOException {
         for (FieldNode constant : constants) {
-            writer.write("### " + constant.getSimpleName() + "\n\n");
+            writer.write("### " + constant.getName().simpleName() + "\n\n");
             writer.write("public static final ");
             writer.write(" " + constant.fullSignature() + "\n\n");
             writer.write(MarkdownUtils.formatText(constant.getFullBody()) + "\n\n");
@@ -398,13 +401,13 @@ public class TypeWriter {
     private void outputDetails(List<Node> nodes) throws IOException {
         for (Node node : nodes) {
             if (node instanceof MethodNode method) {
-                ctx.setMethodName(method.getSimpleName());
-                writer.write("### " + method.getSimpleName());
+                ctx.setMethodName(method.getName().simpleName());
+                writer.write("### " + method.getName().simpleName());
                 writer.write("\n\n");
                 outputMethodOrFieldDeclaration(method);
             } else if (node instanceof FieldNode field) {
-                ctx.setFieldName(field.getSimpleName());
-                writer.write("### " + field.getSimpleName());
+                ctx.setFieldName(field.getName().simpleName());
+                writer.write("### " + field.getName().simpleName());
                 writer.write("\n\n");
                 outputMethodOrFieldDeclaration(field);
             }
@@ -496,7 +499,7 @@ public class TypeWriter {
             writer.write("**Parameters:**\n\n");
             for (ParamNode param : method.getParams()) {
                 if (!param.getFullBody().isEmpty()) {
-                    writer.write("`" +param.getSimpleName() + "` - " +
+                    writer.write("`" +param.getName().simpleName() + "` - " +
                             MarkdownUtils.formatText(param.getFullBody()) +"\n\n");
                 }
             }
@@ -523,18 +526,18 @@ public class TypeWriter {
     }
 
     private void outputInheritedMethods(TypeNode typeNode) throws IOException {
-        for(Map.Entry<TypeReference,List<Link>> entry : typeNode.getInheritedMethods().entrySet()) {
+        for(Map.Entry<VariableType,List<MethodReference>> entry : typeNode.getInheritedMethods().entrySet()) {
             StringBuilder sb = new StringBuilder();
-            List<Link> methodList = entry.getValue();
-            for(Link methodRef : methodList) {
+            List<MethodReference> methodList = entry.getValue();
+            for(MethodReference methodRef : methodList) {
                 if (!sb.isEmpty()) {
                     sb.append(", ");
                 }
-                sb.append(MarkdownUtils.link(methodRef, false));
+                sb.append(MarkdownUtils.link(methodRef.getLink(), false));
             }
             if (!sb.isEmpty()) {
                 writer.write("### Methods inherited from ");
-                writer.write(MarkdownUtils.formatTypeRef(entry.getKey(), true));
+                writer.write(MarkdownUtils.formatVariableType(entry.getKey(), false));
                 writer.write("\n\n");
                 writer.write(sb.toString());
                 writer.write("\n\n");

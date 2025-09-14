@@ -7,19 +7,18 @@ import java.util.List;
 public class InterfaceNode extends TypeNode {
 
     private List<Link> implementingClasses = new ArrayList<>();
-    
+
     /// Create an InterfaceNode with the specified details
-    /// @param simpleName The simple name of the enum.
-    /// @param packageName the name of the package that the interface is a member of
-    public InterfaceNode(String simpleName, String packageName) {
-        super(simpleName, packageName);
+    /// @param name The name of the enum.
+    public InterfaceNode(Name name) {
+        super(name);
         kind = Node.Kind.INTERFACE;
     }
 
     public void addImplementingClass(Link classLink) {
         implementingClasses.add(classLink);
     }
-    
+
     public List<Link> getImplementingClasses() {
         return implementingClasses;
     }

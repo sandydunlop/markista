@@ -5,10 +5,9 @@ package io.github.sandydunlop.markista.model;
 /// It inherits properties from TypeNode and specifies its own kind.
 public class RecordNode extends TypeNode {
     /// Constructs a new RecordNode.
-    /// @param simpleName The simple name of the record.
-    /// @param packageName The name of the package this record belongs to.
-    public RecordNode(String simpleName, String packageName) {
-        super(simpleName, packageName);
+    /// @param name The name of the record.
+    public RecordNode(Name name) {
+        super(name);
         this.kind = Node.Kind.RECORD;
     }
 }

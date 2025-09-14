@@ -2,12 +2,14 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.markista.model.Link;
+import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
+import java.net.URI;
+
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,9 +25,9 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
 
     @Test
     void formatReference_URL() {
-        Link link = new Link().withKind(Link.Kind.URL).withUri("http://example.com");
+        Link link = Link.toWeb(URI.create("http://example.com"));
         Segment segment = Segment.empty().setLink(link).setText("http://example.com");
-        String markdown = MarkdownUtils.formatLink(segment, false, false);
+        String markdown = MarkdownUtils.formatLink(segment.getLink(), "http://example.com");
         assertEquals("[http://example.com](http://example.com)", markdown);
     }
 
@@ -33,48 +35,37 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
 
     @Test
     void formatLink_URL() {
-        Link link = new Link(Link.Kind.URL, null, "http://example.com");
+        Link link = Link.toWeb(URI.create("http://example.com"));
         Text.Segment segment = Text.Segment.empty()
                 .setKind(Segment.Kind.LINK)
                 .setLink(link);
-        resolver.resolve(link);
-        String markdown = MarkdownUtils.formatLink(segment, false, false);
+        resolver.resolveLink(link);
+        String markdown = MarkdownUtils.formatLink(segment.getLink(), "http://example.com");
         assertEquals("[http://example.com](http://example.com)", markdown);
     }
 
     @Test
     void formatLink_PACKAGE_qualified() {
-        Link link = Link.to("io.github.sandydunlop.markista.model")
+        Link link = Link.to(new Reference("io.github.sandydunlop.markista.model"))
                 .withKind(Link.Kind.PACKAGE);
         Text.Segment segment = Text.Segment.empty()
                 .setKind(Segment.Kind.LINK)
-                .setLink(link);
-        resolver.resolve(link);
-        String markdown = MarkdownUtils.formatLink(segment, false, false);
-        assertEquals("[io.github.sandydunlop.markista.model](../model/index.md)", markdown);
-    }
-
-    @Disabled("new LinkResolver")
-    @Test
-    void formatLink_PACKAGE_unqualified() {
-        Link link = Link.to("model")
-                .withKind(Link.Kind.PACKAGE);
-        Text.Segment segment = Text.Segment.empty()
-                .setKind(Segment.Kind.LINK)
-                .setLink(link);
-        resolver.resolve(link);
-        String markdown = MarkdownUtils.formatLink(segment, false, false);
+                .setLink(link)
+                .setText("io.github.sandydunlop.markista.model");
+        resolver.resolveLink(link);
+        String markdown = MarkdownUtils.formatLink(segment.getLink(), "io.github.sandydunlop.markista.model");
         assertEquals("[io.github.sandydunlop.markista.model](../model/index.md)", markdown);
     }
 
     @Test
     void formatLink_PRIMITIVE() {
-        Link link = new Link(Link.Kind.PRIMITIVE, "int", null);
+        Link link = Link.to(new Reference("int")).withKind(Link.Kind.PRIMITIVE);
         Text.Segment segment = Text.Segment.empty()
+                .setText("int")
                 .setKind(Segment.Kind.LINK)
                 .setLink(link);
-        resolver.resolve(link);
-        String markdown = MarkdownUtils.formatLink(segment, false, false);
+        resolver.resolveLink(link);
+        String markdown = MarkdownUtils.formatLink(segment.getLink(), "int");
         assertEquals("int", markdown);
     }
 }

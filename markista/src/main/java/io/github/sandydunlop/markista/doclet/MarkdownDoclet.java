@@ -30,6 +30,8 @@ import jdk.javadoc.doclet.Reporter;
 /// A doclet that renders javadoc comments as Markdown.
 ///
 /// For more information, see the [Markista homepage](https://sandydunlop.github.io/markista).
+///
+/// For information about the Java 9 Doclet API, see [JEP 221](https://openjdk.org/groups/compiler/using-new-doclet.html)
 public class MarkdownDoclet implements Doclet {
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
@@ -327,10 +329,6 @@ public class MarkdownDoclet implements Doclet {
         TextAssembler.assembleTextAndLinks(api, ctx);
         ctx.setModuleName("");
 
-        if (Configuration.getVerbose()) {
-            System.out.println("Module path: " + Configuration.getModulePaths());
-        }
-
         // Gather list of DocService providers, and decide what order they run in
         boolean result;
         List<DocService> extensionsOrder = new ArrayList<>();
@@ -377,9 +375,6 @@ public class MarkdownDoclet implements Doclet {
         DocService mainDocService = defaultDocService;
         HashMap<String, DocService> extensions = new HashMap<>();
         for (DocService extension : loader) {
-            // if (Configuration.getVerbose()) {
-                System.out.println("Extension: " + extension.toString());
-            // }
             addExtensionToMap(extensions, extension);
         }
 
@@ -402,7 +397,6 @@ public class MarkdownDoclet implements Doclet {
                                                 DocService defaultDocService) {
         DocService mainDocService = defaultDocService;
         for (DocService extension : loader) {
-            System.out.println("Extension: " + extension.toString());
             mainDocService = handleExtension(mainDocService, defaultDocService, orderedExtensions, extension);
             if (mainDocService == null) {
                 return null;
@@ -413,7 +407,7 @@ public class MarkdownDoclet implements Doclet {
 
     private void addExtensionToMap(HashMap<String, DocService> extensions, DocService extension) {
         String qualifiedName = extension.getClass().getName();
-        String simpleName = Context.NameSimplifier.simplifyNames(qualifiedName);
+        String simpleName = extension.getClass().getSimpleName();
         extensions.put(qualifiedName, extension);
         extensions.put(simpleName, extension);
     }
