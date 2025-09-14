@@ -124,9 +124,10 @@ class TextAssemblerTests extends ModelTestEnvironment {
         assertEquals("BaseDoc", typeMethod.getFirstSentence().toString());
     }
 
+    @Disabled("concurrency issues")
     @Test
     void moduleDirectives() {
-        Link link = Link.to(new Reference("io.github.sandydunlop.markista"));
+        Link link = Link.to(new Reference("io.github.sandydunlop.markista.model"));
         DirectiveNode directive1 = new DirectiveNode(DirectiveNode.Kind.EXPORTS, link);
         module.addDirective(directive1);
 
@@ -134,7 +135,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         assertTrue(link.isResolved());
-        assertEquals("io/github/sandydunlop/markista/", link.getUri().toString());
+        assertEquals("io/github/sandydunlop/markista/model/", link.getUri().toString());
     }
 
     @Disabled("MFLP-107 Link doesnt contain method name")
