@@ -3,15 +3,16 @@ package io.github.sandydunlop.markista.model;
 import java.util.ArrayList;
 import java.util.List;
 
-/// Represents a module node that contains directives, packages, and constant values. 
-/// Implements the PackageOwner interface to manage contained packages. 
+/// Represents a module node that contains directives, packages, and constant values.
+/// Implements the PackageOwner interface to manage contained packages.
 public class ModuleNode extends Node {
     private final String name;
     private boolean hasModuleInfo = false;
     private String sourcePath;
     private final List<DirectiveNode> directives = new ArrayList<>();
-    private final List<PackageNode> packages = new ArrayList<>();
     private final List<FieldNode> constantValues = new ArrayList<>();
+    // private final List<PackageNode> packages = new ArrayList<>();
+    private final List<PackageReference> packages = new ArrayList<>();
 
     /// Constructs a ModuleNode with the given module name.
     /// @param name The name of the module.
@@ -43,13 +44,13 @@ public class ModuleNode extends Node {
 
     /// Returns the list of packages contained in this module.
     /// @return List of PackageMember objects.
-    public List<PackageNode> getPackages() {
+    public List<PackageReference> getPackages() {
         return packages;
     }
 
     /// Adds a package to this module.
-    /// @param packageNode The PackageNode to add.
-    public void addPackage(PackageNode packageNode) {
+    /// @param packageNode The PackageReference to add.
+    public void addPackage(PackageReference packageNode) {
         packages.add(packageNode);
     }
 

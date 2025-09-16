@@ -10,6 +10,7 @@ import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageReference;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
@@ -75,7 +76,7 @@ class PackageWriterTests {
         ctx = Context.getInstance();
         ctx.setWriterFactory(_ -> writer);
         ctx.setReporter(reporter);
-        packageWriter = new PackageWriter(ctx);
+        packageWriter = new PackageWriter(api, ctx);
 
         api = new Api("Test API");
 
@@ -92,8 +93,11 @@ class PackageWriterTests {
 
         modelPackage.addType(nodeClass);
         packageNode.addPackage(modelPackage);
-        moduleNode.addPackage(packageNode);
-        moduleNode.addPackage(modelPackage);
+
+        PackageReference pr1 = new PackageReference(packageNode.getName());
+        moduleNode.addPackage(pr1);
+        PackageReference pr2 = new PackageReference(modelPackage.getName());
+        moduleNode.addPackage(pr2);
 
         api.addModule(moduleNode);
         api.addPackage(packageNode);

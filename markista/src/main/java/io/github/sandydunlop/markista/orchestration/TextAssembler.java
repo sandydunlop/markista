@@ -11,6 +11,7 @@ import io.github.sandydunlop.markista.model.MethodReference;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.Node;
+import io.github.sandydunlop.markista.model.PackageReference;
 import io.github.sandydunlop.markista.model.Pair;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.RecordNode;
@@ -52,6 +53,7 @@ public class TextAssembler {
         }
 
         processModules(api.getModules());
+        processModule(api.getUnnamedModuleNode());
 
         // Links from types used in methods and fields
         for (TypeNode typeNode : api.getTypes()) {
@@ -83,23 +85,32 @@ public class TextAssembler {
 
     public static void processModules(List<ModuleNode> modules) {
         for (ModuleNode module : modules) {
-            ctx.setModuleName(module.getName());
-            // Constant field values
-            for (FieldNode constant : module.getConstantValues()) {
-                resolver.resolveVariableType(constant.getType());
-                constant.setConstantValueReference(constant.getType());
-            }
+            processModule(module);
+        }
+    }
 
-            // Directives
-            for (DirectiveNode directive : module.getDirectives()) {
-                resolver.resolveLink(directive.getLink());
-                resolver.resolveLink(directive.getInterface());
-                for (Link implementation : directive.getImplementations()) {
-                    resolver.resolveLink(implementation);
-                }
-                for (Link pkg : directive.getPackages()) {
-                    resolver.resolveLink(pkg);
-                }
+    public static void processModule(ModuleNode module) {
+        ctx.setModuleName(module.getName());
+        // Constant field values
+        for (FieldNode constant : module.getConstantValues()) {
+            resolver.resolveVariableType(constant.getType());
+            constant.setConstantValueReference(constant.getType());
+        }
+
+        // Packages
+        for (PackageReference pkg : module.getPackages()) {
+            resolver.resolveLink(pkg.getLink());
+        }
+
+        // Directives
+        for (DirectiveNode directive : module.getDirectives()) {
+            resolver.resolveLink(directive.getLink());
+            resolver.resolveLink(directive.getInterface());
+            for (Link implementation : directive.getImplementations()) {
+                resolver.resolveLink(implementation);
+            }
+            for (Link pkg : directive.getPackages()) {
+                resolver.resolveLink(pkg);
             }
         }
     }
@@ -217,7 +228,6 @@ public class TextAssembler {
                         link.setMethodName(baseMethod.getName().simpleName());
                         link.setAnchor(baseMethod.getName().simpleName().toLowerCase());
                         MethodReference mr = new MethodReference();
-                        mr.setSignature(baseMethod.simplifiedSignature());
                         mr.setLink(link);
                         Pair<String,MethodReference> refs = Pair.of(supertypeName, mr);
                         methodLookup1.put(baseMethod.simplifiedSignature(), refs);

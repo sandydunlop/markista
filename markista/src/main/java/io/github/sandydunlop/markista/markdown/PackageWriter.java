@@ -2,9 +2,11 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.FileLink;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageReference;
 import io.github.sandydunlop.markista.model.TypeNode;
 
 import java.io.IOException;
@@ -23,12 +25,15 @@ public class PackageWriter {
     /// Do not make this `final`. It will break tests with mocked [Context].
     private Context ctx;
 
+    private Api api;
+
     /// The Writer used to output the generated markdown content for the current document.
     /// It handles writing text to the appropriate output file or stream.
     private Writer writer = null;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public PackageWriter(Context context) {
+    public PackageWriter(Api api, Context context) {
+        this.api = api;
         ctx = context;
     }
 
@@ -36,7 +41,8 @@ public class PackageWriter {
     /// @param moduleNode  The module containing the packages to output the documentation for
     /// @throws java.io.IOException if there is a problem writing to the output file
     public void writeDocs(ModuleNode moduleNode) throws InvalidPathException, IOException {
-        for (PackageNode packageNode : moduleNode.getPackages()) {
+        for (PackageReference pkg : moduleNode.getPackages()) {
+            PackageNode packageNode = api.getPackageNode(pkg.getName());
             outputPackageDoc(packageNode);
         }
     }

@@ -61,10 +61,11 @@ public class ExternalLink {
                 moduleNode = new ModuleNode(moduleName);
                 api.addModule(moduleNode);
             } else {
-                PackageNode packageNode = new PackageNode(line);
+                PackageReference packageRef = new PackageReference(line);
                 if (moduleNode != null) {
-                    moduleNode.addPackage(packageNode);
+                    moduleNode.addPackage(packageRef);
                 }
+                PackageNode packageNode = new PackageNode(line);
                 api.addPackage(packageNode);
                 packages.add(line);
                 if (!moduleName.isEmpty()) {

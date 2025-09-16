@@ -11,6 +11,7 @@ import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageReference;
 import io.github.sandydunlop.markista.model.RecordNode;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
@@ -129,9 +130,9 @@ public class ModelTestEnvironment {
 
         module = new ModuleNode("markista");
 		api.addModule(module);
-		module.addPackage(markista);
-		module.addPackage(doclet);
-		module.addPackage(model);
+		module.addPackage(new PackageReference(markista.getName()));
+		module.addPackage(new PackageReference(doclet.getName()));
+		module.addPackage(new PackageReference(model.getName()));
 		markista.setModuleName(module.getName());
 		doclet.setModuleName(module.getName());
 		model.setModuleName(module.getName());

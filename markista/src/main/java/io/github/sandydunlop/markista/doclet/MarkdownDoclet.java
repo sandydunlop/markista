@@ -158,6 +158,18 @@ public class MarkdownDoclet implements Doclet {
                     return OK;
                 }
             },
+            new Option("--classpath", true,
+            //TODO: --class-path, -cp
+                    "Specifies where to find user class files and annotation processors.", null) {
+                @Override
+                public boolean process(String option,
+                                    List<String> arguments) {
+                    if (arguments != null && !arguments.isEmpty()) {
+
+                    }
+                    return OK;
+                }
+            },
             new Option("-d", true,
                     "The directory where documentation will be written to.", null) {
                 @Override

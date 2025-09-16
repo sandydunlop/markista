@@ -8,6 +8,7 @@ import io.github.sandydunlop.markista.model.InterfaceNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageReference;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.VariableType;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
@@ -82,8 +83,10 @@ class ModuleWriterTests {
 
         // Add a package to namedModule (required for index.md generation)
         pkg = new PackageNode("com.example.package");
-        moduleNode.addPackage(pkg);
         api.addPackage(pkg); // Package needs to be in API for LinkResolver to work
+
+        PackageReference pkgRef = new PackageReference(pkg.getName());
+        moduleNode.addPackage(pkgRef);
 
         ctx.setModuleName("");
         ctx.setReporter(reporter);
@@ -102,8 +105,10 @@ class ModuleWriterTests {
 
         // Add a package to namedModule (required for index.md generation)
         PackageNode pkg1 = new PackageNode("com.example.package");
-        namedModule.addPackage(pkg1);
         api.addPackage(pkg1); // Package needs to be in API for LinkResolver to work
+
+        PackageReference pkgRef = new PackageReference(pkg1.getName());
+        namedModule.addPackage(pkgRef);
 
         moduleWriter.writeDocs(api);
 
@@ -121,8 +126,9 @@ class ModuleWriterTests {
 
         // Add a package to namedModule (required for index.md generation)
         PackageNode pkg1 = new PackageNode("com.example.package");
-        unnamedModule.addPackage(pkg1);
         api.addPackage(pkg1); // Package needs to be in API for LinkResolver to work
+        PackageReference pkgRef = new PackageReference(pkg1.getName());
+        unnamedModule.addPackage(pkgRef);
 
         moduleWriter.writeDocs(api);
 

@@ -38,7 +38,7 @@ public class ModelUtils {
                     supertypeNode = modeller.modelClass(jreClass);
                 }
             }
-            if (typeHasMethod(supertypeNode, methodNode)) {
+            if (supertypeNode != null && typeHasMethod(supertypeNode, methodNode)) {
                 return supertypeNode.getName().fullyQualifiedName();
             }
         }

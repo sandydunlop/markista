@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'io.github.sandydunlop'
-version = '0.3.0'
+version = '0.3.1'
 
 repositories {
 	mavenCentral()
@@ -88,7 +88,7 @@ publishing {
         myPub(MavenPublication) {
             from components.java
             pom {
-                name = 'Markista'
+                name = 'markista'
                 description = 'A Javadoc doclet that produces markdown formatted documentation rather than HTML.'
                 url = 'https://sandydunlop.github.io/markista'
                 licenses {

@@ -4,6 +4,7 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageReference;
 
 import java.io.StringWriter;
 import java.nio.file.InvalidPathException;
@@ -43,15 +44,16 @@ class MarkdownServiceTests {
         Api api = new Api("Test API");
         ModuleNode module = new ModuleNode("module");
         PackageNode pkg = new PackageNode("package");
-        module.addPackage(pkg);
         api.addModule(module);
+        PackageReference pkgRef = new PackageReference(pkg.getName());
+        module.addPackage(pkgRef);
 
         // Ensure an exception is thrown
         MarkdownService service = new MarkdownService();
         assertThrows(InvalidPathException.class, () -> {
             service.start(api, ctx);
         });
-    }    
+    }
 
     @Test
     void finishSucceeds() {
@@ -76,5 +78,5 @@ class MarkdownServiceTests {
         public void print(javax.tools.Diagnostic.Kind kind, Element element, String message) {
             stringWriter.write(message);
         }
-    }       
+    }
 }

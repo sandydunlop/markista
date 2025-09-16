@@ -8,6 +8,7 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.MethodNode;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageReference;
 import io.github.sandydunlop.markista.model.ParamNode;
 import io.github.sandydunlop.markista.model.Text;
 import io.github.sandydunlop.markista.model.Text.Segment;
@@ -196,9 +197,11 @@ class ApiScannerTests extends MockedDocletEnvironment {
         when(pkg.getName()).thenReturn("com.example");
         Path srcPath = Path.of("root", "src", "com", "example");
         when(pkg.getSourcePath()).thenReturn(srcPath.toString());
+        api.addPackage(pkg);
 
         // Add to unnamed module packages (LinkedList or similar)
-        unnamed.getPackages().add(pkg);
+        PackageReference pr1 = new PackageReference(pkg.getName());
+        unnamed.getPackages().add(pr1);
 
         as.calculateUnnamedModuleSourcePath();
 

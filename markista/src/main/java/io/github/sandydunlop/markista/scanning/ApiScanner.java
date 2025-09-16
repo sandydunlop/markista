@@ -6,9 +6,11 @@ import io.github.sandydunlop.markista.model.Api;
 import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
 import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.FileLink;
+import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.Name;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageReference;
 import io.github.sandydunlop.markista.model.Reference;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.modelling.ElementModeller;
@@ -132,7 +134,8 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// unnamed module contains no packages this is a no-op.
     void calculateUnnamedModuleSourcePath() {
         if (unnamedModule.getPackages().isEmpty()) return;
-        PackageNode pkg = unnamedModule.getPackages().getFirst();
+        PackageReference packageRef = unnamedModule.getPackages().getFirst();
+        PackageNode pkg = api.getPackageNode(packageRef.getName());
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
         String nameAsPath = pkg.getName().replace(".", separator);
         String root = pkg.getSourcePath().replace(nameAsPath, "");
@@ -185,8 +188,10 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
                 pkg.setModuleName(currentModule.getName());
-                currentModule.addPackage(pkg);
                 api.addPackage(pkg);
+                PackageReference packageRef = new PackageReference(pkg.getName());
+                packageRef.setLink(Link.to(new Reference(pkg.getName())));
+                currentModule.addPackage(packageRef);
                 Element enclosing = ee.getEnclosingElement();
                 if (enclosing instanceof PackageElement enclosingPackageElement) {
                     PackageNode owner = api.getPackageNode(enclosingPackageElement.getQualifiedName().toString());

@@ -113,6 +113,10 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
             assertNotNull(description);
             assertNotEquals("", description);
             switch (option.getNames().getFirst()) {
+                case "--add-modules":
+                    assertTrue(option.process("--add-modules", List.of("mod1,mod2")));
+                    assertEquals("mod1,mod2", Configuration.getAddModules());
+                    break;
                 case "-d":
                     assertTrue(option.process("-d", List.of("build/docs/javadoc")));
                     assertEquals("build/docs/javadoc", ctx.getOutputDirectory());

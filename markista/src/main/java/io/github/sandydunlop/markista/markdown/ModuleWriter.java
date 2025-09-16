@@ -7,6 +7,7 @@ import io.github.sandydunlop.markista.model.FieldNode;
 import io.github.sandydunlop.markista.model.FileLink;
 import io.github.sandydunlop.markista.model.ModuleNode;
 import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.markista.model.PackageReference;
 import io.github.sandydunlop.markista.model.Link;
 import io.github.sandydunlop.markista.model.TypeNode;
 import io.github.sandydunlop.markista.model.VariableType;
@@ -75,6 +76,7 @@ public class ModuleWriter {
             ctx.setModuleName(moduleNode.getName());
             writer = ctx.createFileInModule("index.md");
             if (moduleNode.getName().isEmpty()) {
+                // Unnamed module
                 writer.write("# " + api.getName() + "\n");
             } else {
                 writer.write("# " + TITLE_MODULE + " " + moduleNode.getName() + "\n");
@@ -85,8 +87,8 @@ public class ModuleWriter {
                 MarkdownTable table = new MarkdownTable()
                         .addColumn(TITLE_PACKAGE)
                         .addColumn(TITLE_DESCRIPTION);
-                for (PackageNode member : moduleNode.getPackages()) {
-                    table.addRow(MarkdownUtils.formatFileLink(FileLink.to(member.getName()).withLabel(member.getName())), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));
+                for (PackageReference pkg : moduleNode.getPackages()) {
+                    table.addRow(MarkdownUtils.link(pkg.getLink(), true), MarkdownUtils.inOneLine(MarkdownUtils.formatText(pkg.getFirstSentence())));
                 }
                 table.render(writer);
             }
@@ -97,7 +99,7 @@ public class ModuleWriter {
             outputModuleProvidesDirectives(moduleNode.getProvides());
             writer.flush();
             writer.close();
-            PackageWriter packageWriter = new PackageWriter(ctx);
+            PackageWriter packageWriter = new PackageWriter(api, ctx);
             packageWriter.writeDocs(moduleNode);
         }
         if (!moduleNode.getConstantValues().isEmpty()) {
@@ -223,8 +225,8 @@ public class ModuleWriter {
         writer.write("module:");
         writer.write(moduleNode.getName());
         writer.write("\n");
-        for (PackageNode packageNode : moduleNode.getPackages()) {
-            writer.write(packageNode.getName() );
+        for (PackageReference pkg : moduleNode.getPackages()) {
+            writer.write(pkg.getName() );
             writer.write("\n");
         }
         writer.flush();
