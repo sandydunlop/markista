@@ -60,7 +60,7 @@ public class ModulePath {
         moduleNames = new java.util.HashSet<>();
         classToModule = new HashMap<>();
         List<String> modulePathList = List.of();
-        if (Configuration.getModulePaths() != null) {
+        if (modulePath != null) {
             String[] pathList = modulePath.split(":");
             modulePathList = Arrays.asList(pathList);
         }
