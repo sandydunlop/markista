@@ -192,7 +192,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 pkg.setModuleName(currentModule.getName());
                 api.addPackage(pkg);
                 PackageReference packageRef = new PackageReference(pkg.getName());
-                packageRef.setLink(Link.to(new Reference(pkg.getName())));
+                packageRef.setLink(Link.to(ModelUtil.createReference(pkg.getName())));
                 currentModule.addPackage(packageRef);
                 Element enclosing = ee.getEnclosingElement();
                 if (enclosing instanceof PackageElement enclosingPackageElement) {
@@ -279,7 +279,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         for (TypeNode classNode : api.getTypes()) {
             for (FieldNode fieldNode : classNode.getFields()) {
                 if (fieldNode.getConstantValue() != null) {
-                    Reference fromPackage = new Reference(moduleNode.getName(), ModelUtil.createName(null, classNode.getPackageName()));
+                    Reference fromPackage = ModelUtil.createReference(moduleNode.getName(), ModelUtil.createName(null, classNode.getPackageName()));
                     FileLink link = FileLink.to("constant-values")
                             .from(fromPackage)
                             .withLabel("Constant Field Values");

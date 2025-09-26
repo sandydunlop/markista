@@ -106,7 +106,7 @@ public class ModelTestEnvironment {
     }
 
     protected Link newMethodReference(String typeName, String methodName) {
-        Link methodLink = Link.to(new Reference(typeName + "#" + methodName))
+        Link methodLink = Link.to(ModelUtil.createReference(typeName + "#" + methodName))
                 .withKind(Link.Kind.METHOD)
                 .withMethodName(methodName);
         methodLink.setAnchor(methodName.toLowerCase());

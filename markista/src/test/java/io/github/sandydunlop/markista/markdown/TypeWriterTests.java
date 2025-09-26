@@ -126,7 +126,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         fieldNode.setFirstSentence(Text.of("Full body text for const"));
         fieldNode.setSince(Text.of("Since version 1.0"));
 
-        Link ref = Link.to(new Reference("io.github.sandydunlop.cascara.model.Node"))
+        Link ref = Link.to(ModelUtil.createReference("io.github.sandydunlop.cascara.model.Node"))
                 .withKind(Link.Kind.TYPE);
         fieldNode.getReferences().add(ref);
 
@@ -247,9 +247,9 @@ class TypeWriterTests extends ModelTestEnvironment {
         MethodNode overriddenMethodNode = new MethodNode("java.lang.String", overriddenMethodName);
         overriddenMethodNode.setOwnerName(typeNode.getName());
 
-        Link thrownRef = Link.to(new Reference("scenario.food.berry.Thrown"))
+        Link thrownRef = Link.to(ModelUtil.createReference("scenario.food.berry.Thrown"))
                 .withKind(Link.Kind.TYPE);
-        Link specifiedByRef = Link.to(new Reference("scenario.food.berry.Specified"))
+        Link specifiedByRef = Link.to(ModelUtil.createReference("scenario.food.berry.Specified"))
                 .withKind(Link.Kind.TYPE);
 
         InterfaceNode specifiedByType = newInterface("Specified", pkg);
@@ -262,7 +262,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         methodNode.setReturnDescription(Text.empty().append("returnDescription"));
         methodNode.setSpecifiedBy(specifiedByRef);
         methodNode.addThrownType(thrownRef);
-        Link overriddenMethod = Link.to(new Reference("scenario.food.berry.Avocado" + "#" + "eat"));
+        Link overriddenMethod = Link.to(ModelUtil.createReference("scenario.food.berry.Avocado" + "#" + "eat"));
         methodNode.setBaseMethod(overriddenMethod);
 
         typeNode.addMethod(methodNode);
@@ -450,7 +450,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         ClassNode typeNode = new ClassNode(ModelUtil.createName("scenario.food.berry.Avocado", pkg.getName()));
 
         ClassNode owner = new ClassNode(ModelUtil.createName("scenario.food.berry.Owner", pkg.getName()));
-        Link i = Link.to(new Reference("scenario.food.berry.Owner"));
+        Link i = Link.to(ModelUtil.createReference("scenario.food.berry.Owner"));
         typeNode.setEnclosingClassRef(i);
         typeNode.setOwnerName("scenario.food.berry.Owner");
 

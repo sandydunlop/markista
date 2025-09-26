@@ -125,7 +125,7 @@ public class TextAssembler {
         // Types
         TypeNode ownerTypeNode = api.getTypeNode(typeNode.getOwnerName());
         if (ownerTypeNode != null) {
-            Reference ref = new Reference(ownerTypeNode.getName().fullyQualifiedName());
+            Reference ref = ModelUtil.createReference(ownerTypeNode.getName().fullyQualifiedName());
             Link link = Link.to(ref).from(here());
             resolver.resolveLink(link);
             typeNode.setEnclosingClassRef(link);
@@ -208,7 +208,7 @@ public class TextAssembler {
                 if (directSupertype != null) {
                     VariableType subtypeRef = VariableType.parse(typeNode.getName().fullyQualifiedName());
                     Name fromPackageName = ModelUtil.createName(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
-                    subtypeRef.getLink().from(new Reference("", fromPackageName));
+                    subtypeRef.getLink().from(ModelUtil.createReference("", fromPackageName));
                     resolver.resolveVariableType(subtypeRef);
                     directSupertype.getSubtypes().add(subtypeRef);
                 }
@@ -227,7 +227,7 @@ public class TextAssembler {
                 for (MethodNode baseMethod : supertype.getMethods()) {
                     if (!ModelUtils.typeHasMethod(typeNode, baseMethod)) {
                         Name methodName = ModelUtil.createName(baseMethod.getName().simpleName(), supertypeName, supertype.getPackageName());
-                        Link link = Link.to(new Reference("", methodName));
+                        Link link = Link.to(ModelUtil.createReference("", methodName));
                         link.setMethodName(baseMethod.getName().simpleName());
                         link.setAnchor(baseMethod.getName().simpleName().toLowerCase());
                         MethodReference mr = new MethodReference();
@@ -349,8 +349,8 @@ public class TextAssembler {
     }
 
     public static void setImplementingClass(InterfaceNode interfaceNode, TypeNode typeNode) {
-        Reference toType = new Reference("", typeNode.getName());
-        Reference fromPackage = new Reference("",ModelUtil.createName(null, interfaceNode.getPackageName()));
+        Reference toType = ModelUtil.createReference("", typeNode.getName());
+        Reference fromPackage = ModelUtil.createReference("",ModelUtil.createName(null, interfaceNode.getPackageName()));
         Link implementingClassLink = Link.to(toType).from(fromPackage);
         resolver.resolveLink(implementingClassLink);
         interfaceNode.addImplementingClass(implementingClassLink);
@@ -360,8 +360,8 @@ public class TextAssembler {
         for (MethodNode methodNode : typeNode.getMethods()) {
             for (MethodNode interfaceMethod : interfaceNode.getMethods()) {
                 if (interfaceMethod.simplifiedSignature().equals(methodNode.simplifiedSignature())) {
-                    Reference toType = new Reference("", interfaceNode.getName());
-                    Reference fromPackage = new Reference("", ModelUtil.createName(null, typeNode.getPackageName()));
+                    Reference toType = ModelUtil.createReference("", interfaceNode.getName());
+                    Reference fromPackage = ModelUtil.createReference("", ModelUtil.createName(null, typeNode.getPackageName()));
                     Link specifiedByLink = Link
                             .to(toType).from(fromPackage);
                     resolver.resolveLink(specifiedByLink);
@@ -454,6 +454,6 @@ public class TextAssembler {
 
     private static Reference here() {
         Name name = ModelUtil.createName(ctx.getTypeName(), ctx.getPackageName());
-        return new Reference(ctx.getModuleName(), name);
+        return ModelUtil.createReference(ctx.getModuleName(), name);
     }
 }

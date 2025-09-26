@@ -15,7 +15,7 @@ import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 
 import io.github.sandydunlop.cascara.model.Api;
-import io.github.sandydunlop.cascara.model.ExternalLink;
+import io.github.sandydunlop.markista.core.ExternalLink;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.Link.Kind;
 import io.github.sandydunlop.cascara.model.Link.Scope;
@@ -94,7 +94,7 @@ public class LinkResolver {
 
         if (link.getOrigin() == null) {
             Name originName = ModelUtil.createName(ctx.getTypeName(), ctx.getPackageName());
-            Reference origin = new Reference(ctx.getModuleName(), originName);
+            Reference origin = ModelUtil.createReference(ctx.getModuleName(), originName);
             link.setOrigin(origin);
         }
 

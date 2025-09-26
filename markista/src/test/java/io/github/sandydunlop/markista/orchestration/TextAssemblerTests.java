@@ -116,7 +116,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         VariableType typeRef = VariableType.parse(baseTypeNode.getName().fullyQualifiedName());
         typeNode.getSupertypes().add(typeRef);
 
-        Link methodRef = Link.to(new Reference(baseTypeNode.getName().fullyQualifiedName() + "#" + baseTypeMethod.getName().simpleName()));
+        Link methodRef = Link.to(ModelUtil.createReference(baseTypeNode.getName().fullyQualifiedName() + "#" + baseTypeMethod.getName().simpleName()));
         typeMethod.setBaseMethod(methodRef);
 
         TextAssembler.assembleTextAndLinks(api, ctx);
@@ -128,7 +128,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("concurrency issues")
     @Test
     void moduleDirectives() {
-        Link link = Link.to(new Reference("io.github.sandydunlop.markista.model"));
+        Link link = Link.to(ModelUtil.createReference("io.github.sandydunlop.markista.model"));
         DirectiveNode directive1 = new DirectiveNode(DirectiveNode.Kind.EXPORTS, link);
         module.addDirective(directive1);
 
@@ -162,7 +162,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("resolveLink is being deprecated")
     @Test
     void link_standardMethod() {
-        Link link = Link.to(new Reference("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
+        Link link = Link.to(ModelUtil.createReference("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
         resolver.resolveLink(link);
         String markdown = MarkdownUtils.link(link, true);
         assertEquals("[Doclet.Option.process](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
@@ -171,7 +171,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("resolveLink is being deprecated")
     @Test
     void link_localMethod() {
-        Link link = Link.to(new Reference("Node#sort"));
+        Link link = Link.to(ModelUtil.createReference("Node#sort"));
         resolver.resolveLink(link);
         String markdown = MarkdownUtils.link(link, false);
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
@@ -201,7 +201,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
 
     @Test
     void t1() {
-        Reference ref = new Reference("jdk.javadoc.doclet.Doclet.Option.Kind");
+        Reference ref = ModelUtil.createReference("jdk.javadoc.doclet.Doclet.Option.Kind");
         resolver.qualify(ref);
         assertTrue(ref.getName().isType());
     }

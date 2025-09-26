@@ -140,7 +140,7 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleDirectives_WritesTableForDirectiveNodes() throws IOException {
-        Link ref = Link.to(new Reference("com.example.package"));
+        Link ref = Link.to(ModelUtil.createReference("com.example.package"));
         DirectiveNode exportsDirective = mock(DirectiveNode.class);
         when(exportsDirective.getKind()).thenReturn(DirectiveNode.Kind.EXPORTS);
         when(exportsDirective.getLink()).thenReturn(ref);
@@ -165,13 +165,13 @@ class ModuleWriterTests {
         api.addType(interface1);
         api.addType(interface2);
 
-        Link ref = Link.to(new Reference("com.example.package.Interface"));
+        Link ref = Link.to(ModelUtil.createReference("com.example.package.Interface"));
         ref.setKind(Link.Kind.TYPE);
         ref.setUri(URI.create("com/example/package/Interface.md"));
         DirectiveNode providesDirective = mock(DirectiveNode.class);
         List<Link> implementations = List.of(
-                Link.to(new Reference("com.example.package.Impl1")),
-                Link.to(new Reference("com.example.package.Impl2")));
+                Link.to(ModelUtil.createReference("com.example.package.Impl1")),
+                Link.to(ModelUtil.createReference("com.example.package.Impl2")));
         implementations.get(0).setUri(URI.create("com.example.package.Impl1"));
         implementations.get(1).setUri(URI.create("com.example.package.Impl2"));
 
