@@ -2,6 +2,7 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.TypeNode;
@@ -43,7 +44,7 @@ class ModelUtilsTests extends ModelTestEnvironment {
         elementScanner6.addMethod(elementScannerMethod);
 
         // Set up API model version of it
-        Name methodName = new Name("scan", scanner.getName().fullyQualifiedName(), scanner.getPackageName());
+        Name methodName = ModelUtil.createName("scan", scanner.getName().fullyQualifiedName(), scanner.getPackageName());
         MethodNode scan = new MethodNode("void", methodName);
         ParamNode param1 = new ParamNode("javax.lang.model.element.Element", "p1");
         ParamNode param2 = new ParamNode("java.lang.Integer", "P");

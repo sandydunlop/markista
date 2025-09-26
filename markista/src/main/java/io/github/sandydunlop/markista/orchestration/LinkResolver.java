@@ -27,6 +27,7 @@ import io.github.sandydunlop.cascara.model.Reference;
 import io.github.sandydunlop.cascara.model.TypeNode;
 import io.github.sandydunlop.cascara.model.VariableType;
 import io.github.sandydunlop.cascara.jreutil.JreUtil;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 
 public class LinkResolver {
     private static final String DOT_HTML = ".html";
@@ -55,7 +56,7 @@ public class LinkResolver {
     }
 
     public String resolveRoot() {
-        Name here = new Name(null, ctx.getPackageName());
+        Name here = ModelUtil.createName(null, ctx.getPackageName());
         URI uri = relativize(flattenDirectory(here), null, null);
         return uri.toString();
     }
@@ -92,7 +93,7 @@ public class LinkResolver {
         }
 
         if (link.getOrigin() == null) {
-            Name originName = new Name(ctx.getTypeName(), ctx.getPackageName());
+            Name originName = ModelUtil.createName(ctx.getTypeName(), ctx.getPackageName());
             Reference origin = new Reference(ctx.getModuleName(), originName);
             link.setOrigin(origin);
         }
@@ -374,7 +375,7 @@ public class LinkResolver {
         Reference target = link.getTarget();
         TypeNode typeNode = api.getTypeNode(target.getName());
         if (typeNode != null) {
-            Name typeName = new Name(typeNode.getName().fullyQualifiedName(), typeNode.getPackageName());
+            Name typeName = ModelUtil.createName(typeNode.getName().fullyQualifiedName(), typeNode.getPackageName());
             String module = "";
             Name originName = flattenDirectory(origin.getName().packageName());
             Name targetName = flattenDirectory(typeName);
@@ -544,7 +545,7 @@ public class LinkResolver {
             }
         }
         if (jreType!= null) {
-            Name packageName = new Name(jreType.getPackageName());
+            Name packageName = ModelUtil.createName(jreType.getPackageName());
             name.setPackageComponentCount(packageName.componentCount());
             if (name.componentCount() == packageName.componentCount()) {
                 name.setIsPackage(true);
@@ -565,7 +566,7 @@ public class LinkResolver {
         if (moduleAndPackage != null) {
             String module = moduleAndPackage.getL();
             String pkg = moduleAndPackage.getR();
-            Name packageName = new Name(pkg);
+            Name packageName = ModelUtil.createName(pkg);
             name.setPackageComponentCount(packageName.componentCount());
             ref.setModule(module);
             return true;

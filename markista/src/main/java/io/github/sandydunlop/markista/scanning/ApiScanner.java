@@ -31,6 +31,8 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
 
 import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.ModelUtil;
+
 import jdk.javadoc.doclet.DocletEnvironment;
 
 import static javax.lang.model.element.Modifier.PROTECTED;
@@ -277,7 +279,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         for (TypeNode classNode : api.getTypes()) {
             for (FieldNode fieldNode : classNode.getFields()) {
                 if (fieldNode.getConstantValue() != null) {
-                    Reference fromPackage = new Reference(moduleNode.getName(), new Name(null, classNode.getPackageName()));
+                    Reference fromPackage = new Reference(moduleNode.getName(), ModelUtil.createName(null, classNode.getPackageName()));
                     FileLink link = FileLink.to("constant-values")
                             .from(fromPackage)
                             .withLabel("Constant Field Values");

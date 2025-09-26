@@ -23,6 +23,7 @@ import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.Text;
 import io.github.sandydunlop.cascara.model.TypeNode;
 import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
@@ -146,7 +147,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputDeclaration() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.category");
-        AnnotationNode typeNode = new AnnotationNode(new Name(pkg.getName()+".SaladIngredient", pkg.getName()));
+        AnnotationNode typeNode = new AnnotationNode(ModelUtil.createName(pkg.getName()+".SaladIngredient", pkg.getName()));
 
         AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode("scenario.food.category.Target", "scenario.food.category");
         AnnotationElement param = new AnnotationElement(null, "value", ElementType.TYPE.toString());
@@ -165,7 +166,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
 
-        Name methodName = new Name("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         methodNode.setDeprecation(Deprecation.DEPRECATED);
@@ -183,7 +184,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
 
-        Name methodName = new Name("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         methodNode.setDeprecation(Deprecation.DEPRECATED);
@@ -207,7 +208,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         Context.reset();
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        Name methodName = new Name("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         ParamNode param1 = new ParamNode("java.lang.String", "param1");
@@ -238,11 +239,11 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputMethodDetails() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        Name methodName = new Name("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
         methodNode.setOwnerName(typeNode.getName());
 
-        Name overriddenMethodName = new Name("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        Name overriddenMethodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
         MethodNode overriddenMethodNode = new MethodNode("java.lang.String", overriddenMethodName);
         overriddenMethodNode.setOwnerName(typeNode.getName());
 
@@ -292,7 +293,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputMethodDetails_Since() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado",pkg);
-        Name methodName = new Name("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         Text since = Text.of("1980");
@@ -319,7 +320,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputMethodDetails_References() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        Name methodName = new Name("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         Link ref = Link.toWeb(URI.create("http://example.com"));
@@ -346,7 +347,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputConstructorSummary() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        Name methodName = new Name("Avocado", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        Name methodName = ModelUtil.createName("Avocado", typeNode.getName().fullyQualifiedName(), pkg.getName());
         MethodNode methodNode = new MethodNode("scenario.food.berry.Avocado", methodName);
         typeNode.addConstructor(methodNode);
 
@@ -446,9 +447,9 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputEnclosingClass() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassNode typeNode = new ClassNode(new Name("scenario.food.berry.Avocado", pkg.getName()));
+        ClassNode typeNode = new ClassNode(ModelUtil.createName("scenario.food.berry.Avocado", pkg.getName()));
 
-        ClassNode owner = new ClassNode(new Name("scenario.food.berry.Owner", pkg.getName()));
+        ClassNode owner = new ClassNode(ModelUtil.createName("scenario.food.berry.Owner", pkg.getName()));
         Link i = Link.to(new Reference("scenario.food.berry.Owner"));
         typeNode.setEnclosingClassRef(i);
         typeNode.setOwnerName("scenario.food.berry.Owner");
@@ -473,7 +474,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputTypeDoc_fullBody() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassNode typeNode = new ClassNode(new Name("scenario.food.berry.Avocado", pkg.getName()));
+        ClassNode typeNode = new ClassNode(ModelUtil.createName("scenario.food.berry.Avocado", pkg.getName()));
         typeNode.setFirstSentence(Text.of("One two three"));
 
         ctx.setPackageName("scenario.food.berry");
@@ -495,7 +496,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
 
-        AnnotationNode at = new AnnotationNode(new Name("scenario.food.berry.Watermelon", "scenarion.food.berry"));
+        AnnotationNode at = new AnnotationNode(ModelUtil.createName("scenario.food.berry.Watermelon", "scenarion.food.berry"));
         AppliedAnnotationNode aa = new AppliedAnnotationNode(at.getName().fullyQualifiedName(), at.getPackageName());
         aa.setCustom(true);
         aa.setDocumented(true);
@@ -539,7 +540,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void inheritedMethods() throws IOException {
         // Add a method
-        Name methodName = new Name("inheritedMethod", node.getName().fullyQualifiedName(), model.getName());
+        Name methodName = ModelUtil.createName("inheritedMethod", node.getName().fullyQualifiedName(), model.getName());
         MethodNode test = new MethodNode("java.lang.String", methodName);
         test.setOwnerName(node.getName());
         node.addMethod(test);

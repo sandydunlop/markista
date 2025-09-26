@@ -7,6 +7,7 @@ import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.Reference;
 
 import java.net.URI;
@@ -297,8 +298,8 @@ class LinkResolverTests extends ModelTestEnvironment {
         // Add a 'Doclet' class. 'Node' class is already there.
         ClassNode docletType = newClass("Doclet", doclet);
 
-        Name originName = new Name(docletType.getName().fullyQualifiedName(), docletType.getPackageName());
-        Name targetName = new Name(node.getName().fullyQualifiedName(), docletType.getPackageName());
+        Name originName = ModelUtil.createName(docletType.getName().fullyQualifiedName(), docletType.getPackageName());
+        Name targetName = ModelUtil.createName(node.getName().fullyQualifiedName(), docletType.getPackageName());
 
         // Both within the "markista" module
         Reference origin = new Reference("markista", originName);
@@ -350,7 +351,7 @@ class LinkResolverTests extends ModelTestEnvironment {
 
     @Test
     void test_method() {
-        Name methodName = new Name("testMethod", node.getName().fullyQualifiedName(), node.getPackageName());
+        Name methodName = ModelUtil.createName("testMethod", node.getName().fullyQualifiedName(), node.getPackageName());
         MethodNode test = new MethodNode("java.lang.String", methodName);
         test.setOwnerName(node.getName());
         node.addMethod(test);

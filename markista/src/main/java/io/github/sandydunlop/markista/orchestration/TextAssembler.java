@@ -9,6 +9,7 @@ import io.github.sandydunlop.cascara.model.FileLink;
 import io.github.sandydunlop.cascara.model.InterfaceNode;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.MethodReference;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.Node;
@@ -169,7 +170,7 @@ public class TextAssembler {
         }
         Link baseMethodLink = method.getBaseMethod();
         if (baseMethodLink != null) {
-            Name name = new Name(method.getName().simpleName());
+            Name name = ModelUtil.createName(method.getName().simpleName());
             name.setIsMember(true);
             baseMethodLink.getTarget().setName(name);
             String baseTypeName = ModelUtils.baseTypeName(method);
@@ -206,7 +207,7 @@ public class TextAssembler {
                 TypeNode directSupertype = api.getTypeNode(directSupertypeName);
                 if (directSupertype != null) {
                     VariableType subtypeRef = VariableType.parse(typeNode.getName().fullyQualifiedName());
-                    Name fromPackageName = new Name(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
+                    Name fromPackageName = ModelUtil.createName(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
                     subtypeRef.getLink().from(new Reference("", fromPackageName));
                     resolver.resolveVariableType(subtypeRef);
                     directSupertype.getSubtypes().add(subtypeRef);
@@ -225,7 +226,7 @@ public class TextAssembler {
             if (supertype != null) {
                 for (MethodNode baseMethod : supertype.getMethods()) {
                     if (!ModelUtils.typeHasMethod(typeNode, baseMethod)) {
-                        Name methodName = new Name(baseMethod.getName().simpleName(), supertypeName, supertype.getPackageName());
+                        Name methodName = ModelUtil.createName(baseMethod.getName().simpleName(), supertypeName, supertype.getPackageName());
                         Link link = Link.to(new Reference("", methodName));
                         link.setMethodName(baseMethod.getName().simpleName());
                         link.setAnchor(baseMethod.getName().simpleName().toLowerCase());
@@ -278,7 +279,7 @@ public class TextAssembler {
     public static void linkBaseMethod(Link baseMethodLink, String baseTypeName) {
         if (baseMethodLink.getTarget().getName().isMember()) {
             String methodName = baseMethodLink.getTarget().getName().simpleName();
-            Name typeName = new Name(baseTypeName, null);
+            Name typeName = ModelUtil.createName(baseTypeName, null);
             baseMethodLink.getTarget().setName(typeName);
             baseMethodLink.setKind(Link.Kind.UNRESOLVED);
             resolver.resolveLink(baseMethodLink);
@@ -337,10 +338,10 @@ public class TextAssembler {
         }
         String packageName = standardClass.getPackageName();
         Method[] methods = standardClass.getMethods();
-        Name interfaceName = new Name(qualifiedInterfaceName, standardClass.getPackageName());
+        Name interfaceName = ModelUtil.createName(qualifiedInterfaceName, standardClass.getPackageName());
         InterfaceNode interfaceNode = new InterfaceNode(interfaceName);
         for (Method method : methods) {
-            Name methodName = new Name(method.getName(), qualifiedInterfaceName, packageName);
+            Name methodName = ModelUtil.createName(method.getName(), qualifiedInterfaceName, packageName);
             MethodNode methodNode = new MethodNode("", methodName);
             interfaceNode.addMethod(methodNode);
         }
@@ -349,7 +350,7 @@ public class TextAssembler {
 
     public static void setImplementingClass(InterfaceNode interfaceNode, TypeNode typeNode) {
         Reference toType = new Reference("", typeNode.getName());
-        Reference fromPackage = new Reference("",new Name(null, interfaceNode.getPackageName()));
+        Reference fromPackage = new Reference("",ModelUtil.createName(null, interfaceNode.getPackageName()));
         Link implementingClassLink = Link.to(toType).from(fromPackage);
         resolver.resolveLink(implementingClassLink);
         interfaceNode.addImplementingClass(implementingClassLink);
@@ -360,7 +361,7 @@ public class TextAssembler {
             for (MethodNode interfaceMethod : interfaceNode.getMethods()) {
                 if (interfaceMethod.simplifiedSignature().equals(methodNode.simplifiedSignature())) {
                     Reference toType = new Reference("", interfaceNode.getName());
-                    Reference fromPackage = new Reference("", new Name(null, typeNode.getPackageName()));
+                    Reference fromPackage = new Reference("", ModelUtil.createName(null, typeNode.getPackageName()));
                     Link specifiedByLink = Link
                             .to(toType).from(fromPackage);
                     resolver.resolveLink(specifiedByLink);
@@ -452,7 +453,7 @@ public class TextAssembler {
     }
 
     private static Reference here() {
-        Name name = new Name(ctx.getTypeName(), ctx.getPackageName());
+        Name name = ModelUtil.createName(ctx.getTypeName(), ctx.getPackageName());
         return new Reference(ctx.getModuleName(), name);
     }
 }

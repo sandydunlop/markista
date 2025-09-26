@@ -1,6 +1,7 @@
 package io.github.sandydunlop.markista.core;
 
 import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.SourceCodeLocation;
 
@@ -320,7 +321,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         if (!containingDir.exists()) containingDir.mkdirs();
         String fileName = "index";
         if (!typeName.isEmpty()) {
-            Name name = new Name(typeName, packageName);
+            Name name = ModelUtil.createName(typeName, packageName);
             fileName = name.typeName().toString();
         }
         return new File(containingDir, fileName + ".md");

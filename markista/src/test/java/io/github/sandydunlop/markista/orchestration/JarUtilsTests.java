@@ -3,6 +3,7 @@ package io.github.sandydunlop.markista.orchestration;
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.VariableType;
@@ -31,7 +32,7 @@ class JarUtilsTests extends ModelTestEnvironment {
         subClass.getSupertypes().add(VariableType.parse("java.lang.Object"));
         subClass.getSupertypes().add(VariableType.parse("javax.lang.model.util.ElementScanner9"));
 
-        Name methodName = new Name("scan", subClass.getName().fullyQualifiedName(), model.getName());
+        Name methodName = ModelUtil.createName("scan", subClass.getName().fullyQualifiedName(), model.getName());
         MethodNode scanMethod = new MethodNode("void", methodName);
         scanMethod.setOwnerName(node.getName());
         subClass.addMethod(scanMethod);
@@ -55,7 +56,7 @@ class JarUtilsTests extends ModelTestEnvironment {
         subClass.getSupertypes().add(VariableType.parse("java.lang.Object"));
         subClass.getSupertypes().add(VariableType.parse("java.util.ArrayList"));
 
-        Name methodName = new Name("addAll", subClass.getName().fullyQualifiedName(), model.getName());
+        Name methodName = ModelUtil.createName("addAll", subClass.getName().fullyQualifiedName(), model.getName());
         MethodNode addAllMethod = new MethodNode("void", methodName);
         addAllMethod.setOwnerName(node.getName());
         subClass.addMethod(addAllMethod);

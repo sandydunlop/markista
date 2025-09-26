@@ -5,6 +5,7 @@ import io.github.sandydunlop.cascara.model.Api;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.FileLink;
 import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.PackageNode;
@@ -77,9 +78,9 @@ class MarkdownTests {
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-		api.addType(new ClassNode(new Name("io.github.sandydunlop.markista.util.LinkResolver", util.getName())));
-		api.addType(new ClassNode(new Name("io.github.sandydunlop.markista.doclet.MarkdownDoclet", doclet.getName())));
-		api.addType(new ClassNode(new Name("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option", doclet.getName())));
+		api.addType(new ClassNode(ModelUtil.createName("io.github.sandydunlop.markista.util.LinkResolver", util.getName())));
+		api.addType(new ClassNode(ModelUtil.createName("io.github.sandydunlop.markista.doclet.MarkdownDoclet", doclet.getName())));
+		api.addType(new ClassNode(ModelUtil.createName("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option", doclet.getName())));
 
         module = new ModuleNode("markista");
 		api.addModule(module);
@@ -92,11 +93,11 @@ class MarkdownTests {
 		doclet.setModuleName(module.getName());
 		model.setModuleName(module.getName());
 
-        node = new ClassNode(new Name(model.getName()+".Node", model.getName()));
+        node = new ClassNode(ModelUtil.createName(model.getName()+".Node", model.getName()));
         model.addType(node);
         api.addType(node);
 
-        markdownDoclet = new ClassNode(new Name(doclet.getName()+".MarkdownDoclet", doclet.getName()));
+        markdownDoclet = new ClassNode(ModelUtil.createName(doclet.getName()+".MarkdownDoclet", doclet.getName()));
         model.addType(markdownDoclet);
 
 		Relativizer.setFlattenedDirectories(null);
@@ -110,7 +111,7 @@ class MarkdownTests {
         ParamNode param1 = new ParamNode("java.lang.String", "name");
         params.add(param1);
 
-        Name methodName = new Name("subject", markdownDoclet.getName().fullyQualifiedName(), markdownDoclet.getPackageName());
+        Name methodName = ModelUtil.createName("subject", markdownDoclet.getName().fullyQualifiedName(), markdownDoclet.getPackageName());
         MethodNode method = new MethodNode(node.getName().fullyQualifiedName(), methodName);
         method.addParam(param1);
         markdownDoclet.addMethod(method);

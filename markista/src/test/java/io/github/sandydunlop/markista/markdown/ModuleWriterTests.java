@@ -13,6 +13,7 @@ import io.github.sandydunlop.cascara.model.Reference;
 import io.github.sandydunlop.cascara.model.VariableType;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.cascara.model.Link;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -154,11 +155,11 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleProvidesDirectives_WritesTableForProvides() throws IOException {
-        InterfaceNode interface0 = new InterfaceNode(new Name(pkg.getName()+".Interface",
+        InterfaceNode interface0 = new InterfaceNode(ModelUtil.createName(pkg.getName()+".Interface",
                 pkg.getName()));
-        InterfaceNode interface1 = new InterfaceNode(new Name(pkg.getName()+".Impl1",
+        InterfaceNode interface1 = new InterfaceNode(ModelUtil.createName(pkg.getName()+".Impl1",
                 pkg.getName()));
-        InterfaceNode interface2 = new InterfaceNode(new Name(pkg.getName()+".Impl2",
+        InterfaceNode interface2 = new InterfaceNode(ModelUtil.createName(pkg.getName()+".Impl2",
                 pkg.getName()));
         api.addType(interface0);
         api.addType(interface1);

@@ -7,6 +7,7 @@ import io.github.sandydunlop.cascara.model.DirectiveNode;
 import io.github.sandydunlop.cascara.model.InterfaceNode;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.MethodReference;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.RecordNode;
 import io.github.sandydunlop.cascara.model.Reference;
@@ -59,13 +60,13 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Test
     void test_addJavadocToRecords() {
         RecordNode recordNode = newRecord("RecordTest",model);
-        Name equalsNodeName = new Name("equals", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
+        Name equalsNodeName = ModelUtil.createName("equals", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
         MethodNode equalsNode = new MethodNode("boolean",equalsNodeName);
-        Name hashCodeNodeName = new Name("hashCode", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
+        Name hashCodeNodeName = ModelUtil.createName("hashCode", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
         MethodNode hashCode = new MethodNode("long",hashCodeNodeName);
-        Name toStringNodeName = new Name("toString", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
+        Name toStringNodeName = ModelUtil.createName("toString", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
         MethodNode toString = new MethodNode("java.lang.String",toStringNodeName);
-        Name testNodeName = new Name("test", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
+        Name testNodeName = ModelUtil.createName("test", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
         MethodNode test = new MethodNode("java.lang.String",testNodeName);
         recordNode.addMethod(equalsNode);
         recordNode.addMethod(hashCode);
@@ -91,7 +92,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Test
     void inheritance() {
         TypeNode baseTypeNode = newClass("BaseType", markista);
-        Name baseMethodName = new Name("toString", baseTypeNode.getName().fullyQualifiedName(), baseTypeNode.getPackageName());
+        Name baseMethodName = ModelUtil.createName("toString", baseTypeNode.getName().fullyQualifiedName(), baseTypeNode.getPackageName());
         MethodNode baseTypeMethod = new MethodNode("java.lang.String",baseMethodName);
         baseTypeMethod.setOwnerName(baseTypeNode.getName());
         baseTypeNode.addMethod(baseTypeMethod);
@@ -99,7 +100,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         api.addType(baseTypeNode);
 
         TypeNode typeNode = newClass("MyType", markista);
-        Name methodName = new Name("toString", typeNode.getName().fullyQualifiedName(), typeNode.getPackageName());
+        Name methodName = ModelUtil.createName("toString", typeNode.getName().fullyQualifiedName(), typeNode.getPackageName());
         MethodNode typeMethod = new MethodNode("java.lang.String",methodName);
         typeMethod.setOwnerName(typeNode.getName());
         typeNode.addMethod(typeMethod);
@@ -141,7 +142,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("MFLP-107 Link doesnt contain method name")
     @Test
     void inheritedMethods() {
-        Name methodName = new Name("inheritedMethod", node.getName().fullyQualifiedName(), node.getPackageName());
+        Name methodName = ModelUtil.createName("inheritedMethod", node.getName().fullyQualifiedName(), node.getPackageName());
         MethodNode test = new MethodNode("java.lang.String", methodName);
         test.setOwnerName(node.getName());
         node.addMethod(test);

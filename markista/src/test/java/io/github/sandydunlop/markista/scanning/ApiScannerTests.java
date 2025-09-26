@@ -6,6 +6,7 @@ import io.github.sandydunlop.cascara.model.Api;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.FieldNode;
 import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
@@ -361,7 +362,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.cascara.model.Name("mockpackage.mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(ModelUtil.createName("mockpackage.mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -394,7 +395,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.cascara.model.Name("mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(ModelUtil.createName("mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
         DocTree dct = mockDocCommentTree_TEXT("plain text");
         when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
@@ -430,7 +431,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.cascara.model.Name("mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(ModelUtil.createName("mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -458,7 +459,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.cascara.model.Name("mockpackage.mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(ModelUtil.createName("mockpackage.mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -484,7 +485,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
     @Test
     void addConstantFieldValuesReference() {
-        ClassNode classNode2 = new ClassNode(new io.github.sandydunlop.cascara.model.Name(packageNode.getName() + "." + "Node", packageNode.getName()));
+        ClassNode classNode2 = new ClassNode(ModelUtil.createName(packageNode.getName() + "." + "Node", packageNode.getName()));
         VariableType supertype = VariableType.parse("io.github.sandydunlop.cascara.model.Node");
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);

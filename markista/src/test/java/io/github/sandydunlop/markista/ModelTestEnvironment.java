@@ -16,6 +16,7 @@ import io.github.sandydunlop.cascara.model.RecordNode;
 import io.github.sandydunlop.cascara.model.Reference;
 import io.github.sandydunlop.cascara.model.TypeNode;
 import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.io.StringWriter;
@@ -65,31 +66,31 @@ public class ModelTestEnvironment {
     }
 
     protected ClassNode newClass(String typeName, PackageNode pkg) {
-        ClassNode classNode = new ClassNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
+        ClassNode classNode = new ClassNode(ModelUtil.createName(pkg.getName()+"."+typeName, pkg.getName()));
         configureType(classNode, pkg);
         return classNode;
     }
 
     protected EnumNode newEnum(String typeName, PackageNode pkg) {
-        EnumNode classNode = new EnumNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
+        EnumNode classNode = new EnumNode(ModelUtil.createName(pkg.getName()+"."+typeName, pkg.getName()));
         configureType(classNode, pkg);
         return classNode;
     }
 
     protected InterfaceNode newInterface(String typeName, PackageNode pkg) {
-        InterfaceNode classNode = new InterfaceNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
+        InterfaceNode classNode = new InterfaceNode(ModelUtil.createName(pkg.getName()+"."+typeName, pkg.getName()));
         configureType(classNode, pkg);
         return classNode;
     }
 
     protected AnnotationNode newAnnotation(String typeName, PackageNode pkg) {
-        AnnotationNode classNode = new AnnotationNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
+        AnnotationNode classNode = new AnnotationNode(ModelUtil.createName(pkg.getName()+"."+typeName, pkg.getName()));
         configureType(classNode, pkg);
         return classNode;
     }
 
     protected RecordNode newRecord(String typeName, PackageNode pkg) {
-        RecordNode classNode = new RecordNode(new Name(pkg.getName()+"."+typeName, pkg.getName()));
+        RecordNode classNode = new RecordNode(ModelUtil.createName(pkg.getName()+"."+typeName, pkg.getName()));
         configureType(classNode, pkg);
         return classNode;
     }

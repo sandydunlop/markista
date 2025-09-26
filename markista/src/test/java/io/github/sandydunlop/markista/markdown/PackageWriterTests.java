@@ -7,6 +7,7 @@ import io.github.sandydunlop.cascara.model.Api;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.EnumNode;
 import io.github.sandydunlop.cascara.model.InterfaceNode;
+import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.PackageNode;
@@ -88,7 +89,7 @@ class PackageWriterTests {
         body.append(Text.Segment.empty()
                 .setKind(Text.Segment.Kind.TEXT)
                 .setText("This is a test class [Node](Node)."));
-        ClassNode nodeClass = new ClassNode(new Name(packageNode.getName()+".Node", packageNode.getName()));
+        ClassNode nodeClass = new ClassNode(ModelUtil.createName(packageNode.getName()+".Node", packageNode.getName()));
         nodeClass.setFirstSentence(body);
 
         modelPackage.addType(nodeClass);
@@ -140,9 +141,9 @@ class PackageWriterTests {
 
     @Test
     void packagrWiter_outputsPackageMembers_withoutTabs() throws InvalidPathException, IOException {
-        EnumNode enumNode = new EnumNode(new Name(modelPackage.getName()+".TestEnum", modelPackage.getName()));
-        InterfaceNode interfaceNode = new InterfaceNode(new Name(modelPackage.getName()+".TestInterface", modelPackage.getName()));
-        AnnotationNode annotationNode = new AnnotationNode(new Name(modelPackage.getName()+".TestAnnotation", modelPackage.getName()));
+        EnumNode enumNode = new EnumNode(ModelUtil.createName(modelPackage.getName()+".TestEnum", modelPackage.getName()));
+        InterfaceNode interfaceNode = new InterfaceNode(ModelUtil.createName(modelPackage.getName()+".TestInterface", modelPackage.getName()));
+        AnnotationNode annotationNode = new AnnotationNode(ModelUtil.createName(modelPackage.getName()+".TestAnnotation", modelPackage.getName()));
         modelPackage.addType(enumNode);
         modelPackage.addType(interfaceNode);
         modelPackage.addType(annotationNode);
@@ -169,9 +170,9 @@ class PackageWriterTests {
 
     @Test
     void packagrWiter_outputsPackageMembers_withTabs() throws InvalidPathException, IOException {
-        EnumNode enumNode = new EnumNode(new Name(modelPackage.getName()+".TestEnum", modelPackage.getName()));
-        InterfaceNode interfaceNode = new InterfaceNode(new Name(modelPackage.getName()+".TestInterface", modelPackage.getName()));
-        AnnotationNode annotationNode = new AnnotationNode(new Name(modelPackage.getName()+".TestAnnotation", modelPackage.getName()));
+        EnumNode enumNode = new EnumNode(ModelUtil.createName(modelPackage.getName()+".TestEnum", modelPackage.getName()));
+        InterfaceNode interfaceNode = new InterfaceNode(ModelUtil.createName(modelPackage.getName()+".TestInterface", modelPackage.getName()));
+        AnnotationNode annotationNode = new AnnotationNode(ModelUtil.createName(modelPackage.getName()+".TestAnnotation", modelPackage.getName()));
         modelPackage.addType(enumNode);
         modelPackage.addType(interfaceNode);
         modelPackage.addType(annotationNode);
