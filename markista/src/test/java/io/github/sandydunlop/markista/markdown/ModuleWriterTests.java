@@ -1,18 +1,18 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.DirectiveNode;
-import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.InterfaceNode;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.PackageReference;
-import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.model.VariableType;
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.DirectiveNode;
+import io.github.sandydunlop.cascara.model.FieldNode;
+import io.github.sandydunlop.cascara.model.InterfaceNode;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.PackageNode;
+import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.sandydunlop.cascara.model.Reference;
+import io.github.sandydunlop.cascara.model.VariableType;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
-import io.github.sandydunlop.markista.model.Link;
+import io.github.sandydunlop.cascara.model.Link;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -195,8 +195,8 @@ class ModuleWriterTests {
         FieldNode fieldNode = new FieldNode("int", "MY_CONSTANT");
         fieldNode.setConstantValue(42);
         fieldNode.setConstantValueReference(ref);
-        fieldNode.addModifier(io.github.sandydunlop.markista.model.Modifier.PUBLIC);
-        fieldNode.addModifier(io.github.sandydunlop.markista.model.Modifier.STATIC);
+        fieldNode.addModifier(io.github.sandydunlop.cascara.model.Modifier.PUBLIC);
+        fieldNode.addModifier(io.github.sandydunlop.cascara.model.Modifier.STATIC);
 
         moduleNode.addConstantValue(fieldNode);
 

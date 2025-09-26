@@ -1,5 +1,6 @@
 package io.github.sandydunlop.markista.orchestration;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -12,18 +13,20 @@ import java.util.Set;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ExternalLink;
-import io.github.sandydunlop.markista.model.Link;
-import io.github.sandydunlop.markista.model.Link.Kind;
-import io.github.sandydunlop.markista.model.Link.Scope;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.Pair;
-import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.VariableType;
+
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.ExternalLink;
+import io.github.sandydunlop.cascara.model.Link;
+import io.github.sandydunlop.cascara.model.Link.Kind;
+import io.github.sandydunlop.cascara.model.Link.Scope;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.PackageNode;
+import io.github.sandydunlop.cascara.model.Pair;
+import io.github.sandydunlop.cascara.model.Reference;
+import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
 public class LinkResolver {
     private static final String DOT_HTML = ".html";
@@ -243,8 +246,13 @@ public class LinkResolver {
     void loadExternalLinks() {
         externalLinks = new ArrayList<>();
         for (String path : Configuration.getLinks()) {
-            ExternalLink extLink = new ExternalLink(ctx, URI.create(path));
-            extLink.load();
+            ExternalLink extLink = new ExternalLink(URI.create(path), ctx.getOutputDirectory());
+            try {
+                extLink.load();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
             externalLinks.add(extLink);
         }
     }
@@ -324,7 +332,7 @@ public class LinkResolver {
     boolean tryResolveJreType(Link link) {
         Reference target = link.getTarget();
         String qualifiedBinaryName = target.getName().fullyQualifiedBinaryName();
-        Class<?> jreType = JreUtils.loadClass(qualifiedBinaryName);
+        Class<?> jreType = JreUtil.loadClass(qualifiedBinaryName);
         if (jreType != null) {
             Scope scope = Scope.STANDARD;
             String typeName = link.getTarget().getName().fullyQualifiedName();
@@ -526,11 +534,11 @@ public class LinkResolver {
 
     private boolean qualifyJreReference(Reference ref) {
         Name name = ref.getName();
-        Class<?> jreType = JreUtils.loadClass(name.fullyQualifiedName());
+        Class<?> jreType = JreUtil.loadClass(name.fullyQualifiedName());
         if (jreType == null) {
             // Check if the last component of the name is a member
             Name candidate = name.firstComponents(-1);
-            jreType = JreUtils.loadClass(candidate.fullyQualifiedName());
+            jreType = JreUtil.loadClass(candidate.fullyQualifiedName());
             if (jreType != null) {
                 name.setIsMember(true);
             }

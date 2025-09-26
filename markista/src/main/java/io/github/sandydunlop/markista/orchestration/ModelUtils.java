@@ -1,11 +1,13 @@
 package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.VariableType;
-import io.github.sandydunlop.markista.modelling.StandardModeller;
+
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.modelling.StandardModeller;
+import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
 /// Utilities for rxtrating information from the API model
 public class ModelUtils {
@@ -33,7 +35,7 @@ public class ModelUtils {
             TypeNode supertypeNode = api.getTypeNode(typeName);
             if (supertypeNode == null) {
                 // It's not in the model, try to find in JRE
-                Class<?> jreClass = JreUtils.loadClass(typeName);
+                Class<?> jreClass = JreUtil.loadClass(typeName);
                 if (jreClass != null) {
                     supertypeNode = modeller.modelClass(jreClass);
                 }
@@ -85,8 +87,8 @@ public class ModelUtils {
 
     /// Check if typeA is subtype of typeB
     public static boolean isAssignableFrom(VariableType typeA, VariableType typeB) {
-        Class<?> classA = JreUtils.loadClass(typeA.getRawTypeName().toString());
-        Class<?> classB = JreUtils.loadClass(typeB.getRawTypeName().toString());
+        Class<?> classA = JreUtil.loadClass(typeA.getRawTypeName().toString());
+        Class<?> classB = JreUtil.loadClass(typeB.getRawTypeName().toString());
         return classB.isAssignableFrom(classA);
     }
 

@@ -1,12 +1,13 @@
 package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.VariableType;
-import io.github.sandydunlop.markista.modelling.StandardModeller;
+import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.ParamNode;
+import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.modelling.StandardModeller;
+import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
 import java.lang.reflect.Method;
 
@@ -29,7 +30,7 @@ class ModelUtilsTests extends ModelTestEnvironment {
     @Test
     void subtypes() throws NoSuchMethodException {
         StandardModeller modeller = new StandardModeller();
-        Class<?> elementScannerClass = JreUtils.loadClass("javax.lang.model.util.ElementScanner6");
+        Class<?> elementScannerClass = JreUtil.loadClass("javax.lang.model.util.ElementScanner6");
         TypeNode elementScanner6 = modeller.modelType(elementScannerClass);
         TypeNode scanner = newClass("Scanner", doclet);
         api.addType(scanner);

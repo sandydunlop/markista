@@ -1,18 +1,18 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassNode;
-import io.github.sandydunlop.markista.model.FileLink;
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.PackageReference;
-import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.Link;
-import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.Text.Segment;
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.ClassNode;
+import io.github.sandydunlop.cascara.model.FileLink;
+import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.PackageNode;
+import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.sandydunlop.cascara.model.ParamNode;
+import io.github.sandydunlop.cascara.model.Link;
+import io.github.sandydunlop.cascara.model.Text;
+import io.github.sandydunlop.cascara.model.Text.Segment;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
@@ -126,7 +126,7 @@ class MarkdownTests {
     static List<Object[]> typeReferenceProvider() {
         return List.of(
             new Object[] { Link.Kind.TYPE, "io.github.sandydunlop.Node", null, "io.github.sandydunlop.Node" },
-            new Object[] { Link.Kind.TYPE, "io.github.sandydunlop.markista.model.Node", null, "[Node](../model/Node.md)" },
+            new Object[] { Link.Kind.TYPE, "io.github.sandydunlop.cascara.model.Node", null, "[Node](../model/Node.md)" },
             new Object[] { Link.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
         );
     }

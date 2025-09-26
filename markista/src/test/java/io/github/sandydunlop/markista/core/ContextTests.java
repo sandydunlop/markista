@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.core;
 
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.PackageNode;
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.PackageNode;
 
 import java.io.BufferedReader;
 import java.io.File;

@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.doclet;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.MarkdownService;
-import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.cascara.model.Api;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.sandydunlop.markista.scanning.ApiScanner;

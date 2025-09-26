@@ -2,19 +2,19 @@ package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.MockedDocletEnvironment;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassNode;
-import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.PackageReference;
-import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.Text.Segment;
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.ClassNode;
+import io.github.sandydunlop.cascara.model.FieldNode;
+import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.PackageNode;
+import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.sandydunlop.cascara.model.ParamNode;
+import io.github.sandydunlop.cascara.model.Text;
+import io.github.sandydunlop.cascara.model.Text.Segment;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.VariableType;
+import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.sandydunlop.cascara.model.VariableType;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -361,7 +361,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name("mockpackage.mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.cascara.model.Name("mockpackage.mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -394,7 +394,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name("mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.cascara.model.Name("mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
         DocTree dct = mockDocCommentTree_TEXT("plain text");
         when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
@@ -430,7 +430,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name("mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.cascara.model.Name("mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -458,7 +458,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.markista.model.Name("mockpackage.mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(new io.github.sandydunlop.cascara.model.Name("mockpackage.mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -484,8 +484,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
     @Test
     void addConstantFieldValuesReference() {
-        ClassNode classNode2 = new ClassNode(new io.github.sandydunlop.markista.model.Name(packageNode.getName() + "." + "Node", packageNode.getName()));
-        VariableType supertype = VariableType.parse("io.github.sandydunlop.markista.model.Node");
+        ClassNode classNode2 = new ClassNode(new io.github.sandydunlop.cascara.model.Name(packageNode.getName() + "." + "Node", packageNode.getName()));
+        VariableType supertype = VariableType.parse("io.github.sandydunlop.cascara.model.Node");
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
         FieldNode fieldNode = new FieldNode("int", "field");

@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
+import io.github.sandydunlop.cascara.model.Api;
 import io.github.sandydunlop.markista.spi.DocService;
 
 import java.io.IOException;

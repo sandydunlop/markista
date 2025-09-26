@@ -135,23 +135,23 @@ public class MockedDocletEnvironment {
 
     protected LinkTree mockDocCommentTree_LINK() {
         ReferenceTree rt = mock(ReferenceTree.class);
-        when (rt.getSignature()).thenReturn("io.github.sandydunlop.markista.model.Node");
+        when (rt.getSignature()).thenReturn("io.github.sandydunlop.cascara.model.Node");
         LinkTree dct = mock(LinkTree.class);
         when (dct.getReference()).thenReturn(rt);
         when(dct.getKind()).thenReturn(Kind.LINK);
-        when(dct.toString()).thenReturn("{@link io.github.sandydunlop.markista.model.Node}");
+        when(dct.toString()).thenReturn("{@link io.github.sandydunlop.cascara.model.Node}");
         return dct;
     }
 
     protected DocTree mockDocCommentTree_LINK_PLAIN() {
         ReferenceTree rt = mock(ReferenceTree.class);
-        when (rt.getSignature()).thenReturn("io.github.sandydunlop.markista.model.Node");
+        when (rt.getSignature()).thenReturn("io.github.sandydunlop.cascara.model.Node");
         DocTree linkText = mockDocCommentTree_MARKDOWN("link text");
         LinkTree dct = mock(LinkTree.class);
         when (dct.getReference()).thenReturn(rt);
         List<DocTree> list = List.of(linkText);
         when(dct.getKind()).thenReturn(Kind.LINK_PLAIN);
-        when(dct.toString()).thenReturn("{@link io.github.sandydunlop.markista.model.Node link text}");
+        when(dct.toString()).thenReturn("{@link io.github.sandydunlop.cascara.model.Node link text}");
         when(dct.getLabel()).thenAnswer(_ -> list);
         return dct;
     }

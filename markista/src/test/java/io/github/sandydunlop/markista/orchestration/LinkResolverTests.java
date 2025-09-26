@@ -2,12 +2,12 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.markista.core.Configuration;
-import io.github.sandydunlop.markista.model.ClassNode;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.Link;
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.cascara.model.ClassNode;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.Link;
+import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.Reference;
 
 import java.net.URI;
 
@@ -326,7 +326,7 @@ class LinkResolverTests extends ModelTestEnvironment {
 
     @Test
     void test_qualify_2() {
-        Reference ref = new Reference("io.github.sandydunlop.markista.model.Node");
+        Reference ref = new Reference("io.github.sandydunlop.cascara.model.Node");
         resolver.qualify(ref);
         Name name = ref.getName();
         assertTrue(name.isType());

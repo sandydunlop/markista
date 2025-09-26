@@ -1,8 +1,8 @@
 package io.github.sandydunlop.markista.core;
 
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.SourceCodeLocation;
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.SourceCodeLocation;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

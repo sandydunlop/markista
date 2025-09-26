@@ -1,16 +1,16 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.DirectiveNode;
-import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.FileLink;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.PackageReference;
-import io.github.sandydunlop.markista.model.Link;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.VariableType;
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.DirectiveNode;
+import io.github.sandydunlop.cascara.model.FieldNode;
+import io.github.sandydunlop.cascara.model.FileLink;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.PackageNode;
+import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.sandydunlop.cascara.model.Link;
+import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.sandydunlop.cascara.model.VariableType;
 
 import java.io.IOException;
 import java.io.Writer;

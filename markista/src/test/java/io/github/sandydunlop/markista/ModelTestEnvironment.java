@@ -1,21 +1,21 @@
 package io.github.sandydunlop.markista;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.AnnotationNode;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.ClassNode;
-import io.github.sandydunlop.markista.model.EnumNode;
-import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.InterfaceNode;
-import io.github.sandydunlop.markista.model.Link;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.PackageReference;
-import io.github.sandydunlop.markista.model.RecordNode;
-import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.VariableType;
+import io.github.sandydunlop.cascara.model.AnnotationNode;
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.ClassNode;
+import io.github.sandydunlop.cascara.model.EnumNode;
+import io.github.sandydunlop.cascara.model.FieldNode;
+import io.github.sandydunlop.cascara.model.InterfaceNode;
+import io.github.sandydunlop.cascara.model.Link;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.PackageNode;
+import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.sandydunlop.cascara.model.RecordNode;
+import io.github.sandydunlop.cascara.model.Reference;
+import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.sandydunlop.cascara.model.VariableType;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.io.StringWriter;

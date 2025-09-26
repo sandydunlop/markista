@@ -11,6 +11,7 @@ group = 'io.github.sandydunlop'
 version = '0.3.1'
 
 repositories {
+	mavenLocal()
 	mavenCentral()
 }
 
@@ -20,6 +21,8 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:5.18.0'
     testImplementation 'org.mockito:mockito-junit-jupiter:5.18.0'
 	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+
+    implementation('io.github.sandydunlop:cascara.core:0.1.0')
 }
 
 java {

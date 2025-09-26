@@ -1,8 +1,9 @@
 package io.github.sandydunlop.markista.orchestration;
 
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.Reference;
+import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.Reference;
+import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,14 +14,14 @@ class JreUtilsTests {
     void t1() {
         Reference ref = new Reference("jdk.javadoc.doclet.Doclet.Option.Kind");
         Name name = ref.getName();
-        Class<?> jreType = JreUtils.loadClass(name.fullyQualifiedName());
+        Class<?> jreType = JreUtil.loadClass(name.fullyQualifiedName());
         assertNotNull(jreType);
     }
 
     @Test
     void test_methods() {
-        Class<?> jreType = JreUtils.loadClass("java.lang.Integer");
-        MethodNode[] methods = JreUtils.getMethods(jreType);
+        Class<?> jreType = JreUtil.loadClass("java.lang.Integer");
+        MethodNode[] methods = JreUtil.getMethods(jreType);
         assertNotNull(methods);
     }
 }

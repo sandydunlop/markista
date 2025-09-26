@@ -2,18 +2,18 @@ package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.AppliedAnnotationNode;
-import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.FileLink;
-import io.github.sandydunlop.markista.model.Link;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.PackageNode;
-import io.github.sandydunlop.markista.model.PackageReference;
-import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.modelling.ElementModeller;
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.AppliedAnnotationNode;
+import io.github.sandydunlop.cascara.model.FieldNode;
+import io.github.sandydunlop.cascara.model.FileLink;
+import io.github.sandydunlop.cascara.model.Link;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.PackageNode;
+import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.sandydunlop.cascara.model.Reference;
+import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.sandydunlop.cascara.modelling.ElementModeller;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +30,7 @@ import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
 
-import io.github.sandydunlop.markista.model.MethodNode;
+import io.github.sandydunlop.cascara.model.MethodNode;
 import jdk.javadoc.doclet.DocletEnvironment;
 
 import static javax.lang.model.element.Modifier.PROTECTED;

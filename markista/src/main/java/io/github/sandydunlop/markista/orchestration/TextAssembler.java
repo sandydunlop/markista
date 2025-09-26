@@ -1,25 +1,27 @@
 package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.markista.model.Api;
-import io.github.sandydunlop.markista.model.DirectiveNode;
-import io.github.sandydunlop.markista.model.FieldNode;
-import io.github.sandydunlop.markista.model.FileLink;
-import io.github.sandydunlop.markista.model.InterfaceNode;
-import io.github.sandydunlop.markista.model.MethodNode;
-import io.github.sandydunlop.markista.model.MethodReference;
-import io.github.sandydunlop.markista.model.ModuleNode;
-import io.github.sandydunlop.markista.model.Name;
-import io.github.sandydunlop.markista.model.Node;
-import io.github.sandydunlop.markista.model.PackageReference;
-import io.github.sandydunlop.markista.model.Pair;
-import io.github.sandydunlop.markista.model.ParamNode;
-import io.github.sandydunlop.markista.model.RecordNode;
-import io.github.sandydunlop.markista.model.Reference;
-import io.github.sandydunlop.markista.model.Link;
-import io.github.sandydunlop.markista.model.Text;
-import io.github.sandydunlop.markista.model.TypeNode;
-import io.github.sandydunlop.markista.model.VariableType;
+
+import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.DirectiveNode;
+import io.github.sandydunlop.cascara.model.FieldNode;
+import io.github.sandydunlop.cascara.model.FileLink;
+import io.github.sandydunlop.cascara.model.InterfaceNode;
+import io.github.sandydunlop.cascara.model.MethodNode;
+import io.github.sandydunlop.cascara.model.MethodReference;
+import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.Node;
+import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.sandydunlop.cascara.model.Pair;
+import io.github.sandydunlop.cascara.model.ParamNode;
+import io.github.sandydunlop.cascara.model.RecordNode;
+import io.github.sandydunlop.cascara.model.Reference;
+import io.github.sandydunlop.cascara.model.Link;
+import io.github.sandydunlop.cascara.model.Text;
+import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -329,7 +331,7 @@ public class TextAssembler {
 
     public static InterfaceNode getStandardInterface(VariableType interfaceRef) {
         String qualifiedInterfaceName = interfaceRef.getRawTypeName().toString();
-        Class<?> standardClass = JreUtils.loadClass(qualifiedInterfaceName);
+        Class<?> standardClass = JreUtil.loadClass(qualifiedInterfaceName);
         if (standardClass == null) {
             return null;
         }
