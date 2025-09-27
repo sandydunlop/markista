@@ -6,7 +6,7 @@ import io.github.sandydunlop.cascara.model.Api;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.TypeNode;
 import io.github.sandydunlop.cascara.model.VariableType;
-import io.github.sandydunlop.cascara.modelling.StandardModeller;
+import io.github.sandydunlop.cascara.modeling.StandardModeller;
 import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
 /// Utilities for rxtrating information from the API model

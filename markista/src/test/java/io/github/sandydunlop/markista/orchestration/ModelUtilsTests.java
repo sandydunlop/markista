@@ -7,7 +7,7 @@ import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.TypeNode;
 import io.github.sandydunlop.cascara.model.VariableType;
-import io.github.sandydunlop.cascara.modelling.StandardModeller;
+import io.github.sandydunlop.cascara.modeling.StandardModeller;
 import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
 import java.lang.reflect.Method;
@@ -53,10 +53,10 @@ class ModelUtilsTests extends ModelTestEnvironment {
         scanner.addMethod(scan);
         scan.setOwnerName(scanner.getName());
 
-        VariableType typeB = VariableType.parse(elementScanner6.getName().fullyQualifiedName());
+        VariableType typeB = ModelUtil.parseVariableType(elementScanner6.getName().fullyQualifiedName());
 
         // Inheritance
-        scanner.getSupertypes().add(VariableType.parse("java.lang.Object"));
+        scanner.getSupertypes().add(ModelUtil.parseVariableType("java.lang.Object"));
         scanner.getSupertypes().add(typeB);
 
         String bt = ModelUtils.baseTypeName(scan);

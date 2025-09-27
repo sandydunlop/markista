@@ -206,7 +206,7 @@ public class TextAssembler {
                 String directSupertypeName = link.getTarget().getName().fullyQualifiedName();
                 TypeNode directSupertype = api.getTypeNode(directSupertypeName);
                 if (directSupertype != null) {
-                    VariableType subtypeRef = VariableType.parse(typeNode.getName().fullyQualifiedName());
+                    VariableType subtypeRef = ModelUtil.parseVariableType(typeNode.getName().fullyQualifiedName());
                     Name fromPackageName = ModelUtil.createName(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
                     subtypeRef.getLink().from(ModelUtil.createReference("", fromPackageName));
                     resolver.resolveVariableType(subtypeRef);
@@ -268,7 +268,7 @@ public class TextAssembler {
             // but use a VariableType as the key
             for (Map.Entry<String,List<MethodReference>> entry : methodLookup2.entrySet()) {
                 List<MethodReference> methods = entry.getValue();
-                VariableType supertypeRef = VariableType.parse(entry.getKey());
+                VariableType supertypeRef = ModelUtil.parseVariableType(entry.getKey());
                 resolver.resolveVariableType(supertypeRef);
                 typeNode.getInheritedMethods().put(supertypeRef, methods);
             }

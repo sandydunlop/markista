@@ -486,7 +486,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
     @Test
     void addConstantFieldValuesReference() {
         ClassNode classNode2 = new ClassNode(ModelUtil.createName(packageNode.getName() + "." + "Node", packageNode.getName()));
-        VariableType supertype = VariableType.parse("io.github.sandydunlop.cascara.model.Node");
+        VariableType supertype = ModelUtil.parseVariableType("io.github.sandydunlop.cascara.model.Node");
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
         FieldNode fieldNode = new FieldNode("int", "field");

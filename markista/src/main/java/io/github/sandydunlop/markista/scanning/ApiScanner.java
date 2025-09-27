@@ -13,7 +13,7 @@ import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
 import io.github.sandydunlop.cascara.model.Reference;
 import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.modelling.ElementModeller;
+import io.github.sandydunlop.cascara.modeling.ElementModeller;
 
 import java.util.HashSet;
 import java.util.Set;

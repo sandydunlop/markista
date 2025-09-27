@@ -102,7 +102,7 @@ public class ModelTestEnvironment {
     }
 
     protected VariableType newVariableType(String typeName) {
-        return VariableType.parse(typeName);
+        return ModelUtil.parseVariableType(typeName);
     }
 
     protected Link newMethodReference(String typeName, String methodName) {

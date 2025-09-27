@@ -192,7 +192,7 @@ class ModuleWriterTests {
 
     @Test
     void outputConstantValues_WritesConstantFieldValuesPage() throws InvalidPathException, IOException {
-        VariableType ref = VariableType.parse("v");
+        VariableType ref = ModelUtil.parseVariableType("v");
         FieldNode fieldNode = new FieldNode("int", "MY_CONSTANT");
         fieldNode.setConstantValue(42);
         fieldNode.setConstantValueReference(ref);

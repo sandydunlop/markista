@@ -113,7 +113,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         typeMethod.setFirstSentence(typeMethodText);
 
         // Set baseTypeNode as the supertype of typeNode
-        VariableType typeRef = VariableType.parse(baseTypeNode.getName().fullyQualifiedName());
+        VariableType typeRef = ModelUtil.parseVariableType(baseTypeNode.getName().fullyQualifiedName());
         typeNode.getSupertypes().add(typeRef);
 
         Link methodRef = Link.to(ModelUtil.createReference(baseTypeNode.getName().fullyQualifiedName() + "#" + baseTypeMethod.getName().simpleName()));
@@ -148,8 +148,8 @@ class TextAssemblerTests extends ModelTestEnvironment {
         node.addMethod(test);
 
         ClassNode subClass = newClass("SubClass", model);
-        subClass.getSupertypes().add(VariableType.parse("java.lang.Object"));
-        subClass.getSupertypes().add(VariableType.parse(node.getName().fullyQualifiedName()));
+        subClass.getSupertypes().add(ModelUtil.parseVariableType("java.lang.Object"));
+        subClass.getSupertypes().add(ModelUtil.parseVariableType(node.getName().fullyQualifiedName()));
 
         TextAssembler.assembleTextAndLinks(api, ctx);
 
@@ -180,7 +180,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("standardInterfaceProvider")
     void getStandardInterface_parameterized(String qualifiedName, String packageName, String simpleClassName) {
-        VariableType interfaceRef = VariableType.parse(qualifiedName);
+        VariableType interfaceRef = ModelUtil.parseVariableType(qualifiedName);
         InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
         assertNotNull(interfaceNode);
     }

@@ -254,7 +254,7 @@ class TypeWriterTests extends ModelTestEnvironment {
 
         InterfaceNode specifiedByType = newInterface("Specified", pkg);
         specifiedByType.addMethod(overriddenMethodNode);
-        VariableType interfaceRef = VariableType.parse(specifiedByType.getName().fullyQualifiedName());
+        VariableType interfaceRef = ModelUtil.parseVariableType(specifiedByType.getName().fullyQualifiedName());
         typeNode.getImplementedInterfaces().add(interfaceRef);
 
         ClassNode thrownType = newClass("Thrown", pkg);
@@ -370,7 +370,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputImplementedInterfaces() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        typeNode.getImplementedInterfaces().add(VariableType.parse("interface"));
+        typeNode.getImplementedInterfaces().add(ModelUtil.parseVariableType("interface"));
 
         InterfaceNode testInterface = newInterface("interface", pkg);
 
@@ -427,7 +427,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputSupertypes() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        typeNode.getSupertypes().add(VariableType.parse("test.interface"));
+        typeNode.getSupertypes().add(ModelUtil.parseVariableType("test.interface"));
 
         ctx.setPackageName("scenario.food.berry");
         Api api = new Api("Test API");
@@ -501,9 +501,9 @@ class TypeWriterTests extends ModelTestEnvironment {
         aa.setCustom(true);
         aa.setDocumented(true);
         typeNode.addAppliedAnnotation(aa);
-        AnnotationElement element1 = new AnnotationElement(VariableType.parse("Tn"), "Nm", "Va");
+        AnnotationElement element1 = new AnnotationElement(ModelUtil.parseVariableType("Tn"), "Nm", "Va");
         aa.addElement(element1);
-        AnnotationElement element2 = new AnnotationElement(VariableType.parse("El"), "Em", "Ent");
+        AnnotationElement element2 = new AnnotationElement(ModelUtil.parseVariableType("El"), "Em", "Ent");
         aa.addElement(element2);
 
         ctx.setPackageName("scenario.food.berry");

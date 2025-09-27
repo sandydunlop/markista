@@ -7,7 +7,7 @@ import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.Name;
 import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.VariableType;
-import io.github.sandydunlop.cascara.modelling.StandardModeller;
+import io.github.sandydunlop.cascara.modeling.StandardModeller;
 import io.github.sandydunlop.cascara.model.TypeNode;
 import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
@@ -29,8 +29,8 @@ class JarUtilsTests extends ModelTestEnvironment {
     @Test
     void getMethod_compatibleParams1() {
         ClassNode subClass = newClass("SubClass", model);
-        subClass.getSupertypes().add(VariableType.parse("java.lang.Object"));
-        subClass.getSupertypes().add(VariableType.parse("javax.lang.model.util.ElementScanner9"));
+        subClass.getSupertypes().add(ModelUtil.parseVariableType("java.lang.Object"));
+        subClass.getSupertypes().add(ModelUtil.parseVariableType("javax.lang.model.util.ElementScanner9"));
 
         Name methodName = ModelUtil.createName("scan", subClass.getName().fullyQualifiedName(), model.getName());
         MethodNode scanMethod = new MethodNode("void", methodName);
@@ -53,8 +53,8 @@ class JarUtilsTests extends ModelTestEnvironment {
     @Test
     void getMethod_compatibleParams2() {
         ClassNode subClass = newClass("SubClass", model);
-        subClass.getSupertypes().add(VariableType.parse("java.lang.Object"));
-        subClass.getSupertypes().add(VariableType.parse("java.util.ArrayList"));
+        subClass.getSupertypes().add(ModelUtil.parseVariableType("java.lang.Object"));
+        subClass.getSupertypes().add(ModelUtil.parseVariableType("java.util.ArrayList"));
 
         Name methodName = ModelUtil.createName("addAll", subClass.getName().fullyQualifiedName(), model.getName());
         MethodNode addAllMethod = new MethodNode("void", methodName);
