@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
@@ -41,11 +41,11 @@ class MarkdownServiceTests {
         ctx.setOutputDirectory("\u0000");
 
         // Create an API with only one empty module
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         ModuleNode module = new ModuleNode("module");
         PackageNode pkg = new PackageNode("package");
         api.addModule(module);
-        PackageReference pkgRef = new PackageReference(pkg.getName());
+        PackageReference pkgRef = new PackageReference(pkg.getName().fullyQualifiedName());
         module.addPackage(pkgRef);
 
         // Ensure an exception is thrown

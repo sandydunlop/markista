@@ -3,13 +3,14 @@ package io.github.sandydunlop.markista.markdown;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.cascara.model.AnnotationNode;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.EnumNode;
 import io.github.sandydunlop.cascara.model.InterfaceNode;
 import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.NameUtil;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
 import io.github.sandydunlop.cascara.model.Text;
@@ -37,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PackageWriterTests {
     LinkResolver resolver;
-    Api api;
+    SemanticModel api;
     ModuleNode moduleNode;
     PackageNode packageNode;
     PackageNode modelPackage;
@@ -79,7 +80,7 @@ class PackageWriterTests {
         ctx.setReporter(reporter);
         packageWriter = new PackageWriter(api, ctx);
 
-        api = new Api("Test API");
+        api = new SemanticModel("Test API");
 
         moduleNode = new ModuleNode("markista");
         packageNode = new PackageNode("io.github.sandydunlop.markista");
@@ -89,15 +90,15 @@ class PackageWriterTests {
         body.append(Text.Segment.empty()
                 .setKind(Text.Segment.Kind.TEXT)
                 .setText("This is a test class [Node](Node)."));
-        ClassNode nodeClass = new ClassNode(ModelUtil.createName(packageNode.getName()+".Node", packageNode.getName()));
+        ClassNode nodeClass = new ClassNode(NameUtil.createTypeName(packageNode.getName(), "Node"));
         nodeClass.setFirstSentence(body);
 
         modelPackage.addType(nodeClass);
         packageNode.addPackage(modelPackage);
 
-        PackageReference pr1 = new PackageReference(packageNode.getName());
+        PackageReference pr1 = new PackageReference(packageNode.getName().fullyQualifiedName());
         moduleNode.addPackage(pr1);
-        PackageReference pr2 = new PackageReference(modelPackage.getName());
+        PackageReference pr2 = new PackageReference(modelPackage.getName().fullyQualifiedName());
         moduleNode.addPackage(pr2);
 
         api.addModule(moduleNode);
@@ -141,9 +142,9 @@ class PackageWriterTests {
 
     @Test
     void packagrWiter_outputsPackageMembers_withoutTabs() throws InvalidPathException, IOException {
-        EnumNode enumNode = new EnumNode(ModelUtil.createName(modelPackage.getName()+".TestEnum", modelPackage.getName()));
-        InterfaceNode interfaceNode = new InterfaceNode(ModelUtil.createName(modelPackage.getName()+".TestInterface", modelPackage.getName()));
-        AnnotationNode annotationNode = new AnnotationNode(ModelUtil.createName(modelPackage.getName()+".TestAnnotation", modelPackage.getName()));
+        EnumNode enumNode = new EnumNode(NameUtil.createTypeName(modelPackage.getName(), "TestEnum"));
+        InterfaceNode interfaceNode = new InterfaceNode(NameUtil.createTypeName(modelPackage.getName(), "TestInterface"));
+        AnnotationNode annotationNode = new AnnotationNode(NameUtil.createTypeName(modelPackage.getName(), "TestAnnotation"));
         modelPackage.addType(enumNode);
         modelPackage.addType(interfaceNode);
         modelPackage.addType(annotationNode);
@@ -170,9 +171,9 @@ class PackageWriterTests {
 
     @Test
     void packagrWiter_outputsPackageMembers_withTabs() throws InvalidPathException, IOException {
-        EnumNode enumNode = new EnumNode(ModelUtil.createName(modelPackage.getName()+".TestEnum", modelPackage.getName()));
-        InterfaceNode interfaceNode = new InterfaceNode(ModelUtil.createName(modelPackage.getName()+".TestInterface", modelPackage.getName()));
-        AnnotationNode annotationNode = new AnnotationNode(ModelUtil.createName(modelPackage.getName()+".TestAnnotation", modelPackage.getName()));
+        EnumNode enumNode = new EnumNode(NameUtil.createTypeName(modelPackage.getName(), "TestEnum"));
+        InterfaceNode interfaceNode = new InterfaceNode(NameUtil.createTypeName(modelPackage.getName(), "TestInterface"));
+        AnnotationNode annotationNode = new AnnotationNode(NameUtil.createTypeName(modelPackage.getName(), "TestAnnotation"));
         modelPackage.addType(enumNode);
         modelPackage.addType(interfaceNode);
         modelPackage.addType(annotationNode);

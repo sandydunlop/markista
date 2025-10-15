@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.doclet;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.MarkdownService;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.sandydunlop.markista.scanning.ApiScanner;
@@ -335,7 +335,7 @@ public class MarkdownDoclet implements Doclet {
     @Override
     public boolean run(DocletEnvironment environment) {
         ApiScanner scanner = new ApiScanner(environment);
-        Api api = scanner.scan(environment.getIncludedElements());
+        SemanticModel api = scanner.scan(environment.getIncludedElements());
         ctx.setApi(api);
         Relativizer.setFlattenedDirectories(ctx.getFlattenedDirectories());
         TextAssembler.assembleTextAndLinks(api, ctx);

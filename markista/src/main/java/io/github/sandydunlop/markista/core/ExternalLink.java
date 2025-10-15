@@ -1,6 +1,6 @@
 package io.github.sandydunlop.markista.core;
 
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ExternalLink {
-    Api api;
+    SemanticModel api;
 
     URI uri;
     String outputDirectory;
@@ -26,7 +26,7 @@ public class ExternalLink {
 
     public ExternalLink(URI u, String d) {
         uri = u;
-        api = new Api("");
+        api = new SemanticModel("");
         outputDirectory = d;
     }
 
@@ -50,7 +50,7 @@ public class ExternalLink {
         return uri.getScheme() != null && uri.getScheme().startsWith("http");
     }
 
-    public Api getApi() {
+    public SemanticModel getSemanticModel() {
         return api;
     }
 

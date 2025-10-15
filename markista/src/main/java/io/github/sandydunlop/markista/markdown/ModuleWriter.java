@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.DirectiveNode;
 import io.github.sandydunlop.cascara.model.FieldNode;
 import io.github.sandydunlop.cascara.model.FileLink;
@@ -10,7 +10,7 @@ import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -45,9 +45,9 @@ public class ModuleWriter {
     /// It handles writing text to the appropriate output file or stream.
     private Writer writer;
 
-    /// The Api model representing the entire documented API structure,
+    /// The SemanticModel model representing the entire documented API structure,
     /// including modules, packages, types, and members used for cross-referencing and navigation.
-    private Api api;
+    private SemanticModel api;
 
     /// Constructor that sets up the locations API documents will be written to.
     public ModuleWriter(Context context) {
@@ -57,7 +57,7 @@ public class ModuleWriter {
     /// Output the documentation files for the specified API
     /// @param  api The API to output the documentation for
     /// @throws java.io.IOException if there is a problem writing to the output file
-    public void writeDocs(Api api) throws InvalidPathException, IOException {
+    public void writeDocs(SemanticModel api) throws InvalidPathException, IOException {
         this.api = api;
         for (ModuleNode moduleNode : api.getModules()) {
             outputModuleDoc(moduleNode);
@@ -71,9 +71,9 @@ public class ModuleWriter {
     /// @param moduleNode The module to write documentation for
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputModuleDoc(ModuleNode moduleNode) throws InvalidPathException, IOException {
-        ctx.setModuleName(moduleNode.getName());
+        ctx.setModuleName(moduleNode.getName().fullyQualifiedName());
         if (!moduleNode.getPackages().isEmpty()) {
-            ctx.setModuleName(moduleNode.getName());
+            ctx.setModuleName(moduleNode.getName().fullyQualifiedName());
             writer = ctx.createFileInModule("index.md");
             if (moduleNode.getName().isEmpty()) {
                 // Unnamed module
@@ -210,8 +210,8 @@ public class ModuleWriter {
                     modifiersAndType.append(constantValue.getModifiersString());
                     modifiersAndType.append(" ");
                 }
-                VariableType reference = constantValue.getConstantValueReference();
-                modifiersAndType.append(MarkdownUtils.formatVariableType(reference, true));
+                VariableTypeNode reference = constantValue.getConstantValueReference();
+                modifiersAndType.append(MarkdownUtils.formatVariableTypeNode(reference, true));
                 table.addRow(modifiersAndType.toString(), constantValue.getName().simpleName(), escape(constantValue.getConstantValue().toString()));
             }
             table.render(writer);
@@ -223,10 +223,10 @@ public class ModuleWriter {
     private void outputElementList(ModuleNode moduleNode) throws InvalidPathException, IOException {
         writer = ctx.createFileInModule("element-list");
         writer.write("module:");
-        writer.write(moduleNode.getName());
+        writer.write(moduleNode.getName().fullyQualifiedName());
         writer.write("\n");
         for (PackageReference pkg : moduleNode.getPackages()) {
-            writer.write(pkg.getName() );
+            writer.write(pkg.getName().fullyQualifiedName());
             writer.write("\n");
         }
         writer.flush();

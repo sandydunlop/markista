@@ -1,8 +1,8 @@
 package io.github.sandydunlop.markista.core;
 
-import io.github.sandydunlop.cascara.model.Api;
-import io.github.sandydunlop.cascara.model.ModelUtil;
-import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.SemanticModel;
+import io.github.sandydunlop.cascara.model.NameUtil;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.SourceCodeLocation;
 
 import java.io.BufferedOutputStream;
@@ -40,7 +40,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
 
     /// The Api model representing the entire documented API structure,
     /// including modules, packages, types, and members used for cross-referencing and navigation.
-    private Api api;
+    private SemanticModel api;
 
     /// The directory the documentation is being generated in
     private String outputDirectory = "";
@@ -100,7 +100,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
 
     /// Sets the Api model associated with this context, also initializing the flattened directories string.
     /// @param api The Api instance.
-    public void setApi(Api api) {
+    public void setApi(SemanticModel api) {
         this.api = api;
         if (Configuration.getFlattenPackages()) {
             this.flattenedDirectories = api.commonBase();
@@ -109,7 +109,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
 
     /// Returns the Api model associated with this context.
     /// @return The current Api model.
-    public Api getApi() {
+    public SemanticModel getApi() {
         return api;
     }
 
@@ -321,7 +321,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         if (!containingDir.exists()) containingDir.mkdirs();
         String fileName = "index";
         if (!typeName.isEmpty()) {
-            Name name = ModelUtil.createName(typeName, packageName);
+            JlsName name = NameUtil.createName(typeName, packageName);
             fileName = name.typeName().toString();
         }
         return new File(containingDir, fileName + ".md");

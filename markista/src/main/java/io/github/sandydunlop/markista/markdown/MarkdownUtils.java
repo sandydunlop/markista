@@ -4,11 +4,11 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.FileLink;
 import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.Text;
-import io.github.sandydunlop.cascara.model.VariableType;
-import io.github.sandydunlop.cascara.model.VariableType.BoundingKind;
-import io.github.sandydunlop.cascara.model.VariableType.TypeParameter;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
+import io.github.sandydunlop.cascara.model.VariableTypeNode.BoundingKind;
+import io.github.sandydunlop.cascara.model.VariableTypeNode.TypeParameter;
 
 import java.util.List;
 
@@ -58,7 +58,7 @@ public class MarkdownUtils {
         int paramCount = 0;
         for (ParamNode param : params) {
             if (paramCount++ > 0) sb.append(", ");
-            String typeName = formatVariableType(param.getType(), false);
+            String typeName = formatVariableTypeNode(param.getType(), false);
             sb.append(typeName);
             sb.append(" ");
             sb.append(param.getName().simpleName());
@@ -101,37 +101,37 @@ public class MarkdownUtils {
         return sb.toString();
     }
 
-    public static String formatVariableType(VariableType typeRef) {
-        return formatVariableType(typeRef, false);
+    public static String formatVariableTypeNode(VariableTypeNode typeRef) {
+        return formatVariableTypeNode(typeRef, false);
     }
 
-    public static String formatVariableType(VariableType variableType, boolean useQualifiedName) {
+    public static String formatVariableTypeNode(VariableTypeNode variableType, boolean useQualifiedName) {
         StringBuilder sb = new StringBuilder();
         if (variableType.getTypeParameterDeclaration() != null) {
             sb.append(variableType.getTypeParameterDeclaration());
             sb.append(" ");
         }
         switch (variableType) {
-            case VariableType.Generic generic -> {
-                sb.append(formatVariableTypeLink(variableType, useQualifiedName));
+            case VariableTypeNode.Generic generic -> {
+                sb.append(formatVariableTypeNodeLink(variableType, useQualifiedName));
                 sb.append("<");
                 sb.append(boundingConstraint(generic));
-                sb.append(formatVariableType(generic.getParams(), useQualifiedName));
+                sb.append(formatVariableTypeNode(generic.getParams(), useQualifiedName));
                 sb.append(">");
             }
-            case VariableType.Sequence sequence -> {
-                for (VariableType element : sequence) {
+            case VariableTypeNode.Sequence sequence -> {
+                for (VariableTypeNode element : sequence) {
                     if (!sb.isEmpty()) {
                         sb.append(", ");
                     }
-                    sb.append(formatVariableType(element, useQualifiedName));
+                    sb.append(formatVariableTypeNode(element, useQualifiedName));
                 }
             }
             case TypeParameter typeParameter -> {
                 sb.append(boundingConstraint(typeParameter));
-                sb.append(formatVariableTypeLink(variableType, useQualifiedName));
+                sb.append(formatVariableTypeNodeLink(variableType, useQualifiedName));
             }
-            default -> sb.append(formatVariableTypeLink(variableType, useQualifiedName));
+            default -> sb.append(formatVariableTypeNodeLink(variableType, useQualifiedName));
         }
         for (int d = 0; d < variableType.arrayDimensions(); d++) {
             sb.append("[]");
@@ -148,7 +148,7 @@ public class MarkdownUtils {
         return "";
     }
 
-    public static String formatVariableTypeLink(VariableType variableType, boolean useQualifiedName) {
+    public static String formatVariableTypeNodeLink(VariableTypeNode variableType, boolean useQualifiedName) {
         if (variableType.getLink() != null) {
             return link(variableType.getLink(), useQualifiedName);
         } else {
@@ -220,7 +220,7 @@ public class MarkdownUtils {
     }
 
     private static String getLabelForType(Link link, boolean qualifyType) {
-        Name name = link.getTarget().getName();
+        JlsName name = link.getTarget().getName();
         if (qualifyType) {
             return name.fullyQualifiedName();
         } else {
@@ -229,10 +229,10 @@ public class MarkdownUtils {
     }
 
     private static String getLabelForMethod(Link link, boolean qualifyMember) {
-        Name name = link.getTarget().getName();
+        JlsName name = link.getTarget().getName();
         if (qualifyMember) {
-            Name typeName = name.typeName();
-            Name methodName = name.lastComponents(1);
+            JlsName typeName = name.typeName();
+            JlsName methodName = name.lastComponents(1);
             return typeName.toString() + "." + methodName.toString();
         } else {
             return name.lastComponents(1).toString();

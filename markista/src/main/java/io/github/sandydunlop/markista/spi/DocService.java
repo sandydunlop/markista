@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.spi;
 import java.security.Provider.Service;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 
 
 
@@ -43,7 +43,7 @@ public interface DocService {
     /// @param api the Api object representing the project's structure
     /// @param ctx the Context object providing additional information for processing
     /// @return true on success, otheriwse false
-    boolean start(Api api, Context ctx);
+    boolean start(SemanticModel api, Context ctx);
 
     /// Runs after the main Markdown DocService.
     /// @return true on success, otheriwse false

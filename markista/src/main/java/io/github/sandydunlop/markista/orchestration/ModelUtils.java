@@ -2,35 +2,35 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Context;
 
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableType;
-import io.github.sandydunlop.cascara.modeling.StandardModeller;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
+import io.github.sandydunlop.cascara.modeling.StandardModeler;
 import io.github.sandydunlop.cascara.jreutil.JreUtil;
 
 /// Utilities for rxtrating information from the API model
 public class ModelUtils {
-    static Api api;
+    static SemanticModel api;
     static Context ctx;
 
     private ModelUtils() {
         // Nothing to see here
     }
 
-    public static void init(Api a, Context c) {
+    public static void init(SemanticModel a, Context c) {
         api = a;
         ctx = c;
     }
 
     public static String baseTypeName(MethodNode methodNode){
-        StandardModeller modeller = new StandardModeller();
+        StandardModeler modeller = new StandardModeler();
         TypeNode type = api.getTypeNode(methodNode.getOwnerName());
         if (type == null) {
             return null;
         }
         for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
-            VariableType typeRef = type.getSupertypes().get(i);
+            VariableTypeNode typeRef = type.getSupertypes().get(i);
             String typeName = typeRef.getRawTypeName().toString();
             TypeNode supertypeNode = api.getTypeNode(typeName);
             if (supertypeNode == null) {
@@ -61,8 +61,8 @@ public class ModelUtils {
         if (!methodA.getName().simpleName().equals(methodB.getName().simpleName())) {
             return false;
         }
-        VariableType[] paramTypesA = methodA.getParamTypes();
-        VariableType[] paramTypesB = methodB.getParamTypes();
+        VariableTypeNode[] paramTypesA = methodA.getParamTypes();
+        VariableTypeNode[] paramTypesB = methodB.getParamTypes();
 
         // Check if parameter types are compatible
         if (paramTypesA.length == paramTypesB.length) {
@@ -77,8 +77,8 @@ public class ModelUtils {
     }
 
     /// Check if typeA is a subtype of typeB
-    public static boolean isSubtype(VariableType typeA, VariableType typeB) {
-        if (typeA instanceof VariableType.Generic paramTypeA && typeB instanceof VariableType.Generic paramTypeB) {
+    public static boolean isSubtype(VariableTypeNode typeA, VariableTypeNode typeB) {
+        if (typeA instanceof VariableTypeNode.Generic paramTypeA && typeB instanceof VariableTypeNode.Generic paramTypeB) {
             return parameterizedTypesAreCompatible(paramTypeA, paramTypeB);
         } else {
             return isAssignableFrom(typeA, typeB);
@@ -86,25 +86,25 @@ public class ModelUtils {
     }
 
     /// Check if typeA is subtype of typeB
-    public static boolean isAssignableFrom(VariableType typeA, VariableType typeB) {
+    public static boolean isAssignableFrom(VariableTypeNode typeA, VariableTypeNode typeB) {
         Class<?> classA = JreUtil.loadClass(typeA.getRawTypeName().toString());
         Class<?> classB = JreUtil.loadClass(typeB.getRawTypeName().toString());
         return classB.isAssignableFrom(classA);
     }
 
-    private static boolean parameterizedTypesAreCompatible(VariableType.Generic paramTypeA, VariableType.Generic paramTypeB) {
+    private static boolean parameterizedTypesAreCompatible(VariableTypeNode.Generic paramTypeA, VariableTypeNode.Generic paramTypeB) {
         // Check raw types
         if (!paramTypeA.getRawTypeName().equals(paramTypeB.getRawTypeName())) {
             return false;
         }
         // Check the actual type arguments
-        VariableType typeArgsA = paramTypeA.getParams();
-        VariableType typeArgsB = paramTypeB.getParams();
+        VariableTypeNode typeArgsA = paramTypeA.getParams();
+        VariableTypeNode typeArgsB = paramTypeB.getParams();
 
-        if (typeArgsA instanceof VariableType.Sequence sequenceA && typeArgsB instanceof VariableType.Sequence sequenceB) {
+        if (typeArgsA instanceof VariableTypeNode.Sequence sequenceA && typeArgsB instanceof VariableTypeNode.Sequence sequenceB) {
             for (int i=0; i<sequenceA.size(); i++) {
-                VariableType typeArgsAtype = sequenceA.get(i);
-                VariableType typeArgsBtype = sequenceB.get(i);
+                VariableTypeNode typeArgsAtype = sequenceA.get(i);
+                VariableTypeNode typeArgsBtype = sequenceB.get(i);
                 if (!isSubtype(typeArgsAtype, typeArgsBtype)) {
                     return false;
                 }

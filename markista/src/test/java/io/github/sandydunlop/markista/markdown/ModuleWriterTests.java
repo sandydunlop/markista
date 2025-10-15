@@ -1,16 +1,17 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.DirectiveNode;
 import io.github.sandydunlop.cascara.model.FieldNode;
 import io.github.sandydunlop.cascara.model.InterfaceNode;
 import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.NameUtil;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
 import io.github.sandydunlop.cascara.model.Reference;
-import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.ModelUtil;
@@ -39,7 +40,7 @@ import static org.mockito.Mockito.when;
 class ModuleWriterTests {
     LinkResolver resolver;
     private static Context ctx;
-    Api api;
+    SemanticModel api;
     ModuleNode moduleNode;
     PackageNode pkg;
 
@@ -78,7 +79,7 @@ class ModuleWriterTests {
         ctx.setReporter(reporter);
         moduleWriter = new ModuleWriter(ctx);
 
-        api = new Api("Test API");
+        api = new SemanticModel("Test API");
         moduleNode = new ModuleNode("mod");
         api.addModule(moduleNode);
 
@@ -86,7 +87,7 @@ class ModuleWriterTests {
         pkg = new PackageNode("com.example.package");
         api.addPackage(pkg); // Package needs to be in API for LinkResolver to work
 
-        PackageReference pkgRef = new PackageReference(pkg.getName());
+        PackageReference pkgRef = new PackageReference(pkg.getName().fullyQualifiedName());
         moduleNode.addPackage(pkgRef);
 
         ctx.setModuleName("");
@@ -108,7 +109,7 @@ class ModuleWriterTests {
         PackageNode pkg1 = new PackageNode("com.example.package");
         api.addPackage(pkg1); // Package needs to be in API for LinkResolver to work
 
-        PackageReference pkgRef = new PackageReference(pkg1.getName());
+        PackageReference pkgRef = new PackageReference(pkg1.getName().fullyQualifiedName());
         namedModule.addPackage(pkgRef);
 
         moduleWriter.writeDocs(api);
@@ -121,14 +122,14 @@ class ModuleWriterTests {
     @Test
     void writeDocs_WritesModuleDocsForUnnamedModule() throws IOException {
         // Setup modules in API
-        api = new Api("Test API");
+        api = new SemanticModel("Test API");
         ModuleNode unnamedModule = new ModuleNode("");
         api.addModule(unnamedModule);
 
         // Add a package to namedModule (required for index.md generation)
         PackageNode pkg1 = new PackageNode("com.example.package");
         api.addPackage(pkg1); // Package needs to be in API for LinkResolver to work
-        PackageReference pkgRef = new PackageReference(pkg1.getName());
+        PackageReference pkgRef = new PackageReference(pkg1.getName().fullyQualifiedName());
         unnamedModule.addPackage(pkgRef);
 
         moduleWriter.writeDocs(api);
@@ -140,7 +141,7 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleDirectives_WritesTableForDirectiveNodes() throws IOException {
-        Link ref = Link.to(ModelUtil.createReference("com.example.package"));
+        Link ref = Link.to(NameUtil.createReference("com.example.package"));
         DirectiveNode exportsDirective = mock(DirectiveNode.class);
         when(exportsDirective.getKind()).thenReturn(DirectiveNode.Kind.EXPORTS);
         when(exportsDirective.getLink()).thenReturn(ref);
@@ -155,23 +156,20 @@ class ModuleWriterTests {
 
     @Test
     void outputModuleProvidesDirectives_WritesTableForProvides() throws IOException {
-        InterfaceNode interface0 = new InterfaceNode(ModelUtil.createName(pkg.getName()+".Interface",
-                pkg.getName()));
-        InterfaceNode interface1 = new InterfaceNode(ModelUtil.createName(pkg.getName()+".Impl1",
-                pkg.getName()));
-        InterfaceNode interface2 = new InterfaceNode(ModelUtil.createName(pkg.getName()+".Impl2",
-                pkg.getName()));
+        InterfaceNode interface0 = new InterfaceNode(NameUtil.createTypeName(pkg.getName(), "Interface"));
+        InterfaceNode interface1 = new InterfaceNode(NameUtil.createTypeName(pkg.getName(), "Impl1"));
+        InterfaceNode interface2 = new InterfaceNode(NameUtil.createTypeName(pkg.getName(), "Impl2"));
         api.addType(interface0);
         api.addType(interface1);
         api.addType(interface2);
 
-        Link ref = Link.to(ModelUtil.createReference("com.example.package.Interface"));
+        Link ref = Link.to(NameUtil.createReference("com.example.package.Interface"));
         ref.setKind(Link.Kind.TYPE);
         ref.setUri(URI.create("com/example/package/Interface.md"));
         DirectiveNode providesDirective = mock(DirectiveNode.class);
         List<Link> implementations = List.of(
-                Link.to(ModelUtil.createReference("com.example.package.Impl1")),
-                Link.to(ModelUtil.createReference("com.example.package.Impl2")));
+                Link.to(NameUtil.createReference("com.example.package.Impl1")),
+                Link.to(NameUtil.createReference("com.example.package.Impl2")));
         implementations.get(0).setUri(URI.create("com.example.package.Impl1"));
         implementations.get(1).setUri(URI.create("com.example.package.Impl2"));
 
@@ -192,10 +190,10 @@ class ModuleWriterTests {
 
     @Test
     void outputConstantValues_WritesConstantFieldValuesPage() throws InvalidPathException, IOException {
-        VariableType ref = ModelUtil.parseVariableType("v");
-        FieldNode fieldNode = new FieldNode("int", "MY_CONSTANT");
+        VariableTypeNode vt = ModelUtil.parseVariableType("int");
+        FieldNode fieldNode = new FieldNode(vt, "MY_CONSTANT");
         fieldNode.setConstantValue(42);
-        fieldNode.setConstantValueReference(ref);
+        fieldNode.setConstantValueReference(vt);
         fieldNode.addModifier(io.github.sandydunlop.cascara.model.Modifier.PUBLIC);
         fieldNode.addModifier(io.github.sandydunlop.cascara.model.Modifier.STATIC);
 

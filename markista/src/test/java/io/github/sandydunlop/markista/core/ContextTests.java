@@ -1,6 +1,6 @@
 package io.github.sandydunlop.markista.core;
 
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.PackageNode;
 
 import java.io.BufferedReader;
@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ContextTests {
     static Context ctx;
-    private Api api;
+    private SemanticModel api;
     private PackageNode pkg;
 
     StringWriter stringWriter = new StringWriter();
@@ -54,7 +54,7 @@ class ContextTests {
 
         PackageNode pkg0 = new PackageNode("io.github.sandydunlop");
         pkg = new PackageNode("io.github.sandydunlop.test");
-        api = new Api("Test API");
+        api = new SemanticModel("Test API");
         api.addPackage(pkg0);
         api.addPackage(pkg);
         ctx.setApi(api);
@@ -177,7 +177,7 @@ class ContextTests {
         ctx.setApi(api);
 
         ctx.setModuleName("");
-        ctx.setPackageName(pkg.getName());
+        ctx.setPackageName(pkg.getName().fullyQualifiedName());
         File file = ctx.getPackageDirectory();
         assertEquals(outputDir + "sandydunlop/test", file.getAbsolutePath());
     }
@@ -190,7 +190,7 @@ class ContextTests {
         Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("markista");
-        ctx.setPackageName(pkg.getName());
+        ctx.setPackageName(pkg.getName().fullyQualifiedName());
 
         OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInPackage();
         w.write("test createFile 1");
@@ -211,7 +211,7 @@ class ContextTests {
         Configuration.setFlattenPackages(true);
 
         ctx.setModuleName("");
-        ctx.setPackageName(pkg.getName());
+        ctx.setPackageName(pkg.getName().fullyQualifiedName());
 
         OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInPackage();
         w.write("test createFile 1");

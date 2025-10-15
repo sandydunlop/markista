@@ -18,7 +18,7 @@ import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.Text;
 import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -132,9 +132,9 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputSupertypes(TypeNode typeNode) throws IOException {
         int indentation = 0;
-        for (VariableType typeRef : typeNode.getSupertypes()) {
+        for (VariableTypeNode typeRef : typeNode.getSupertypes()) {
             writer.write(NBSP.repeat(indentation));
-            writer.write(MarkdownUtils.formatVariableType(typeRef, true) + BR + "\n");
+            writer.write(MarkdownUtils.formatVariableTypeNode(typeRef, true) + BR + "\n");
             indentation += 8;
         }
         writer.write(NBSP.repeat(indentation));
@@ -147,11 +147,11 @@ public class TypeWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputImplementedInterfaces(TypeNode typeNode) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for (VariableType typeRef : typeNode.getImplementedInterfaces()) {
+        for (VariableTypeNode typeRef : typeNode.getImplementedInterfaces()) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatVariableType(typeRef, true));
+            sb.append(MarkdownUtils.formatVariableTypeNode(typeRef, true));
         }
         if (!sb.isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");
@@ -194,11 +194,11 @@ public class TypeWriter {
 
     private void outputDirectKnownSubtypes(TypeNode typeNode) throws IOException {
         StringBuilder sb = new StringBuilder();
-        for (VariableType typeRef : typeNode.getSubtypes()) {
+        for (VariableTypeNode typeRef : typeNode.getSubtypes()) {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatVariableType(typeRef));
+            sb.append(MarkdownUtils.formatVariableTypeNode(typeRef));
         }
         if (!sb.isEmpty()) {
             writer.write("Direct Known Subtypes:<br/>\n");
@@ -229,10 +229,10 @@ public class TypeWriter {
         }
         writer.write(typeNode.getModifiersString() + typeString + " __" + typeNode.getName().simpleName() + "__");
         if (typeNode.getSupertypes().size() > 1) {
-            VariableType typeRef = typeNode.getSupertypes().getLast();
+            VariableTypeNode typeRef = typeNode.getSupertypes().getLast();
             writer.write(BR);
             writer.write("extends ");
-            writer.write(MarkdownUtils.formatVariableType(typeRef));
+            writer.write(MarkdownUtils.formatVariableTypeNode(typeRef));
             writer.write("\n");
         }
         writer.write("</span>\n\n");
@@ -244,9 +244,9 @@ public class TypeWriter {
         writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = "";
         if (member instanceof MethodNode method) {
-            typeString = MarkdownUtils.formatVariableType(method.getReturnType());
+            typeString = MarkdownUtils.formatVariableTypeNode(method.getReturnType());
         } else if (member instanceof FieldNode field) {
-            typeString = MarkdownUtils.formatVariableType(field.getType());
+            typeString = MarkdownUtils.formatVariableTypeNode(field.getType());
         }
         for (AppliedAnnotationNode annotation : member.getAppliedAnnotations()) {
             if (member instanceof AnnotationNode || (annotation.isCustom() && annotation.isDocumented())) {
@@ -324,7 +324,7 @@ public class TypeWriter {
                 .addColumn("Field")
                 .addColumn(TEXT_DESCRIPTION);
         for (FieldNode fieldNode : fields) {
-            String link = MarkdownUtils.formatVariableType(fieldNode.getType(), false);
+            String link = MarkdownUtils.formatVariableTypeNode(fieldNode.getType(), false);
             table.addRow(fieldNode.getModifiersString() + link,
                         MarkdownUtils.mdAnchorLink(fieldNode.getName().simpleName()), MarkdownUtils.inOneLine(MarkdownUtils.formatText(fieldNode.getFirstSentence())));
         }
@@ -355,7 +355,7 @@ public class TypeWriter {
                 .addColumn("Method")
                 .addColumn(TEXT_DESCRIPTION);
         for (MethodNode methodNode : methods) {
-            String returnTypeText = MarkdownUtils.formatVariableType(methodNode.getReturnType());
+            String returnTypeText = MarkdownUtils.formatVariableTypeNode(methodNode.getReturnType());
             table.addRow(methodNode.getModifiersString() + returnTypeText,
                         MarkdownUtils.mdAnchorLink(methodNode.getName().simpleName()) + "(" + MarkdownUtils.formatParams(methodNode.getParams()) + ")",
                         MarkdownUtils.inOneLine(MarkdownUtils.formatText(methodNode.getFirstSentence())));
@@ -526,7 +526,7 @@ public class TypeWriter {
     }
 
     private void outputInheritedMethods(TypeNode typeNode) throws IOException {
-        for(Map.Entry<VariableType,List<MethodReference>> entry : typeNode.getInheritedMethods().entrySet()) {
+        for(Map.Entry<VariableTypeNode,List<MethodReference>> entry : typeNode.getInheritedMethods().entrySet()) {
             StringBuilder sb = new StringBuilder();
             List<MethodReference> methodList = entry.getValue();
             for(MethodReference methodRef : methodList) {
@@ -537,7 +537,7 @@ public class TypeWriter {
             }
             if (!sb.isEmpty()) {
                 writer.write("### Methods inherited from ");
-                writer.write(MarkdownUtils.formatVariableType(entry.getKey(), false));
+                writer.write(MarkdownUtils.formatVariableTypeNode(entry.getKey(), false));
                 writer.write("\n\n");
                 writer.write(sb.toString());
                 writer.write("\n\n");

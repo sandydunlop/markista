@@ -2,18 +2,19 @@ package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.AppliedAnnotationNode;
 import io.github.sandydunlop.cascara.model.FieldNode;
 import io.github.sandydunlop.cascara.model.FileLink;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.NameUtil;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
 import io.github.sandydunlop.cascara.model.Reference;
 import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.modeling.ElementModeller;
+import io.github.sandydunlop.cascara.modeling.ElementModeler;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -39,23 +40,23 @@ import static javax.lang.model.element.Modifier.PROTECTED;
 import static javax.lang.model.element.Modifier.PUBLIC;
 
 /// A scanner that walks the language model elements provided by the Javadoc doclet
-/// environment and builds an Api model representing the discovered modules, packages,
+/// environment and builds an SemanticModel model representing the discovered modules, packages,
 /// types, and members. The scanner delegates most element-to-model conversion logic
 /// to TypeUtils, and it records a set of included element names so filtering can be
 /// applied when only a subset of elements should be documented.
 ///
 /// This class extends ElementScanner9 so it can visit elements in source order and
 /// recursively walk nested elements. The scanner keeps track of the current ModuleNode
-/// being populated and updates the Api instance as elements are encountered.
+/// being populated and updates the SemanticModel instance as elements are encountered.
 @java.lang.SuppressWarnings("squid:S110") // There is no way around this.
 public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// The shared Context singleton providing logging and configuration access.
     private final Context ctx;
 
-    /// The Api model being populated by this scanner.
-    Api api;
+    /// The SemanticModel model being populated by this scanner.
+    SemanticModel api;
 
-    private ElementModeller modeller;
+    private ElementModeler modeller;
 
     /// The unnamed module node reprsenting package elements not in an explicit module.
     private final ModuleNode unnamedModule;
@@ -66,26 +67,26 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// A set of fully-qualified names (packages and types) included in the scan invocation.
     HashSet<String> includedNames;
 
-    /// Initializes the ApiScanner with access to the doclet environment.
+    /// Initializes the SemanticModelScanner with access to the doclet environment.
     /// The doclet environment provides tools for processing API elements, types, and documentation.
     /// @param environment Represents the operating environment of a single invocation of the doclet.
     public ApiScanner(DocletEnvironment environment) {
-        api = new Api(Configuration.getDocTitle());
+        api = new SemanticModel(Configuration.getDocTitle());
         unnamedModule = api.getUnnamedModuleNode();
         currentModule = api.getUnnamedModuleNode();
         ctx = Context.getInstance();
-        modeller = new ElementModeller(api, environment);
+        modeller = new ElementModeler(api, environment);
     }
 
-    /// Scan the given set of top-level elements and return the built Api model.
+    /// Scan the given set of top-level elements and return the built SemanticModel model.
     /// This method performs setup actions (register included elements, initialize
-    /// TypeUtils with the Api and environment), executes the scan, performs some
+    /// TypeUtils with the SemanticModel and environment), executes the scan, performs some
     /// post-processing (constant value reference collection, annotation marking),
-    /// computes the unnamed module source path and sorts the final Api model.
+    /// computes the unnamed module source path and sorts the final SemanticModel model.
     ///
     /// @param elements top-level elements to scan (packages and types)
-    /// @return the fully-populated Api model
-    public Api scan(Set<? extends Element> elements) {
+    /// @return the fully-populated SemanticModel model
+    public SemanticModel scan(Set<? extends Element> elements) {
         processIncludedElements(elements);
         scan(elements, 0);
         addConstantFieldValuesReference(currentModule);
@@ -139,7 +140,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         PackageReference packageRef = unnamedModule.getPackages().getFirst();
         PackageNode pkg = api.getPackageNode(packageRef.getName());
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
-        String nameAsPath = pkg.getName().replace(".", separator);
+        String nameAsPath = pkg.getName().fullyQualifiedName().replace(".", separator);
         String root = pkg.getSourcePath().replace(nameAsPath, "");
         unnamedModule.setSourcePath(root);
     }
@@ -151,7 +152,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
 
     /// Visit a module element and create or reuse a ModuleNode for it.
     /// The module's module-info.java presence and source path are discovered,
-    /// directives are added, and the module is registered with the Api model.
+    /// directives are added, and the module is registered with the SemanticModel model.
     @Override
     public Void visitModule(ModuleElement e, Integer depth) {
         ModuleNode mod;
@@ -167,7 +168,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (mod == null) {
             mod = modeller.modelModule(e);
             api.addModule(mod);
-            ctx.setModuleName(mod.getName());
+            ctx.setModuleName(mod.getName().fullyQualifiedName());
             if (Configuration.getVerbose()) {
                 ctx.reportInfo(String.format("[ MODULE] %s", mod.getName()));
             }
@@ -177,7 +178,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     }
 
     /// Visit a package element and, if it was included, create a PackageNode and
-    /// attach it to the current module and to the Api model. Package source path
+    /// attach it to the current module and to the SemanticModel model. Package source path
     /// and documentation are configured via TypeUtils helpers.
     @Override
     public Void visitPackage(PackageElement ee, Integer depth) {
@@ -185,14 +186,14 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             PackageNode pkg = api.getPackageNode(ee.getQualifiedName().toString());
             if (pkg == null) {
                 pkg = modeller.modelPackage(ee);
-                ctx.setPackageName(pkg.getName());
+                ctx.setPackageName(pkg.getName().fullyQualifiedName());
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
-                pkg.setModuleName(currentModule.getName());
+                pkg.setModuleName(currentModule.getName().fullyQualifiedName());
                 api.addPackage(pkg);
-                PackageReference packageRef = new PackageReference(pkg.getName());
-                packageRef.setLink(Link.to(ModelUtil.createReference(pkg.getName())));
+                PackageReference packageRef = new PackageReference(pkg.getName().fullyQualifiedName());
+                packageRef.setLink(Link.to(NameUtil.createReference(pkg.getName().fullyQualifiedName())));
                 currentModule.addPackage(packageRef);
                 Element enclosing = ee.getEnclosingElement();
                 if (enclosing instanceof PackageElement enclosingPackageElement) {
@@ -211,7 +212,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// This also records the source file path when available.
     @Override
     public Void visitType(TypeElement e, Integer depth) {
-        if (isIncludedElement(e.getQualifiedName().toString()) && isIncludedInApi(e)){
+        if (isIncludedElement(e.getQualifiedName().toString()) && isIncludedInSemanticModel(e)){
             String qualifiedName = e.getQualifiedName().toString();
             TypeNode typeNode = api.getTypeNode(qualifiedName);
             if (typeNode == null) {
@@ -231,7 +232,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// return description, references and since information using TypeUtils helpers.
     @Override
     public Void visitExecutable(ExecutableElement ee, Integer depth) {
-        if (isIncludedElement(ee) && isIncludedInApi(ee)){
+        if (isIncludedElement(ee) && isIncludedInSemanticModel(ee)){
             MethodNode methodNode = modeller.modelMethod(ee);
             api.addMethod(methodNode);
         }
@@ -242,7 +243,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// to a FieldNode, record any constant value, and populate documentation and modifiers.
     @Override
     public Void visitVariable(VariableElement ve, Integer depth) {
-        if (isIncludedElement(ve) && isIncludedInApi(ve) && ve.getKind() == ElementKind.FIELD) {
+        if (isIncludedElement(ve) && isIncludedInSemanticModel(ve) && ve.getKind() == ElementKind.FIELD) {
             Element enclosingElement = ve.getEnclosingElement();
             if (!(enclosingElement instanceof TypeElement)) {
                 ctx.reportError("No enclosing type for " + ve.getSimpleName().toString());
@@ -279,7 +280,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         for (TypeNode classNode : api.getTypes()) {
             for (FieldNode fieldNode : classNode.getFields()) {
                 if (fieldNode.getConstantValue() != null) {
-                    Reference fromPackage = ModelUtil.createReference(moduleNode.getName(), ModelUtil.createName(null, classNode.getPackageName()));
+                    Reference fromPackage = NameUtil.createReference(moduleNode.getName().fullyQualifiedName(), NameUtil.createName(null, classNode.getPackageName()));
                     FileLink link = FileLink.to("constant-values")
                             .from(fromPackage)
                             .withLabel("Constant Field Values");
@@ -307,7 +308,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// Returns true if the element should be included in the public API documentation based on its modifiers and configuration.
     /// @param e The language model element to test.
     /// @return true if element is public or protected or private member documentation is configured; false otherwise.
-    public boolean isIncludedInApi(Element e) {
+    public boolean isIncludedInSemanticModel(Element e) {
         Set<Modifier> mods = e.getModifiers();
         return Configuration.getDocumentPrivateMembers() || mods.contains(PUBLIC) || mods.contains(PROTECTED);
     }

@@ -2,7 +2,7 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.FileLink;
 import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.PackageNode;
@@ -25,14 +25,14 @@ public class PackageWriter {
     /// Do not make this `final`. It will break tests with mocked [Context].
     private Context ctx;
 
-    private Api api;
+    private SemanticModel api;
 
     /// The Writer used to output the generated markdown content for the current document.
     /// It handles writing text to the appropriate output file or stream.
     private Writer writer = null;
 
     /// Constructor that sets up the locations API documents will be written to.
-    public PackageWriter(Api api, Context context) {
+    public PackageWriter(SemanticModel api, Context context) {
         this.api = api;
         ctx = context;
     }
@@ -51,7 +51,7 @@ public class PackageWriter {
     /// @param packageNode the package
     /// @throws java.io.IOException if there is a problem writing to the output file
     void outputPackageDoc(PackageNode packageNode) throws InvalidPathException, IOException {
-        ctx.setPackageName(packageNode.getName());
+        ctx.setPackageName(packageNode.getName().fullyQualifiedName());
         writer = ctx.createFileInPackage();
         writer.write("\n");
         writer.write("# Package " + packageNode.getName() + "\n");
@@ -95,7 +95,7 @@ public class PackageWriter {
                         "Package")
                 .addColumn(TEXT_DESCRIPTION);
         for (PackageNode member : members) {
-            String name = member.getName();
+            String name = member.getName().fullyQualifiedName();
             name = name.substring(name.lastIndexOf(".") + 1);
             FileLink link = FileLink.to(name + "/index.md").withLabel(name);
             table.addRow(MarkdownUtils.formatFileLink(link), MarkdownUtils.inOneLine(MarkdownUtils.formatText(member.getFirstSentence())));

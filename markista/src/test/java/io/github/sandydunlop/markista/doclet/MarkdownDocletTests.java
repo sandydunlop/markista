@@ -5,7 +5,7 @@ import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option;
 import io.github.sandydunlop.markista.markdown.MarkdownService;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.markista.spi.DocService;
 
 import java.util.ArrayList;
@@ -208,13 +208,13 @@ class MarkdownDocletTests extends MockedDocletEnvironment {
 
     class TestDocService implements DocService {
         @Override public boolean replacesDefault() { return true; }
-        @Override public boolean start(Api api, Context ctx) { return true; }
+        @Override public boolean start(SemanticModel api, Context ctx) { return true; }
         @Override public boolean finish() { return true; }
     }
 
     class TestDocService2 implements DocService {
         @Override public boolean replacesDefault() { return true; }
-        @Override public boolean start(Api api, Context ctx) { return true; }
+        @Override public boolean start(SemanticModel api, Context ctx) { return true; }
         @Override public boolean finish() { return true; }
     }
 }

@@ -1,19 +1,21 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.FileLink;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.NameUtil;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
 import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.Text;
 import io.github.sandydunlop.cascara.model.Text.Segment;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
@@ -39,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MarkdownTests {
     private static final String JAVA_24_URL = "https://docs.oracle.com/en/java/javase/24/docs/api/";
     private static Context ctx;
-	private Api api;
+	private SemanticModel api;
 
     private ModuleNode module;
     private PackageNode model;
@@ -68,7 +70,7 @@ class MarkdownTests {
         reporter.stringWriter = new StringWriter();
         ctx.setReporter(reporter);
 
-        api = new Api("Test API");
+        api = new SemanticModel("Test API");
         api.addPackage(new PackageNode("io.github.sandydunlop"));
         markista = new PackageNode("io.github.sandydunlop.markista");
 		util = new PackageNode("io.github.sandydunlop.markista.util");
@@ -78,26 +80,26 @@ class MarkdownTests {
 		api.addPackage(util);
 		api.addPackage(doclet);
 		api.addPackage(model);
-		api.addType(new ClassNode(ModelUtil.createName("io.github.sandydunlop.markista.util.LinkResolver", util.getName())));
-		api.addType(new ClassNode(ModelUtil.createName("io.github.sandydunlop.markista.doclet.MarkdownDoclet", doclet.getName())));
-		api.addType(new ClassNode(ModelUtil.createName("io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option", doclet.getName())));
+		api.addType(new ClassNode(NameUtil.createTypeName(util.getName(), "LinkResolver")));
+		api.addType(new ClassNode(NameUtil.createTypeName(doclet.getName(), "MarkdownDoclet")));
+		api.addType(new ClassNode(NameUtil.createTypeName(doclet.getName(), "MarkdownDoclet.Option")));
 
         module = new ModuleNode("markista");
 		api.addModule(module);
-		module.addPackage(new PackageReference(markista.getName()));
-		module.addPackage(new PackageReference(util.getName()));
-		module.addPackage(new PackageReference(doclet.getName()));
-		module.addPackage(new PackageReference(model.getName()));
-		markista.setModuleName(module.getName());
-		util.setModuleName(module.getName());
-		doclet.setModuleName(module.getName());
-		model.setModuleName(module.getName());
+		module.addPackage(new PackageReference(markista.getName().fullyQualifiedName()));
+		module.addPackage(new PackageReference(util.getName().fullyQualifiedName()));
+		module.addPackage(new PackageReference(doclet.getName().fullyQualifiedName()));
+		module.addPackage(new PackageReference(model.getName().fullyQualifiedName()));
+		markista.setModuleName(module.getName().fullyQualifiedName());
+		util.setModuleName(module.getName().fullyQualifiedName());
+		doclet.setModuleName(module.getName().fullyQualifiedName());
+		model.setModuleName(module.getName().fullyQualifiedName());
 
-        node = new ClassNode(ModelUtil.createName(model.getName()+".Node", model.getName()));
+        node = new ClassNode(NameUtil.createTypeName(model.getName(), "Node"));
         model.addType(node);
         api.addType(node);
 
-        markdownDoclet = new ClassNode(ModelUtil.createName(doclet.getName()+".MarkdownDoclet", doclet.getName()));
+        markdownDoclet = new ClassNode(NameUtil.createTypeName(doclet.getName(), "MarkdownDoclet"));
         model.addType(markdownDoclet);
 
 		Relativizer.setFlattenedDirectories(null);
@@ -108,10 +110,11 @@ class MarkdownTests {
     @Test
     void formatParams() {
         List<ParamNode> params = new ArrayList<>();
-        ParamNode param1 = new ParamNode("java.lang.String", "name");
+        VariableTypeNode vt = ModelUtil.parseVariableType("java.lang.String");
+        ParamNode param1 = new ParamNode(vt, "name");
         params.add(param1);
 
-        Name methodName = ModelUtil.createName("subject", markdownDoclet.getName().fullyQualifiedName(), markdownDoclet.getPackageName());
+        JlsName methodName = NameUtil.createName("subject", markdownDoclet.getName().fullyQualifiedName(), markdownDoclet.getPackageName());
         MethodNode method = new MethodNode(node.getName().fullyQualifiedName(), methodName);
         method.addParam(param1);
         markdownDoclet.addMethod(method);

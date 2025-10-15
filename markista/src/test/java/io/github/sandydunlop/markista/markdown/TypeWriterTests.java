@@ -4,7 +4,7 @@ import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.cascara.model.AnnotationElement;
 import io.github.sandydunlop.cascara.model.AnnotationNode;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.AppliedAnnotationNode;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.Deprecation;
@@ -14,7 +14,8 @@ import io.github.sandydunlop.cascara.model.InterfaceNode;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.MethodReference;
 import io.github.sandydunlop.cascara.model.Modifier;
-import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.NameUtil;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.RecordNode;
@@ -22,7 +23,7 @@ import io.github.sandydunlop.cascara.model.Reference;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.Text;
 import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
 import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
@@ -65,9 +66,11 @@ class TypeWriterTests extends ModelTestEnvironment {
 
     @Test
     void outputFieldSummary_WritesMarkdownTableForFields() throws IOException {
-        FieldNode field1 = new FieldNode("java.lang.String", "fieldOne");
+        VariableTypeNode vt1 = ModelUtil.parseVariableType("java.lang.String");
+        FieldNode field1 = new FieldNode(vt1, "fieldOne");
         field1.addModifier(Modifier.PUBLIC);
-        FieldNode field2 = new FieldNode("int", "fieldTwo");
+        VariableTypeNode vt2 = ModelUtil.parseVariableType("int");
+        FieldNode field2 = new FieldNode(vt2, "fieldTwo");
         field2.addModifier(Modifier.PRIVATE);
 
         TypeNode type = newClass("MyClass", model);
@@ -126,7 +129,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         fieldNode.setFirstSentence(Text.of("Full body text for const"));
         fieldNode.setSince(Text.of("Since version 1.0"));
 
-        Link ref = Link.to(ModelUtil.createReference("io.github.sandydunlop.cascara.model.Node"))
+        Link ref = Link.to(NameUtil.createReference("io.github.sandydunlop.cascara.model.Node"))
                 .withKind(Link.Kind.TYPE);
         fieldNode.getReferences().add(ref);
 
@@ -147,13 +150,13 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputDeclaration() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.category");
-        AnnotationNode typeNode = new AnnotationNode(ModelUtil.createName(pkg.getName()+".SaladIngredient", pkg.getName()));
+        AnnotationNode typeNode = new AnnotationNode(NameUtil.createTypeName(pkg.getName(), "SaladIngredient"));
 
         AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode("scenario.food.category.Target", "scenario.food.category");
         AnnotationElement param = new AnnotationElement(null, "value", ElementType.TYPE.toString());
         appliedAnnotation.addElement(param);
 
-        ctx.setApi(new Api(""));
+        ctx.setApi(new SemanticModel(""));
         typeNode.addAppliedAnnotation(appliedAnnotation);
 
         typeWriter.outputTypeDoc(typeNode);
@@ -166,13 +169,13 @@ class TypeWriterTests extends ModelTestEnvironment {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
 
-        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "eat");
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         methodNode.setDeprecation(Deprecation.DEPRECATED);
         methodNode.setDeprecationText(Text.empty().append("This is deprecated"));
         typeNode.addMethod(methodNode);
-        ctx.setApi(new Api(""));
+        ctx.setApi(new SemanticModel(""));
 
         typeWriter.outputTypeDoc(typeNode);
         String output = writer.toString();
@@ -184,14 +187,14 @@ class TypeWriterTests extends ModelTestEnvironment {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
 
-        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "eat");
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         methodNode.setDeprecation(Deprecation.DEPRECATED);
         typeNode.addMethod(methodNode);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -208,20 +211,21 @@ class TypeWriterTests extends ModelTestEnvironment {
         Context.reset();
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "eat");
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
-        ParamNode param1 = new ParamNode("java.lang.String", "param1");
+        VariableTypeNode vt = ModelUtil.parseVariableType("java.lang.String");
+        ParamNode param1 = new ParamNode(vt, "param1");
         param1.setFirstSentence(Text.empty().append("param1doc"));
         methodNode.addParam(param1);
-        ParamNode param2 = new ParamNode("java.lang.String", "param2");
+        ParamNode param2 = new ParamNode(vt, "param2");
         param2.setFirstSentence(Text.empty().append("param2doc"));
         methodNode.addParam(param2);
 
         typeNode.addMethod(methodNode);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -239,22 +243,22 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputMethodDetails() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "eat");
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
         methodNode.setOwnerName(typeNode.getName());
 
-        Name overriddenMethodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        JlsName overriddenMethodName = NameUtil.createMemberName(typeNode.getName(), "eat");
         MethodNode overriddenMethodNode = new MethodNode("java.lang.String", overriddenMethodName);
         overriddenMethodNode.setOwnerName(typeNode.getName());
 
-        Link thrownRef = Link.to(ModelUtil.createReference("scenario.food.berry.Thrown"))
+        Link thrownRef = Link.to(NameUtil.createReference("scenario.food.berry.Thrown"))
                 .withKind(Link.Kind.TYPE);
-        Link specifiedByRef = Link.to(ModelUtil.createReference("scenario.food.berry.Specified"))
+        Link specifiedByRef = Link.to(NameUtil.createReference("scenario.food.berry.Specified"))
                 .withKind(Link.Kind.TYPE);
 
         InterfaceNode specifiedByType = newInterface("Specified", pkg);
         specifiedByType.addMethod(overriddenMethodNode);
-        VariableType interfaceRef = ModelUtil.parseVariableType(specifiedByType.getName().fullyQualifiedName());
+        VariableTypeNode interfaceRef = ModelUtil.parseVariableType(specifiedByType.getName().fullyQualifiedName());
         typeNode.getImplementedInterfaces().add(interfaceRef);
 
         ClassNode thrownType = newClass("Thrown", pkg);
@@ -262,13 +266,13 @@ class TypeWriterTests extends ModelTestEnvironment {
         methodNode.setReturnDescription(Text.empty().append("returnDescription"));
         methodNode.setSpecifiedBy(specifiedByRef);
         methodNode.addThrownType(thrownRef);
-        Link overriddenMethod = Link.to(ModelUtil.createReference("scenario.food.berry.Avocado" + "#" + "eat"));
+        Link overriddenMethod = Link.to(NameUtil.createReference("scenario.food.berry.Avocado" + "#" + "eat"));
         methodNode.setBaseMethod(overriddenMethod);
 
         typeNode.addMethod(methodNode);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -293,7 +297,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputMethodDetails_Since() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado",pkg);
-        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "eat");
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         Text since = Text.of("1980");
@@ -302,7 +306,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         typeNode.addMethod(methodNode);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         resolver = new LinkResolver(api, ctx);
@@ -320,7 +324,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputMethodDetails_References() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        Name methodName = ModelUtil.createName("eat", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "eat");
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         Link ref = Link.toWeb(URI.create("http://example.com"));
@@ -329,7 +333,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         typeNode.addMethod(methodNode);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         ctx.setApi(api);
@@ -347,12 +351,12 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputConstructorSummary() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        Name methodName = ModelUtil.createName("Avocado", typeNode.getName().fullyQualifiedName(), pkg.getName());
+        JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "Avocado");
         MethodNode methodNode = new MethodNode("scenario.food.berry.Avocado", methodName);
         typeNode.addConstructor(methodNode);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -375,7 +379,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         InterfaceNode testInterface = newInterface("interface", pkg);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -407,7 +411,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         typeNode.addType(enclosedAnnotation);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -430,7 +434,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         typeNode.getSupertypes().add(ModelUtil.parseVariableType("test.interface"));
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -447,15 +451,15 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputEnclosingClass() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassNode typeNode = new ClassNode(ModelUtil.createName("scenario.food.berry.Avocado", pkg.getName()));
+        ClassNode typeNode = new ClassNode(NameUtil.createTypeName(pkg.getName(), "scenario.food.berry.Avocado"));
 
-        ClassNode owner = new ClassNode(ModelUtil.createName("scenario.food.berry.Owner", pkg.getName()));
-        Link i = Link.to(ModelUtil.createReference("scenario.food.berry.Owner"));
+        ClassNode owner = new ClassNode(NameUtil.createTypeName(pkg.getName(), "scenario.food.berry.Owner"));
+        Link i = Link.to(NameUtil.createReference("scenario.food.berry.Owner"));
         typeNode.setEnclosingClassRef(i);
         typeNode.setOwnerName("scenario.food.berry.Owner");
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -474,11 +478,11 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputTypeDoc_fullBody() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
-        ClassNode typeNode = new ClassNode(ModelUtil.createName("scenario.food.berry.Avocado", pkg.getName()));
+        ClassNode typeNode = new ClassNode(NameUtil.createTypeName(pkg.getName(), "scenario.food.berry.Avocado"));
         typeNode.setFirstSentence(Text.of("One two three"));
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -496,7 +500,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
 
-        AnnotationNode at = new AnnotationNode(ModelUtil.createName("scenario.food.berry.Watermelon", "scenarion.food.berry"));
+        AnnotationNode at = new AnnotationNode(NameUtil.createName("scenario.food.berry.Watermelon", "scenarion.food.berry"));
         AppliedAnnotationNode aa = new AppliedAnnotationNode(at.getName().fullyQualifiedName(), at.getPackageName());
         aa.setCustom(true);
         aa.setDocumented(true);
@@ -507,7 +511,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         aa.addElement(element2);
 
         ctx.setPackageName("scenario.food.berry");
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         api.addPackage(pkg);
         api.addType(typeNode);
         pkg.addType(typeNode);
@@ -522,7 +526,7 @@ class TypeWriterTests extends ModelTestEnvironment {
 
     @Test
     void outputDeprecation_record() throws IOException {
-        Api api = new Api("Test API");
+        SemanticModel api = new SemanticModel("Test API");
         PackageNode pkg = new PackageNode("scenario.food.berry");
         api.addPackage(pkg);
         RecordNode typeNode = newRecord("Avocado", pkg);
@@ -540,14 +544,14 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void inheritedMethods() throws IOException {
         // Add a method
-        Name methodName = ModelUtil.createName("inheritedMethod", node.getName().fullyQualifiedName(), model.getName());
+        JlsName methodName = NameUtil.createMemberName(node.getName(), "inheritedMethod");
         MethodNode test = new MethodNode("java.lang.String", methodName);
         test.setOwnerName(node.getName());
         node.addMethod(test);
 
         // Add a subclass
         ClassNode subClass = newClass("SubClass", model);
-        VariableType typeRef = newVariableType("Node");
+        VariableTypeNode typeRef = newVariableTypeNode("Node");
         Link methodLink = newMethodReference("Node", "inheritedMethod");
         MethodReference methodRef = new MethodReference();
         methodRef.setLink(methodLink);

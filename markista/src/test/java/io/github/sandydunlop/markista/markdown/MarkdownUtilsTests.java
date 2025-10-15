@@ -6,6 +6,7 @@ import io.github.sandydunlop.cascara.model.Reference;
 import io.github.sandydunlop.cascara.model.Text;
 import io.github.sandydunlop.cascara.model.Text.Segment;
 import io.github.sandydunlop.cascara.model.ModelUtil;
+import io.github.sandydunlop.cascara.model.NameUtil;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.net.URI;
@@ -47,7 +48,7 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
 
     @Test
     void formatLink_PACKAGE_qualified() {
-        Link link = Link.to(ModelUtil.createReference("io.github.sandydunlop.markista.model"))
+        Link link = Link.to(NameUtil.createReference("io.github.sandydunlop.markista.model"))
                 .withKind(Link.Kind.PACKAGE);
         Text.Segment segment = Text.Segment.empty()
                 .setKind(Segment.Kind.LINK)
@@ -60,7 +61,7 @@ class MarkdownUtilsTests extends ModelTestEnvironment {
 
     @Test
     void formatLink_PRIMITIVE() {
-        Link link = Link.to(ModelUtil.createReference("int")).withKind(Link.Kind.PRIMITIVE);
+        Link link = Link.to(NameUtil.createReference("int")).withKind(Link.Kind.PRIMITIVE);
         Text.Segment segment = Text.Segment.empty()
                 .setText("int")
                 .setKind(Segment.Kind.LINK)

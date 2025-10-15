@@ -2,12 +2,13 @@ package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.MockedDocletEnvironment;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.Api;
+import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.FieldNode;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
+import io.github.sandydunlop.cascara.model.NameUtil;
 import io.github.sandydunlop.cascara.model.PackageNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
 import io.github.sandydunlop.cascara.model.ParamNode;
@@ -15,7 +16,7 @@ import io.github.sandydunlop.cascara.model.Text;
 import io.github.sandydunlop.cascara.model.Text.Segment;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -64,7 +65,7 @@ import static org.mockito.Mockito.when;
 class ApiScannerTests extends MockedDocletEnvironment {
     private static Context ctx;
     private PackageNode packageNode;
-    private Api api;
+    private SemanticModel api;
     private ModuleNode unnamedModule = new ModuleNode("");
 
     @Mock static Reporter reporter = new Reporter() {
@@ -93,7 +94,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
     @BeforeEach
     void init() {
-        api = new Api("Test API");
+        api = new SemanticModel("Test API");
         packageNode = new PackageNode("io.github.sandydunlop.markista.model");
         api.addPackage(packageNode);
     }
@@ -140,7 +141,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         ApiScanner scanner2 = new ApiScanner(mockEnvironment);
         scanner2.visitModule(moduleElement, Integer.valueOf(0));
 
-        Api api2 = scanner2.api;
+        SemanticModel api2 = scanner2.api;
         assertEquals(1, api2.getModules().size());
         ModuleNode moduleNode = api2.getModules().get(0);
         assertEquals(MODULE_NAME, moduleNode.getName());
@@ -160,7 +161,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         ApiScanner scanner2 = new ApiScanner(mockEnvironment);
         scanner2.visitModule(moduleElement, Integer.valueOf(0));
 
-        Api api2 = scanner2.api;
+        SemanticModel api2 = scanner2.api;
         assertEquals(0, api2.getModules().size());
     }
 
@@ -195,20 +196,20 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         // Create a mocked PackageNode and attach to unnamed module packages deque
         PackageNode pkg = mock(PackageNode.class);
-        when(pkg.getName()).thenReturn("com.example");
+        when(pkg.getName().fullyQualifiedName()).thenReturn("com.example");
         Path srcPath = Path.of("root", "src", "com", "example");
         when(pkg.getSourcePath()).thenReturn(srcPath.toString());
         api.addPackage(pkg);
 
         // Add to unnamed module packages (LinkedList or similar)
-        PackageReference pr1 = new PackageReference(pkg.getName());
+        PackageReference pr1 = new PackageReference(pkg.getName().fullyQualifiedName());
         unnamed.getPackages().add(pr1);
 
         as.calculateUnnamedModuleSourcePath();
 
         // Expected root computed by replacing nameAsPath in the source path string
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
-        String nameAsPath = pkg.getName().replace(".", separator);
+        String nameAsPath = pkg.getName().fullyQualifiedName().replace(".", separator);
         String expectedRootStr = pkg.getSourcePath().replace(nameAsPath, "");
 
         assertEquals(expectedRootStr, unnamed.getSourcePath(), "Unnamed module sourcePath should be computed from package source path");
@@ -265,7 +266,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
         mockIncludedElements(elements);
 
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);
-        Api api2 = apiScanner.scan(docletEnvironmentMock.getIncludedElements());
+        SemanticModel api2 = apiScanner.scan(docletEnvironmentMock.getIncludedElements());
 
         assertNotNull(api2);
         assertNotNull(apiScanner.includedNames);
@@ -362,7 +363,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(ModelUtil.createName("mockpackage.mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(NameUtil.createName("mockpackage.mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -395,7 +396,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(ModelUtil.createName("mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(NameUtil.createName("mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
         DocTree dct = mockDocCommentTree_TEXT("plain text");
         when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
@@ -431,7 +432,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(ModelUtil.createName("mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(NameUtil.createName("mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -459,7 +460,7 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(ModelUtil.createName("mockpackage.mocktype", "mockpackage"));
+        TypeNode typeNode = new TypeNode(NameUtil.createName("mockpackage.mocktype", "mockpackage"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -485,11 +486,12 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
     @Test
     void addConstantFieldValuesReference() {
-        ClassNode classNode2 = new ClassNode(ModelUtil.createName(packageNode.getName() + "." + "Node", packageNode.getName()));
-        VariableType supertype = ModelUtil.parseVariableType("io.github.sandydunlop.cascara.model.Node");
+        ClassNode classNode2 = new ClassNode(NameUtil.createTypeName(packageNode.getName(), "Node"));
+        VariableTypeNode supertype = ModelUtil.parseVariableType("io.github.sandydunlop.cascara.model.Node");
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
-        FieldNode fieldNode = new FieldNode("int", "field");
+        VariableTypeNode vt = ModelUtil.parseVariableType("int");
+        FieldNode fieldNode = new FieldNode(vt, "field");
         fieldNode.setConstantValue("1");
         classNode2.addField(fieldNode);
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);

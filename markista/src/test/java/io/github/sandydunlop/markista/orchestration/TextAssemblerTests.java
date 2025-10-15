@@ -8,14 +8,15 @@ import io.github.sandydunlop.cascara.model.InterfaceNode;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.MethodReference;
 import io.github.sandydunlop.cascara.model.ModelUtil;
-import io.github.sandydunlop.cascara.model.Name;
+import io.github.sandydunlop.cascara.model.NameUtil;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.RecordNode;
 import io.github.sandydunlop.cascara.model.Reference;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.Text;
 import io.github.sandydunlop.cascara.model.Text.Segment;
 import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableType;
+import io.github.sandydunlop.cascara.model.VariableTypeNode;
 
 import java.util.List;
 import java.util.Map;
@@ -60,13 +61,13 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Test
     void test_addJavadocToRecords() {
         RecordNode recordNode = newRecord("RecordTest",model);
-        Name equalsNodeName = ModelUtil.createName("equals", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
+        JlsName equalsNodeName = NameUtil.createMemberName(recordNode.getName(), "equals");
         MethodNode equalsNode = new MethodNode("boolean",equalsNodeName);
-        Name hashCodeNodeName = ModelUtil.createName("hashCode", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
+        JlsName hashCodeNodeName = NameUtil.createMemberName(recordNode.getName(), "hashCode");
         MethodNode hashCode = new MethodNode("long",hashCodeNodeName);
-        Name toStringNodeName = ModelUtil.createName("toString", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
+        JlsName toStringNodeName = NameUtil.createMemberName(recordNode.getName(), "toString");
         MethodNode toString = new MethodNode("java.lang.String",toStringNodeName);
-        Name testNodeName = ModelUtil.createName("test", recordNode.getName().fullyQualifiedName(), recordNode.getPackageName());
+        JlsName testNodeName = NameUtil.createMemberName(recordNode.getName(), "test");
         MethodNode test = new MethodNode("java.lang.String",testNodeName);
         recordNode.addMethod(equalsNode);
         recordNode.addMethod(hashCode);
@@ -92,7 +93,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Test
     void inheritance() {
         TypeNode baseTypeNode = newClass("BaseType", markista);
-        Name baseMethodName = ModelUtil.createName("toString", baseTypeNode.getName().fullyQualifiedName(), baseTypeNode.getPackageName());
+        JlsName baseMethodName = NameUtil.createMemberName(baseTypeNode.getName(), "toString");
         MethodNode baseTypeMethod = new MethodNode("java.lang.String",baseMethodName);
         baseTypeMethod.setOwnerName(baseTypeNode.getName());
         baseTypeNode.addMethod(baseTypeMethod);
@@ -100,7 +101,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         api.addType(baseTypeNode);
 
         TypeNode typeNode = newClass("MyType", markista);
-        Name methodName = ModelUtil.createName("toString", typeNode.getName().fullyQualifiedName(), typeNode.getPackageName());
+        JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "toString");
         MethodNode typeMethod = new MethodNode("java.lang.String",methodName);
         typeMethod.setOwnerName(typeNode.getName());
         typeNode.addMethod(typeMethod);
@@ -113,10 +114,10 @@ class TextAssemblerTests extends ModelTestEnvironment {
         typeMethod.setFirstSentence(typeMethodText);
 
         // Set baseTypeNode as the supertype of typeNode
-        VariableType typeRef = ModelUtil.parseVariableType(baseTypeNode.getName().fullyQualifiedName());
+        VariableTypeNode typeRef = ModelUtil.parseVariableType(baseTypeNode.getName().fullyQualifiedName());
         typeNode.getSupertypes().add(typeRef);
 
-        Link methodRef = Link.to(ModelUtil.createReference(baseTypeNode.getName().fullyQualifiedName() + "#" + baseTypeMethod.getName().simpleName()));
+        Link methodRef = Link.to(NameUtil.createReference(baseTypeNode.getName().fullyQualifiedName() + "#" + baseTypeMethod.getName().simpleName()));
         typeMethod.setBaseMethod(methodRef);
 
         TextAssembler.assembleTextAndLinks(api, ctx);
@@ -128,7 +129,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("concurrency issues")
     @Test
     void moduleDirectives() {
-        Link link = Link.to(ModelUtil.createReference("io.github.sandydunlop.markista.model"));
+        Link link = Link.to(NameUtil.createReference("io.github.sandydunlop.markista.model"));
         DirectiveNode directive1 = new DirectiveNode(DirectiveNode.Kind.EXPORTS, link);
         module.addDirective(directive1);
 
@@ -142,7 +143,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("MFLP-107 Link doesnt contain method name")
     @Test
     void inheritedMethods() {
-        Name methodName = ModelUtil.createName("inheritedMethod", node.getName().fullyQualifiedName(), node.getPackageName());
+        JlsName methodName = NameUtil.createName("inheritedMethod", node.getName().fullyQualifiedName(), node.getPackageName());
         MethodNode test = new MethodNode("java.lang.String", methodName);
         test.setOwnerName(node.getName());
         node.addMethod(test);
@@ -154,7 +155,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         assertEquals(1, subClass.getInheritedMethods().size());
-        Map.Entry<VariableType, List<MethodReference>> inheritedEntry = subClass.getInheritedMethods().entrySet().iterator().next();
+        Map.Entry<VariableTypeNode, List<MethodReference>> inheritedEntry = subClass.getInheritedMethods().entrySet().iterator().next();
         List<MethodReference> inheritedMethods = inheritedEntry.getValue();
         assertEquals(1, inheritedMethods.size());
     }
@@ -162,7 +163,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("resolveLink is being deprecated")
     @Test
     void link_standardMethod() {
-        Link link = Link.to(ModelUtil.createReference("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
+        Link link = Link.to(NameUtil.createReference("jdk.javadoc.doclet.Doclet.Option#process(java.lang.String,java.util.List)"));
         resolver.resolveLink(link);
         String markdown = MarkdownUtils.link(link, true);
         assertEquals("[Doclet.Option.process](https://docs.oracle.com/en/java/javase/24/docs/api/jdk.javadoc/jdk/javadoc/doclet/Doclet.Option.html#process(java.lang.String,java.util.List))", markdown);
@@ -171,7 +172,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("resolveLink is being deprecated")
     @Test
     void link_localMethod() {
-        Link link = Link.to(ModelUtil.createReference("Node#sort"));
+        Link link = Link.to(NameUtil.createReference("Node#sort"));
         resolver.resolveLink(link);
         String markdown = MarkdownUtils.link(link, false);
         assertEquals("[Node.sort](../model/Node.md#sort)", markdown);
@@ -180,7 +181,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("standardInterfaceProvider")
     void getStandardInterface_parameterized(String qualifiedName, String packageName, String simpleClassName) {
-        VariableType interfaceRef = ModelUtil.parseVariableType(qualifiedName);
+        VariableTypeNode interfaceRef = ModelUtil.parseVariableType(qualifiedName);
         InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
         assertNotNull(interfaceNode);
     }
@@ -201,7 +202,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
 
     @Test
     void t1() {
-        Reference ref = ModelUtil.createReference("jdk.javadoc.doclet.Doclet.Option.Kind");
+        Reference ref = NameUtil.createReference("jdk.javadoc.doclet.Doclet.Option.Kind");
         resolver.qualify(ref);
         assertTrue(ref.getName().isType());
     }
