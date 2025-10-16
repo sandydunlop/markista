@@ -280,7 +280,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         for (TypeNode classNode : api.getTypes()) {
             for (FieldNode fieldNode : classNode.getFields()) {
                 if (fieldNode.getConstantValue() != null) {
-                    Reference fromPackage = NameUtil.createReference(moduleNode.getName().fullyQualifiedName(), NameUtil.createName(null, classNode.getPackageName()));
+                    Reference fromPackage = NameUtil.createReference(moduleNode.getName().fullyQualifiedName(), classNode.getPackageName());
                     FileLink link = FileLink.to("constant-values")
                             .from(fromPackage)
                             .withLabel("Constant Field Values");

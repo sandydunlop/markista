@@ -364,7 +364,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(NameUtil.createName("mockpackage.mocktype", "mockpackage"));
+        JlsName pkgName = NameUtil.createPackageName("mockpackage");
+        TypeNode typeNode = new TypeNode(NameUtil.createTypeName(pkgName, "mockpackage.mocktype"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -397,7 +398,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(NameUtil.createName("mocktype", "mockpackage"));
+        JlsName pkgName = NameUtil.createPackageName("mockpackage");
+        TypeNode typeNode = new TypeNode(NameUtil.createTypeName(pkgName, "mocktype"));
         apiScanner.api.addType(typeNode);
         DocTree dct = mockDocCommentTree_TEXT("plain text");
         when(treeUtilsMock.getDocCommentTree(executableMock)).thenReturn((DocCommentTree)dct);
@@ -433,7 +435,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(NameUtil.createName("mocktype", "mockpackage"));
+        JlsName pkgName = NameUtil.createPackageName("mockpackage");
+        TypeNode typeNode = new TypeNode(NameUtil.createTypeName(pkgName, "mocktype"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);
@@ -461,7 +464,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
 
         PackageNode packageNode2 = new PackageNode("mockpackage");
         apiScanner.api.addPackage(packageNode2);
-        TypeNode typeNode = new TypeNode(NameUtil.createName("mockpackage.mocktype", "mockpackage"));
+        JlsName pkgName = NameUtil.createPackageName("mockpackage");
+        TypeNode typeNode = new TypeNode(NameUtil.createTypeName(pkgName, "mockpackage.mocktype"));
         apiScanner.api.addType(typeNode);
 
         apiScanner.visitType(typeMock, 1);

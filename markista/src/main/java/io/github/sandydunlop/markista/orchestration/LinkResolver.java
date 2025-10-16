@@ -57,7 +57,7 @@ public class LinkResolver {
     }
 
     public String resolveRoot() {
-        JlsName here = NameUtil.createName(null, ctx.getPackageName());
+        JlsName here = NameUtil.createPackageName(ctx.getPackageName());
         URI uri = relativize(flattenDirectory(here), null, null);
         return uri.toString();
     }
@@ -94,7 +94,8 @@ public class LinkResolver {
         }
 
         if (link.getOrigin() == null) {
-            JlsName originName = NameUtil.createName(ctx.getTypeName(), ctx.getPackageName());
+            JlsName pkgName = NameUtil.createPackageName(ctx.getPackageName());
+            JlsName originName = NameUtil.createTypeName(pkgName, ctx.getTypeName());
             Reference origin = NameUtil.createReference(ctx.getModuleName(), originName);
             link.setOrigin(origin);
         }
@@ -376,10 +377,9 @@ public class LinkResolver {
         Reference target = link.getTarget();
         TypeNode typeNode = api.getTypeNode(target.getName());
         if (typeNode != null) {
-            JlsName typeName = NameUtil.createName(typeNode.getName().fullyQualifiedName(), typeNode.getPackageName());
             String module = "";
             JlsName originName = flattenDirectory(origin.getName().packageName());
-            JlsName targetName = flattenDirectory(typeName);
+            JlsName targetName = flattenDirectory(typeNode.getName());
             link.setUri(relativize(originName, targetName, module));
             resolvedType(link, Link.Scope.LOCAL);
             return true;

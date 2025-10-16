@@ -321,7 +321,8 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         if (!containingDir.exists()) containingDir.mkdirs();
         String fileName = "index";
         if (!typeName.isEmpty()) {
-            JlsName name = NameUtil.createName(typeName, packageName);
+            JlsName pkgName = NameUtil.createPackageName(packageName);
+            JlsName name = NameUtil.createTypeName(pkgName, typeName);
             fileName = name.typeName().toString();
         }
         return new File(containingDir, fileName + ".md");

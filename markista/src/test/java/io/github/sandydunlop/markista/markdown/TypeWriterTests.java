@@ -152,7 +152,8 @@ class TypeWriterTests extends ModelTestEnvironment {
         PackageNode pkg = new PackageNode("scenario.food.category");
         AnnotationNode typeNode = new AnnotationNode(NameUtil.createTypeName(pkg.getName(), "SaladIngredient"));
 
-        AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode("scenario.food.category.Target", "scenario.food.category");
+        JlsName typeName = NameUtil.createTypeName(pkg.getName(), "scenario.food.category.Target");
+        AppliedAnnotationNode appliedAnnotation = new AppliedAnnotationNode(typeName);
         AnnotationElement param = new AnnotationElement(null, "value", ElementType.TYPE.toString());
         appliedAnnotation.addElement(param);
 
@@ -500,8 +501,9 @@ class TypeWriterTests extends ModelTestEnvironment {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
 
-        AnnotationNode at = new AnnotationNode(NameUtil.createName("scenario.food.berry.Watermelon", "scenarion.food.berry"));
-        AppliedAnnotationNode aa = new AppliedAnnotationNode(at.getName().fullyQualifiedName(), at.getPackageName());
+        AnnotationNode at = new AnnotationNode(NameUtil.createTypeName(pkg.getName(), "scenario.food.berry.Watermelon"));
+        JlsName typeName = NameUtil.createTypeName(at.getPackageName(), at.getName().fullyQualifiedName());
+        AppliedAnnotationNode aa = new AppliedAnnotationNode(typeName);
         aa.setCustom(true);
         aa.setDocumented(true);
         typeNode.addAppliedAnnotation(aa);

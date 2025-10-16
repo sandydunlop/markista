@@ -352,7 +352,7 @@ class LinkResolverTests extends ModelTestEnvironment {
 
     @Test
     void test_method() {
-        JlsName methodName = NameUtil.createName("testMethod", node.getName().fullyQualifiedName(), node.getPackageName());
+        JlsName methodName = NameUtil.createMemberName("testMethod");
         MethodNode test = new MethodNode("java.lang.String", methodName);
         test.setOwnerName(node.getName());
         node.addMethod(test);

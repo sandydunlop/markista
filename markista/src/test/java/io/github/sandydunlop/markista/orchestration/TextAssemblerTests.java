@@ -143,7 +143,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @Disabled("MFLP-107 Link doesnt contain method name")
     @Test
     void inheritedMethods() {
-        JlsName methodName = NameUtil.createName("inheritedMethod", node.getName().fullyQualifiedName(), node.getPackageName());
+        JlsName methodName = NameUtil.createMemberName("inheritedMethod");
         MethodNode test = new MethodNode("java.lang.String", methodName);
         test.setOwnerName(node.getName());
         node.addMethod(test);

@@ -114,7 +114,7 @@ class MarkdownTests {
         ParamNode param1 = new ParamNode(vt, NameUtil.createMemberName("name"));
         params.add(param1);
 
-        JlsName methodName = NameUtil.createName("subject", markdownDoclet.getName().fullyQualifiedName(), markdownDoclet.getPackageName());
+        JlsName methodName = NameUtil.createMemberName(markdownDoclet.getName(), "subject");
         MethodNode method = new MethodNode(node.getName().fullyQualifiedName(), methodName);
         method.addParam(param1);
         markdownDoclet.addMethod(method);

@@ -120,7 +120,7 @@ public class TextAssembler {
     }
 
     public static void processTypeNode(TypeNode typeNode) {
-        ctx.setPackageName(typeNode.getPackageName());
+        ctx.setPackageName(typeNode.getPackageName().toString());
         ctx.setTypeName(typeNode.getName().fullyQualifiedName());
 
         // Types
@@ -208,8 +208,8 @@ public class TextAssembler {
                 TypeNode directSupertype = api.getTypeNode(directSupertypeName);
                 if (directSupertype != null) {
                     VariableTypeNode subtypeRef = ModelUtil.parseVariableType(typeNode.getName().fullyQualifiedName());
-                    JlsName fromPackageName = NameUtil.createName(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
-                    subtypeRef.getLink().from(NameUtil.createReference("", fromPackageName));
+                    // JlsName fromPackageName = NameUtil.createName(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
+                    subtypeRef.getLink().from(NameUtil.createReference("", directSupertype.getPackageName()));
                     resolver.resolveVariableTypeNode(subtypeRef);
                     directSupertype.getSubtypes().add(subtypeRef);
                 }
@@ -227,7 +227,7 @@ public class TextAssembler {
             if (supertype != null) {
                 for (MethodNode baseMethod : supertype.getMethods()) {
                     if (!ModelUtils.typeHasMethod(typeNode, baseMethod)) {
-                        JlsName methodName = NameUtil.createName(baseMethod.getName().simpleName(), supertypeName, supertype.getPackageName());
+                        JlsName methodName = NameUtil.createMemberName(supertype.getName(), baseMethod.getName().simpleName());
                         Link link = Link.to(NameUtil.createReference("", methodName));
                         link.setMethodName(baseMethod.getName().simpleName());
                         link.setAnchor(baseMethod.getName().simpleName().toLowerCase());
@@ -280,7 +280,7 @@ public class TextAssembler {
     public static void linkBaseMethod(Link baseMethodLink, String baseTypeName) {
         if (baseMethodLink.getTarget().getName().isMember()) {
             String methodName = baseMethodLink.getTarget().getName().simpleName();
-            JlsName typeName = NameUtil.createName(baseTypeName, null);
+            JlsName typeName = NameUtil.createTypeName(baseTypeName);
             baseMethodLink.getTarget().setName(typeName);
             baseMethodLink.setKind(Link.Kind.UNRESOLVED);
             resolver.resolveLink(baseMethodLink);
@@ -313,7 +313,7 @@ public class TextAssembler {
     }
 
     public static void associateMethodsWithImplementedInterfaces(TypeNode typeNode) {
-        ctx.setPackageName(typeNode.getPackageName());
+        ctx.setPackageName(typeNode.getPackageName().toString());
         ctx.setTypeName(typeNode.getName().fullyQualifiedName());
         List<VariableTypeNode> interfaces = typeNode.getImplementedInterfaces();
         for (VariableTypeNode interfaceRef : interfaces) {
@@ -337,12 +337,12 @@ public class TextAssembler {
         if (standardClass == null) {
             return null;
         }
-        String packageName = standardClass.getPackageName();
         Method[] methods = standardClass.getMethods();
-        JlsName interfaceName = NameUtil.createName(qualifiedInterfaceName, standardClass.getPackageName());
+        JlsName packageName = NameUtil.createPackageName(standardClass.getPackageName());
+        JlsName interfaceName = NameUtil.createTypeName(packageName, qualifiedInterfaceName);
         InterfaceNode interfaceNode = new InterfaceNode(interfaceName);
         for (Method method : methods) {
-            JlsName methodName = NameUtil.createName(method.getName(), qualifiedInterfaceName, packageName);
+            JlsName methodName = NameUtil.createMemberName(interfaceName, method.getName());
             MethodNode methodNode = new MethodNode("", methodName);
             interfaceNode.addMethod(methodNode);
         }
@@ -351,7 +351,7 @@ public class TextAssembler {
 
     public static void setImplementingClass(InterfaceNode interfaceNode, TypeNode typeNode) {
         Reference toType = NameUtil.createReference("", typeNode.getName());
-        Reference fromPackage = NameUtil.createReference("",NameUtil.createName(null, interfaceNode.getPackageName()));
+        Reference fromPackage = NameUtil.createReference("",interfaceNode.getPackageName());
         Link implementingClassLink = Link.to(toType).from(fromPackage);
         resolver.resolveLink(implementingClassLink);
         interfaceNode.addImplementingClass(implementingClassLink);
@@ -362,7 +362,7 @@ public class TextAssembler {
             for (MethodNode interfaceMethod : interfaceNode.getMethods()) {
                 if (interfaceMethod.simplifiedSignature().equals(methodNode.simplifiedSignature())) {
                     Reference toType = NameUtil.createReference("", interfaceNode.getName());
-                    Reference fromPackage = NameUtil.createReference("", NameUtil.createName(null, typeNode.getPackageName()));
+                    Reference fromPackage = NameUtil.createReference("", typeNode.getPackageName());
                     Link specifiedByLink = Link
                             .to(toType).from(fromPackage);
                     resolver.resolveLink(specifiedByLink);
@@ -454,7 +454,8 @@ public class TextAssembler {
     }
 
     private static Reference here() {
-        JlsName name = NameUtil.createName(ctx.getTypeName(), ctx.getPackageName());
+        JlsName packageName = NameUtil.createPackageName(ctx.getPackageName());
+        JlsName name = NameUtil.createTypeName(packageName, ctx.getTypeName());
         return NameUtil.createReference(ctx.getModuleName(), name);
     }
 }
