@@ -13,7 +13,7 @@ import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
 import io.github.sandydunlop.cascara.model.NameUtil;
 import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.Node;
+import io.github.sandydunlop.cascara.model.SemanticNode;
 import io.github.sandydunlop.cascara.model.PackageReference;
 import io.github.sandydunlop.cascara.common.Pair;
 import io.github.sandydunlop.cascara.model.ParamNode;
@@ -172,7 +172,7 @@ public class TextAssembler {
         Link baseMethodLink = method.getBaseMethod();
         if (baseMethodLink != null) {
             JlsName name = NameUtil.createName(method.getName().simpleName());
-            name.setIsMember(true);
+            name.setMember(true);
             baseMethodLink.getTarget().setName(name);
             String baseTypeName = ModelUtils.baseTypeName(method);
             if (baseTypeName != null) {
@@ -380,7 +380,7 @@ public class TextAssembler {
         }
     }
 
-    public static void resolveLinksForReferences(Node node) {
+    public static void resolveLinksForReferences(SemanticNode node) {
         for (Link link : node.getReferences()) {
             if (link instanceof FileLink fileLink) {
                 String docRoot = resolver.resolveRoot();

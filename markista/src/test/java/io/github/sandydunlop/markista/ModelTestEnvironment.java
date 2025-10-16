@@ -99,7 +99,8 @@ public class ModelTestEnvironment {
 
     protected FieldNode newField(String typeName, String name, TypeNode type) {
         VariableTypeNode vt = ModelUtil.parseVariableType(typeName);
-        FieldNode fieldNode = new FieldNode(vt, name);
+        JlsName fieldName = NameUtil.createMemberName(name);
+        FieldNode fieldNode = new FieldNode(vt, fieldName);
         type.addField(fieldNode);
         return fieldNode;
     }

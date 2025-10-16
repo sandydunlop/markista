@@ -67,10 +67,10 @@ class TypeWriterTests extends ModelTestEnvironment {
     @Test
     void outputFieldSummary_WritesMarkdownTableForFields() throws IOException {
         VariableTypeNode vt1 = ModelUtil.parseVariableType("java.lang.String");
-        FieldNode field1 = new FieldNode(vt1, "fieldOne");
+        FieldNode field1 = new FieldNode(vt1, NameUtil.createMemberName("fieldOne"));
         field1.addModifier(Modifier.PUBLIC);
         VariableTypeNode vt2 = ModelUtil.parseVariableType("int");
-        FieldNode field2 = new FieldNode(vt2, "fieldTwo");
+        FieldNode field2 = new FieldNode(vt2, NameUtil.createMemberName("fieldTwo"));
         field2.addModifier(Modifier.PRIVATE);
 
         TypeNode type = newClass("MyClass", model);
@@ -215,10 +215,10 @@ class TypeWriterTests extends ModelTestEnvironment {
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
         VariableTypeNode vt = ModelUtil.parseVariableType("java.lang.String");
-        ParamNode param1 = new ParamNode(vt, "param1");
+        ParamNode param1 = new ParamNode(vt, NameUtil.createMemberName("param1"));
         param1.setFirstSentence(Text.empty().append("param1doc"));
         methodNode.addParam(param1);
-        ParamNode param2 = new ParamNode(vt, "param2");
+        ParamNode param2 = new ParamNode(vt, NameUtil.createMemberName("param2"));
         param2.setFirstSentence(Text.empty().append("param2doc"));
         methodNode.addParam(param2);
 

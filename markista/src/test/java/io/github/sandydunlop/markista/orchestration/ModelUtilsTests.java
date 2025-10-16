@@ -49,8 +49,8 @@ class ModelUtilsTests extends ModelTestEnvironment {
         MethodNode scan = new MethodNode("void", methodName);
         VariableTypeNode vt1 = ModelUtil.parseVariableType("javax.lang.model.element.Element");
         VariableTypeNode vt2 = ModelUtil.parseVariableType("java.lang.Integer");
-        ParamNode param1 = new ParamNode(vt1, "p1");
-        ParamNode param2 = new ParamNode(vt2, "P");
+        ParamNode param1 = new ParamNode(vt1, NameUtil.createMemberName("p1"));
+        ParamNode param2 = new ParamNode(vt2, NameUtil.createMemberName("P"));
         scan.addParam(param1);
         scan.addParam(param2);
         scanner.addMethod(scan);

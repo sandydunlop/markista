@@ -5,6 +5,7 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.cascara.model.SemanticModel;
 import io.github.sandydunlop.cascara.model.ClassNode;
 import io.github.sandydunlop.cascara.model.FieldNode;
+import io.github.sandydunlop.cascara.model.JlsName;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.ModelUtil;
 import io.github.sandydunlop.cascara.model.ModuleNode;
@@ -491,7 +492,8 @@ class ApiScannerTests extends MockedDocletEnvironment {
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
         VariableTypeNode vt = ModelUtil.parseVariableType("int");
-        FieldNode fieldNode = new FieldNode(vt, "field");
+        JlsName fieldName = NameUtil.createMemberName("field");
+        FieldNode fieldNode = new FieldNode(vt, fieldName);
         fieldNode.setConstantValue("1");
         classNode2.addField(fieldNode);
         ApiScanner apiScanner = new ApiScanner(docletEnvironmentMock);

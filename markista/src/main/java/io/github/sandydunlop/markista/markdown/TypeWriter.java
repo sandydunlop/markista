@@ -13,7 +13,7 @@ import io.github.sandydunlop.cascara.model.FileLink;
 import io.github.sandydunlop.cascara.model.InterfaceNode;
 import io.github.sandydunlop.cascara.model.MethodNode;
 import io.github.sandydunlop.cascara.model.MethodReference;
-import io.github.sandydunlop.cascara.model.Node;
+import io.github.sandydunlop.cascara.model.SemanticNode;
 import io.github.sandydunlop.cascara.model.ParamNode;
 import io.github.sandydunlop.cascara.model.Link;
 import io.github.sandydunlop.cascara.model.Text;
@@ -213,11 +213,11 @@ public class TypeWriter {
     private void outputDeclaration(TypeNode typeNode) throws IOException {
         writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = typeNode.getKind().toString().toLowerCase();
-        if (typeNode.getKind() == Node.Kind.ANNOTATION) {
+        if (typeNode.getKind() == SemanticNode.Kind.ANNOTATION) {
             typeString = "@interface";
         }
         for (AppliedAnnotationNode annotation : typeNode.getAppliedAnnotations()) {
-            if (typeNode.getKind() == Node.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
+            if (typeNode.getKind() == SemanticNode.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
                 writer.write("@" + annotation.getTypeName().typeName().toString());
                 if (!annotation.getElements().isEmpty()) {
                     writer.write("(");
@@ -398,8 +398,8 @@ public class TypeWriter {
     /// @see java.util.List
     /// @since 0.1.0
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputDetails(List<Node> nodes) throws IOException {
-        for (Node node : nodes) {
+    private void outputDetails(List<SemanticNode> nodes) throws IOException {
+        for (SemanticNode node : nodes) {
             if (node instanceof MethodNode method) {
                 ctx.setMethodName(method.getName().simpleName());
                 writer.write("### " + method.getName().simpleName());
@@ -437,7 +437,7 @@ public class TypeWriter {
     /// Outputs references for a type member
     /// @param node The type
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputReferences(Node node) throws IOException {
+    private void outputReferences(SemanticNode node) throws IOException {
         if (!node.getReferences().isEmpty()) {
             writer.write("**See Also:**\n\n");
             for (Link ref : node.getReferences()) {

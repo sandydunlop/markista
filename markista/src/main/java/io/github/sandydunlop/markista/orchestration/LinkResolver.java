@@ -502,7 +502,7 @@ public class LinkResolver {
                     if (api.getTypeNode(name) == null) {
                         if (api.getTypeNode(name.firstComponents(-1)) != null) {
                             // It is a member
-                            name.setIsMember(true);
+                            name.setMember(true);
                             ref.setModule(packageNode.getModuleName());
                             return true;
                         } else {
@@ -510,13 +510,13 @@ public class LinkResolver {
                         }
                     } else {
                         // It is a type name
-                        name.setIsType(true);
+                        name.setKind(JlsName.Kind.TYPE);
                         ref.setModule(packageNode.getModuleName());
                         return true;
                     }
                 } else {
                     // It is a package name
-                    name.setIsPackage(true);
+                    name.setKind(JlsName.Kind.PACKAGE);
                     ref.setModule(packageNode.getModuleName());
                     return true;
                 }
@@ -542,17 +542,17 @@ public class LinkResolver {
             JlsName candidate = name.firstComponents(-1);
             jreType = JreUtil.loadClass(candidate.fullyQualifiedName());
             if (jreType != null) {
-                name.setIsMember(true);
+                name.setMember(true);
             }
         }
         if (jreType!= null) {
             JlsName packageName = NameUtil.createName(jreType.getPackageName());
             name.setPackageComponentCount(packageName.componentCount());
             if (name.componentCount() == packageName.componentCount()) {
-                name.setIsPackage(true);
+                name.setKind(JlsName.Kind.PACKAGE);
             } else {
                 if (!name.isMember()) {
-                    name.setIsType(true);
+                    name.setKind(JlsName.Kind.TYPE);
                 }
             }
             ref.setModule(jreType.getModule().getName());

@@ -40,8 +40,8 @@ class JarUtilsTests extends ModelTestEnvironment {
 
         VariableTypeNode vt1 = ModelUtil.parseVariableType("javax.lang.model.element.Element");
         VariableTypeNode vt2 = ModelUtil.parseVariableType("java.lang.Integer");
-        ParamNode param1 = new ParamNode(vt1, "param1");
-        ParamNode param2 = new ParamNode(vt2, "param2");
+        ParamNode param1 = new ParamNode(vt1, NameUtil.createMemberName("param1"));
+        ParamNode param2 = new ParamNode(vt2, NameUtil.createMemberName("param2"));
         scanMethod.addParam(param1);
         scanMethod.addParam(param2);
 
@@ -65,7 +65,7 @@ class JarUtilsTests extends ModelTestEnvironment {
         subClass.addMethod(addAllMethod);
 
         VariableTypeNode vt1 = ModelUtil.parseVariableType("java.util.Collection<? extends String>");
-        ParamNode param1 = new ParamNode(vt1, "c");
+        ParamNode param1 = new ParamNode(vt1, NameUtil.createMemberName("c"));
         addAllMethod.addParam(param1);
 
         TextAssembler.assembleTextAndLinks(api, ctx);

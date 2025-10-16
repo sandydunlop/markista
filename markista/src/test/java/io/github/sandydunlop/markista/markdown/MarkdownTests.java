@@ -111,7 +111,7 @@ class MarkdownTests {
     void formatParams() {
         List<ParamNode> params = new ArrayList<>();
         VariableTypeNode vt = ModelUtil.parseVariableType("java.lang.String");
-        ParamNode param1 = new ParamNode(vt, "name");
+        ParamNode param1 = new ParamNode(vt, NameUtil.createMemberName("name"));
         params.add(param1);
 
         JlsName methodName = NameUtil.createName("subject", markdownDoclet.getName().fullyQualifiedName(), markdownDoclet.getPackageName());

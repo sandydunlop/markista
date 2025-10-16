@@ -191,7 +191,7 @@ class ModuleWriterTests {
     @Test
     void outputConstantValues_WritesConstantFieldValuesPage() throws InvalidPathException, IOException {
         VariableTypeNode vt = ModelUtil.parseVariableType("int");
-        FieldNode fieldNode = new FieldNode(vt, "MY_CONSTANT");
+        FieldNode fieldNode = new FieldNode(vt, NameUtil.createMemberName("MY_CONSTANT"));
         fieldNode.setConstantValue(42);
         fieldNode.setConstantValueReference(vt);
         fieldNode.addModifier(io.github.sandydunlop.cascara.model.Modifier.PUBLIC);
