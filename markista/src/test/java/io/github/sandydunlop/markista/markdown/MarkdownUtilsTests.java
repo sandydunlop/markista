@@ -1,12 +1,12 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.Reference;
-import io.github.sandydunlop.cascara.model.Text;
-import io.github.sandydunlop.cascara.model.Text.Segment;
-import io.github.sandydunlop.cascara.model.ModelUtil;
-import io.github.sandydunlop.cascara.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.Reference;
+import io.github.qishr.cascara.lang.java.model.Text;
+import io.github.qishr.cascara.lang.java.model.Text.Segment;
+import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.net.URI;

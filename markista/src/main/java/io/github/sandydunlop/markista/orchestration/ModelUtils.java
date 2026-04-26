@@ -2,12 +2,12 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Context;
 
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.MethodNode;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
-import io.github.sandydunlop.cascara.modeling.StandardModeler;
-import io.github.sandydunlop.cascara.jreutil.JreUtil;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.MethodNode;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.modeler.StandardModeler;
+import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
 
 /// Utilities for rxtrating information from the API model
 public class ModelUtils {

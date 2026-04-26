@@ -2,12 +2,12 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.FileLink;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
-import io.github.sandydunlop.cascara.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.FileLink;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.PackageReference;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -41,9 +41,9 @@ public class PackageWriter {
     /// @param moduleNode  The module containing the packages to output the documentation for
     /// @throws java.io.IOException if there is a problem writing to the output file
     public void writeDocs(ModuleNode moduleNode) throws InvalidPathException, IOException {
-        for (PackageReference pkg : moduleNode.getPackages()) {
-            PackageNode packageNode = api.getPackageNode(pkg.getName());
-            outputPackageDoc(packageNode);
+        for (PackageNode pkg : moduleNode.getPackages()) {
+            // PackageNode packageNode = api.getPackageNode(pkg.getName());
+            outputPackageDoc(pkg);
         }
     }
 

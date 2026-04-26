@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.spi;
 import java.security.Provider.Service;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
 
 
 

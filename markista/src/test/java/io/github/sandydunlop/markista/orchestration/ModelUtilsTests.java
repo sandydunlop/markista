@@ -1,15 +1,15 @@
 package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
-import io.github.sandydunlop.cascara.model.MethodNode;
-import io.github.sandydunlop.cascara.model.ModelUtil;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.ParamNode;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
-import io.github.sandydunlop.cascara.modeling.StandardModeler;
-import io.github.sandydunlop.cascara.jreutil.JreUtil;
+import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
+import io.github.qishr.cascara.lang.java.model.MethodNode;
+import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.ParamNode;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.modeler.StandardModeler;
 
 import java.lang.reflect.Method;
 

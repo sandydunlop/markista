@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.core;
 
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -233,7 +233,7 @@ class ContextTests {
         ctx.setModuleName("markista");
         ctx.setPackageName("");
 
-        OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInModule("test.md");
+        Writer w = (Writer)ctx.createFileInModule("test.md");
         w.write("test createFile module 1");
         w.flush();
         w.close();
@@ -253,7 +253,7 @@ class ContextTests {
         ctx.setModuleName("");
         ctx.setPackageName("");
 
-        OutputStreamWriter w = (OutputStreamWriter)ctx.createFileInModule("test.md");
+        Writer w = (Writer)ctx.createFileInModule("test.md");
         w.write("test createFile module 2");
         w.flush();
         w.close();

@@ -1,21 +1,21 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.ClassNode;
-import io.github.sandydunlop.cascara.model.FileLink;
-import io.github.sandydunlop.cascara.model.MethodNode;
-import io.github.sandydunlop.cascara.model.ModelUtil;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
-import io.github.sandydunlop.cascara.model.ParamNode;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.Text;
-import io.github.sandydunlop.cascara.model.Text.Segment;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.ClassNode;
+import io.github.qishr.cascara.lang.java.model.FileLink;
+import io.github.qishr.cascara.lang.java.model.MethodNode;
+import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.PackageReference;
+import io.github.qishr.cascara.lang.java.model.ParamNode;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.Text;
+import io.github.qishr.cascara.lang.java.model.Text.Segment;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
@@ -86,10 +86,10 @@ class MarkdownTests {
 
         module = new ModuleNode("markista");
 		api.addModule(module);
-		module.addPackage(new PackageReference(markista.getName().fullyQualifiedName()));
-		module.addPackage(new PackageReference(util.getName().fullyQualifiedName()));
-		module.addPackage(new PackageReference(doclet.getName().fullyQualifiedName()));
-		module.addPackage(new PackageReference(model.getName().fullyQualifiedName()));
+		module.addPackage(markista); //new PackageReference(markista.getName().fullyQualifiedName()));
+		module.addPackage(util); //new PackageReference(util.getName().fullyQualifiedName()));
+		module.addPackage(doclet); //new PackageReference(doclet.getName().fullyQualifiedName()));
+		module.addPackage(model); //new PackageReference(model.getName().fullyQualifiedName()));
 		markista.setModuleName(module.getName().fullyQualifiedName());
 		util.setModuleName(module.getName().fullyQualifiedName());
 		doclet.setModuleName(module.getName().fullyQualifiedName());
@@ -130,7 +130,7 @@ class MarkdownTests {
     static List<Object[]> typeReferenceProvider() {
         return List.of(
             new Object[] { Link.Kind.TYPE, "io.github.sandydunlop.Node", null, "io.github.sandydunlop.Node" },
-            new Object[] { Link.Kind.TYPE, "io.github.sandydunlop.cascara.model.Node", null, "[Node](../model/Node.md)" },
+            new Object[] { Link.Kind.TYPE, "io.github.qishr.cascara.lang.java.model.Node", null, "[Node](../model/Node.md)" },
             new Object[] { Link.Kind.TYPE, "Node", null, "[Node](../model/Node.md)" }
         );
     }

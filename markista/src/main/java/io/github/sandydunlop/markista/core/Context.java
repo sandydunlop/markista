@@ -1,9 +1,9 @@
 package io.github.sandydunlop.markista.core;
 
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.SourceCodeLocation;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.SourceCodeLocation;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -323,7 +323,7 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         if (!typeName.isEmpty()) {
             JlsName pkgName = NameUtil.createPackageName(packageName);
             JlsName name = NameUtil.createTypeName(pkgName, typeName);
-            fileName = name.typeName().toString();
+            fileName = name.binaryName();
         }
         return new File(containingDir, fileName + ".md");
     }

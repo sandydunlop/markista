@@ -1,20 +1,20 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.DirectiveNode;
-import io.github.sandydunlop.cascara.model.FieldNode;
-import io.github.sandydunlop.cascara.model.InterfaceNode;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
-import io.github.sandydunlop.cascara.model.Reference;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.DirectiveNode;
+import io.github.qishr.cascara.lang.java.model.FieldNode;
+import io.github.qishr.cascara.lang.java.model.InterfaceNode;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.PackageReference;
+import io.github.qishr.cascara.lang.java.model.Reference;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.ModelUtil;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -87,8 +87,8 @@ class ModuleWriterTests {
         pkg = new PackageNode("com.example.package");
         api.addPackage(pkg); // Package needs to be in API for LinkResolver to work
 
-        PackageReference pkgRef = new PackageReference(pkg.getName().fullyQualifiedName());
-        moduleNode.addPackage(pkgRef);
+        // PackageReference pkgRef = new PackageReference(pkg.getName().fullyQualifiedName());
+        moduleNode.addPackage(pkg);
 
         ctx.setModuleName("");
         ctx.setReporter(reporter);
@@ -109,8 +109,8 @@ class ModuleWriterTests {
         PackageNode pkg1 = new PackageNode("com.example.package");
         api.addPackage(pkg1); // Package needs to be in API for LinkResolver to work
 
-        PackageReference pkgRef = new PackageReference(pkg1.getName().fullyQualifiedName());
-        namedModule.addPackage(pkgRef);
+        // PackageReference pkgRef = new PackageReference(pkg1.getName().fullyQualifiedName());
+        namedModule.addPackage(pkg1);
 
         moduleWriter.writeDocs(api);
 
@@ -129,8 +129,12 @@ class ModuleWriterTests {
         // Add a package to namedModule (required for index.md generation)
         PackageNode pkg1 = new PackageNode("com.example.package");
         api.addPackage(pkg1); // Package needs to be in API for LinkResolver to work
-        PackageReference pkgRef = new PackageReference(pkg1.getName().fullyQualifiedName());
-        unnamedModule.addPackage(pkgRef);
+
+        // PackageReference pkgRef = new PackageReference(pkg1.getName().fullyQualifiedName());
+        Reference ref = NameUtil.createReference(pkg1.getName().toString());
+        pkg1.setLink(Link.to(ref));
+
+        unnamedModule.addPackage(pkg1);
 
         moduleWriter.writeDocs(api);
 
@@ -194,8 +198,8 @@ class ModuleWriterTests {
         FieldNode fieldNode = new FieldNode(vt, NameUtil.createMemberName("MY_CONSTANT"));
         fieldNode.setConstantValue(42);
         fieldNode.setConstantValueReference(vt);
-        fieldNode.addModifier(io.github.sandydunlop.cascara.model.Modifier.PUBLIC);
-        fieldNode.addModifier(io.github.sandydunlop.cascara.model.Modifier.STATIC);
+        fieldNode.addModifier(io.github.qishr.cascara.lang.java.model.Modifier.PUBLIC);
+        fieldNode.addModifier(io.github.qishr.cascara.lang.java.model.Modifier.STATIC);
 
         moduleNode.addConstantValue(fieldNode);
 

@@ -1,23 +1,23 @@
 package io.github.sandydunlop.markista;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.AnnotationNode;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.ClassNode;
-import io.github.sandydunlop.cascara.model.EnumNode;
-import io.github.sandydunlop.cascara.model.FieldNode;
-import io.github.sandydunlop.cascara.model.InterfaceNode;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
-import io.github.sandydunlop.cascara.model.RecordNode;
-import io.github.sandydunlop.cascara.model.Reference;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
-import io.github.sandydunlop.cascara.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.AnnotationNode;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.ClassNode;
+import io.github.qishr.cascara.lang.java.model.EnumNode;
+import io.github.qishr.cascara.lang.java.model.FieldNode;
+import io.github.qishr.cascara.lang.java.model.InterfaceNode;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.PackageReference;
+import io.github.qishr.cascara.lang.java.model.RecordNode;
+import io.github.qishr.cascara.lang.java.model.Reference;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.ModelUtil;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.io.StringWriter;
@@ -135,9 +135,9 @@ public class ModelTestEnvironment {
 
         module = new ModuleNode("markista");
 		api.addModule(module);
-		module.addPackage(new PackageReference(markista.getName().fullyQualifiedName()));
-		module.addPackage(new PackageReference(doclet.getName().fullyQualifiedName()));
-		module.addPackage(new PackageReference(model.getName().fullyQualifiedName()));
+		module.addPackage(markista); //new PackageReference(markista.getName().fullyQualifiedName()));
+		module.addPackage(doclet); //new PackageReference(doclet.getName().fullyQualifiedName()));
+		module.addPackage(model); //new PackageReference(model.getName().fullyQualifiedName()));
 		markista.setModuleName(module.getName().fullyQualifiedName());
 		doclet.setModuleName(module.getName().fullyQualifiedName());
 		model.setModuleName(module.getName().fullyQualifiedName());

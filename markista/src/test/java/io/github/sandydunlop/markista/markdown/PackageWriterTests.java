@@ -1,19 +1,17 @@
 package io.github.sandydunlop.markista.markdown;
 
+import io.github.qishr.cascara.lang.java.model.AnnotationNode;
+import io.github.qishr.cascara.lang.java.model.ClassNode;
+import io.github.qishr.cascara.lang.java.model.EnumNode;
+import io.github.qishr.cascara.lang.java.model.InterfaceNode;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.Text;
+
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.AnnotationNode;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.ClassNode;
-import io.github.sandydunlop.cascara.model.EnumNode;
-import io.github.sandydunlop.cascara.model.InterfaceNode;
-import io.github.sandydunlop.cascara.model.ModelUtil;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
-import io.github.sandydunlop.cascara.model.Text;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
@@ -96,10 +94,10 @@ class PackageWriterTests {
         modelPackage.addType(nodeClass);
         packageNode.addPackage(modelPackage);
 
-        PackageReference pr1 = new PackageReference(packageNode.getName().fullyQualifiedName());
-        moduleNode.addPackage(pr1);
-        PackageReference pr2 = new PackageReference(modelPackage.getName().fullyQualifiedName());
-        moduleNode.addPackage(pr2);
+        // PackageReference pr1 = new PackageReference(packageNode.getName().fullyQualifiedName());
+        moduleNode.addPackage(packageNode);
+        // PackageReference pr2 = new PackageReference(modelPackage.getName().fullyQualifiedName());
+        moduleNode.addPackage(modelPackage);
 
         api.addModule(moduleNode);
         api.addPackage(packageNode);
@@ -164,7 +162,7 @@ class PackageWriterTests {
         assertTrue(output.contains("[TestEnum](TestEnum.md)"));
         assertTrue(output.contains("[TestAnnotation](TestAnnotation.md)"));
 
-        assertTrue(output.contains("Enum Class TestEnum"));
+        assertTrue(output.contains("Enum TestEnum"));
         assertTrue(output.contains("Interface TestInterface"));
         assertTrue(output.contains("Annotation Interface TestAnnotation"));
     }
@@ -193,7 +191,7 @@ class PackageWriterTests {
         assertTrue(output.contains("[TestEnum](TestEnum.md)"));
         assertTrue(output.contains("[TestAnnotation](TestAnnotation.md)"));
 
-        assertTrue(output.contains("Enum Class TestEnum"));
+        assertTrue(output.contains("Enum TestEnum"));
         assertTrue(output.contains("Interface TestInterface"));
         assertTrue(output.contains("Annotation Interface TestAnnotation"));
     }

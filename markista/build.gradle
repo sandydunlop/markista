@@ -15,6 +15,12 @@ repositories {
 	mavenCentral()
 }
 
+tasks.withType(JavaCompile) {
+    options.compilerArgs.addAll([
+        '--add-exports', "jdk.javadoc/jdk.javadoc.internal.tool=markista"
+    ])
+}
+
 dependencies {
 	testImplementation(platform('org.junit:junit-bom:5.13.3'))
     testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
@@ -22,16 +28,18 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter:5.18.0'
 	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
 
-    implementation('io.github.sandydunlop:cascara.core:0.1.0')
+    // implementation('io.github.sandydunlop:cascara.core:0.1.0')
+    implementation('io.github.qishr:cascara-common:0.1.0')
+    implementation('io.github.qishr:cascara-lang-java-parser:0.1.0')
 }
 
 java {
     withJavadocJar()
     withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_24
-    targetCompatibility = JavaVersion.VERSION_24
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
     toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -77,8 +85,8 @@ jar {
 }
 
 jar.doLast {
-    ant.checksum file: archivePath
-    // ant.checksum file: archiveFile
+    def jarFile = archiveFile.get().asFile
+    ant.checksum file: jarFile
 }
 
 signing {

@@ -1,24 +1,24 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.AbstractMember;
-import io.github.sandydunlop.cascara.model.AnnotationElement;
-import io.github.sandydunlop.cascara.model.AnnotationNode;
-import io.github.sandydunlop.cascara.model.AppliedAnnotationNode;
-import io.github.sandydunlop.cascara.model.ClassNode;
-import io.github.sandydunlop.cascara.model.Deprecation;
-import io.github.sandydunlop.cascara.model.EnumNode;
-import io.github.sandydunlop.cascara.model.FieldNode;
-import io.github.sandydunlop.cascara.model.FileLink;
-import io.github.sandydunlop.cascara.model.InterfaceNode;
-import io.github.sandydunlop.cascara.model.MethodNode;
-import io.github.sandydunlop.cascara.model.MethodReference;
-import io.github.sandydunlop.cascara.model.SemanticNode;
-import io.github.sandydunlop.cascara.model.ParamNode;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.Text;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.AbstractMember;
+import io.github.qishr.cascara.lang.java.model.AnnotationElement;
+import io.github.qishr.cascara.lang.java.model.AnnotationNode;
+import io.github.qishr.cascara.lang.java.model.AppliedAnnotationNode;
+import io.github.qishr.cascara.lang.java.model.ClassNode;
+import io.github.qishr.cascara.lang.java.model.Deprecation;
+import io.github.qishr.cascara.lang.java.model.EnumNode;
+import io.github.qishr.cascara.lang.java.model.FieldNode;
+import io.github.qishr.cascara.lang.java.model.FileLink;
+import io.github.qishr.cascara.lang.java.model.InterfaceNode;
+import io.github.qishr.cascara.lang.java.model.MethodNode;
+import io.github.qishr.cascara.lang.java.model.MethodReference;
+import io.github.qishr.cascara.lang.java.model.JavaSemanticNode;
+import io.github.qishr.cascara.lang.java.model.ParamNode;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.Text;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -54,7 +54,9 @@ public class TypeWriter {
     /// @param typeNode the type
     /// @throws java.io.IOException if there is a problem writing to the output file
     public void outputTypeDoc(TypeNode typeNode) throws InvalidPathException, IOException {
-        ctx.setTypeName(typeNode.getName().fullyQualifiedName());
+        // ctx.setTypeName(typeNode.getName().fullyQualifiedName());
+        ctx.setPackageName(typeNode.getPackageName().toString());
+        ctx.setTypeName(typeNode.getName().binaryName());
         writer = ctx.createFileInPackage();
         writer.write("Package [" + typeNode.getPackageName() + "](index.md)\n\n");
         writer.write("# " + typeNode.getKindName() + " " + typeNode.getName().simpleName() + "\n");
@@ -213,11 +215,11 @@ public class TypeWriter {
     private void outputDeclaration(TypeNode typeNode) throws IOException {
         writer.write("<span style=\"font-family: monospace; font-size: 80%;\">");
         String typeString = typeNode.getKind().toString().toLowerCase();
-        if (typeNode.getKind() == SemanticNode.Kind.ANNOTATION) {
+        if (typeNode.getKind() == JavaSemanticNode.Kind.ANNOTATION) {
             typeString = "@interface";
         }
         for (AppliedAnnotationNode annotation : typeNode.getAppliedAnnotations()) {
-            if (typeNode.getKind() == SemanticNode.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
+            if (typeNode.getKind() == JavaSemanticNode.Kind.ANNOTATION || (annotation.isCustom() && annotation.isDocumented())) {
                 writer.write("@" + annotation.getTypeName().typeName().toString());
                 if (!annotation.getElements().isEmpty()) {
                     writer.write("(");
@@ -293,7 +295,7 @@ public class TypeWriter {
                 .addColumn(TEXT_CLASS)
                 .addColumn(TEXT_DESCRIPTION);
         for (TypeNode nestedClassNode : nestedClasses) {
-            FileLink link = FileLink.to(nestedClassNode.getName().typeName().toString()).withLabel(nestedClassNode.getName().typeName().toString());
+            FileLink link = FileLink.to(nestedClassNode.getName().binaryName().toString()).withLabel(nestedClassNode.getName().typeName().toString());
             table.addRow(nestedClassNode.getModifiersString(),
                         MarkdownUtils.formatFileLink(link),
                         MarkdownUtils.inOneLine(MarkdownUtils.formatText(nestedClassNode.getFirstSentence())));
@@ -398,8 +400,8 @@ public class TypeWriter {
     /// @see java.util.List
     /// @since 0.1.0
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputDetails(List<SemanticNode> nodes) throws IOException {
-        for (SemanticNode node : nodes) {
+    private void outputDetails(List<JavaSemanticNode> nodes) throws IOException {
+        for (JavaSemanticNode node : nodes) {
             if (node instanceof MethodNode method) {
                 ctx.setMethodName(method.getName().simpleName());
                 writer.write("### " + method.getName().simpleName());
@@ -437,7 +439,7 @@ public class TypeWriter {
     /// Outputs references for a type member
     /// @param node The type
     /// @throws java.io.IOException if there is a problem writing to the output file
-    private void outputReferences(SemanticNode node) throws IOException {
+    private void outputReferences(JavaSemanticNode node) throws IOException {
         if (!node.getReferences().isEmpty()) {
             writer.write("**See Also:**\n\n");
             for (Link ref : node.getReferences()) {

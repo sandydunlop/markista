@@ -5,7 +5,7 @@ import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.doclet.MarkdownDoclet.Option;
 import io.github.sandydunlop.markista.markdown.MarkdownService;
-import io.github.sandydunlop.cascara.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.sandydunlop.markista.spi.DocService;
 
 import java.util.ArrayList;

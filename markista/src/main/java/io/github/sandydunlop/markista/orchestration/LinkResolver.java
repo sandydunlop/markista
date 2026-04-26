@@ -14,21 +14,21 @@ import java.util.Set;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 
-import io.github.sandydunlop.cascara.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.sandydunlop.markista.core.ExternalLink;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.Link.Kind;
-import io.github.sandydunlop.cascara.model.Link.Scope;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.common.Pair;
-import io.github.sandydunlop.cascara.model.Reference;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
-import io.github.sandydunlop.cascara.jreutil.JreUtil;
-import io.github.sandydunlop.cascara.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.Link.Kind;
+import io.github.qishr.cascara.lang.java.model.Link.Scope;
+import io.github.qishr.cascara.lang.java.model.MethodNode;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.common.util.Pair;
+import io.github.qishr.cascara.lang.java.model.Reference;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
 
 public class LinkResolver {
     private static final String DOT_HTML = ".html";
@@ -93,11 +93,37 @@ public class LinkResolver {
             }
         }
 
+
+        if (link.getTarget().getName() != null) {
+            if (isVoid(link.getTarget().getName())) {
+                link.setKind(Link.Kind.VOID);
+                link.setResolved(true);
+                return true;
+            }
+            if (isPrimitive(link.getTarget().getName())) {
+                link.setKind(Link.Kind.PRIMITIVE);
+                link.setResolved(true);
+                return true;
+            }
+        }
+
         if (link.getOrigin() == null) {
-            JlsName pkgName = NameUtil.createPackageName(ctx.getPackageName());
-            JlsName originName = NameUtil.createTypeName(pkgName, ctx.getTypeName());
-            Reference origin = NameUtil.createReference(ctx.getModuleName(), originName);
-            link.setOrigin(origin);
+            if (ctx.getPackageName() == null || ctx.getPackageName().isEmpty()) {
+                if (ctx.getModuleName() == null || ctx.getModuleName().isEmpty()) {
+                    // We're not in a package or a module.
+                    // This is likely invalid. IllegalStateException?
+                    return false;
+                }
+                // We're in a module, but not in a package
+                Reference origin = NameUtil.createReference(ctx.getModuleName(), null);
+                link.setOrigin(origin);
+            } else {
+                // We're in a package
+                JlsName pkgName = NameUtil.createPackageName(ctx.getPackageName());
+                JlsName originName = NameUtil.createTypeName(pkgName, ctx.getTypeName());
+                Reference origin = NameUtil.createReference(ctx.getModuleName(), originName);
+                link.setOrigin(origin);
+            }
         }
 
         qualify(link.getOrigin());
@@ -108,7 +134,7 @@ public class LinkResolver {
 
         if (link.getTarget().getName() != null && link.getTarget().getName().isMember()) {
             JlsName targetName = link.getTarget().getName();
-            JlsName typeName = targetName.firstComponents(-1);
+            JlsName typeName = targetName.lastComponents(1);
             String methodName = targetName.simpleName();
             link.getTarget().setName(typeName);
             link.setMethodName(methodName);
@@ -123,6 +149,25 @@ public class LinkResolver {
         }
 
         return success;
+    }
+
+    boolean isVoid(JlsName name) {
+        return name.toString().equals("void");
+    }
+
+    boolean isPrimitive(JlsName name) {
+        String typeName = name.toString();
+        switch(typeName) {
+            case "boolean":
+            case "char":
+            case "int":
+            case "long":
+            case "float":
+            case "double":
+                return true;
+            default:
+                return false;
+        }
     }
 
     /// Checks if the target is a primitive type or void.
@@ -262,10 +307,28 @@ public class LinkResolver {
 
     public boolean resolve(Link link) {
         if (link.getTarget().getName() != null) {
-            return resolvePackageOrType(link);
+            if (link.getTarget().getName().isMember()) {
+                return resolveMember(link);
+            } else {
+                return resolvePackageOrType(link);
+            }
         } else {
             return resolveModule(link);
         }
+    }
+
+    private boolean resolveMember(Link link) {
+        String nameString = link.getTarget().getName().simpleName();
+        if (ctx.getTypeName() != null && !ctx.getTypeName().isEmpty()) {
+            TypeNode typeNode = api.getTypeNode(ctx.getTypeName());
+            for (MethodNode methodNode : typeNode.getMethods()) {
+                String methodName = methodNode.getName().simpleName();
+                if (methodName.equals(nameString)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean resolvePackageOrType(Link link) {
@@ -322,7 +385,7 @@ public class LinkResolver {
         }
         for (ExternalLink extLink : externalLinks) {
             for (ModuleNode moduleNode : extLink.getSemanticModel().getModules()) {
-                if (moduleNode.getName().equals(target.getModuleName())) {
+                if (moduleNode.getName().toString().equals(target.getModuleName())) {
                     resolvedModule(link, extLink.isWebLink() ? Scope.EXTERNAL : Scope.SIBLING);
                     link.setUri(relativize(link.getOrigin().getName(), null, target.getModuleName()));
                     return true;
@@ -334,7 +397,7 @@ public class LinkResolver {
 
     boolean tryResolveJreType(Link link) {
         Reference target = link.getTarget();
-        String qualifiedBinaryName = target.getName().fullyQualifiedBinaryName();
+        String qualifiedBinaryName = target.getName().fullyQualifiedJvmBinaryName();
         Class<?> jreType = JreUtil.loadClass(qualifiedBinaryName);
         if (jreType != null) {
             Scope scope = Scope.STANDARD;
@@ -377,8 +440,17 @@ public class LinkResolver {
         Reference target = link.getTarget();
         TypeNode typeNode = api.getTypeNode(target.getName());
         if (typeNode != null) {
-            String module = "";
-            JlsName originName = flattenDirectory(origin.getName().packageName());
+
+            // typeNode's name potentially has more metadata than target's name
+            target.setName(typeNode.getName());
+            // TODO: Should we do this for every link being resolved?
+
+            String module = ""; // TODO: cascara://organizer/CASC-0002980F - should this be target module?
+            JlsName originName = null;
+            if (origin.getName() != null) {
+                originName = flattenDirectory(origin.getName().packageName());
+            }
+
             JlsName targetName = flattenDirectory(typeNode.getName());
             link.setUri(relativize(originName, targetName, module));
             resolvedType(link, Link.Scope.LOCAL);
@@ -393,9 +465,14 @@ public class LinkResolver {
         PackageNode packageNode = api.getPackageNode(target.getName());
         if (packageNode != null) {
             String module = "";
-            JlsName originName = flattenDirectory(origin.getName().packageName());
             JlsName targetName = flattenDirectory(target.getName());
-            link.setUri(relativize(originName, targetName, module));
+            if (origin.getName() == null) {
+                // Origin is a module
+                link.setUri(relativize(null, targetName, module));
+            } else {
+                JlsName originName = flattenDirectory(origin.getName().packageName());
+                link.setUri(relativize(originName, targetName, module));
+            }
             resolvedPackage(link, Link.Scope.LOCAL);
             return true;
         }
@@ -428,21 +505,45 @@ public class LinkResolver {
             if (to == null) {
                 uri = new URI("../".repeat(from.componentCount()));
             } else {
-                commonCount = from.commonComponentCount(to);
-                uri = new URI("../".repeat(from.componentCount() - commonCount));
+                if (from == null) {
+                    // Origin is a module, not a package
+                    commonCount = 0;
+                    uri = null;
+                } else {
+                    // Origin is a package
+                    commonCount = from.commonComponentCount(to);
+                    uri = new URI("../".repeat(from.componentCount() - commonCount));
+                }
             }
             if (module != null && !module.isEmpty()) {
-                uri = uri.resolve("../" + module + "/");
+                if (uri != null) {
+                    uri = uri.resolve("../" + module + "/");
+                } else {
+                    uri = new URI(module + "/");
+                }
             }
             if (to != null) {
-                JlsName toPackageName = to.packageName().lastComponents(-commonCount);
+                JlsName pkgName = to.packageName();
+                String toPackageNameString;
+                if (pkgName.componentCount() == commonCount) {
+                    toPackageNameString = "";
+                } else {
+                    JlsName name = to.packageName().lastComponents(-commonCount);
+                    toPackageNameString = name.toString();
+                }
                 JlsName toTypeName = to.typeName();
-                if (!toPackageName.isEmpty()) {
-                    String toPackage = toPackageName.toString().replace(".", "/");
-                    uri = uri.resolve(toPackage + "/");
+                if (!toPackageNameString.isEmpty()) {
+                    String toPackage = toPackageNameString.replace(".", "/");
+                    if (uri == null) {
+                        // Origin is not a package, or no target module was given
+                        uri = new URI(toPackage + "/");
+                    } else {
+                        // Origin is a package, or target module was given
+                        uri = uri.resolve(toPackage + "/");
+                    }
                 }
                 if (!toTypeName.isEmpty()) {
-                    String toType = to.typeName().toString();
+                    String toType = to.binaryName();
                     uri = uri.resolve(toType);
                     String tmp = uri.toString();
                     if (tmp.endsWith("/")) {
@@ -469,6 +570,10 @@ public class LinkResolver {
             return path;
         }
         if (flattenedDirectories != null && !flattenedDirectories.isEmpty()) {
+            if (!path.toString().startsWith(flattenedDirectories)) {
+                // Unrelated package
+                return path;
+            }
             int flattenedComponents = 1;
             for (int i = 0; i < flattenedDirectories.length(); i++) {
                 if (flattenedDirectories.charAt(i) == '.') {
@@ -483,6 +588,8 @@ public class LinkResolver {
     boolean qualify(Reference ref) {
         JlsName name = ref.getName();
         if (name == null || name.isEmpty()) {
+            // TODO: Links to modules end up here. This is fine.
+            // Make sure the caller handes them though.
             return false;
         }
         if (qualifyLocalReference(ref)) return true;
@@ -539,7 +646,7 @@ public class LinkResolver {
         Class<?> jreType = JreUtil.loadClass(name.fullyQualifiedName());
         if (jreType == null) {
             // Check if the last component of the name is a member
-            JlsName candidate = name.firstComponents(-1);
+            JlsName candidate = name.lastComponents(1);
             jreType = JreUtil.loadClass(candidate.fullyQualifiedName());
             if (jreType != null) {
                 name.setMember(true);

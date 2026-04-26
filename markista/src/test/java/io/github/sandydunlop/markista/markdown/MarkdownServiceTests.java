@@ -1,10 +1,10 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.PackageReference;
 
 import java.io.StringWriter;
 import java.nio.file.InvalidPathException;
@@ -45,8 +45,8 @@ class MarkdownServiceTests {
         ModuleNode module = new ModuleNode("module");
         PackageNode pkg = new PackageNode("package");
         api.addModule(module);
-        PackageReference pkgRef = new PackageReference(pkg.getName().fullyQualifiedName());
-        module.addPackage(pkgRef);
+        // PackageReference pkgRef = new PackageReference(pkg.getName().fullyQualifiedName());
+        module.addPackage(pkg);
 
         // Ensure an exception is thrown
         MarkdownService service = new MarkdownService();

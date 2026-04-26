@@ -2,29 +2,29 @@ package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.AnnotationElement;
-import io.github.sandydunlop.cascara.model.AnnotationNode;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.AppliedAnnotationNode;
-import io.github.sandydunlop.cascara.model.ClassNode;
-import io.github.sandydunlop.cascara.model.Deprecation;
-import io.github.sandydunlop.cascara.model.EnumNode;
-import io.github.sandydunlop.cascara.model.FieldNode;
-import io.github.sandydunlop.cascara.model.InterfaceNode;
-import io.github.sandydunlop.cascara.model.MethodNode;
-import io.github.sandydunlop.cascara.model.MethodReference;
-import io.github.sandydunlop.cascara.model.Modifier;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.ParamNode;
-import io.github.sandydunlop.cascara.model.RecordNode;
-import io.github.sandydunlop.cascara.model.Reference;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.Text;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
-import io.github.sandydunlop.cascara.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.AnnotationElement;
+import io.github.qishr.cascara.lang.java.model.AnnotationNode;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.AppliedAnnotationNode;
+import io.github.qishr.cascara.lang.java.model.ClassNode;
+import io.github.qishr.cascara.lang.java.model.Deprecation;
+import io.github.qishr.cascara.lang.java.model.EnumNode;
+import io.github.qishr.cascara.lang.java.model.FieldNode;
+import io.github.qishr.cascara.lang.java.model.InterfaceNode;
+import io.github.qishr.cascara.lang.java.model.MethodNode;
+import io.github.qishr.cascara.lang.java.model.MethodReference;
+import io.github.qishr.cascara.lang.java.model.Modifier;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.ParamNode;
+import io.github.qishr.cascara.lang.java.model.RecordNode;
+import io.github.qishr.cascara.lang.java.model.Reference;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.Text;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.ModelUtil;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 
@@ -129,7 +129,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         fieldNode.setFirstSentence(Text.of("Full body text for const"));
         fieldNode.setSince(Text.of("Since version 1.0"));
 
-        Link ref = Link.to(NameUtil.createReference("io.github.sandydunlop.cascara.model.Node"))
+        Link ref = Link.to(NameUtil.createReference("io.github.qishr.cascara.lang.java.model.Node"))
                 .withKind(Link.Kind.TYPE);
         fieldNode.getReferences().add(ref);
 

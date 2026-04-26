@@ -1,16 +1,16 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.DirectiveNode;
-import io.github.sandydunlop.cascara.model.FieldNode;
-import io.github.sandydunlop.cascara.model.FileLink;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.DirectiveNode;
+import io.github.qishr.cascara.lang.java.model.FieldNode;
+import io.github.qishr.cascara.lang.java.model.FileLink;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.PackageReference;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -77,7 +77,7 @@ public class ModuleWriter {
             writer = ctx.createFileInModule("index.md");
             if (moduleNode.getName().isEmpty()) {
                 // Unnamed module
-                writer.write("# " + api.getName() + "\n");
+                writer.write("# " + api.getTitle() + "\n");
             } else {
                 writer.write("# " + TITLE_MODULE + " " + moduleNode.getName() + "\n");
             }
@@ -87,7 +87,7 @@ public class ModuleWriter {
                 MarkdownTable table = new MarkdownTable()
                         .addColumn(TITLE_PACKAGE)
                         .addColumn(TITLE_DESCRIPTION);
-                for (PackageReference pkg : moduleNode.getPackages()) {
+                for (PackageNode pkg : moduleNode.getPackages()) {
                     table.addRow(MarkdownUtils.link(pkg.getLink(), true), MarkdownUtils.inOneLine(MarkdownUtils.formatText(pkg.getFirstSentence())));
                 }
                 table.render(writer);
@@ -124,8 +124,9 @@ public class ModuleWriter {
                 .addColumn(TITLE_DESCRIPTION);
         for (DirectiveNode directive : directives) {
             String columnTwo = formatDirectivePackageDoc(directive);
-            String link = MarkdownUtils.link(directive.getLink(), true);
-            table.addRow(link, columnTwo);
+            Link link = directive.getLink();
+            String linkString = MarkdownUtils.link(link, true);
+            table.addRow(linkString, columnTwo);
         }
         table.render(writer, 4);
     }
@@ -225,7 +226,7 @@ public class ModuleWriter {
         writer.write("module:");
         writer.write(moduleNode.getName().fullyQualifiedName());
         writer.write("\n");
-        for (PackageReference pkg : moduleNode.getPackages()) {
+        for (PackageNode pkg : moduleNode.getPackages()) {
             writer.write(pkg.getName().fullyQualifiedName());
             writer.write("\n");
         }

@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.doclet;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.markdown.MarkdownService;
-import io.github.sandydunlop.cascara.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.sandydunlop.markista.orchestration.Relativizer;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.sandydunlop.markista.scanning.ApiScanner;
@@ -73,30 +73,43 @@ public class MarkdownDoclet implements Doclet {
     /// without the Javadoc command. This is useful for debugging.
     /// @param args this parameter is ignored.
     public static void main(String[] args) {
-        if (args != null && args.length > 1 && args[0].equals("-options")) {
-            readJavadocOptions(args[1]);
+        if (args != null && args.length > 1) {
+            if (args[0].equals("-options")) {
+                readJavadocOptions(args[1]);
+            } else {
+                docletArgs = args;
+            }
         }
-        if (!javadocArgs.isEmpty()) {
-            javadocArgs.addFirst("build/classes/java/main");
-            javadocArgs.addFirst("-docletpath");
-            javadocArgs.addFirst(MarkdownDoclet.class.getName());
-            javadocArgs.addFirst("-doclet");
-            docletArgs = javadocArgs.toArray(new String[0]);
-        } else {
-            docletArgs = new String[]{
-                "-doclet", MarkdownDoclet.class.getName(),
-                "-docletpath", "build/classes/java/main",
-                "-d", "markista/build/md-docs",
-                "-private",
-                "-doctitle", "Markista API",
-                "--flatten-packages",
-                "-sourcepath", "markista/src/main/java/",
-                "-subpackages", "io.github.sandydunlop.markista",
-                "-tabs"
-            };
+        if (docletArgs == null || docletArgs.length == 0) {
+            if (!javadocArgs.isEmpty()) {
+                javadocArgs.addFirst("build/classes/java/main");
+                javadocArgs.addFirst("-docletpath");
+                javadocArgs.addFirst(MarkdownDoclet.class.getName());
+                javadocArgs.addFirst("-doclet");
+                docletArgs = javadocArgs.toArray(new String[0]);
+            } else {
+                docletArgs = new String[]{
+                    "-doclet", MarkdownDoclet.class.getName(),
+                    "-docletpath", "/Users/sandy/git/markista/markista/build/classes/java/main",
+                    "-d", "/Users/sandy/git/markista/markista/markista/build/md-docs",
+                    "-private",
+                    "-doctitle", "Markista API",
+                    "--flatten-packages",
+                    // "-sourcepath", "markista/src/main/java/",
+                    // "-subpackages", "io.github.sandydunlop.markista",
+                    "-tabs",
+
+                    "-sourcepath", "/Users/sandy/git/qishr/repositories/cascara/cascara-ui/src/main/java",
+                    "--module-path", "/Users/sandy/git/qishr/repositories/cascara/build/modulepath"
+                };
+            }
         }
-        DocumentationTool docTool = ToolProvider.getSystemDocumentationTool();
-        docTool.run(System.in, System.out, System.err, docletArgs); //NOSONAR
+
+        // DocumentationTool docTool = ToolProvider.getSystemDocumentationTool();
+        // docTool.run(System.in, System.out, System.err, docletArgs); //NOSONAR
+
+        int result = jdk.javadoc.internal.tool.Main.execute(args);
+        System.exit(result);
     }
 
     /// A base class for declaring options.
@@ -302,7 +315,56 @@ public class MarkdownDoclet implements Doclet {
                                        List<String> arguments) {
                     return OK;
                 }
+            },
+
+
+
+
+
+
+
+            new Option("-Xlint", false, "Recognize Xlint options", null) {
+                @Override
+                public boolean process(String option, List<String> arguments) {
+                    // Just consume the argument so the parser is happy
+                    return OK;
+                }
+                @Override
+                public Kind getKind() {
+                    // Marking it as EXTENDED or HIDDEN often helps bypass strict consumption checks
+                    return Kind.STANDARD;
+                }
+            },
+            // Also handle the specific -Xlint:-options variant if needed
+            new Option("-Xlint:-options", true, "Recognize Xlint options", null) {
+                @Override
+                public boolean process(String option, List<String> arguments) {
+                    return OK;
+                }
+                @Override
+                public Kind getKind() {
+                    return Kind.STANDARD;
+                }
+            },
+            // Also handle the specific -Xlint:-options variant if needed
+            new Option("-options", false, "Recognize options", null) {
+                @Override
+                public boolean process(String option, List<String> arguments) {
+                    return OK;
+                }
+                @Override
+                public Kind getKind() {
+                    return Kind.STANDARD;
+                }
             }
+
+
+
+
+
+
+
+
     );
 
     /// Initializes the doclet.

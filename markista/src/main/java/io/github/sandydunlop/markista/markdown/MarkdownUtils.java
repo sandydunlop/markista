@@ -1,14 +1,14 @@
 package io.github.sandydunlop.markista.markdown;
 
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.ParamNode;
-import io.github.sandydunlop.cascara.model.FileLink;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.Text;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode.BoundingKind;
-import io.github.sandydunlop.cascara.model.VariableTypeNode.TypeParameter;
+import io.github.qishr.cascara.lang.java.model.ParamNode;
+import io.github.qishr.cascara.lang.java.model.FileLink;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.Text;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode.BoundingKind;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode.TypeParameter;
 
 import java.util.List;
 
@@ -40,6 +40,9 @@ public class MarkdownUtils {
                 return formatLink(fileLink, fileLink.getLabel());
             } else {
                 // Only web links should reach here
+                if (link.getUri() == null) {
+                    return formatLink(link, "");
+                }
                 return formatLink(link, link.getUri().toString());
             }
         }
@@ -161,6 +164,7 @@ public class MarkdownUtils {
     /// @param label The text that will be displayed for the link
     /// @return Markdown formatted text with a resolved link
     public static String formatLink(Link link, String label) {
+        // TODO: Use UriScheme
         if (link.getUri() != null && link.getUri().getScheme() != null && link.getUri().getScheme().startsWith("http")) {
             if (link.getAnchor() != null && !link.getAnchor().isEmpty()) {
                 return String.format("[%s](%s#%s)", label, link.getUri(), link.getAnchor());

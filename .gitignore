@@ -22,6 +22,7 @@ gradle-app.setting
 .DS_Store
 .vscode/tasks.json
 /io
+/docs-output
 /markista/null
 javadoc-consumer.options
 javadoc-example.options

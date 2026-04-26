@@ -1,9 +1,9 @@
 package io.github.sandydunlop.markista.core;
 
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.PackageReference;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -66,10 +66,10 @@ public class ExternalLink {
                 api.addModule(moduleNode);
             } else {
                 PackageReference packageRef = new PackageReference(line);
-                if (moduleNode != null) {
-                    moduleNode.addPackage(packageRef);
-                }
                 PackageNode packageNode = new PackageNode(line);
+                if (moduleNode != null) {
+                    moduleNode.addPackage(packageNode);
+                }
                 api.addPackage(packageNode);
                 packages.add(line);
                 if (!moduleName.isEmpty()) {

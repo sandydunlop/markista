@@ -10,7 +10,8 @@ module markista {
     requires transitive jdk.javadoc;
     requires transitive java.compiler;
 
-    requires cascara.core;
+    requires cascara.common;
+    requires cascara.lang.java;
 
     exports io.github.sandydunlop.markista.core;
     exports io.github.sandydunlop.markista.doclet;

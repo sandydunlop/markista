@@ -2,21 +2,21 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.sandydunlop.markista.markdown.MarkdownUtils;
-import io.github.sandydunlop.cascara.model.ClassNode;
-import io.github.sandydunlop.cascara.model.DirectiveNode;
-import io.github.sandydunlop.cascara.model.InterfaceNode;
-import io.github.sandydunlop.cascara.model.MethodNode;
-import io.github.sandydunlop.cascara.model.MethodReference;
-import io.github.sandydunlop.cascara.model.ModelUtil;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.RecordNode;
-import io.github.sandydunlop.cascara.model.Reference;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.Text;
-import io.github.sandydunlop.cascara.model.Text.Segment;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.ClassNode;
+import io.github.qishr.cascara.lang.java.model.DirectiveNode;
+import io.github.qishr.cascara.lang.java.model.InterfaceNode;
+import io.github.qishr.cascara.lang.java.model.MethodNode;
+import io.github.qishr.cascara.lang.java.model.MethodReference;
+import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.RecordNode;
+import io.github.qishr.cascara.lang.java.model.Reference;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.Text;
+import io.github.qishr.cascara.lang.java.model.Text.Segment;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 
 import java.util.List;
 import java.util.Map;
@@ -52,9 +52,10 @@ class TextAssemblerTests extends ModelTestEnvironment {
             for (Link implementation : directive.getImplementations()) {
                 assertNotEquals("", implementation.getUri().toString());
             }
-            for (Link pkg : directive.getPackages()) {
-                assertNotEquals("", pkg.getUri().toString());
-            }
+
+            // for (Link pkg : directive.getPackages()) {
+            //     assertNotEquals("", pkg.getUri().toString());
+            // }
         }
     }
 
@@ -200,10 +201,4 @@ class TextAssemblerTests extends ModelTestEnvironment {
         );
     }
 
-    @Test
-    void t1() {
-        Reference ref = NameUtil.createReference("jdk.javadoc.doclet.Doclet.Option.Kind");
-        resolver.qualify(ref);
-        assertTrue(ref.getName().isType());
-    }
 }

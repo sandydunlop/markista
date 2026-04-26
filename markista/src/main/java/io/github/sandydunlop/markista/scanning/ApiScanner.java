@@ -2,20 +2,21 @@ package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
-import io.github.sandydunlop.cascara.model.SemanticModel;
-import io.github.sandydunlop.cascara.model.AppliedAnnotationNode;
-import io.github.sandydunlop.cascara.model.FieldNode;
-import io.github.sandydunlop.cascara.model.FileLink;
-import io.github.sandydunlop.cascara.model.Link;
-import io.github.sandydunlop.cascara.model.ModuleNode;
-import io.github.sandydunlop.cascara.model.NameUtil;
-import io.github.sandydunlop.cascara.model.JlsName;
-import io.github.sandydunlop.cascara.model.PackageNode;
-import io.github.sandydunlop.cascara.model.PackageReference;
-import io.github.sandydunlop.cascara.model.Reference;
-import io.github.sandydunlop.cascara.model.TypeNode;
-import io.github.sandydunlop.cascara.modeling.ElementModeler;
+import io.github.qishr.cascara.lang.java.model.SemanticModel;
+import io.github.qishr.cascara.lang.java.model.AppliedAnnotationNode;
+import io.github.qishr.cascara.lang.java.model.FieldNode;
+import io.github.qishr.cascara.lang.java.model.FileLink;
+import io.github.qishr.cascara.lang.java.model.Link;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
+import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
+import io.github.qishr.cascara.lang.java.model.PackageReference;
+import io.github.qishr.cascara.lang.java.model.Reference;
+import io.github.qishr.cascara.lang.java.model.TypeNode;
+import io.github.qishr.cascara.lang.java.modeler.ElementModeler;
 
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,8 +32,8 @@ import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
 
-import io.github.sandydunlop.cascara.model.MethodNode;
-import io.github.sandydunlop.cascara.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.MethodNode;
+import io.github.qishr.cascara.lang.java.model.ModelUtil;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -137,12 +138,12 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// unnamed module contains no packages this is a no-op.
     void calculateUnnamedModuleSourcePath() {
         if (unnamedModule.getPackages().isEmpty()) return;
-        PackageReference packageRef = unnamedModule.getPackages().getFirst();
+        PackageNode packageRef = unnamedModule.getPackages().getFirst();
         PackageNode pkg = api.getPackageNode(packageRef.getName());
         String separator = java.nio.file.FileSystems.getDefault().getSeparator();
         String nameAsPath = pkg.getName().fullyQualifiedName().replace(".", separator);
-        String root = pkg.getSourcePath().replace(nameAsPath, "");
-        unnamedModule.setSourcePath(root);
+        String root = pkg.getSourcePath().toString().replace(nameAsPath, "");
+        unnamedModule.setSourcePath(Path.of(root));
     }
 
     @Override
@@ -193,8 +194,11 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 pkg.setModuleName(currentModule.getName().fullyQualifiedName());
                 api.addPackage(pkg);
                 PackageReference packageRef = new PackageReference(pkg.getName().fullyQualifiedName());
+
                 packageRef.setLink(Link.to(NameUtil.createReference(pkg.getName().fullyQualifiedName())));
-                currentModule.addPackage(packageRef);
+                pkg.setLink(Link.to(NameUtil.createReference(pkg.getName().fullyQualifiedName())));
+
+                currentModule.addPackage(pkg);
                 Element enclosing = ee.getEnclosingElement();
                 if (enclosing instanceof PackageElement enclosingPackageElement) {
                     PackageNode owner = api.getPackageNode(enclosingPackageElement.getQualifiedName().toString());
