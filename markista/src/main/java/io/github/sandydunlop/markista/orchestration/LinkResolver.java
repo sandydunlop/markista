@@ -3,6 +3,7 @@ package io.github.sandydunlop.markista.orchestration;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,11 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.github.sandydunlop.markista.core.Configuration;
-import io.github.sandydunlop.markista.core.Context;
-
 import io.github.qishr.cascara.lang.java.model.SemanticModel;
-import io.github.sandydunlop.markista.core.ExternalLink;
 import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.Link.Kind;
 import io.github.qishr.cascara.lang.java.model.Link.Scope;
@@ -29,6 +26,10 @@ import io.github.qishr.cascara.lang.java.model.Reference;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
+
+import io.github.sandydunlop.markista.core.Configuration;
+import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.core.ExternalLink;
 
 public class LinkResolver {
     private static final String DOT_HTML = ".html";
@@ -58,7 +59,7 @@ public class LinkResolver {
 
     public String resolveRoot() {
         JlsName here = NameUtil.createPackageName(ctx.getPackageName());
-        URI uri = relativize(flattenDirectory(here), null, null);
+        URI uri = relativize(flattenDirectory(here, flattenedDirectories), null, null);
         return uri.toString();
     }
 
@@ -156,18 +157,7 @@ public class LinkResolver {
     }
 
     boolean isPrimitive(JlsName name) {
-        String typeName = name.toString();
-        switch(typeName) {
-            case "boolean":
-            case "char":
-            case "int":
-            case "long":
-            case "float":
-            case "double":
-                return true;
-            default:
-                return false;
-        }
+        return primitives.contains(name.toString());
     }
 
     /// Checks if the target is a primitive type or void.
@@ -351,15 +341,23 @@ public class LinkResolver {
         if (target.getModuleName().isEmpty()) {
             return false;
         }
-        if (jreNamedModules.containsKey(target.getModuleName())) {
-            Scope scope = Scope.STANDARD;
-            if (siblingModulePath != null && siblingModulePath.hasModule(target.getModuleName())) {
-                scope = Scope.SIBLING;
-            }
+        if (siblingModulePath != null && siblingModulePath.hasModule(target.getModuleName())) {
+            Scope scope = Scope.SIBLING;
+            URI uri = relativize(link.getOrigin().getName(), target.getName(), target.getModuleName());
+            String s = uri.toString();
+            link.setUri(uri);
             resolvedModule(link, scope);
-            String url = JAVA_24_URL + target.getModuleName() + "/module-summary.html";
-            link.setUri(URI.create(url));
             return true;
+        } else {
+            if (jreNamedModules.containsKey(target.getModuleName())) {
+                Scope scope = Scope.STANDARD;
+                // } else {
+                    resolvedModule(link, scope);
+                    String url = JAVA_24_URL + target.getModuleName() + "/module-summary.html";
+                    link.setUri(URI.create(url));
+                // }
+                return true;
+            }
         }
         return false;
     }
@@ -387,7 +385,19 @@ public class LinkResolver {
             for (ModuleNode moduleNode : extLink.getSemanticModel().getModules()) {
                 if (moduleNode.getName().toString().equals(target.getModuleName())) {
                     resolvedModule(link, extLink.isWebLink() ? Scope.EXTERNAL : Scope.SIBLING);
-                    link.setUri(relativize(link.getOrigin().getName(), null, target.getModuleName()));
+
+                    // TODO: Make this work
+                    if (target.getName() == null && link.getOrigin() != null &&  link.getOrigin().getName() == null) {
+                        // Module to module link
+                        try {
+                            link.setUri(new URI("../" + target.getModuleName()));
+                        } catch (URISyntaxException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    } else {
+                        link.setUri(relativize(link.getOrigin().getName(), null, target.getModuleName()));
+                    }
                     return true;
                 }
             }
@@ -400,12 +410,12 @@ public class LinkResolver {
         String qualifiedBinaryName = target.getName().fullyQualifiedJvmBinaryName();
         Class<?> jreType = JreUtil.loadClass(qualifiedBinaryName);
         if (jreType != null) {
-            Scope scope = Scope.STANDARD;
             String typeName = link.getTarget().getName().fullyQualifiedName();
             if (siblingModulePath != null && siblingModulePath.hasClass(typeName)) {
-                scope = Scope.SIBLING;
+                return tryResolveSiblingType(link);
             }
-            resolvedType(link, scope);
+
+            resolvedType(link, Scope.STANDARD);
             String packageName = jreType.getPackageName();
             String moduleName = jrePackagesToModules.get(packageName);
             String className = jreType.getSimpleName();
@@ -415,9 +425,100 @@ public class LinkResolver {
             url += "/" + className;
             url += DOT_HTML;
             link.setUri(URI.create(url));
+
             return true;
         }
         return false;
+    }
+
+    boolean tryResolveSiblingType(Link link) {
+        Reference target = link.getTarget();
+        String typeName = link.getTarget().getName().fullyQualifiedName();
+        Reference origin = link.getOrigin();
+        JlsName originName = null;
+
+        if (origin.getName() != null) {
+            originName = flattenDirectory(origin.getName().packageName(), flattenedDirectories);
+        }
+
+        String siblingModuleName = siblingModulePath.getModuleForClass(typeName);
+        URI uri = getSiblingPackageRelativePath(originName, target, siblingModuleName);
+
+        resolvedType(link, Scope.SIBLING);
+        link.setUri(uri);
+        return true;
+    }
+
+    private URI getSiblingPackageRelativePath(JlsName originName, Reference target, String siblingModuleName) {
+        Path outputPath = Path.of(ctx.getOutputDirectory());
+        Path siblingModuleDocPath = outputPath.resolve(siblingModuleName);
+        JlsName siblingTypeName;
+
+        if (flattenedDirectories != null && !flattenedDirectories.isEmpty()) {
+            // Get the element-list file from the sibling's doc output dir
+            // and work out what its flattenedDirectories should be.
+            String siblingFlattenedDirectories = getSiblingFlattenedDirectories(siblingModuleDocPath);
+            siblingTypeName = flattenDirectory(target.getName(), siblingFlattenedDirectories);
+        } else {
+            siblingTypeName = target.getName();
+        }
+
+        String siblingPackageDir = siblingTypeName.toString().replaceAll("\\.", "/");
+
+        URI siblingModuleLinkUri = relativize(originName, null, siblingModuleName);
+        String siblingPackageRelativePath = siblingModuleLinkUri.toString() + "/" + siblingPackageDir;
+
+        return URI.create(siblingPackageRelativePath);
+    }
+
+    private String getSiblingFlattenedDirectories(Path siblingModuleDocPath) {
+        List<String> elementList = getSiblingElementList(siblingModuleDocPath);
+        String siblingFlattenedDirectories = commonBase(elementList);
+        return siblingFlattenedDirectories;
+    }
+
+    private List<String> getSiblingElementList(Path docRoot) {
+        List<String> list = new ArrayList<>();
+        Path elementListPath = docRoot.resolve("element-list");
+        String s = elementListPath.toString();
+        if (!Files.exists(elementListPath)) {
+            return list;
+        }
+        try {
+            return Files.readAllLines(elementListPath);
+        } catch (IOException e) {
+            return list;
+        }
+    }
+
+    public String commonBase(List<String> elementList) {
+        if (elementList == null || elementList.isEmpty()) {
+           return "";
+        } else {
+            int lastDot = 0;
+            String base = null;
+            for(String pkgName : elementList) {
+                if (pkgName.startsWith("module:")) {
+                    continue;
+                }
+                if (base == null) {
+                    base = pkgName;
+                }
+                for(int j = 0; j < Math.min(base.length(), pkgName.length()); ++j) {
+                    if (base.charAt(j) != pkgName.charAt(j)) {
+                        base = base.substring(0, lastDot);
+                        break;
+                    }
+                    if (j == pkgName.length() - 1) {
+                        base = base.substring(0, lastDot);
+                    }
+                    if (j < base.length() && base.charAt(j) == '.') {
+                        lastDot = j;
+                    }
+                }
+            }
+            return base;
+        }
     }
 
     boolean tryResolveJrePackage(Link link) {
@@ -448,10 +549,10 @@ public class LinkResolver {
             String module = ""; // TODO: cascara://organizer/CASC-0002980F - should this be target module?
             JlsName originName = null;
             if (origin.getName() != null) {
-                originName = flattenDirectory(origin.getName().packageName());
+                originName = flattenDirectory(origin.getName().packageName(), flattenedDirectories);
             }
 
-            JlsName targetName = flattenDirectory(typeNode.getName());
+            JlsName targetName = flattenDirectory(typeNode.getName(), flattenedDirectories);
             link.setUri(relativize(originName, targetName, module));
             resolvedType(link, Link.Scope.LOCAL);
             return true;
@@ -465,12 +566,12 @@ public class LinkResolver {
         PackageNode packageNode = api.getPackageNode(target.getName());
         if (packageNode != null) {
             String module = "";
-            JlsName targetName = flattenDirectory(target.getName());
+            JlsName targetName = flattenDirectory(target.getName(), flattenedDirectories);
             if (origin.getName() == null) {
                 // Origin is a module
                 link.setUri(relativize(null, targetName, module));
             } else {
-                JlsName originName = flattenDirectory(origin.getName().packageName());
+                JlsName originName = flattenDirectory(origin.getName().packageName(), flattenedDirectories);
                 link.setUri(relativize(originName, targetName, module));
             }
             resolvedPackage(link, Link.Scope.LOCAL);
@@ -503,7 +604,12 @@ public class LinkResolver {
         int commonCount = 0;
         try {
             if (to == null) {
-                uri = new URI("../".repeat(from.componentCount()));
+                if (from == null) {
+                    // uri = new URI("../");
+                    uri = new URI("");
+                } else {
+                    uri = new URI("../".repeat(from.componentCount()));
+                }
             } else {
                 if (from == null) {
                     // Origin is a module, not a package
@@ -559,13 +665,10 @@ public class LinkResolver {
         return null;
     }
 
-
-
-
     /// Removes prefix directories from a path if flattenedDirectories is set and matches.
     /// @param path The package name or path to flatten.
     /// @return The adjusted path or original if no flattening applies.
-    JlsName flattenDirectory(JlsName path) {
+    JlsName flattenDirectory(JlsName path, String flattenedDirectories) {
         if (path.isEmpty()) {
             return path;
         }

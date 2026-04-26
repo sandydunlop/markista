@@ -65,7 +65,6 @@ public class ModulePath {
             modulePathList = Arrays.asList(pathList);
         }
 
-        classToModule = new HashMap<>();
         for (String modulePathString : modulePathList) {
             File file = Paths.get(modulePathString).toFile();
             String moduleName = "";
@@ -124,6 +123,7 @@ public class ModulePath {
                 classNames.add(clazz.getName());
                 for (Class<?> declaredClass : clazz.getDeclaredClasses()) {
                     classNames.add(declaredClass.getName());
+                    classToModule.put(declaredClass.getName(), moduleName);
                 }
             }
         } catch (java.lang.NoClassDefFoundError e) {
@@ -161,6 +161,7 @@ public class ModulePath {
                     .replace("\\", ".")
                     .substring(0, entryName.length() - 6); // Remove DOT_CLASS
                 classNames.add(className);
+                classToModule.put(className, newModuleName);
             }
         }
         return newModuleName;

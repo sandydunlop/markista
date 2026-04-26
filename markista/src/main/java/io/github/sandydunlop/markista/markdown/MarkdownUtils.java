@@ -43,7 +43,12 @@ public class MarkdownUtils {
                 if (link.getUri() == null) {
                     return formatLink(link, "");
                 }
-                return formatLink(link, link.getUri().toString());
+                String label = link.getUri().toString();
+                String targetModule = link.getTarget().getModuleName();
+                if (link.getTarget().getName() == null && targetModule != null){
+                    label = targetModule;
+                }
+                return formatLink(link, label);
             }
         }
         if (useQualifiedName) {
