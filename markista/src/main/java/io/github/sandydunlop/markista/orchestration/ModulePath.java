@@ -1,6 +1,5 @@
 package io.github.sandydunlop.markista.orchestration;
 
-import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 
 import java.io.File;

@@ -20,8 +20,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import javax.lang.model.SourceVersion;
-import javax.tools.DocumentationTool;
-import javax.tools.ToolProvider;
 
 import jdk.javadoc.doclet.Doclet;
 import jdk.javadoc.doclet.DocletEnvironment;

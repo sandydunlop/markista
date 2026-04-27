@@ -10,7 +10,6 @@ import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
-import io.github.qishr.cascara.lang.java.model.PackageReference;
 import io.github.qishr.cascara.lang.java.model.ParamNode;
 import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.Text;

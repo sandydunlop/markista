@@ -30,7 +30,7 @@ dependencies {
 
     // implementation('io.github.sandydunlop:cascara.core:0.1.0')
     implementation('io.github.qishr:cascara-common:0.1.0')
-    implementation('io.github.qishr:cascara-lang-java-parser:0.1.0')
+    implementation('io.github.qishr:cascara-lang-java:0.1.0')
 }
 
 java {

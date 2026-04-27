@@ -9,7 +9,7 @@ import io.github.qishr.cascara.lang.java.model.MethodNode;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 import io.github.qishr.cascara.lang.java.modeler.StandardModeler;
-import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
+import io.github.qishr.cascara.lang.java.util.JreUtil;
 
 /// Utilities for rxtrating information from the API model
 public class ModelUtils {

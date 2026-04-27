@@ -6,7 +6,6 @@ import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.qishr.cascara.lang.java.model.FileLink;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
-import io.github.qishr.cascara.lang.java.model.PackageReference;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 
 import java.io.IOException;
@@ -25,7 +24,7 @@ public class PackageWriter {
     /// Do not make this `final`. It will break tests with mocked [Context].
     private Context ctx;
 
-    private SemanticModel api;
+    // private SemanticModel api;
 
     /// The Writer used to output the generated markdown content for the current document.
     /// It handles writing text to the appropriate output file or stream.
@@ -33,7 +32,7 @@ public class PackageWriter {
 
     /// Constructor that sets up the locations API documents will be written to.
     public PackageWriter(SemanticModel api, Context context) {
-        this.api = api;
+        // this.api = api;
         ctx = context;
     }
 

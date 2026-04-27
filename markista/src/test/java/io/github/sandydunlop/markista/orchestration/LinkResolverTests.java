@@ -8,7 +8,6 @@ import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
 import io.github.qishr.cascara.lang.java.model.Reference;
 
 import java.net.URI;

@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
-import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
+import io.github.qishr.cascara.lang.java.util.JreUtil;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
 import io.github.qishr.cascara.lang.java.model.ModelUtil;
 import io.github.qishr.cascara.lang.java.model.NameUtil;

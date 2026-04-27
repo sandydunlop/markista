@@ -11,7 +11,6 @@ import io.github.qishr.cascara.lang.java.model.ModelUtil;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.RecordNode;
-import io.github.qishr.cascara.lang.java.model.Reference;
 import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.Text;
 import io.github.qishr.cascara.lang.java.model.Text.Segment;

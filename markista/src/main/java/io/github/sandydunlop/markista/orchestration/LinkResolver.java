@@ -25,8 +25,7 @@ import io.github.qishr.cascara.common.util.Pair;
 import io.github.qishr.cascara.lang.java.model.Reference;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
-import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
-
+import io.github.qishr.cascara.lang.java.util.JreUtil;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.core.ExternalLink;
@@ -346,7 +345,6 @@ public class LinkResolver {
         if (siblingModulePath != null && siblingModulePath.hasModule(target.getModuleName())) {
             Scope scope = Scope.SIBLING;
             URI uri = relativize(link.getOrigin().getName(), target.getName(), target.getModuleName());
-            String s = uri.toString();
             link.setUri(uri);
             resolvedModule(link, scope);
             return true;
@@ -480,7 +478,6 @@ public class LinkResolver {
     private List<String> getSiblingElementList(Path docRoot) {
         List<String> list = new ArrayList<>();
         Path elementListPath = docRoot.resolve("element-list");
-        String s = elementListPath.toString();
         if (!Files.exists(elementListPath)) {
             return list;
         }

@@ -4,7 +4,6 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
-import io.github.qishr.cascara.lang.java.model.PackageReference;
 
 import java.io.StringWriter;
 import java.nio.file.InvalidPathException;
