@@ -2,6 +2,8 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Context;
 
+import javax.tools.Diagnostic.Kind;
+
 import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
@@ -87,8 +89,16 @@ public class ModelUtils {
 
     /// Check if typeA is subtype of typeB
     public static boolean isAssignableFrom(VariableTypeNode typeA, VariableTypeNode typeB) {
-        Class<?> classA = JreUtil.loadClass(typeA.getRawTypeName().toString());
-        Class<?> classB = JreUtil.loadClass(typeB.getRawTypeName().toString());
+        Class<?> classA = JreUtil.loadClass(typeA.getRawTypeName());
+        Class<?> classB = JreUtil.loadClass(typeB.getRawTypeName());
+        if (classA == null) {
+            ctx.getReporter().print(Kind.WARNING, "Failed to load class:" + typeA.getRawTypeName());
+            return false;
+        }
+        if (classB == null) {
+            ctx.getReporter().print(Kind.WARNING, "Failed to load class:" + typeB.getRawTypeName());
+            return false;
+        }
         return classB.isAssignableFrom(classA);
     }
 

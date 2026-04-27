@@ -315,56 +315,7 @@ public class MarkdownDoclet implements Doclet {
                                        List<String> arguments) {
                     return OK;
                 }
-            },
-
-
-
-
-
-
-
-            new Option("-Xlint", false, "Recognize Xlint options", null) {
-                @Override
-                public boolean process(String option, List<String> arguments) {
-                    // Just consume the argument so the parser is happy
-                    return OK;
-                }
-                @Override
-                public Kind getKind() {
-                    // Marking it as EXTENDED or HIDDEN often helps bypass strict consumption checks
-                    return Kind.STANDARD;
-                }
-            },
-            // Also handle the specific -Xlint:-options variant if needed
-            new Option("-Xlint:-options", true, "Recognize Xlint options", null) {
-                @Override
-                public boolean process(String option, List<String> arguments) {
-                    return OK;
-                }
-                @Override
-                public Kind getKind() {
-                    return Kind.STANDARD;
-                }
-            },
-            // Also handle the specific -Xlint:-options variant if needed
-            new Option("-options", false, "Recognize options", null) {
-                @Override
-                public boolean process(String option, List<String> arguments) {
-                    return OK;
-                }
-                @Override
-                public Kind getKind() {
-                    return Kind.STANDARD;
-                }
             }
-
-
-
-
-
-
-
-
     );
 
     /// Initializes the doclet.

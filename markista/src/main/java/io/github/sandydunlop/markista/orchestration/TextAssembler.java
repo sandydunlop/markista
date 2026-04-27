@@ -209,7 +209,6 @@ public class TextAssembler {
                 TypeNode directSupertype = api.getTypeNode(directSupertypeName);
                 if (directSupertype != null) {
                     VariableTypeNode subtypeRef = ModelUtil.parseVariableType(typeNode.getName().fullyQualifiedName());
-                    // JlsName fromPackageName = NameUtil.createName(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
                     subtypeRef.getLink().from(NameUtil.createReference("", directSupertype.getPackageName()));
                     resolver.resolveVariableTypeNode(subtypeRef);
                     directSupertype.getSubtypes().add(subtypeRef);
