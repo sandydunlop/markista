@@ -1,6 +1,6 @@
 package io.github.sandydunlop.markista.orchestration;
 
-import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
+import io.github.qishr.cascara.lang.java.util.JreUtil;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.Reference;

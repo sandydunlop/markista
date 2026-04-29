@@ -15,7 +15,6 @@ import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.JavaSemanticNode;
-import io.github.qishr.cascara.lang.java.model.PackageReference;
 import io.github.qishr.cascara.common.util.Pair;
 import io.github.qishr.cascara.lang.java.model.ParamNode;
 import io.github.qishr.cascara.lang.java.model.RecordNode;
@@ -24,7 +23,7 @@ import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.Text;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
-import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
+import io.github.qishr.cascara.lang.java.util.JreUtil;
 
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -209,7 +208,6 @@ public class TextAssembler {
                 TypeNode directSupertype = api.getTypeNode(directSupertypeName);
                 if (directSupertype != null) {
                     VariableTypeNode subtypeRef = ModelUtil.parseVariableType(typeNode.getName().fullyQualifiedName());
-                    // JlsName fromPackageName = NameUtil.createName(directSupertype.getName().fullyQualifiedName(), directSupertype.getPackageName());
                     subtypeRef.getLink().from(NameUtil.createReference("", directSupertype.getPackageName()));
                     resolver.resolveVariableTypeNode(subtypeRef);
                     directSupertype.getSubtypes().add(subtypeRef);

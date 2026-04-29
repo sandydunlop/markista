@@ -25,8 +25,7 @@ import io.github.qishr.cascara.common.util.Pair;
 import io.github.qishr.cascara.lang.java.model.Reference;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
-import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
-
+import io.github.qishr.cascara.lang.java.util.JreUtil;
 import io.github.sandydunlop.markista.core.Configuration;
 import io.github.sandydunlop.markista.core.Context;
 import io.github.sandydunlop.markista.core.ExternalLink;
@@ -44,14 +43,14 @@ public class LinkResolver {
     private ModulePath siblingModulePath = null;
 
     List<ExternalLink> externalLinks = new ArrayList<>();
-    String flattenedDirectories = "";
+    // String flattenedDirectories = "";
 
     public LinkResolver(SemanticModel a, Context c) {
         api = a;
         ctx = c;
         loadPackages();
         loadExternalLinks();
-        flattenedDirectories = ctx.getFlattenedDirectories();
+        // flattenedDirectories = ctx.getFlattenedDirectories();
         if (Configuration.getModulePaths() != null && !Configuration.getModulePaths().isEmpty()) {
             siblingModulePath = new ModulePath(c, Configuration.getModulePaths());
         }
@@ -59,7 +58,7 @@ public class LinkResolver {
 
     public String resolveRoot() {
         JlsName here = NameUtil.createPackageName(ctx.getPackageName());
-        URI uri = relativize(flattenDirectory(here, flattenedDirectories), null, null);
+        URI uri = relativize(flattenDirectory(here, ctx.getCommonBasePath()), null, null);
         return uri.toString();
     }
 
@@ -211,11 +210,6 @@ public class LinkResolver {
         }
         link.setScope(extLink.isWebLink() ? Link.Scope.EXTERNAL : Link.Scope.SIBLING);
 
-        String up = Relativizer.relativize(ctx.getPackageName(), "");
-        Relativizer.setFlattenedDirectories(extLink.getSemanticModel().commonBase());
-        String down = Relativizer.relativize("", packageName);
-        Relativizer.setFlattenedDirectories(api.commonBase());
-
         if (extLink.isWebLink()) {
             String moduleName = extLink.getPackageToModule().get(packageName);
             URI uri = extLink.getUri();
@@ -227,6 +221,15 @@ public class LinkResolver {
             link.setUri(uri);
             link.setResolved(true);
         } else {
+            String up = Relativizer.relativize(ctx.getPackageName(), "", ctx.getCommonBasePath());
+            // Relativizer.setFlattenedDirectories(extLink.getSemanticModel().commonBase());
+
+            // TODO: This is wrong, it needs to get the common base path of the target
+            String targetCommonBase = ctx.getCommonBasePath();
+
+            String down = Relativizer.relativize("", packageName, targetCommonBase);
+            // Relativizer.setFlattenedDirectories(api.commonBase());
+
             String directory = extLink.getUri().getPath().toString();
             String path = Path.of(up, directory, down).normalize().toString();
             if (typeName.isEmpty()) {
@@ -239,16 +242,17 @@ public class LinkResolver {
         link.setResolved(true);
     }
 
-    /// Computes a relative path from the current package context, considering sibling modules.
-    /// @param from The source package name.
-    /// @param to The target package name.
-    /// @return The relative path string including sibling module base if applicable.
-    static String relativizeWithSiblingModule(String from, String to, String toModule) {
-        String toRoot = Relativizer.relativize(from, "");
-        String toTarget = Relativizer.relativize("", to);
-        Path path = Path.of(toRoot, "..", toModule, toTarget);
-        return path.toString();
-    }
+    // /// Computes a relative path from the current package context, considering sibling modules.
+    // /// @param from The source package name.
+    // /// @param to The target package name.
+    // /// @return The relative path string including sibling module base if applicable.
+    // static String relativizeWithSiblingModule(String from, String to, String toModule) {
+    //     String originCommonBase = ctx.getCommonBasePath();
+    //     String toRoot = Relativizer.relativize(from, "");
+    //     String toTarget = Relativizer.relativize("", to);
+    //     Path path = Path.of(toRoot, "..", toModule, toTarget);
+    //     return path.toString();
+    // }
 
     /// Removes parentheses and what they contain from an expression
     /// @param expression An expression such as `classname.method(parameter)`.
@@ -296,15 +300,17 @@ public class LinkResolver {
     }
 
     public boolean resolve(Link link) {
+        boolean success = false;
         if (link.getTarget().getName() != null) {
             if (link.getTarget().getName().isMember()) {
-                return resolveMember(link);
+                success = resolveMember(link);
             } else {
-                return resolvePackageOrType(link);
+                success = resolvePackageOrType(link);
             }
         } else {
-            return resolveModule(link);
+            success = resolveModule(link);
         }
+        return success;
     }
 
     private boolean resolveMember(Link link) {
@@ -344,7 +350,6 @@ public class LinkResolver {
         if (siblingModulePath != null && siblingModulePath.hasModule(target.getModuleName())) {
             Scope scope = Scope.SIBLING;
             URI uri = relativize(link.getOrigin().getName(), target.getName(), target.getModuleName());
-            String s = uri.toString();
             link.setUri(uri);
             resolvedModule(link, scope);
             return true;
@@ -386,13 +391,11 @@ public class LinkResolver {
                 if (moduleNode.getName().toString().equals(target.getModuleName())) {
                     resolvedModule(link, extLink.isWebLink() ? Scope.EXTERNAL : Scope.SIBLING);
 
-                    // TODO: Make this work
                     if (target.getName() == null && link.getOrigin() != null &&  link.getOrigin().getName() == null) {
                         // Module to module link
                         try {
                             link.setUri(new URI("../" + target.getModuleName()));
                         } catch (URISyntaxException e) {
-                            // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
                     } else {
@@ -438,7 +441,11 @@ public class LinkResolver {
         JlsName originName = null;
 
         if (origin.getName() != null) {
-            originName = flattenDirectory(origin.getName().packageName(), flattenedDirectories);
+            if (origin.getModuleName() == null) {
+                throw new IllegalStateException("Origin has no module name");
+            }
+            String originCommonBase = ctx.getCommonBasePath(origin.getModuleName());
+            originName = flattenDirectory(origin.getName().packageName(), originCommonBase);
         }
 
         String siblingModuleName = siblingModulePath.getModuleForClass(typeName);
@@ -454,7 +461,7 @@ public class LinkResolver {
         Path siblingModuleDocPath = outputPath.resolve(siblingModuleName);
         JlsName siblingTypeName;
 
-        if (flattenedDirectories != null && !flattenedDirectories.isEmpty()) {
+        if (Configuration.getFlattenPackages()) {
             // Get the element-list file from the sibling's doc output dir
             // and work out what its flattenedDirectories should be.
             String siblingFlattenedDirectories = getSiblingFlattenedDirectories(siblingModuleDocPath);
@@ -480,7 +487,6 @@ public class LinkResolver {
     private List<String> getSiblingElementList(Path docRoot) {
         List<String> list = new ArrayList<>();
         Path elementListPath = docRoot.resolve("element-list");
-        String s = elementListPath.toString();
         if (!Files.exists(elementListPath)) {
             return list;
         }
@@ -546,14 +552,26 @@ public class LinkResolver {
             target.setName(typeNode.getName());
             // TODO: Should we do this for every link being resolved?
 
-            String module = ""; // TODO: cascara://organizer/CASC-0002980F - should this be target module?
+            String module = "";
+            if (!target.getModuleName().equals(origin.getModuleName())) {
+                module = target.getModuleName();
+            }
             JlsName originName = null;
             if (origin.getName() != null) {
-                originName = flattenDirectory(origin.getName().packageName(), flattenedDirectories);
+                if (origin.getModuleName() == null) {
+                    throw new IllegalStateException("Origin has no module name");
+                }
+                String originCommonBase = ctx.getCommonBasePath(origin.getModuleName());
+                originName = flattenDirectory(origin.getName().packageName(), originCommonBase);
             }
 
-            JlsName targetName = flattenDirectory(typeNode.getName(), flattenedDirectories);
+            if (target.getModuleName() == null) {
+                throw new IllegalStateException("Target has no module name");
+            }
+            String targetCommonBase = ctx.getCommonBasePath(target.getModuleName());
+            JlsName targetName = flattenDirectory(typeNode.getName(), targetCommonBase);
             link.setUri(relativize(originName, targetName, module));
+
             resolvedType(link, Link.Scope.LOCAL);
             return true;
         }
@@ -566,12 +584,20 @@ public class LinkResolver {
         PackageNode packageNode = api.getPackageNode(target.getName());
         if (packageNode != null) {
             String module = "";
-            JlsName targetName = flattenDirectory(target.getName(), flattenedDirectories);
+            if (target.getModuleName() == null) {
+                throw new IllegalStateException("Target has no module name");
+            }
+            String targetCommonBase = ctx.getCommonBasePath(target.getModuleName());
+            JlsName targetName = flattenDirectory(target.getName(), targetCommonBase);
             if (origin.getName() == null) {
                 // Origin is a module
                 link.setUri(relativize(null, targetName, module));
             } else {
-                JlsName originName = flattenDirectory(origin.getName().packageName(), flattenedDirectories);
+                if (origin.getModuleName() == null) {
+                    throw new IllegalStateException("Origin has no module name");
+                }
+                String originCommonBase = ctx.getCommonBasePath(origin.getModuleName());
+                JlsName originName = flattenDirectory(origin.getName().packageName(), originCommonBase);
                 link.setUri(relativize(originName, targetName, module));
             }
             resolvedPackage(link, Link.Scope.LOCAL);
@@ -625,7 +651,7 @@ public class LinkResolver {
                 if (uri != null) {
                     uri = uri.resolve("../" + module + "/");
                 } else {
-                    uri = new URI(module + "/");
+                    uri = new URI("../" + module + "/"); // =======================HERE
                 }
             }
             if (to != null) {
@@ -709,7 +735,8 @@ public class LinkResolver {
                 name.setPackageComponentCount(i);
                 if (i < name.componentCount()) {
                     // Part of `name` is a package name
-                    if (api.getTypeNode(name) == null) {
+                    TypeNode typeNode = api.getTypeNode(name);
+                    if (typeNode == null) {
                         if (api.getTypeNode(name.firstComponents(-1)) != null) {
                             // It is a member
                             name.setMember(true);
@@ -721,7 +748,7 @@ public class LinkResolver {
                     } else {
                         // It is a type name
                         name.setKind(JlsName.Kind.TYPE);
-                        ref.setModule(packageNode.getModuleName());
+                        ref.setModule(typeNode.getModuleName());
                         return true;
                     }
                 } else {

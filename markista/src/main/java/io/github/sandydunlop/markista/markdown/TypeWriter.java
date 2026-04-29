@@ -153,7 +153,7 @@ public class TypeWriter {
             if (!sb.isEmpty()) {
                 sb.append(", ");
             }
-            sb.append(MarkdownUtils.formatVariableTypeNode(typeRef, true));
+            sb.append(MarkdownUtils.formatVariableTypeNode(typeRef, false));
         }
         if (!sb.isEmpty()) {
             writer.write("All Implemented Interfaces:<br/>\n");

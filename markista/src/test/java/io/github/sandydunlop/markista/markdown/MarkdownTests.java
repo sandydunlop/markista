@@ -10,7 +10,6 @@ import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
-import io.github.qishr.cascara.lang.java.model.PackageReference;
 import io.github.qishr.cascara.lang.java.model.ParamNode;
 import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.Text;
@@ -102,7 +101,7 @@ class MarkdownTests {
         markdownDoclet = new ClassNode(NameUtil.createTypeName(doclet.getName(), "MarkdownDoclet"));
         model.addType(markdownDoclet);
 
-		Relativizer.setFlattenedDirectories(null);
+		// Relativizer.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }
@@ -119,7 +118,7 @@ class MarkdownTests {
         method.addParam(param1);
         markdownDoclet.addMethod(method);
         api.addType(markdownDoclet);
-		Relativizer.setFlattenedDirectories(null);
+		// Relativizer.setFlattenedDirectories(null);
         TextAssembler.assembleTextAndLinks(api, ctx);
 
         String markdown = MarkdownUtils.formatParams(params);
@@ -181,7 +180,7 @@ class MarkdownTests {
                 .setKind(Text.Segment.Kind.TEXT)
                 .setText(" world"));
         api.addLink(link);
-		Relativizer.setFlattenedDirectories(null);
+		// Relativizer.setFlattenedDirectories(null);
         TextAssembler.assembleTextAndLinks(api, ctx);
         String formatted = MarkdownUtils.formatText(text);
         assertEquals("hello [link](http://example.com) world", formatted);

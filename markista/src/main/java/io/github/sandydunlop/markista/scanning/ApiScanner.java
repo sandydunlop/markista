@@ -9,7 +9,6 @@ import io.github.qishr.cascara.lang.java.model.FileLink;
 import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
-import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
 import io.github.qishr.cascara.lang.java.model.PackageReference;
 import io.github.qishr.cascara.lang.java.model.Reference;
@@ -33,7 +32,6 @@ import javax.lang.model.element.VariableElement;
 import javax.lang.model.util.ElementScanner9;
 
 import io.github.qishr.cascara.lang.java.model.MethodNode;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
 
 import jdk.javadoc.doclet.DocletEnvironment;
 
@@ -54,6 +52,8 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// The shared Context singleton providing logging and configuration access.
     private final Context ctx;
 
+    private final DocletEnvironment environment;
+
     /// The SemanticModel model being populated by this scanner.
     SemanticModel api;
 
@@ -72,6 +72,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// The doclet environment provides tools for processing API elements, types, and documentation.
     /// @param environment Represents the operating environment of a single invocation of the doclet.
     public ApiScanner(DocletEnvironment environment) {
+        this.environment = environment;
         api = new SemanticModel(Configuration.getDocTitle());
         unnamedModule = api.getUnnamedModuleNode();
         currentModule = api.getUnnamedModuleNode();
@@ -90,7 +91,9 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     public SemanticModel scan(Set<? extends Element> elements) {
         processIncludedElements(elements);
         scan(elements, 0);
-        addConstantFieldValuesReference(currentModule);
+        for (ModuleNode moduleNode : api.getModules()) {
+            addConstantFieldValuesReference(moduleNode);
+        }
         markCustomAnnotations();
         calculateUnnamedModuleSourcePath();
         api.sort();
@@ -156,16 +159,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// directives are added, and the module is registered with the SemanticModel model.
     @Override
     public Void visitModule(ModuleElement e, Integer depth) {
-        ModuleNode mod;
-        if (e.getQualifiedName().toString().isEmpty()) {
-            ctx.setModuleName("");
-            mod = unnamedModule;
-            if (Configuration.getVerbose()) {
-                ctx.reportInfo("[ MODULE] UNNAMED");
-            }
-        } else {
-            mod = api.getModuleNode(e.getQualifiedName().toString());
-        }
+        ModuleNode mod = getModule(e);
         if (mod == null) {
             mod = modeller.modelModule(e);
             api.addModule(mod);
@@ -176,6 +170,20 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         }
         currentModule = mod;
         return null;
+    }
+
+    private ModuleNode getModule(ModuleElement e) {
+        ModuleNode mod;
+        if (e.getQualifiedName().toString().isEmpty()) {
+            ctx.setModuleName("");
+            mod = unnamedModule;
+            if (Configuration.getVerbose()) {
+                ctx.reportInfo("[ MODULE] UNNAMED");
+            }
+        } else {
+            mod = api.getModuleNode(e.getQualifiedName().toString());
+        }
+        return mod;
     }
 
     /// Visit a package element and, if it was included, create a PackageNode and
@@ -191,12 +199,16 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
                 }
-                pkg.setModuleName(currentModule.getName().fullyQualifiedName());
+                // pkg.setModuleName(currentModule.getName().fullyQualifiedName());
                 api.addPackage(pkg);
                 PackageReference packageRef = new PackageReference(pkg.getName().fullyQualifiedName());
 
                 packageRef.setLink(Link.to(NameUtil.createReference(pkg.getName().fullyQualifiedName())));
                 pkg.setLink(Link.to(NameUtil.createReference(pkg.getName().fullyQualifiedName())));
+
+                ModuleElement moduleElement = environment.getElementUtils().getModuleOf(ee);
+                ModuleNode moduleNode = getModule(moduleElement);
+                currentModule = moduleNode;
 
                 currentModule.addPackage(pkg);
                 Element enclosing = ee.getEnclosingElement();
@@ -281,15 +293,17 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// Adds references to constant field values from classes in the API to the provided module node.
     /// @param moduleNode The ModuleNode to which constant value references will be added.
     public void addConstantFieldValuesReference(ModuleNode moduleNode) {
-        for (TypeNode classNode : api.getTypes()) {
-            for (FieldNode fieldNode : classNode.getFields()) {
-                if (fieldNode.getConstantValue() != null) {
-                    Reference fromPackage = NameUtil.createReference(moduleNode.getName().fullyQualifiedName(), classNode.getPackageName());
-                    FileLink link = FileLink.to("constant-values")
-                            .from(fromPackage)
-                            .withLabel("Constant Field Values");
-                    fieldNode.getReferences().add(link);
-                    moduleNode.addConstantValue(fieldNode);
+        for (PackageNode pkg : moduleNode.getPackages()) {
+            for (TypeNode classNode : pkg.getTypes()) {
+                for (FieldNode fieldNode : classNode.getFields()) {
+                    if (fieldNode.getConstantValue() != null) {
+                        Reference fromPackage = NameUtil.createReference(moduleNode.getName().fullyQualifiedName(), classNode.getPackageName());
+                        FileLink link = FileLink.to("constant-values")
+                                .from(fromPackage)
+                                .withLabel("Constant Field Values");
+                        fieldNode.getReferences().add(link);
+                        moduleNode.addConstantValue(fieldNode);
+                    }
                 }
             }
         }

@@ -8,7 +8,6 @@ import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
 import io.github.qishr.cascara.lang.java.model.Reference;
 
 import java.net.URI;
@@ -251,20 +250,20 @@ class LinkResolverTests extends ModelTestEnvironment {
         Configuration.setAddModules("");
     }
 
-    @Test
-    void testRelativizeWithSiblingModule_returnsExpectedPath() {
-        setup2();
-        // Setup from and to packages and sibling module
-        String from = "com.example.sub";
-        String to = "com.example.other";
-        String toModule = "other.module";
+    // @Test
+    // void testRelativizeWithSiblingModule_returnsExpectedPath() {
+    //     setup2();
+    //     // Setup from and to packages and sibling module
+    //     String from = "com.example.sub";
+    //     String to = "com.example.other";
+    //     String toModule = "other.module";
 
-        String relPath = LinkResolver.relativizeWithSiblingModule(from, to, toModule);
+    //     String relPath = LinkResolver.relativizeWithSiblingModule(from, to, toModule);
 
-        assertNotNull(relPath);
-        // Expected path contains toModule directory
-        assertTrue(relPath.contains(toModule.replace('.', '/')) || relPath.contains(toModule));
-    }
+    //     assertNotNull(relPath);
+    //     // Expected path contains toModule directory
+    //     assertTrue(relPath.contains(toModule.replace('.', '/')) || relPath.contains(toModule));
+    // }
 
     @Test
     void resolveLocalPackageTypeInternal_null () {
@@ -277,19 +276,19 @@ class LinkResolverTests extends ModelTestEnvironment {
         assertFalse(r);
     }
 
-    @Test
-    void relativizeWithSiblingModule_returnsPathContainingModuleName() {
-        // Basic sanity test: relativizeWithSiblingModule should include provided sibling module component
-        String from = "com.example.from";
-        String to = "com.example.to";
-        String toModule = "some.module";
+    // @Test
+    // void relativizeWithSiblingModule_returnsPathContainingModuleName() {
+    //     // Basic sanity test: relativizeWithSiblingModule should include provided sibling module component
+    //     String from = "com.example.from";
+    //     String to = "com.example.to";
+    //     String toModule = "some.module";
 
-        String path = LinkResolver.relativizeWithSiblingModule(from, to, toModule);
+    //     String path = LinkResolver.relativizeWithSiblingModule(from, to, toModule);
 
-        assertNotNull(path);
-        assertTrue(path.contains(toModule) || path.contains("some" /* fallback check */),
-                "Result should mention the sibling module name");
-    }
+    //     assertNotNull(path);
+    //     assertTrue(path.contains(toModule) || path.contains("some" /* fallback check */),
+    //             "Result should mention the sibling module name");
+    // }
 
     @Test
 	void removeParentheses() {

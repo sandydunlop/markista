@@ -2,6 +2,8 @@ package io.github.sandydunlop.markista.scanning;
 
 import io.github.sandydunlop.markista.MockedDocletEnvironment;
 import io.github.sandydunlop.markista.core.Context;
+import io.github.sandydunlop.markista.orchestration.TextAssembler;
+
 import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.qishr.cascara.lang.java.model.ClassNode;
 import io.github.qishr.cascara.lang.java.model.FieldNode;
@@ -11,11 +13,9 @@ import io.github.qishr.cascara.lang.java.model.ModelUtil;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
-import io.github.qishr.cascara.lang.java.model.PackageReference;
 import io.github.qishr.cascara.lang.java.model.ParamNode;
 import io.github.qishr.cascara.lang.java.model.Text;
 import io.github.qishr.cascara.lang.java.model.Text.Segment;
-import io.github.sandydunlop.markista.orchestration.TextAssembler;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 

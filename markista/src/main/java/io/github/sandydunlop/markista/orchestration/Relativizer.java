@@ -1,27 +1,27 @@
 package io.github.sandydunlop.markista.orchestration;
 
 public class Relativizer {
-    private static String flattenedDirectories = null;
+    // private static String flattenedDirectories = null;
 
     private Relativizer() {
         // Nothing to see here
     }
 
-    /// Sets the string used to adjust flattened directories in relative path calculations.
-    /// @param fd The string representing flattened directories.
-    public static void setFlattenedDirectories(String fd) {
-        flattenedDirectories = fd;
-    }
+    // /// Sets the string used to adjust flattened directories in relative path calculations.
+    // /// @param fd The string representing flattened directories.
+    // public static void setFlattenedDirectories(String fd) {
+    //     flattenedDirectories = fd;
+    // }
 
     /// Produces a relative path string from one package to another by splitting and comparing components.
     /// Supports flattened directories if set.
     /// @param from The source package name.
     /// @param to The target package name.
     /// @return The relative path string.
-    public static String relativize(String from, String to) {
+    public static String relativize(String from, String to, String commonBasePath) {
         if (from == null || to == null) return "";
-        from = flattenDirectory(from);
-        to = flattenDirectory(to);
+        from = flattenDirectory(from, commonBasePath);
+        to = flattenDirectory(to, commonBasePath);
         String[] fromParts = from.split("\\.");
         String[] toParts = to.split("\\.");
         int commonIndex = findCommonIndex(fromParts, toParts);
@@ -36,12 +36,12 @@ public class Relativizer {
     /// Removes prefix directories from a path if flattenedDirectories is set and matches.
     /// @param path The package name or path to flatten.
     /// @return The adjusted path or original if no flattening applies.
-    static String flattenDirectory(String path) {
-        if (flattenedDirectories != null && !flattenedDirectories.isEmpty() && path.startsWith(flattenedDirectories)) {
-            if (path.length() <= flattenedDirectories.length()) {
+    static String flattenDirectory(String path, String commonBasePath) {
+        if (commonBasePath != null && !commonBasePath.isEmpty() && path.startsWith(commonBasePath)) {
+            if (path.length() <= commonBasePath.length()) {
                 return "";
             }
-            return path.substring(flattenedDirectories.length() + 1);
+            return path.substring(commonBasePath.length() + 1);
         }
         return path;
     }

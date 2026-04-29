@@ -1,7 +1,7 @@
 package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.ModelTestEnvironment;
-import io.github.qishr.cascara.lang.java.jreutil.JreUtil;
+import io.github.qishr.cascara.lang.java.util.JreUtil;
 import io.github.qishr.cascara.lang.java.model.ClassNode;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
 import io.github.qishr.cascara.lang.java.model.ModelUtil;
@@ -22,7 +22,7 @@ class JarUtilsTests extends ModelTestEnvironment {
     @BeforeEach
     void init() {
         setupModel();
-        Relativizer.setFlattenedDirectories(null);
+        // Relativizer.setFlattenedDirectories(null);
 		ctx.setModuleName("markista");
         ctx.setPackageName("io.github.sandydunlop.markista.doclet");
     }

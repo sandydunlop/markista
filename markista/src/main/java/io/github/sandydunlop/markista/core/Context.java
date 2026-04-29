@@ -2,7 +2,9 @@ package io.github.sandydunlop.markista.core;
 
 import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
+import io.github.qishr.cascara.lang.java.model.PackageNode;
 import io.github.qishr.cascara.lang.java.model.JlsName;
+import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.SourceCodeLocation;
 
 import java.io.BufferedOutputStream;
@@ -13,6 +15,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.tools.Diagnostic;
 
@@ -47,7 +51,12 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
 
     /// The base section of the directory structure that contains no
     /// documentation and can be skipped when creating directories.
-    private String flattenedDirectories = "";
+    // private String flattenedDirectories = "";
+    private Map<String, String> commonBasePaths = new HashMap<>();
+
+    //
+    //
+    //
 
     /// The name of the module currently being documented
     private String moduleName = "";
@@ -85,8 +94,23 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         instance = null;
     }
 
-    public String getFlattenedDirectories() {
-        return flattenedDirectories;
+    public String getCommonBasePath(String moduleName) {
+        if (!Configuration.getFlattenPackages()) {
+            return "";
+        }
+        // String moduleName = moduleNode.getName().toString();
+        return commonBasePaths.get(moduleName);
+    }
+
+    public String getCommonBasePath() {
+        if (!Configuration.getFlattenPackages()) {
+            return "";
+        }
+        return commonBasePaths.get(moduleName);
+        // ModuleNode moduleNode = api.getModuleNode(moduleName);
+        // if (moduleNode == null) {
+        //     throw new IllegalStateException("Module not found in model: " + moduleName);
+        // }
     }
 
     /// Returns the singleton instance of this Context.
@@ -103,7 +127,12 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
     public void setApi(SemanticModel api) {
         this.api = api;
         if (Configuration.getFlattenPackages()) {
-            this.flattenedDirectories = api.commonBase();
+            for (ModuleNode moduleNode : api.getModules()) {
+                String moduleName = moduleNode.getName().toString();
+                String commonBase = commonBase(moduleNode);
+                commonBasePaths.put(moduleName, commonBase);
+            }
+            // this.flattenedDirectories = commonBase(api);
         }
     }
 
@@ -293,14 +322,15 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         }
         String dirName = packageName.replace(".", File.separator);
         if (Configuration.getFlattenPackages() && dirName.length() > 2) {
-            if (dirName.length() < flattenedDirectories.length()) {
+            String commonBasePath = commonBasePaths.get(moduleName);
+            if (dirName.length() < commonBasePath.length()) {
                 // This was happening when mock classes ended up mixed in
                 // with what we're trying to document here
                 reportWarning(String.format(
                         "Unexpected path '%s' for package '%s'",
                         dirName, packageName));
             } else {
-                dirName = dirName.substring(flattenedDirectories.length());
+                dirName = dirName.substring(commonBasePath.length());
             }
         }
         return new File(moduleDir, dirName);
@@ -364,5 +394,52 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
             BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
             return new OutputStreamWriter(bufferedOutputStream);
         }
+    }
+
+    /// Computes the longest common base package prefix shared by all packages in this API.
+    ///
+    /// This method iterates through the list of packages and determines the common package name prefix,
+    /// truncated at the nearest dot ('.') boundary. If no common base exists, returns an empty string.
+    ///
+    /// @return The longest common base package name shared by all packages, or an empty string if none.
+    @Deprecated
+    public String commonBase(SemanticModel model) {
+        if (model.getPackages().isEmpty()) return "";
+        int lastDot = 0;
+        String base = model.getPackages().getFirst().getName().fullyQualifiedName();
+        for (PackageNode pkg : model.getPackages()) {
+            String pkgName = pkg.getName().fullyQualifiedName();
+            for (int j=0; j<Math.min(base.length(), pkgName.length()); j++) {
+                if (base.charAt(j) != pkgName.charAt(j)) {
+                    base = base.substring(0, lastDot);
+                    break;
+                }
+                if (j == pkgName.length() - 1) {
+                    base = base.substring(0, lastDot);
+                }
+                if (j < base.length() && base.charAt(j) == '.') lastDot = j;
+            }
+        }
+        return base;
+    }
+
+    public String commonBase(ModuleNode module) {
+        if (module.getPackages().isEmpty()) return "";
+        int lastDot = 0;
+        String base = module.getPackages().getFirst().getName().fullyQualifiedName();
+        for (PackageNode pkg : module.getPackages()) {
+            String pkgName = pkg.getName().fullyQualifiedName();
+            for (int j=0; j<Math.min(base.length(), pkgName.length()); j++) {
+                if (base.charAt(j) != pkgName.charAt(j)) {
+                    base = base.substring(0, lastDot);
+                    break;
+                }
+                if (j == pkgName.length() - 1) {
+                    base = base.substring(0, lastDot);
+                }
+                if (j < base.length() && base.charAt(j) == '.') lastDot = j;
+            }
+        }
+        return base;
     }
 }

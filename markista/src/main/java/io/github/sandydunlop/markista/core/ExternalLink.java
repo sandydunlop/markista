@@ -3,7 +3,6 @@ package io.github.sandydunlop.markista.core;
 import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
-import io.github.qishr.cascara.lang.java.model.PackageReference;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -65,7 +64,6 @@ public class ExternalLink {
                 moduleNode = new ModuleNode(moduleName);
                 api.addModule(moduleNode);
             } else {
-                PackageReference packageRef = new PackageReference(line);
                 PackageNode packageNode = new PackageNode(line);
                 if (moduleNode != null) {
                     moduleNode.addPackage(packageNode);

@@ -104,7 +104,7 @@ class PackageWriterTests {
         api.addPackage(modelPackage);
         api.addType(nodeClass);
 		resolver = new LinkResolver(api, ctx);
-		Relativizer.setFlattenedDirectories(null);
+		// Relativizer.setFlattenedDirectories(null);
     }
 
     void setupLinks() {
