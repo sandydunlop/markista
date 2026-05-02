@@ -765,6 +765,7 @@ public class LinkResolver {
             String simpleTypeName = typeNode.getName().simpleName();
             if (simpleTypeName.equals(nameString)) {
                 ref.setName(typeNode.getName());
+                ref.setModule(typeNode.getModuleName());
                 return true;
             }
         }

@@ -414,7 +414,8 @@ public class TextAssembler {
     }
 
     public static void processJavadocComments(SemanticModel api) {
-        for (Link link : api.getLinks()) {
+        List<Link> links = api.getLinks();
+        for (Link link : links) {
             if (link.getOrigin() != null) {
                 JlsName origin = link.getOrigin().getName();
                 ctx.setPackageName(origin.packageName().toString());
