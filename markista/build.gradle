@@ -5,6 +5,8 @@ plugins {
     id "org.sonarqube" version "6.2.0.5505"
     id 'signing'
 	id 'maven-publish'
+
+    id("org.openjfx.javafxplugin") version "0.1.0"
 }
 
 group = 'io.github.sandydunlop'
@@ -14,6 +16,13 @@ repositories {
 	mavenLocal()
 	mavenCentral()
 }
+
+
+javafx {
+    version = "25"
+    modules = [ 'javafx.controls', 'javafx.graphics' ]
+}
+
 
 tasks.withType(JavaCompile) {
     options.compilerArgs.addAll([
