@@ -89,6 +89,13 @@ public class ModelUtils {
 
     /// Check if typeA is subtype of typeB
     public static boolean isAssignableFrom(VariableTypeNode typeA, VariableTypeNode typeB) {
+        if (typeA.getRawTypeName().equals(typeB.getRawTypeName())) {
+            return true;
+        }
+        if (typeA.getRawTypeName().equals("?")) {
+            System.out.println("TODO: Need to verify wildcards: " + typeA.getRawTypeName());
+            return false;
+        }
         Class<?> classA = JreUtil.loadClass(typeA.getRawTypeName());
         Class<?> classB = JreUtil.loadClass(typeB.getRawTypeName());
         if (classA == null) {

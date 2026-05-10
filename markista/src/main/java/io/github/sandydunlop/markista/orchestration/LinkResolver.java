@@ -213,10 +213,12 @@ public class LinkResolver {
         if (extLink.isWebLink()) {
             String moduleName = extLink.getPackageToModule().get(packageName);
             URI uri = extLink.getUri();
-            uri = uri.resolve(moduleName);
-            uri = uri.resolve(packageName.replace(".", "/"));
+            // uri = uri.resolve(moduleName);
+            String path = moduleName + "/" + packageName.replace(".", "/") + "/";
             if (!typeName.isEmpty()) {
-                uri = uri.resolve(typeName);
+                uri = uri.resolve(path + typeName + ".html");
+            } else {
+                uri = uri.resolve(path);
             }
             link.setUri(uri);
             link.setResolved(true);
@@ -609,13 +611,26 @@ public class LinkResolver {
     boolean tryResolveExternalPackageOrType(Link link) {
         Reference target = link.getTarget();
         JlsName targetName = target.getName();
+
         for (int i=targetName.componentCount(); i>0; i--) {
             JlsName candidateName = targetName.firstComponents(i);
             String candidate = candidateName.toString();
             for (ExternalLink extLink : externalLinks) {
                 if (extLink.getPackages().contains(candidate)) {
                     String packageName = candidate;
-                    String typeName = candidateName.lastComponents(-i).toString();
+                    String typeName = targetName.simpleName();
+                    // if (i < candidateName.packageComponentCount()) {
+                    //     typeName = candidateName.lastComponents(-i).toString();
+                    // } else {
+                    //     typeName = "";
+                    // }
+
+
+                    // if (targetName.toString().contains("Observable")) {
+                    //     System.out.println("Debug");
+                    // }
+
+
                     resolvedExternal(link, extLink, packageName, typeName);
                     return true;
                 }
