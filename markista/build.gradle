@@ -22,15 +22,21 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
-	testImplementation(platform('org.junit:junit-bom:5.13.3'))
-    testImplementation 'org.junit.jupiter:junit-jupiter:5.13.4'
-    testImplementation 'org.mockito:mockito-core:5.18.0'
-    testImplementation 'org.mockito:mockito-junit-jupiter:5.18.0'
-	testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+    implementation(platform("io.github.qishr:cascara-meta-bom:0.1.7"))
 
-    // implementation('io.github.sandydunlop:cascara.core:0.1.0')
-    implementation('io.github.qishr:cascara-common:0.1.0')
-    implementation('io.github.qishr:cascara-lang-java:0.1.0')
+    // JUnit
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Mockito
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+
+    // Cascara
+    implementation "io.github.qishr:cascara-common"
+    implementation "io.github.qishr:cascara-lang-java"
 }
 
 java {

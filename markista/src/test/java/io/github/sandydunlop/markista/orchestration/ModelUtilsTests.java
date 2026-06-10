@@ -31,9 +31,9 @@ class ModelUtilsTests extends ModelTestEnvironment {
 
     @Test
     void subtypes() throws NoSuchMethodException {
-        StandardModeler modeller = new StandardModeler();
+        StandardModeler modeler = new StandardModeler();
         Class<?> elementScannerClass = JreUtil.loadClass("javax.lang.model.util.ElementScanner6");
-        TypeNode elementScanner6 = modeller.modelType(elementScannerClass);
+        TypeNode elementScanner6 = modeler.modelType(elementScannerClass);
         TypeNode scanner = newClass("Scanner", doclet);
         api.addType(scanner);
 
@@ -41,7 +41,7 @@ class ModelUtilsTests extends ModelTestEnvironment {
         Method m = elementScannerClass.getMethod("scan",
                 javax.lang.model.element.Element.class,
                 Object.class);
-        MethodNode elementScannerMethod = modeller.modelMethod(m);
+        MethodNode elementScannerMethod = modeler.modelMethod(m);
         elementScanner6.addMethod(elementScannerMethod);
 
         // Set up API model version of it

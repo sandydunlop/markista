@@ -81,8 +81,8 @@ class JarUtilsTests extends ModelTestEnvironment {
         String typeName = "javax.lang.model.util.ElementScanner9";
 
         Class<?> jreClass = JreUtil.loadClass(typeName);
-        StandardModeler modeller = new StandardModeler();
-        TypeNode typeNode = modeller.modelClass(jreClass);
+        StandardModeler modeler = new StandardModeler();
+        TypeNode typeNode = modeler.modelClass(jreClass);
         assertNotNull(typeNode);
     }
 }

@@ -24,4 +24,6 @@ module markista {
     opens io.github.sandydunlop.markista.orchestration;
     opens io.github.sandydunlop.markista.scanning;
     opens io.github.sandydunlop.markista.spi;
+
+    provides jdk.javadoc.doclet.Doclet with io.github.sandydunlop.markista.doclet.MarkdownDoclet;
 }

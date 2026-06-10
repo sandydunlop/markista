@@ -2,6 +2,8 @@ package io.github.sandydunlop.markista.orchestration;
 
 import io.github.sandydunlop.markista.core.Context;
 
+import java.util.List;
+
 import javax.tools.Diagnostic.Kind;
 
 import io.github.qishr.cascara.lang.java.model.SemanticModel;
@@ -26,7 +28,7 @@ public class ModelUtils {
     }
 
     public static String baseTypeName(MethodNode methodNode){
-        StandardModeler modeller = new StandardModeler();
+        StandardModeler modeler = new StandardModeler();
         TypeNode type = api.getTypeNode(methodNode.getOwnerName());
         if (type == null) {
             return null;
@@ -39,7 +41,7 @@ public class ModelUtils {
                 // It's not in the model, try to find in JRE
                 Class<?> jreClass = JreUtil.loadClass(typeName);
                 if (jreClass != null) {
-                    supertypeNode = modeller.modelClass(jreClass);
+                    supertypeNode = modeler.modelClass(jreClass);
                 }
             }
             if (supertypeNode != null && typeHasMethod(supertypeNode, methodNode)) {
@@ -48,6 +50,14 @@ public class ModelUtils {
         }
         // MFLP-89 If we reach here, it should be an interface
         return null;
+    }
+
+    public static List<VariableTypeNode> baseInterfaces(MethodNode methodNode) {
+        TypeNode type = api.getTypeNode(methodNode.getOwnerName());
+        if (type == null) {
+            return null;
+        }
+        return type.getImplementedInterfaces();
     }
 
     public static boolean typeHasMethod(TypeNode typeNode, MethodNode methodNode) {
@@ -60,7 +70,9 @@ public class ModelUtils {
     }
 
     public static boolean canOverride(MethodNode methodA, MethodNode methodB) {
-        if (!methodA.getName().simpleName().equals(methodB.getName().simpleName())) {
+        String nameA = methodA.getName().simpleName();
+        String nameB = methodB.getName().simpleName();
+        if (!nameA.equals(nameB)) {
             return false;
         }
         VariableTypeNode[] paramTypesA = methodA.getParamTypes();

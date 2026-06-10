@@ -169,31 +169,183 @@ public class TextAssembler {
         for (Link thrownRef : method.getThrownTypes()) {
             resolver.resolveLink(thrownRef);
         }
+
+        String nameString = method.getName().toString();
+        if (nameString.contains("toString") && nameString.contains("JsonScalarNode")) {
+            System.out.println("Debug: INHERIT");
+        }
+
         Link baseMethodLink = method.getBaseMethod();
         if (baseMethodLink != null) {
-            JlsName name = NameUtil.createName(method.getName().simpleName());
-            name.setMember(true);
-            baseMethodLink.getTarget().setName(name);
-            String baseTypeName = ModelUtils.baseTypeName(method);
-            if (baseTypeName != null) {
-                linkBaseMethod(baseMethodLink, baseTypeName);
-            } else {
-                // Arriving here would indicate that the class is not in the model and not a standard java class
-                method.setBaseMethod(null);
-            }
 
-            // Now process @inheritDocs
-            TypeNode baseType = api.getTypeNode(baseTypeName);
-            if (baseType != null) {
-                MethodNode baseMethod = baseType.getMethod(method);
-                if (baseMethod != null) {
-                    method.setFirstSentence(processInheritDocTags(baseMethod.getFirstSentence(), method.getFirstSentence()));
-                    method.setBody(processInheritDocTags(baseMethod.getBody(), method.getBody()));
-                }
-            }
+            MethodNode documentedAncestor = getDocumentedAncestorMethod(method);
+
+            // if (documentedAncestor != null) {
+            //     method.setFirstSentence(processInheritDocTags(documentedAncestor.getFirstSentence(), method.getFirstSentence()));
+            //     method.setBody(processInheritDocTags(documentedAncestor.getBody(), method.getBody()));
+            // }
+
+
+
+
+
+            // JlsName name = NameUtil.createName(method.getName().simpleName());
+            // name.setMember(true);
+
+
+            // if (baseMethodLink.getTarget() == null) {
+            //     Reference rO = new Reference();
+            //     Reference rT = new Reference();
+            //     baseMethodLink.setOrigin(rO);
+            //     baseMethodLink.setTarget(rT);
+            // }
+
+
+            // baseMethodLink.getTarget().setName(name);
+
+
+
+
+            // // TODO: This gets the first ancestor. We need to try the next one if this one also has @inheritDoc
+            // String baseTypeName = ModelUtils.baseTypeName(method);
+
+
+
+            // if (baseTypeName != null) {
+            //     linkBaseMethod(baseMethodLink, baseTypeName);
+            // } else {
+            //     // Arriving here would indicate that the class is not in the model and not a standard java class
+            //     method.setBaseMethod(null);
+            // }
+
+            // // Now process @inheritDocs
+            // TypeNode baseType = api.getTypeNode(baseTypeName);
+            // if (baseType != null) {
+            //     MethodNode baseMethod = baseType.getMethod(method);
+            //     if (baseMethod != null) {
+            //         method.setFirstSentence(processInheritDocTags(baseMethod.getFirstSentence(), method.getFirstSentence()));
+            //         method.setBody(processInheritDocTags(baseMethod.getBody(), method.getBody()));
+            //     }
+            // }
+
+
+
+
         }
         resolveLinksForReferences(method);
     }
+
+    //========================================================
+    //
+    // TODO: rename ro process... or something
+    //
+    // TODO: We need to check interfaces for comments too!!!
+    //
+    // And eventually check JRE types too (eg toString)
+    //
+    // if we're on a roll here, should probably add details of inherited methods
+    // and anything else that's missing.
+    //
+    //========================================================
+    private static MethodNode getDocumentedAncestorMethod(MethodNode method) {
+        Link baseMethodLink = method.getBaseMethod();
+        if (baseMethodLink == null) {
+            return null;
+        }
+
+        JlsName name = NameUtil.createName(method.getName().simpleName());
+        name.setMember(true);
+
+
+        if (baseMethodLink.getTarget() == null) {
+            Reference rO = new Reference();
+            Reference rT = new Reference();
+            baseMethodLink.setOrigin(rO);
+            baseMethodLink.setTarget(rT);
+        }
+
+
+        baseMethodLink.getTarget().setName(name);
+
+
+
+
+        // TODO: This gets the first ancestor. We need to try the next one if this one also has @inheritDoc
+        String baseTypeName = ModelUtils.baseTypeName(method);
+
+        if (baseTypeName != null) {
+            linkBaseMethod(baseMethodLink, baseTypeName);
+        } else {
+            // Arriving here would indicate that the class is not in the model and not a standard java class
+            method.setBaseMethod(null);
+        }
+
+        // Now process @inheritDocs
+        TypeNode baseType = api.getTypeNode(baseTypeName);
+        if (baseType != null) {
+            MethodNode baseMethod = baseType.getMethod(method);
+            if (baseMethod != null) {
+
+
+                MethodNode ancestor = null;
+                // TODO: Check if method has documentation
+                // If it has @inheritDoc, then call this method again
+                // If it has real docs, return it
+                if (hasInheritDocsTag(baseMethod.getFullBody())) {
+                    ancestor = getDocumentedAncestorMethod(baseMethod);
+                }
+
+                method.setFirstSentence(processInheritDocTags(baseMethod.getFirstSentence(), method.getFirstSentence()));
+                method.setBody(processInheritDocTags(baseMethod.getBody(), method.getBody()));
+
+                return baseMethod;
+            }
+        }
+
+        // if (method.getName().toString().contains("trace")) {
+        //     PackageNode pn0 = null;
+        //     // for (PackageNode pn : api.getPackages()) {
+        //     //     System.out.println("Debug: " + pn.getName());
+        //     //     if (pn.getName().toString().equals("io.github.qishr.cascara.common.diagnostic")) {
+        //     //         pn0 = pn;
+        //     //         System.out.println("Debug: interface");
+        //     //     }
+        //     // }
+        //     // io.github.qishr.cascara.common.diagnostic
+        //     PackageNode pkg = api.getPackageNode("io.qishr.github.cascara.common.diagnostic");
+        //     System.out.println("Debug: interface");
+        // }
+
+        List<VariableTypeNode> baseInterfaces = ModelUtils.baseInterfaces(method);
+        for (int i = baseInterfaces.size() - 1; i >=0; i--) {
+            VariableTypeNode interfaceType = baseInterfaces.get(i);
+            String rawInterfaceName = interfaceType.getRawTypeName();
+            TypeNode interfaceNode = api.getTypeNode(rawInterfaceName);
+            if (interfaceNode == null) {
+                System.out.println("Debug: null interface: " + rawInterfaceName);
+            } else {
+                MethodNode interfaceMethod = interfaceNode.getMethod(method);
+                if (interfaceMethod != null) {
+                    if (hasInheritDocsTag(interfaceMethod.getFullBody())) {
+                        getDocumentedAncestorMethod(interfaceMethod);
+                    }
+                    method.setFirstSentence(processInheritDocTags(interfaceMethod.getFirstSentence(), method.getFirstSentence()));
+                    method.setBody(processInheritDocTags(interfaceMethod.getBody(), method.getBody()));
+                    return interfaceMethod;
+                }
+            }
+        }
+
+
+
+        return null;
+    }
+
+    // private static MethodNode getDocumentedAncestorInterfaceMethod(MethodNode method) {
+    //     JlsName ownerName = method.getOwnerName();
+    //     TypeNode typeNode = api.getTypeNode(ownerName);
+
+    // }
 
     //
     //
@@ -398,6 +550,17 @@ public class TextAssembler {
     //
     //
     //
+
+    private static boolean hasInheritDocsTag(Text text) {
+        int segmentCount = text.getSegments().size();
+        for (int i = segmentCount - 1; i >= 0; i--) {
+            Text.Segment segment = text.getSegments().get(i);
+            if (segment.getKind() == Text.Segment.Kind.INHERIT) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public static Text processInheritDocTags(Text baseMethodText, Text text) {
         int segmentCount = text.getSegments().size();

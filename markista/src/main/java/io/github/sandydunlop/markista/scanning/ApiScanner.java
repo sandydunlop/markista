@@ -57,7 +57,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     /// The SemanticModel model being populated by this scanner.
     SemanticModel api;
 
-    private ElementModeler modeller;
+    private ElementModeler modeler;
 
     /// The unnamed module node reprsenting package elements not in an explicit module.
     private final ModuleNode unnamedModule;
@@ -77,7 +77,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         unnamedModule = api.getUnnamedModuleNode();
         currentModule = api.getUnnamedModuleNode();
         ctx = Context.getInstance();
-        modeller = new ElementModeler(api, environment);
+        modeler = new ElementModeler(api, environment);
     }
 
     /// Scan the given set of top-level elements and return the built SemanticModel model.
@@ -161,7 +161,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     public Void visitModule(ModuleElement e, Integer depth) {
         ModuleNode mod = getModule(e);
         if (mod == null) {
-            mod = modeller.modelModule(e);
+            mod = modeler.modelModule(e);
             api.addModule(mod);
             ctx.setModuleName(mod.getName().fullyQualifiedName());
             if (Configuration.getVerbose()) {
@@ -194,7 +194,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
         if (isIncludedElement(ee.getQualifiedName().toString())) {
             PackageNode pkg = api.getPackageNode(ee.getQualifiedName().toString());
             if (pkg == null) {
-                pkg = modeller.modelPackage(ee);
+                pkg = modeler.modelPackage(ee);
                 ctx.setPackageName(pkg.getName().fullyQualifiedName());
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[PACKAGE] %s", pkg.getName()));
@@ -219,6 +219,8 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                     }
                 }
             }
+        } else {
+            System.out.println("Not included: "  +  ee.toString());
         }
         return null;
     }
@@ -236,7 +238,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
                 if (Configuration.getVerbose()) {
                     ctx.reportInfo(String.format("[   TYPE] %s", qualifiedName));
                 }
-                typeNode = modeller.modelType(e);
+                typeNode = modeler.modelType(e);
                 api.addType(typeNode);
             }
         }
@@ -249,7 +251,22 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
     @Override
     public Void visitExecutable(ExecutableElement ee, Integer depth) {
         if (isIncludedElement(ee) && isIncludedInSemanticModel(ee)){
-            MethodNode methodNode = modeller.modelMethod(ee);
+
+
+            // if (ee.toString().contains("info(java.lang.String")) {
+            //     System.out.println("Debug: " + ee.toString());
+            // }
+            // if (ee.toString().contains("trace")) {
+            //     TypeElement ownerElement = (TypeElement) ee.getEnclosingElement();
+            //     String qualifiedClassName = ownerElement.getQualifiedName().toString();
+            //     if (qualifiedClassName.contains("Abstract")) {
+            //         System.out.println("Debug: " + ee.toString());
+            //     }
+            //     System.out.println("Debug Scanner: " + qualifiedClassName + " . " + ee.toString());
+            // }
+
+
+            MethodNode methodNode = modeler.modelMethod(ee);
             api.addMethod(methodNode);
         }
         return super.visitExecutable(ee, depth);
@@ -270,7 +287,7 @@ public class ApiScanner extends ElementScanner9<Void, Integer> {
             TypeNode typeNode = api.getTypeNode(classElement.getQualifiedName().toString());
             FieldNode fieldNode = typeNode.getField(simpleName);
             if (fieldNode == null) {
-                fieldNode = modeller.modelField(ve);
+                fieldNode = modeler.modelField(ve);
                 typeNode.addField(fieldNode);
             }
         }
