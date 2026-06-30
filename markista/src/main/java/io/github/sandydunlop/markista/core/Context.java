@@ -368,6 +368,11 @@ public class Context { //NOSONAR - This works best as a singleton but Sonar show
         return createFileInternal(path);
     }
 
+    public Writer createFileInRoot(String fileName) throws InvalidPathException, IOException {
+        Path path = Path.of(outputDirectory, fileName);
+        return createFileInternal(path.toFile());
+    }
+
     File createModuleFilePath(String fileName) throws InvalidPathException {
         if (outputDirectory.isEmpty()) outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
         Path path;

@@ -4,15 +4,20 @@ import io.github.sandydunlop.markista.core.Context;
 import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.qishr.cascara.lang.java.model.DirectiveNode;
 import io.github.qishr.cascara.lang.java.model.FieldNode;
+import io.github.qishr.cascara.lang.java.model.FileLink;
+import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
 import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
+import java.net.URI;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.List;
 
 /// A class that outputs a module's API documentation as Markdown.
@@ -32,6 +37,7 @@ public class ModuleWriter {
     private static final String TITLE_REQUIRES = "Requires";
     private static final String TITLE_USES = "Uses";
     private static final String TITLE_VALUE = "Value";
+    private static final String NL = "\n";
 
     /// The Context singleton instance providing access to the current documentation generation context,
     /// including configuration, current module/package/type names, and reporting utilities.
@@ -61,6 +67,92 @@ public class ModuleWriter {
             outputModuleDoc(moduleNode);
         }
         outputModuleDoc(api.getUnnamedModuleNode());
+        outputSummary();
+        outputIndex();
+    }
+
+    private void outputIndex()  throws InvalidPathException, IOException {
+        ctx.setModuleName(null);
+        ctx.setPackageName(null);
+        writer = ctx.createFileInRoot("index.md");
+
+        // writer.write("""
+        //     ---
+        //     hide:
+        //       - navigation
+        //       - toc
+        //     ---
+        //     """);
+
+        writer.write("# Cascara Javadoc Overview" + NL);
+
+        MarkdownTable table = new MarkdownTable()
+            .addColumn(TITLE_MODULE)
+            .addColumn(TITLE_DESCRIPTION);
+
+        for (ModuleNode moduleNode : api.getModules()) {
+            String description = MarkdownUtils.formatText(moduleNode.getFirstSentence());
+
+            String moduleName = moduleNode.getName().fullyQualifiedName();
+            String linkString = "[" + moduleNode.getName().fullyQualifiedName() + "](" + moduleName + "/index.md)";
+
+            table.addRow(linkString, description);
+        }
+
+        table.render(writer, 0);
+        writer.flush();
+        writer.close();
+    }
+
+    private void outputSummary()  throws InvalidPathException, IOException {
+        ctx.setModuleName(null);
+        ctx.setPackageName(null);
+        writer = ctx.createFileInRoot("SUMMARY.md");
+        writer.write("* [Overview](index.md)" + NL);
+        for (ModuleNode moduleNode : api.getModules()) {
+            ctx.setModuleName(moduleNode.getName().fullyQualifiedName());
+            String moduleName = moduleNode.getName().fullyQualifiedName();
+            writer.write("* [" + moduleNode.getName().fullyQualifiedName() + "](" + moduleName + "/index.md)");
+            writer.write(NL);
+
+            for (DirectiveNode directive : moduleNode.getExports()) {
+                Link link = directive.getLink();
+                JlsName packageName = link.getTarget().getName();
+                PackageNode packageNode = api.getPackageNode(packageName);
+
+                // String docPathString = link.getTarget().
+                // FileLink typeLink = FileLink.to(docPathString).withLabel(typeNode.getName().simpleName());
+                // String linkString = MarkdownUtils.formatFileLink(typeLink);
+
+                String uriString = moduleName + "/" + link.getUri().toString();
+                link.setUri(URI.create(uriString));
+
+
+                String base = ctx.getCommonBasePath();
+                String linkText = packageName.fullyQualifiedName().substring(base.length() + 1);
+
+                // String linkText = packageName.simpleName();
+                String linkString = MarkdownUtils.formatLink(link, linkText);
+                writer.write("    * " + linkString + NL);
+
+                ctx.setPackageName(packageName.fullyQualifiedName());
+                File packageDir = ctx.getPackageDirectory();
+                Path packageDirPath = packageDir.toPath();
+
+                Path rootPath = Path.of(ctx.getOutputDirectory());
+                Path relPath = rootPath.relativize(packageDirPath);
+
+                for (TypeNode typeNode : packageNode.getTypes()) {
+                    Path docPath = relPath.resolve(typeNode.getName().simpleName());
+                    String docPathString = docPath.toString();
+                    FileLink typeLink = FileLink.to(docPathString).withLabel(typeNode.getName().simpleName());
+                    linkString = MarkdownUtils.formatFileLink(typeLink);
+                    writer.write("        * " + linkString + NL);
+                }
+            }
+        }
+        writer.flush();
+        writer.close();
     }
 
     /// Outputs a single module's documentation as a Markdown file.
@@ -75,13 +167,13 @@ public class ModuleWriter {
             writer = ctx.createFileInModule("index.md");
             if (moduleNode.getName().isEmpty()) {
                 // Unnamed module
-                writer.write("# " + api.getTitle() + "\n");
+                writer.write("# " + api.getTitle() + NL);
             } else {
-                writer.write("# " + TITLE_MODULE + " " + moduleNode.getName() + "\n");
+                writer.write("# " + TITLE_MODULE + " " + moduleNode.getName() + NL);
             }
-            writer.write("\n\n" + MarkdownUtils.formatText(moduleNode.getFullBody()) + "\n\n");
+            writer.write("\n\n" + MarkdownUtils.formatText(moduleNode.getFullBody()) + NL + NL);
             if (moduleNode.getName().isEmpty() && !moduleNode.getPackages().isEmpty()) {
-                writer.write("## " + TITLE_PACKAGES + "\n\n");
+                writer.write("## " + TITLE_PACKAGES + NL + NL);
                 MarkdownTable table = new MarkdownTable()
                         .addColumn(TITLE_PACKAGE)
                         .addColumn(TITLE_DESCRIPTION);
@@ -116,7 +208,7 @@ public class ModuleWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputModuleDirectives(String title, String kind, List<DirectiveNode> directives) throws IOException {
         if (directives.isEmpty()) return;
-        writer.write("=== \"" + title + "\"\n\n");
+        writer.write("=== \"" + title + "\"" + NL + NL);
         MarkdownTable table = new MarkdownTable()
                 .addColumn(kind)
                 .addColumn(TITLE_DESCRIPTION);
@@ -134,7 +226,7 @@ public class ModuleWriter {
     /// @throws java.io.IOException if there is a problem writing to the output file
     private void outputModuleProvidesDirectives(List<DirectiveNode> directives) throws IOException {
         if (directives.isEmpty()) return;
-        writer.write("\n=== \"" + TITLE_PROVIDES + "\"\n\n");
+        writer.write("\n=== \"" + TITLE_PROVIDES + "\"" + NL + NL);
         MarkdownTable table = new MarkdownTable()
                 .addColumn(TITLE_INTERFACE)
                 .addColumn(TITLE_IMPLEMENTATIONS);
@@ -198,7 +290,7 @@ public class ModuleWriter {
     private void outputConstantValues(ModuleNode moduleNode) throws InvalidPathException, IOException {
         writer = ctx.createFileInModule("constant-values.md");
         if (!moduleNode.getConstantValues().isEmpty()) {
-            writer.write("# " + TITLE_CONSTANT_FIELD_VALUES + "\n");
+            writer.write("# " + TITLE_CONSTANT_FIELD_VALUES + NL);
             MarkdownTable table = new MarkdownTable()
                     .addColumn(TITLE_MODIFIER_AND_TYPE)
                     .addColumn(TITLE_CONSTANT_FIELD)
@@ -223,10 +315,10 @@ public class ModuleWriter {
         writer = ctx.createFileInModule("element-list");
         writer.write("module:");
         writer.write(moduleNode.getName().fullyQualifiedName());
-        writer.write("\n");
+        writer.write(NL);
         for (PackageNode pkg : moduleNode.getPackages()) {
             writer.write(pkg.getName().fullyQualifiedName());
-            writer.write("\n");
+            writer.write(NL);
         }
         writer.flush();
         writer.close();
