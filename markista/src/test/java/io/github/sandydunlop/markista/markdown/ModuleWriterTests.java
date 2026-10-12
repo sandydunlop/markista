@@ -12,7 +12,7 @@ import io.github.qishr.cascara.lang.java.model.Reference;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.qishr.cascara.lang.java.model.Link;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.VariableTypeParser;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -192,7 +192,7 @@ class ModuleWriterTests {
 
     @Test
     void outputConstantValues_WritesConstantFieldValuesPage() throws InvalidPathException, IOException {
-        VariableTypeNode vt = ModelUtil.parseVariableType("int");
+        VariableTypeNode vt = VariableTypeParser.parseVariableType("int");
         FieldNode fieldNode = new FieldNode(vt, NameUtil.createMemberName("MY_CONSTANT"));
         fieldNode.setConstantValue(42);
         fieldNode.setConstantValueReference(vt);

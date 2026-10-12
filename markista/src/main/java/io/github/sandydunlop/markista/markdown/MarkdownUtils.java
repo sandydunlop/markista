@@ -7,6 +7,7 @@ import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.Text;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
+import io.github.qishr.cascara.lang.java.model.Link.Kind;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode.BoundingKind;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode.TypeParameter;
 
@@ -240,7 +241,16 @@ public class MarkdownUtils {
     private static String getLabelForMethod(Link link, boolean qualifyMember) {
         JlsName name = link.getTarget().getName();
         if (qualifyMember) {
-            JlsName typeName = name.typeName();
+
+
+            JlsName typeName;
+            try {
+                typeName = name.typeName();
+            } catch (Exception e) {
+                typeName = name;
+            }
+
+
             JlsName methodName = name.lastComponents(1);
             return typeName.toString() + "." + methodName.toString();
         } else {

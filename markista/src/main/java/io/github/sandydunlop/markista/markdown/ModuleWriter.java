@@ -112,7 +112,7 @@ public class ModuleWriter {
         for (ModuleNode moduleNode : api.getModules()) {
             ctx.setModuleName(moduleNode.getName().fullyQualifiedName());
             String moduleName = moduleNode.getName().fullyQualifiedName();
-            writer.write("* [" + moduleNode.getName().fullyQualifiedName() + "](" + moduleName + "/index.md)");
+            writer.write("    * [" + moduleNode.getName().fullyQualifiedName() + "](" + moduleName + "/index.md)");
             writer.write(NL);
 
             for (DirectiveNode directive : moduleNode.getExports()) {
@@ -133,7 +133,7 @@ public class ModuleWriter {
 
                 // String linkText = packageName.simpleName();
                 String linkString = MarkdownUtils.formatLink(link, linkText);
-                writer.write("    * " + linkString + NL);
+                writer.write("        * " + linkString + NL);
 
                 ctx.setPackageName(packageName.fullyQualifiedName());
                 File packageDir = ctx.getPackageDirectory();
@@ -147,7 +147,7 @@ public class ModuleWriter {
                     String docPathString = docPath.toString();
                     FileLink typeLink = FileLink.to(docPathString).withLabel(typeNode.getName().simpleName());
                     linkString = MarkdownUtils.formatFileLink(typeLink);
-                    writer.write("        * " + linkString + NL);
+                    writer.write("            * " + linkString + NL);
                 }
             }
         }

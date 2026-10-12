@@ -36,6 +36,14 @@ public class ModelUtils {
         for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
             VariableTypeNode typeRef = type.getSupertypes().get(i);
             String typeName = typeRef.getRawTypeName().toString();
+
+
+
+            int b = typeName.indexOf("<");
+            if (b > -1) {
+                typeName = typeName.substring(0, b);
+            }
+
             TypeNode supertypeNode = api.getTypeNode(typeName);
             if (supertypeNode == null) {
                 // It's not in the model, try to find in JRE
@@ -108,8 +116,15 @@ public class ModelUtils {
             System.out.println("TODO: Need to verify wildcards: " + typeA.getRawTypeName());
             return false;
         }
-        Class<?> classA = JreUtil.loadClass(typeA.getRawTypeName());
-        Class<?> classB = JreUtil.loadClass(typeB.getRawTypeName());
+        Class<?> classA;
+        Class<?> classB;
+        try {
+            classA = JreUtil.loadClass(typeA.getRawTypeName());
+            classB = JreUtil.loadClass(typeB.getRawTypeName());
+        } catch (java.lang.IllegalArgumentException e) {
+            throw e;
+        }
+
         if (classA == null) {
             ctx.getReporter().print(Kind.WARNING, "Failed to load class:" + typeA.getRawTypeName());
             return false;

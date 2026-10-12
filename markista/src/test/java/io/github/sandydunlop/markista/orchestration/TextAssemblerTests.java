@@ -7,7 +7,7 @@ import io.github.qishr.cascara.lang.java.model.DirectiveNode;
 import io.github.qishr.cascara.lang.java.model.InterfaceNode;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
 import io.github.qishr.cascara.lang.java.model.MethodReference;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.VariableTypeParser;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.RecordNode;
@@ -114,7 +114,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
         typeMethod.setFirstSentence(typeMethodText);
 
         // Set baseTypeNode as the supertype of typeNode
-        VariableTypeNode typeRef = ModelUtil.parseVariableType(baseTypeNode.getName().fullyQualifiedName());
+        VariableTypeNode typeRef = VariableTypeParser.parseVariableType(baseTypeNode.getName().fullyQualifiedName());
         typeNode.getSupertypes().add(typeRef);
 
         Link methodRef = Link.to(NameUtil.createReference(baseTypeNode.getName().fullyQualifiedName() + "#" + baseTypeMethod.getName().simpleName()));
@@ -149,8 +149,8 @@ class TextAssemblerTests extends ModelTestEnvironment {
         node.addMethod(test);
 
         ClassNode subClass = newClass("SubClass", model);
-        subClass.getSupertypes().add(ModelUtil.parseVariableType("java.lang.Object"));
-        subClass.getSupertypes().add(ModelUtil.parseVariableType(node.getName().fullyQualifiedName()));
+        subClass.getSupertypes().add(VariableTypeParser.parseVariableType("java.lang.Object"));
+        subClass.getSupertypes().add(VariableTypeParser.parseVariableType(node.getName().fullyQualifiedName()));
 
         TextAssembler.assembleTextAndLinks(api, ctx);
 
@@ -181,7 +181,7 @@ class TextAssemblerTests extends ModelTestEnvironment {
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("standardInterfaceProvider")
     void getStandardInterface_parameterized(String qualifiedName, String packageName, String simpleClassName) {
-        VariableTypeNode interfaceRef = ModelUtil.parseVariableType(qualifiedName);
+        VariableTypeNode interfaceRef = VariableTypeParser.parseVariableType(qualifiedName);
         InterfaceNode interfaceNode = TextAssembler.getStandardInterface(interfaceRef);
         assertNotNull(interfaceNode);
     }

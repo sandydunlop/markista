@@ -3,7 +3,7 @@ package io.github.sandydunlop.markista.orchestration;
 import io.github.sandydunlop.markista.ModelTestEnvironment;
 import io.github.qishr.cascara.lang.java.util.JreUtil;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.VariableTypeParser;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.ParamNode;
@@ -47,8 +47,8 @@ class ModelUtilsTests extends ModelTestEnvironment {
         // Set up API model version of it
         JlsName methodName = NameUtil.createMemberName(scanner.getName(), "scan");
         MethodNode scan = new MethodNode("void", methodName);
-        VariableTypeNode vt1 = ModelUtil.parseVariableType("javax.lang.model.element.Element");
-        VariableTypeNode vt2 = ModelUtil.parseVariableType("java.lang.Integer");
+        VariableTypeNode vt1 = VariableTypeParser.parseVariableType("javax.lang.model.element.Element");
+        VariableTypeNode vt2 = VariableTypeParser.parseVariableType("java.lang.Integer");
         ParamNode param1 = new ParamNode(vt1, NameUtil.createMemberName("p1"));
         ParamNode param2 = new ParamNode(vt2, NameUtil.createMemberName("P"));
         scan.addParam(param1);
@@ -56,10 +56,10 @@ class ModelUtilsTests extends ModelTestEnvironment {
         scanner.addMethod(scan);
         scan.setOwnerName(scanner.getName());
 
-        VariableTypeNode typeB = ModelUtil.parseVariableType(elementScanner6.getName().fullyQualifiedName());
+        VariableTypeNode typeB = VariableTypeParser.parseVariableType(elementScanner6.getName().fullyQualifiedName());
 
         // Inheritance
-        scanner.getSupertypes().add(ModelUtil.parseVariableType("java.lang.Object"));
+        scanner.getSupertypes().add(VariableTypeParser.parseVariableType("java.lang.Object"));
         scanner.getSupertypes().add(typeB);
 
         String bt = ModelUtils.baseTypeName(scan);

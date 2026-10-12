@@ -5,7 +5,7 @@ import io.github.qishr.cascara.lang.java.model.SemanticModel;
 import io.github.qishr.cascara.lang.java.model.ClassNode;
 import io.github.qishr.cascara.lang.java.model.FileLink;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.VariableTypeParser;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.JlsName;
@@ -109,7 +109,7 @@ class MarkdownTests {
     @Test
     void formatParams() {
         List<ParamNode> params = new ArrayList<>();
-        VariableTypeNode vt = ModelUtil.parseVariableType("java.lang.String");
+        VariableTypeNode vt = VariableTypeParser.parseVariableType("java.lang.String");
         ParamNode param1 = new ParamNode(vt, NameUtil.createMemberName("name"));
         params.add(param1);
 

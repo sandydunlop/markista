@@ -58,7 +58,14 @@ public class LinkResolver {
 
     public String resolveRoot() {
         JlsName here = NameUtil.createPackageName(ctx.getPackageName());
-        URI uri = relativize(flattenDirectory(here, ctx.getCommonBasePath()), null, null);
+
+
+        // CONST_VAL: Possibly goes wrong here
+        String commonBase = ctx.getCommonBasePath();
+        JlsName flattened = flattenDirectory(here, commonBase);
+        URI uri = relativize(flattened, null, null);
+
+
         return uri.toString();
     }
 
@@ -624,12 +631,6 @@ public class LinkResolver {
                     // } else {
                     //     typeName = "";
                     // }
-
-
-                    // if (targetName.toString().contains("Observable")) {
-                    //     System.out.println("Debug");
-                    // }
-
 
                     resolvedExternal(link, extLink, packageName, typeName);
                     return true;

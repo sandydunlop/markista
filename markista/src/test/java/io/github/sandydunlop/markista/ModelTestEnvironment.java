@@ -15,7 +15,7 @@ import io.github.qishr.cascara.lang.java.model.PackageNode;
 import io.github.qishr.cascara.lang.java.model.RecordNode;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.VariableTypeParser;
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 
 import java.io.StringWriter;
@@ -96,7 +96,7 @@ public class ModelTestEnvironment {
     }
 
     protected FieldNode newField(String typeName, String name, TypeNode type) {
-        VariableTypeNode vt = ModelUtil.parseVariableType(typeName);
+        VariableTypeNode vt = VariableTypeParser.parseVariableType(typeName);
         JlsName fieldName = NameUtil.createMemberName(name);
         FieldNode fieldNode = new FieldNode(vt, fieldName);
         type.addField(fieldNode);
@@ -104,7 +104,7 @@ public class ModelTestEnvironment {
     }
 
     protected VariableTypeNode newVariableTypeNode(String typeName) {
-        return ModelUtil.parseVariableType(typeName);
+        return VariableTypeParser.parseVariableType(typeName);
     }
 
     protected Link newMethodReference(String typeName, String methodName) {

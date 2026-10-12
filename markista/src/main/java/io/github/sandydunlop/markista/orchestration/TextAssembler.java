@@ -9,7 +9,7 @@ import io.github.qishr.cascara.lang.java.model.FileLink;
 import io.github.qishr.cascara.lang.java.model.InterfaceNode;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
 import io.github.qishr.cascara.lang.java.model.MethodReference;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.VariableTypeParser;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
@@ -117,6 +117,12 @@ public class TextAssembler {
     }
 
     public static void processTypeNode(TypeNode typeNode) {
+
+
+        // CONST_VAL: Should this be set or not?
+        ctx.setModuleName(typeNode.getModuleName());
+
+
         ctx.setPackageName(typeNode.getPackageName().toString());
         ctx.setTypeName(typeNode.getName().fullyQualifiedName());
 
@@ -359,7 +365,7 @@ public class TextAssembler {
                 String directSupertypeName = link.getTarget().getName().fullyQualifiedName();
                 TypeNode directSupertype = api.getTypeNode(directSupertypeName);
                 if (directSupertype != null) {
-                    VariableTypeNode subtypeRef = ModelUtil.parseVariableType(typeNode.getName().fullyQualifiedName());
+                    VariableTypeNode subtypeRef = VariableTypeParser.parseVariableType(typeNode.getName().fullyQualifiedName());
                     subtypeRef.getLink().from(NameUtil.createReference("", directSupertype.getPackageName()));
                     resolver.resolveVariableTypeNode(subtypeRef);
                     directSupertype.getSubtypes().add(subtypeRef);
@@ -420,7 +426,7 @@ public class TextAssembler {
             // but use a VariableTypeNode as the key
             for (Map.Entry<String,List<MethodReference>> entry : methodLookup2.entrySet()) {
                 List<MethodReference> methods = entry.getValue();
-                VariableTypeNode supertypeRef = ModelUtil.parseVariableType(entry.getKey());
+                VariableTypeNode supertypeRef = VariableTypeParser.parseVariableType(entry.getKey());
                 resolver.resolveVariableTypeNode(supertypeRef);
                 typeNode.getInheritedMethods().put(supertypeRef, methods);
             }

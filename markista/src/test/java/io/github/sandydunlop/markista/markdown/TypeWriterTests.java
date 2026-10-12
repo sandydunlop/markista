@@ -23,7 +23,7 @@ import io.github.qishr.cascara.lang.java.model.Link;
 import io.github.qishr.cascara.lang.java.model.Text;
 import io.github.qishr.cascara.lang.java.model.TypeNode;
 import io.github.qishr.cascara.lang.java.model.VariableTypeNode;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.VariableTypeParser;
 
 import io.github.sandydunlop.markista.orchestration.LinkResolver;
 import io.github.sandydunlop.markista.orchestration.TextAssembler;
@@ -66,10 +66,10 @@ class TypeWriterTests extends ModelTestEnvironment {
 
     @Test
     void outputFieldSummary_WritesMarkdownTableForFields() throws IOException {
-        VariableTypeNode vt1 = ModelUtil.parseVariableType("java.lang.String");
+        VariableTypeNode vt1 = VariableTypeParser.parseVariableType("java.lang.String");
         FieldNode field1 = new FieldNode(vt1, NameUtil.createMemberName("fieldOne"));
         field1.addModifier(Modifier.PUBLIC);
-        VariableTypeNode vt2 = ModelUtil.parseVariableType("int");
+        VariableTypeNode vt2 = VariableTypeParser.parseVariableType("int");
         FieldNode field2 = new FieldNode(vt2, NameUtil.createMemberName("fieldTwo"));
         field2.addModifier(Modifier.PRIVATE);
 
@@ -215,7 +215,7 @@ class TypeWriterTests extends ModelTestEnvironment {
         JlsName methodName = NameUtil.createMemberName(typeNode.getName(), "eat");
         MethodNode methodNode = new MethodNode("java.lang.String", methodName);
 
-        VariableTypeNode vt = ModelUtil.parseVariableType("java.lang.String");
+        VariableTypeNode vt = VariableTypeParser.parseVariableType("java.lang.String");
         ParamNode param1 = new ParamNode(vt, NameUtil.createMemberName("param1"));
         param1.setFirstSentence(Text.empty().append("param1doc"));
         methodNode.addParam(param1);
@@ -259,7 +259,7 @@ class TypeWriterTests extends ModelTestEnvironment {
 
         InterfaceNode specifiedByType = newInterface("Specified", pkg);
         specifiedByType.addMethod(overriddenMethodNode);
-        VariableTypeNode interfaceRef = ModelUtil.parseVariableType(specifiedByType.getName().fullyQualifiedName());
+        VariableTypeNode interfaceRef = VariableTypeParser.parseVariableType(specifiedByType.getName().fullyQualifiedName());
         typeNode.getImplementedInterfaces().add(interfaceRef);
 
         ClassNode thrownType = newClass("Thrown", pkg);
@@ -375,7 +375,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputImplementedInterfaces() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        typeNode.getImplementedInterfaces().add(ModelUtil.parseVariableType("interface"));
+        typeNode.getImplementedInterfaces().add(VariableTypeParser.parseVariableType("interface"));
 
         InterfaceNode testInterface = newInterface("interface", pkg);
 
@@ -432,7 +432,7 @@ class TypeWriterTests extends ModelTestEnvironment {
     void outputSupertypes() throws IOException {
         PackageNode pkg = new PackageNode("scenario.food.berry");
         ClassNode typeNode = newClass("Avocado", pkg);
-        typeNode.getSupertypes().add(ModelUtil.parseVariableType("test.interface"));
+        typeNode.getSupertypes().add(VariableTypeParser.parseVariableType("test.interface"));
 
         ctx.setPackageName("scenario.food.berry");
         SemanticModel api = new SemanticModel("Test API");
@@ -507,9 +507,9 @@ class TypeWriterTests extends ModelTestEnvironment {
         aa.setCustom(true);
         aa.setDocumented(true);
         typeNode.addAppliedAnnotation(aa);
-        AnnotationElement element1 = new AnnotationElement(ModelUtil.parseVariableType("Tn"), "Nm", "Va");
+        AnnotationElement element1 = new AnnotationElement(VariableTypeParser.parseVariableType("Tn"), "Nm", "Va");
         aa.addElement(element1);
-        AnnotationElement element2 = new AnnotationElement(ModelUtil.parseVariableType("El"), "Em", "Ent");
+        AnnotationElement element2 = new AnnotationElement(VariableTypeParser.parseVariableType("El"), "Em", "Ent");
         aa.addElement(element2);
 
         ctx.setPackageName("scenario.food.berry");

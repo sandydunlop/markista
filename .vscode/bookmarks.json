@@ -1,0 +1,49 @@
+{
+	"files": [
+		{
+			"path": "markista/src/main/java/io/github/sandydunlop/markista/markdown/TypeWriter.java",
+			"bookmarks": [
+				{
+					"line": 157,
+					"column": 9,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "markista/src/main/java/io/github/sandydunlop/markista/orchestration/TextAssembler.java",
+			"bookmarks": [
+				{
+					"line": 136,
+					"column": 32,
+					"label": ""
+				},
+				{
+					"line": 476,
+					"column": 19,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "markista/src/main/java/io/github/sandydunlop/markista/orchestration/LinkResolver.java",
+			"bookmarks": [
+				{
+					"line": 313,
+					"column": 14,
+					"label": ""
+				}
+			]
+		},
+		{
+			"path": "markista/src/main/java/io/github/sandydunlop/markista/markdown/MarkdownUtils.java",
+			"bookmarks": [
+				{
+					"line": 37,
+					"column": 12,
+					"label": ""
+				}
+			]
+		}
+	]
+}

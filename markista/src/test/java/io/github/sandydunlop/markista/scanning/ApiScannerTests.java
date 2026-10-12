@@ -9,7 +9,7 @@ import io.github.qishr.cascara.lang.java.model.ClassNode;
 import io.github.qishr.cascara.lang.java.model.FieldNode;
 import io.github.qishr.cascara.lang.java.model.JlsName;
 import io.github.qishr.cascara.lang.java.model.MethodNode;
-import io.github.qishr.cascara.lang.java.model.ModelUtil;
+import io.github.qishr.cascara.lang.java.model.VariableTypeParser;
 import io.github.qishr.cascara.lang.java.model.ModuleNode;
 import io.github.qishr.cascara.lang.java.model.NameUtil;
 import io.github.qishr.cascara.lang.java.model.PackageNode;
@@ -493,10 +493,10 @@ class ApiScannerTests extends MockedDocletEnvironment {
     @Test
     void addConstantFieldValuesReference() {
         ClassNode classNode2 = new ClassNode(NameUtil.createTypeName(packageNode.getName(), "Node"));
-        VariableTypeNode supertype = ModelUtil.parseVariableType("io.github.qishr.cascara.lang.java.model.Node");
+        VariableTypeNode supertype = VariableTypeParser.parseVariableType("io.github.qishr.cascara.lang.java.model.Node");
         classNode2.getSupertypes().add(supertype);
         api.addType(classNode2);
-        VariableTypeNode vt = ModelUtil.parseVariableType("int");
+        VariableTypeNode vt = VariableTypeParser.parseVariableType("int");
         JlsName fieldName = NameUtil.createMemberName("field");
         FieldNode fieldNode = new FieldNode(vt, fieldName);
         fieldNode.setConstantValue("1");
