@@ -177,12 +177,15 @@ public class TextAssembler {
         }
 
         String nameString = method.getName().toString();
-        if (nameString.contains("toString") && nameString.contains("JsonScalarNode")) {
-            System.out.println("Debug: INHERIT");
-        }
+        // if (nameString.contains("toString") && nameString.contains("JsonScalarNode")) {
+        //     System.out.println("Debug: INHERIT");
+        // }
 
         Link baseMethodLink = method.getBaseMethod();
         if (baseMethodLink != null) {
+            if (nameString.contains("initialize")) {
+                System.out.println("Debug");
+            }
 
             MethodNode documentedAncestor = getDocumentedAncestorMethod(method);
 
@@ -278,6 +281,10 @@ public class TextAssembler {
 
         // TODO: This gets the first ancestor. We need to try the next one if this one also has @inheritDoc
         String baseTypeName = ModelUtils.baseTypeName(method);
+
+        // if (method.getName().toString().contains("initialize")) {
+        //     System.out.println("Debug");
+        // }
 
         if (baseTypeName != null) {
             linkBaseMethod(baseMethodLink, baseTypeName);
@@ -440,6 +447,9 @@ public class TextAssembler {
             JlsName typeName = NameUtil.createTypeName(baseTypeName);
             baseMethodLink.getTarget().setName(typeName);
             baseMethodLink.setKind(Link.Kind.UNRESOLVED);
+            // if (baseTypeName.contains("AbstractOptionProvider")) {
+            //     System.out.println("Debug");
+            // }
             resolver.resolveLink(baseMethodLink);
             baseMethodLink.setAnchor(methodName.toLowerCase());
             baseMethodLink.setKind(Link.Kind.METHOD);

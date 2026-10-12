@@ -28,17 +28,22 @@ public class ModelUtils {
     }
 
     public static String baseTypeName(MethodNode methodNode){
+        // if (methodNode.getName().toString().contains("initialize")) {
+        //     System.out.println("Debug");
+        // }
+
         StandardModeler modeler = new StandardModeler();
         TypeNode type = api.getTypeNode(methodNode.getOwnerName());
         if (type == null) {
             return null;
         }
-        for (int i = type.getSupertypes().size() - 1; i >= 0; i--) {
-            VariableTypeNode typeRef = type.getSupertypes().get(i);
+        List<VariableTypeNode> supertypes = type.getSupertypes();
+        for (int i = supertypes.size() - 1; i >= 0; i--) {
+            VariableTypeNode typeRef = supertypes.get(i);
             String typeName = typeRef.getRawTypeName().toString();
 
 
-
+            // TODO: This should not be needed
             int b = typeName.indexOf("<");
             if (b > -1) {
                 typeName = typeName.substring(0, b);

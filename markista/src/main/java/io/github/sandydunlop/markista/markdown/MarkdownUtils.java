@@ -170,19 +170,28 @@ public class MarkdownUtils {
     /// @param label The text that will be displayed for the link
     /// @return Markdown formatted text with a resolved link
     public static String formatLink(Link link, String label) {
+        String md;
         // TODO: Use UriScheme
         if (link.getUri() != null && link.getUri().getScheme() != null && link.getUri().getScheme().startsWith("http")) {
             if (link.getAnchor() != null && !link.getAnchor().isEmpty()) {
-                return String.format("[%s](%s#%s)", label, link.getUri(), link.getAnchor());
+                md = String.format("[%s](%s#%s)", label, link.getUri(), link.getAnchor());
             } else {
-                return String.format(FORMAT_SIMPLE_LINK, label, link.getUri());
+                md = String.format(FORMAT_SIMPLE_LINK, label, link.getUri());
             }
         } else {
-            return formatLocalLink(link, label);
+            md = formatLocalLink(link, label);
         }
+        if (md.contains("null")) {
+            System.out.println("Debug");
+        }
+        return md;
     }
 
     public static String formatLocalLink(Link link, String label) {
+        if (link.getUri() == null) {
+            // TODO: This indicates an error in link resolution
+            return label;
+        }
         if (link.getKind() == Link.Kind.METHOD) {
             return formatLocalMethodLink(link, label);
         } else if (link.getKind() == Link.Kind.TYPE) {

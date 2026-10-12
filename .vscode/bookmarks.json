@@ -14,13 +14,18 @@
 			"path": "markista/src/main/java/io/github/sandydunlop/markista/orchestration/TextAssembler.java",
 			"bookmarks": [
 				{
-					"line": 136,
-					"column": 32,
+					"line": 184,
+					"column": 37,
 					"label": ""
 				},
 				{
-					"line": 476,
-					"column": 19,
+					"line": 289,
+					"column": 39,
+					"label": ""
+				},
+				{
+					"line": 443,
+					"column": 23,
 					"label": ""
 				}
 			]
@@ -29,8 +34,28 @@
 			"path": "markista/src/main/java/io/github/sandydunlop/markista/orchestration/LinkResolver.java",
 			"bookmarks": [
 				{
-					"line": 313,
-					"column": 14,
+					"line": 314,
+					"column": 19,
+					"label": ""
+				},
+				{
+					"line": 575,
+					"column": 13,
+					"label": ""
+				},
+				{
+					"line": 601,
+					"column": 46,
+					"label": ""
+				},
+				{
+					"line": 625,
+					"column": 38,
+					"label": ""
+				},
+				{
+					"line": 681,
+					"column": 30,
 					"label": ""
 				}
 			]

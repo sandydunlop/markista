@@ -209,8 +209,10 @@ public class LinkResolver {
         link.setResolved(true);
     }
 
-    private void resolvedExternal(Link link, ExternalLink extLink, String packageName, String typeName) {
-        if (typeName.isEmpty()) {
+    private void resolvedExternal(Link link, ExternalLink extLink, String moduleName, String packageName, String typeName) {
+        if (packageName.isEmpty()) {
+            link.setKind(Link.Kind.MODULE);
+        } else if (typeName.isEmpty()) {
             link.setKind(Link.Kind.PACKAGE);
         } else {
             link.setKind(Link.Kind.TYPE);
@@ -218,7 +220,9 @@ public class LinkResolver {
         link.setScope(extLink.isWebLink() ? Link.Scope.EXTERNAL : Link.Scope.SIBLING);
 
         if (extLink.isWebLink()) {
-            String moduleName = extLink.getPackageToModule().get(packageName);
+            if (moduleName == null || moduleName.isEmpty()) {
+                moduleName = extLink.getPackageToModule().get(packageName);
+            }
             URI uri = extLink.getUri();
             // uri = uri.resolve(moduleName);
             String path = moduleName + "/" + packageName.replace(".", "/") + "/";
@@ -346,6 +350,10 @@ public class LinkResolver {
     }
 
     private boolean resolveModule(Link link) {
+        // if (link.getTarget().getModuleName().equals("javafx.base")) {
+        //     System.out.println("Debug");
+        // }
+
         if (tryResolveLocalModule(link)) return true;
         if (tryResolveJreModule(link)) return true;
         return tryResolveExternalModule(link);
@@ -398,17 +406,31 @@ public class LinkResolver {
         for (ExternalLink extLink : externalLinks) {
             for (ModuleNode moduleNode : extLink.getSemanticModel().getModules()) {
                 if (moduleNode.getName().toString().equals(target.getModuleName())) {
-                    resolvedModule(link, extLink.isWebLink() ? Scope.EXTERNAL : Scope.SIBLING);
+                    // resolvedModule(link, extLink.isWebLink() ? Scope.EXTERNAL : Scope.SIBLING);
 
-                    if (target.getName() == null && link.getOrigin() != null &&  link.getOrigin().getName() == null) {
-                        // Module to module link
-                        try {
-                            link.setUri(new URI("../" + target.getModuleName()));
-                        } catch (URISyntaxException e) {
-                            e.printStackTrace();
-                        }
+                    String pkgName = "";
+                    if (target.getName() != null && target.getName().packageName() != null) {
+                        pkgName = target.getName().packageName().toString();
+                    }
+                    String typeName = "";
+                    if (target.getName() != null && target.getName().typeName() != null) {
+                        typeName = target.getName().typeName().toString();
+                    }
+                    resolvedExternal(link, extLink, target.getModuleName(), pkgName, typeName);
+
+                    if (link.getScope() == Scope.EXTERNAL) {
+
                     } else {
-                        link.setUri(relativize(link.getOrigin().getName(), null, target.getModuleName()));
+                        if (target.getName() == null && link.getOrigin() != null &&  link.getOrigin().getName() == null) {
+                            // Module to module link
+                            try {
+                                link.setUri(new URI("../" + target.getModuleName()));
+                            } catch (URISyntaxException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            link.setUri(relativize(link.getOrigin().getName(), null, target.getModuleName()));
+                        }
                     }
                     return true;
                 }
@@ -555,6 +577,7 @@ public class LinkResolver {
         Reference origin = link.getOrigin();
         Reference target = link.getTarget();
         TypeNode typeNode = api.getTypeNode(target.getName());
+
         if (typeNode != null) {
 
             // typeNode's name potentially has more metadata than target's name
@@ -565,13 +588,33 @@ public class LinkResolver {
             if (!target.getModuleName().equals(origin.getModuleName())) {
                 module = target.getModuleName();
             }
-            JlsName originName = null;
-            if (origin.getName() != null) {
+
+            JlsName originName = origin.getName();
+
+            // if (typeNode.getName().toString().contains("UriScheme")) {
+            //     System.out.println("Debug");
+            // }
+
+            if (originName == null) {
+                // Use the context instead of the null one
+
+                if (!ctx.getPackageName().isEmpty() && !ctx.getTypeName().isEmpty()) {
+                    // JlsName pkgName = NameUtil.createPackageName(ctx.getPackageName());
+                    // originName = NameUtil.createTypeName(pkgName, ctx.getTypeName());
+                    originName = NameUtil.createPackageName(ctx.getPackageName());
+                }
+
+
+            }
+
+            if (originName != null) {
                 if (origin.getModuleName() == null) {
                     throw new IllegalStateException("Origin has no module name");
                 }
                 String originCommonBase = ctx.getCommonBasePath(origin.getModuleName());
-                originName = flattenDirectory(origin.getName().packageName(), originCommonBase);
+                if (originCommonBase != null && !originCommonBase.isEmpty()) {
+                    originName = flattenDirectory(originName.packageName(), originCommonBase);
+                }
             }
 
             if (target.getModuleName() == null) {
@@ -579,6 +622,10 @@ public class LinkResolver {
             }
             String targetCommonBase = ctx.getCommonBasePath(target.getModuleName());
             JlsName targetName = flattenDirectory(typeNode.getName(), targetCommonBase);
+
+            if (originName != null && originName.isType()) {
+                originName = originName.packageName();
+            }
             link.setUri(relativize(originName, targetName, module));
 
             resolvedType(link, Link.Scope.LOCAL);
@@ -632,7 +679,7 @@ public class LinkResolver {
                     //     typeName = "";
                     // }
 
-                    resolvedExternal(link, extLink, packageName, typeName);
+                    resolvedExternal(link, extLink, null, packageName, typeName);
                     return true;
                 }
             }
@@ -641,6 +688,15 @@ public class LinkResolver {
     }
 
     URI relativize(JlsName from, JlsName to, String module) {
+        if (from != null && to != null) {
+            if (from.toString().contains("lang.processor") && to.toString().contains("JsonConverter")) {
+                System.out.println("Debug");
+            }
+            if (from.toString().contains("ui.theme") && to.toString().contains("AbstractOptionProvider")) {
+                System.out.println("Debug");
+            }
+        }
+
         // a.b.C.D
         URI uri;
         int commonCount = 0;
@@ -659,7 +715,10 @@ public class LinkResolver {
                     uri = null;
                 } else {
                     // Origin is a package
-                    commonCount = from.commonComponentCount(to);
+                    // commonCount = from.commonComponentCount(to);
+                    commonCount = ctx.getCommonBasePath().isEmpty()
+                        ? 0
+                        : from.commonComponentCount(to);
                     uri = new URI("../".repeat(from.componentCount() - commonCount));
                 }
             }

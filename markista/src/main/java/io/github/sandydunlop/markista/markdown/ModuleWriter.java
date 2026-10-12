@@ -104,11 +104,35 @@ public class ModuleWriter {
         writer.close();
     }
 
+    /// Finds the longest string that appears at the start of every package name.
+    /// i.e. the longest string that can be removed from the start of every package name
+    /// without causing any package name to become non-unique.
+    private String apiBase() {
+        JlsName name = api.getPackages().getFirst().getName();
+        int components = name.componentCount();
+        for (int i = components; i > 0; i--) {
+            String subName = name.firstComponents(i).toString();
+            boolean isCommon = true;
+            for (PackageNode pkg : api.getPackages()) {
+                if (!pkg.getName().toString().startsWith(subName)) {
+                    isCommon = false;
+                    break;
+                }
+            }
+            if (isCommon) {
+                return subName;
+            }
+        }
+        return "";
+    }
+
     private void outputSummary()  throws InvalidPathException, IOException {
         ctx.setModuleName(null);
         ctx.setPackageName(null);
         writer = ctx.createFileInRoot("SUMMARY.md");
         writer.write("* [Overview](index.md)" + NL);
+        String apiBase = apiBase();
+
         for (ModuleNode moduleNode : api.getModules()) {
             ctx.setModuleName(moduleNode.getName().fullyQualifiedName());
             String moduleName = moduleNode.getName().fullyQualifiedName();
@@ -128,12 +152,28 @@ public class ModuleWriter {
                 link.setUri(URI.create(uriString));
 
 
+
+
+                String linkText;
+
                 String base = ctx.getCommonBasePath();
-                String linkText = packageName.fullyQualifiedName().substring(base.length() + 1);
+                int baseLength = base.length();
+                if (baseLength == 0) {
+                    // System.out.println("Pkg: " + packageName);
+                    // System.out.println("apiBase: " + apiBase);
+                    base = apiBase;
+                    linkText = packageName.fullyQualifiedName().substring(base.length() + 1);
+                } else {
+                    linkText = packageName.fullyQualifiedName().substring(base.length() + 1);
+                }
+
+
+
+
 
                 // String linkText = packageName.simpleName();
-                String linkString = MarkdownUtils.formatLink(link, linkText);
-                writer.write("        * " + linkString + NL);
+                String linkMarkdown = MarkdownUtils.formatLink(link, linkText);
+                writer.write("        * " + linkMarkdown + NL);
 
                 ctx.setPackageName(packageName.fullyQualifiedName());
                 File packageDir = ctx.getPackageDirectory();
@@ -146,8 +186,8 @@ public class ModuleWriter {
                     Path docPath = relPath.resolve(typeNode.getName().simpleName());
                     String docPathString = docPath.toString();
                     FileLink typeLink = FileLink.to(docPathString).withLabel(typeNode.getName().simpleName());
-                    linkString = MarkdownUtils.formatFileLink(typeLink);
-                    writer.write("            * " + linkString + NL);
+                    linkMarkdown = MarkdownUtils.formatFileLink(typeLink);
+                    writer.write("            * " + linkMarkdown + NL);
                 }
             }
         }
@@ -215,7 +255,26 @@ public class ModuleWriter {
         for (DirectiveNode directive : directives) {
             String columnTwo = formatDirectivePackageDoc(directive);
             Link link = directive.getLink();
+
+
+            URI linkUri = link.getUri();
+            String uriString = null;
+            if (linkUri != null) {
+                uriString = linkUri.toString();
+                if (uriString.contains("controlsindex")) {
+                    System.out.println("Debug");
+                }
+            }
+
+
             String linkString = MarkdownUtils.link(link, true);
+
+
+            if (linkString.contains("controlsindex")) {
+                System.out.println("Debug");
+            }
+
+
             table.addRow(linkString, columnTwo);
         }
         table.render(writer, 4);
@@ -252,7 +311,15 @@ public class ModuleWriter {
             }
             String label = link.getTarget().getName().fullyQualifiedName();
             if (link.isResolved()) {
-                sb.append(String.format("[%s](%s)", label, link.getUri()));
+
+
+                // TODO: We should not have to add the ".md" here
+                // Link resolver should have done it? Or is that MardownUtils' job?
+
+                // sb.append(String.format("[%s](%s)", label, link.getUri()));
+                sb.append(String.format("[%s](%s)", label, link.getUri() + ".md"));
+
+
             } else {
                 sb.append(label);
             }
